@@ -1,0 +1,10 @@
+[package]
+name = "abm"
+version = "0.1.0"
+authors = ["Carmine Spagnuolo <spagnuolocarmine@gmail.com>"]
+edition = "2018"
+keywords = ["discrete", "simulation","agent based model","agent based simulation"]
+categories = ["science", "simulation","agent based model"]
+
+[dependencies]
+priority-queue = "0.5.2"
