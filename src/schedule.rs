@@ -6,18 +6,18 @@ use crate::agent::Agent;
 use crate::agentimpl::AgentImpl;
 use crate::simstate::SimState;
 
-pub struct Schedule<A: Agent>{
+pub struct Schedule<A: Agent + Clone>{
     step: usize,
     time: f64,
     events: PriorityQueue<AgentImpl<A>,Priority>
 }
 
-struct Pair<A: Agent> {
+struct Pair<A: Agent + Clone> {
     agentimpl: AgentImpl<A>,
     priority: Priority,
 }
 
-impl<A: Agent> Pair<A> {
+impl<A: Agent + Clone> Pair<A> {
     fn new(agent: AgentImpl<A>, priority: Priority) -> Pair<A> {
         Pair {
             agentimpl: agent,
@@ -26,7 +26,7 @@ impl<A: Agent> Pair<A> {
     }
 }
 
-impl<A: Agent> Schedule<A> {
+impl<A: Agent + Clone> Schedule<A> {
     pub fn new() -> Schedule<A> {
         Schedule {
             step: 0,
@@ -57,7 +57,7 @@ impl<A: Agent> Schedule<A> {
             None => panic!("agente non trovato"),
         }
 
-        let mut ctime = self.time;
+
         let mut cevents: Vec<Pair<A>> = Vec::new();
 
         loop {
@@ -86,8 +86,15 @@ impl<A: Agent> Schedule<A> {
 
         }
 
-        for item in cevents.iter_mut() {
+        for item in cevents.into_iter() {
+
+            let agentimpl2 = item.agentimpl.clone();
+            if item.agentimpl.repeating {
+                self.schedule_once(agentimpl2, item.priority.time + 1.0, item.priority.ordering);
+            }
+
             item.agentimpl.step(simstate);
+
         }
 
     }
