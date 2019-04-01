@@ -3,16 +3,18 @@ use std::cmp::Eq;
 
 pub struct Priority{
     pub time:f64,
-    pub priority:i64
+    pub ordering:i64
 }
 
 impl Ord for Priority {
     fn cmp(&self, other: &Priority) -> Ordering {
-        if self.priority < other.priority {return Ordering::Less;}
-        if self.priority > other.priority {return Ordering::Greater;}
+
+        if self.time < other.time {return Ordering::Greater;}
+        if self.time > other.time {return Ordering::Less;}
+
+        if self.ordering < other.ordering {return Ordering::Greater;}
+        if self.ordering > other.ordering {return Ordering::Less;}
         //return self.time.cmp(&other.time)
-        if self.time < other.time {return Ordering::Less;}
-        if self.time > other.time {return Ordering::Greater;}
 
         return Ordering::Equal
     }
@@ -26,6 +28,6 @@ impl Eq for Priority {}
 
 impl PartialEq for Priority {
     fn eq(&self, other: &Priority) -> bool {
-        self.priority == other.priority && self.time == other.time
+        self.ordering == other.ordering && self.time == other.time
     }
 }
