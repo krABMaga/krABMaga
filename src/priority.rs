@@ -8,9 +8,13 @@ pub struct Priority{
 
 impl Ord for Priority {
     fn cmp(&self, other: &Priority) -> Ordering {
+        if self.priority < other.priority {return Ordering::Less;}
+        if self.priority > other.priority {return Ordering::Greater;}
+        //return self.time.cmp(&other.time)
         if self.time < other.time {return Ordering::Less;}
         if self.time > other.time {return Ordering::Greater;}
-        return self.priority.cmp(&other.priority)
+
+        return Ordering::Equal
     }
 }
 impl PartialOrd for Priority {
@@ -22,6 +26,6 @@ impl Eq for Priority {}
 
 impl PartialEq for Priority {
     fn eq(&self, other: &Priority) -> bool {
-        self.time == other.time && self.priority == other.priority
+        self.priority == other.priority && self.time == other.time
     }
 }

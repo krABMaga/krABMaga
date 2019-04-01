@@ -15,7 +15,7 @@ fn main() {
 
     let pr = Priority {
         time: 10.0,
-        priority: 100,
+        priority: 10,
     };
 
     let ag2 = Agent {
@@ -23,8 +23,8 @@ fn main() {
     };
 
     let pr2 = Priority {
-        time: 15.0,
-        priority: 500,
+        time: 30.0,
+        priority: 20,
     };
 
     let mut pq = PriorityQueue::new();
