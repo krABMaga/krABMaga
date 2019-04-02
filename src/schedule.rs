@@ -41,7 +41,8 @@ impl<A: Agent + Clone> Schedule<A> {
 
     pub fn schedule_repeating(&mut self, mut agent: AgentImpl<A>, time:f64, ordering:i64) {
         agent.repeating = true;
-        self.events.push(agent, Priority{time: time, ordering: ordering});
+        let pr = Priority::new(time, ordering);
+        self.events.push(agent, pr);
     }
 
     pub fn step(&mut self, simstate: &SimState<A>){
@@ -57,19 +58,15 @@ impl<A: Agent + Clone> Schedule<A> {
         match events.peek() {
             Some(item) => {
                 let (_agent, priority) = item;
-                println!("{}", priority);
                 self.time = priority.time;
-                //cevents.push(Pair::new(*agent, *priority));
             },
             None => panic!("agente non trovato"),
         }
 
-
-        //let mut cevents: Vec<Pair<A>> = Vec::new();
+        println!("{}", events.len());
         let mut counter = 0;
-
         loop {
-            println!("loop # {}", counter);
+            println!("{:?}", counter);
             counter += 1;
             if events.is_empty() {
                 break;
@@ -79,7 +76,6 @@ impl<A: Agent + Clone> Schedule<A> {
                 Some(item) => {
                     let (_agent, priority) = item;
                     if priority.time > self.time {
-                        println!("problemi di tempo");
                         break;
                     }
                 },
@@ -90,7 +86,8 @@ impl<A: Agent + Clone> Schedule<A> {
             match item {
                 Some(item) => {
                     let (agent, priority) = item;
-                    println!("{}", priority);
+                    // let x = agent.id.clone();
+                    // println!("{}", x);
                     cevents.push(Pair::new(agent, priority));
                 },
                 None => panic!("no item"),
@@ -98,6 +95,7 @@ impl<A: Agent + Clone> Schedule<A> {
 
         }
 
+        println!("{:?}", cevents.len());
         for item in cevents.into_iter() {
 
             if item.agentimpl.repeating {

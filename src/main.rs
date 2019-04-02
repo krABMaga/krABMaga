@@ -7,45 +7,31 @@ use abm::agent::Agent;
 use abm::simstate::SimState;
 use abm::agentimpl::AgentImpl;
 use abm::schedule::Schedule;
-use abm::priority::Priority;
 //use priority::Priority;
 //use agent::Agent;
 
 fn main() {
-    let piccione = Bird {
-        id: String::from("piccione"),
-    };
-    let quaglia = Bird {
-        id: String::from("quaglia"),
-    };
-    assert_eq!{piccione, piccione.clone()};
-
-
-    let pa = AgentImpl::new(piccione);
-    let pp = Priority {
-        time: 10.0,
-        ordering: 100
-    };
-    let qa = AgentImpl::new(quaglia);
-    let qp = Priority {
-        time: 5.0,
-        ordering: 200
-    };
 
     let mut schedule: Schedule<Bird> = Schedule::new();
 
-    schedule.events.push(pa, pp);
-    schedule.events.push(qa, qp);
+    for bird_id in 1..10 {
+        let bird = Bird::new(String::from(bird_id.to_string()));
+        println!("{}", bird_id);
+        let pa = AgentImpl::new(bird);
+        schedule.schedule_repeating(pa, 1.0, 10);
+        println!("{}", schedule.events.len());
+    }
 
-    // for (item, _) in schedule.events.into_sorted_iter() {
-    //         println!("1 {}", item);
-    //     }
 
     let simstate = SimState {
         schedule: schedule.clone(),
     };
 
-    schedule.step(&simstate);
+
+    for step in 1..3 {
+        println!("step {}", step);
+        schedule.step(&simstate);
+    }
 }
 
 #[derive(Debug)]
@@ -66,13 +52,9 @@ impl Agent for Bird {
     fn step<A: Agent + Clone>(self, _simstate: &SimState<A>) {
         println!("{:?} ha fatto lo step", self.id);
     }
-}
 
-impl Eq for Bird{}
-
-impl PartialEq for Bird {
-    fn eq(&self, other: &Bird) -> bool {
-        self.id == other.id
+    fn id<A: Agent + Clone>(self) -> String {
+        self.id
     }
 }
 

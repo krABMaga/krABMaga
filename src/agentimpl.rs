@@ -26,6 +26,10 @@ impl<A: Agent + Clone> AgentImpl<A> {
     pub fn step(self, simstate: &SimState<A>) {
         self.agent.step(simstate);
     }
+
+    pub fn id(self) -> String {
+        self.id
+    }
 }
 
 impl<A: Agent + Clone> Eq for AgentImpl<A>{}

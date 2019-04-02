@@ -8,6 +8,15 @@ pub struct Priority{
     pub ordering:i64
 }
 
+impl Priority {
+    pub fn new(time: f64, ordering: i64) -> Priority {
+        Priority {
+            time: time,
+            ordering: ordering
+        }
+    }
+}
+
 impl Ord for Priority {
     fn cmp(&self, other: &Priority) -> Ordering {
 
