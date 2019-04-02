@@ -6,10 +6,11 @@ use crate::agent::Agent;
 use crate::agentimpl::AgentImpl;
 use crate::simstate::SimState;
 
+#[derive(Clone)]
 pub struct Schedule<A: Agent + Clone>{
-    step: usize,
-    time: f64,
-    events: PriorityQueue<AgentImpl<A>,Priority>
+    pub step: usize,
+    pub time: f64,
+    pub events: PriorityQueue<AgentImpl<A>,Priority>
 }
 
 struct Pair<A: Agent + Clone> {
@@ -45,22 +46,31 @@ impl<A: Agent + Clone> Schedule<A> {
 
     pub fn step(&mut self, simstate: &SimState<A>){
         self.step += 1;
-        let mut events = &mut self.events;
-        if events.is_empty()
-            { return; }
+        let events = &mut self.events;
+        if events.is_empty() {
+            println!("coda eventi vuota");
+            return
+        }
+
+        let mut cevents: Vec<Pair<A>> = Vec::new();
 
         match events.peek() {
             Some(item) => {
                 let (_agent, priority) = item;
+                println!("{}", priority);
                 self.time = priority.time;
+                //cevents.push(Pair::new(*agent, *priority));
             },
             None => panic!("agente non trovato"),
         }
 
 
-        let mut cevents: Vec<Pair<A>> = Vec::new();
+        //let mut cevents: Vec<Pair<A>> = Vec::new();
+        let mut counter = 0;
 
         loop {
+            println!("loop # {}", counter);
+            counter += 1;
             if events.is_empty() {
                 break;
             }
@@ -69,6 +79,7 @@ impl<A: Agent + Clone> Schedule<A> {
                 Some(item) => {
                     let (_agent, priority) = item;
                     if priority.time > self.time {
+                        println!("problemi di tempo");
                         break;
                     }
                 },
@@ -79,6 +90,7 @@ impl<A: Agent + Clone> Schedule<A> {
             match item {
                 Some(item) => {
                     let (agent, priority) = item;
+                    println!("{}", priority);
                     cevents.push(Pair::new(agent, priority));
                 },
                 None => panic!("no item"),
@@ -88,15 +100,12 @@ impl<A: Agent + Clone> Schedule<A> {
 
         for item in cevents.into_iter() {
 
-            let agentimpl2 = item.agentimpl.clone();
             if item.agentimpl.repeating {
+                let agentimpl2 = item.agentimpl.clone();
                 self.schedule_once(agentimpl2, item.priority.time + 1.0, item.priority.ordering);
             }
 
             item.agentimpl.step(simstate);
-
         }
-
     }
-
 }

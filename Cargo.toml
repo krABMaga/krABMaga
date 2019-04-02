@@ -7,4 +7,4 @@ keywords = ["discrete", "simulation","agent based model","agent based simulation
 categories = ["science", "simulation","agent based model"]
 
 [dependencies]
-priority-queue = "0.5.2"
+priority-queue = "0.5.4"

@@ -1,6 +1,8 @@
 use std::cmp::Ordering;
 use std::cmp::Eq;
+use std::fmt;
 
+#[derive(Clone)]
 pub struct Priority{
     pub time:f64,
     pub ordering:i64
@@ -29,5 +31,11 @@ impl Eq for Priority {}
 impl PartialEq for Priority {
     fn eq(&self, other: &Priority) -> bool {
         self.ordering == other.ordering && self.time == other.time
+    }
+}
+
+impl fmt::Display for Priority {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{} {}", self.time, self.ordering)
     }
 }
