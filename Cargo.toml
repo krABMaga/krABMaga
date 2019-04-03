@@ -8,3 +8,4 @@ categories = ["science", "simulation","agent based model"]
 
 [dependencies]
 priority-queue = "0.5.4"
+uid = "0.1.4"

@@ -1,65 +1,53 @@
 extern crate priority_queue;
-//use priority_queue::PriorityQueue;
-//use abm::agent::Agent;
-//use abm::priority::Priority;
+
 use std::fmt;
 use abm::agent::Agent;
 use abm::simstate::SimState;
 use abm::agentimpl::AgentImpl;
 use abm::schedule::Schedule;
-//use priority::Priority;
-//use agent::Agent;
 
 fn main() {
 
     let mut schedule: Schedule<Bird> = Schedule::new();
+    assert!(schedule.events.is_empty());
 
-    for bird_id in 1..10 {
-        let bird = Bird::new(String::from(bird_id.to_string()));
-        println!("{}", bird_id);
+    for bird_id in 1..10000 {
+        let bird = Bird::new(bird_id);
         let pa = AgentImpl::new(bird);
-        schedule.schedule_repeating(pa, 1.0, 10);
-        println!("{}", schedule.events.len());
+        schedule.schedule_repeating(pa, 5.0, 100);
     }
-
 
     let simstate = SimState {
         schedule: schedule.clone(),
     };
 
-
-    for step in 1..3 {
+    for step in 1..100{
         println!("step {}", step);
         schedule.step(&simstate);
     }
 }
 
-#[derive(Debug)]
-#[derive(Clone)]
+#[derive(Copy, Clone, Debug, Eq, Ord, PartialEq, PartialOrd, Hash)]
 pub struct Bird {
-    id: String,
+    x: u32,
 }
 
 impl Bird {
-    pub fn new(id: String) -> Bird {
+    pub fn new(x: u32) -> Self {
         Bird {
-            id,
+            x
         }
     }
 }
 
 impl Agent for Bird {
-    fn step<A: Agent + Clone>(self, _simstate: &SimState<A>) {
-        println!("{:?} ha fatto lo step", self.id);
-    }
-
-    fn id<A: Agent + Clone>(self) -> String {
-        self.id
+    fn step(self, simstate: &SimState<A>) {
+        println!("{:?} ha fatto lo step", self.x);
     }
 }
 
 impl fmt::Display for Bird {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.id)
+        write!(f, "{}", self.x)
     }
 }

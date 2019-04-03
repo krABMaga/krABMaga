@@ -1,6 +1,6 @@
 use crate::simstate::SimState;
+use std::hash::{Hash};
 
 pub trait Agent{
-    fn step<A: Agent + Clone>(self, simstate: &SimState<A>);
-    fn id<A: Agent + Clone>(self) -> String;
+    fn step<A: Agent + Clone + Copy + Hash + Eq>(self, simstate: &SimState<A>);
 }

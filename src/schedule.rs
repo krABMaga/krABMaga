@@ -5,20 +5,22 @@ use crate::priority::Priority;
 use crate::agent::Agent;
 use crate::agentimpl::AgentImpl;
 use crate::simstate::SimState;
+use std::hash::{Hash};
+
 
 #[derive(Clone)]
-pub struct Schedule<A: Agent + Clone>{
+pub struct Schedule<A: Agent + Clone + Copy + Hash + Eq>{
     pub step: usize,
     pub time: f64,
     pub events: PriorityQueue<AgentImpl<A>,Priority>
 }
 
-struct Pair<A: Agent + Clone> {
+struct Pair<A: Agent + Clone + Copy + Hash + Eq> {
     agentimpl: AgentImpl<A>,
     priority: Priority,
 }
 
-impl<A: Agent + Clone> Pair<A> {
+impl<A: Agent + Clone + Copy + Hash + Eq> Pair<A> {
     fn new(agent: AgentImpl<A>, priority: Priority) -> Pair<A> {
         Pair {
             agentimpl: agent,
@@ -27,7 +29,7 @@ impl<A: Agent + Clone> Pair<A> {
     }
 }
 
-impl<A: Agent + Clone> Schedule<A> {
+impl<A: Agent + Clone + Copy + Hash + Eq> Schedule<A> {
     pub fn new() -> Schedule<A> {
         Schedule {
             step: 0,
@@ -63,11 +65,7 @@ impl<A: Agent + Clone> Schedule<A> {
             None => panic!("agente non trovato"),
         }
 
-        println!("{}", events.len());
-        let mut counter = 0;
         loop {
-            println!("{:?}", counter);
-            counter += 1;
             if events.is_empty() {
                 break;
             }
@@ -95,7 +93,6 @@ impl<A: Agent + Clone> Schedule<A> {
 
         }
 
-        println!("{:?}", cevents.len());
         for item in cevents.into_iter() {
 
             if item.agentimpl.repeating {
