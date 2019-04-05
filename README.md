@@ -1,2 +1,2 @@
-# A Multi-Agent Based Simulation engine in in Rust
+# A Multi-Agent Based Simulation engine in Rust
 
