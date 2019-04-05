@@ -4,23 +4,23 @@ use priority_queue::PriorityQueue;
 use crate::priority::Priority;
 use crate::agent::Agent;
 use crate::agentimpl::AgentImpl;
-use crate::simstate::SimState;
+use crate::simulstate::SimState;
 use std::hash::{Hash};
 
 
 #[derive(Clone)]
-pub struct Schedule<A: Agent + Clone + Copy + Hash + Eq>{
+pub struct Schedule<A: Agent + Clone + Hash + Eq>{
     pub step: usize,
     pub time: f64,
     pub events: PriorityQueue<AgentImpl<A>,Priority>
 }
 
-struct Pair<A: Agent + Clone + Copy + Hash + Eq> {
+struct Pair<A: Agent + Clone> {
     agentimpl: AgentImpl<A>,
     priority: Priority,
 }
 
-impl<A: Agent + Clone + Copy + Hash + Eq> Pair<A> {
+impl<A: Agent + Clone> Pair<A> {
     fn new(agent: AgentImpl<A>, priority: Priority) -> Pair<A> {
         Pair {
             agentimpl: agent,
@@ -29,7 +29,7 @@ impl<A: Agent + Clone + Copy + Hash + Eq> Pair<A> {
     }
 }
 
-impl<A: Agent + Clone + Copy + Hash + Eq> Schedule<A> {
+impl<A: Agent + Clone + Hash + Eq> Schedule<A> {
     pub fn new() -> Schedule<A> {
         Schedule {
             step: 0,
@@ -47,7 +47,7 @@ impl<A: Agent + Clone + Copy + Hash + Eq> Schedule<A> {
         self.events.push(agent, pr);
     }
 
-    pub fn step(&mut self, simstate: &SimState<A>){
+    pub fn step(&mut self, simstate: &SimState){
         self.step += 1;
         let events = &mut self.events;
         if events.is_empty() {

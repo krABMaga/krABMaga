@@ -2,26 +2,26 @@ extern crate priority_queue;
 
 use std::fmt;
 use abm::agent::Agent;
-use abm::simstate::SimState;
 use abm::agentimpl::AgentImpl;
 use abm::schedule::Schedule;
+use abm::simulstate::SimState;
 
 fn main() {
 
     let mut schedule: Schedule<Bird> = Schedule::new();
     assert!(schedule.events.is_empty());
 
-    for bird_id in 1..10000 {
+    for bird_id in 1..10 {
         let bird = Bird::new(bird_id);
         let pa = AgentImpl::new(bird);
         schedule.schedule_repeating(pa, 5.0, 100);
     }
 
     let simstate = SimState {
-        schedule: schedule.clone(),
+        //schedule: schedule.clone(),
     };
 
-    for step in 1..100{
+    for step in 1..10{
         println!("step {}", step);
         schedule.step(&simstate);
     }
@@ -41,7 +41,7 @@ impl Bird {
 }
 
 impl Agent for Bird {
-    fn step(self, simstate: &SimState<A>) {
+    fn step(self, _simstate: &SimState) {
         println!("{:?} ha fatto lo step", self.x);
     }
 }
