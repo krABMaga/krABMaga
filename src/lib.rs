@@ -3,3 +3,4 @@ pub mod agent;
 pub mod schedule;
 pub mod simulstate;
 pub mod agentimpl;
+pub mod field;

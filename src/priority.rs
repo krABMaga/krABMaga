@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 use std::cmp::Eq;
 use std::fmt;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Priority{
     pub time:f64,
     pub ordering:i64

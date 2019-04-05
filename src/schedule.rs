@@ -15,7 +15,7 @@ pub struct Schedule<A: Agent + Clone + Hash + Eq>{
     pub events: PriorityQueue<AgentImpl<A>,Priority>
 }
 
-struct Pair<A: Agent + Clone> {
+pub struct Pair<A: Agent + Clone> {
     agentimpl: AgentImpl<A>,
     priority: Priority,
 }
@@ -95,8 +95,9 @@ impl<A: Agent + Clone + Hash + Eq> Schedule<A> {
 
         for item in cevents.into_iter() {
 
+            let agentimpl2 = item.agentimpl.clone();
+
             if item.agentimpl.repeating {
-                let agentimpl2 = item.agentimpl.clone();
                 self.schedule_once(agentimpl2, item.priority.time + 1.0, item.priority.ordering);
             }
 
