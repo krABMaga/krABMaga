@@ -1,5 +1,6 @@
 extern crate priority_queue;
 
+
 use std::fmt;
 use abm::agent::Agent;
 use abm::priority::Priority;
@@ -8,6 +9,10 @@ use abm::schedule::Schedule;
 use abm::simulstate::SimState;
 use abm::field::Field;
 use std::default::Default;
+
+
+static mut COUNT: u32 = 0;
+
 
 #[test]
 fn schedule_test_1() {
