@@ -10,12 +10,12 @@ use std::default::Default;
 static mut COUNT: u32 = 0;
 
 #[test]
-fn schedule_test() {
+fn schedule_test_1() {
 
     let mut schedule: Schedule<Bird> = Default::default();
     assert!(schedule.events.is_empty());
 
-    for bird_id in 1..3{
+    for bird_id in 1..4{
         let bird = Bird::new(bird_id);
         let pa = AgentImpl::new(bird);
         schedule.schedule_repeating(pa, 5.0, 100);
@@ -25,12 +25,47 @@ fn schedule_test() {
         //schedule: schedule.clone(),
     };
 
-    for step in 1..10{
-        println!("step {}", step);
-        schedule.step(&simstate);
+    schedule.step(&simstate);
+
+    unsafe {
+        assert_eq!(6, COUNT);
     }
 
-    
+    unsafe {
+        COUNT = 0;
+    }
+}
+
+#[test]
+fn schedule_test_2() {
+
+    let mut schedule: Schedule<Bird> = Default::default();
+
+    let bird1 = Bird {x: 1};
+    let bird2 = Bird {x: 2};
+    let bird3 = Bird {x: 3};
+    let pa1 = AgentImpl::new(bird1);
+    let pa2 = AgentImpl::new(bird2);
+    let pa3 = AgentImpl::new(bird3);
+
+    schedule.schedule_repeating(pa1, 5.0, 100);
+    schedule.schedule_repeating(pa2, 5.0, 100);
+    schedule.schedule_repeating(pa3, 10.0, 100);
+
+    let simstate = SimState {};
+
+    schedule.step(&simstate);
+    unsafe {
+        assert_eq!(3, COUNT);
+    }
+    schedule.step(&simstate);
+    unsafe {
+        assert_eq!(6, COUNT);
+    }
+
+    unsafe {
+        COUNT = 0;
+    }
 }
 
 #[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
