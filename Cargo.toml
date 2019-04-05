@@ -14,3 +14,7 @@ criterion = "0.1.2"
 [[bench]]
 name = "benchmark"
 harness = false
+
+[[bin]]
+name = "boids"
+ path = "examples/boids.rs"
