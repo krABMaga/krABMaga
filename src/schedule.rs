@@ -8,7 +8,7 @@ use crate::simulstate::SimState;
 use std::hash::{Hash};
 
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct Schedule<A: Agent + Clone + Hash + Eq>{
     pub step: usize,
     pub time: f64,
@@ -21,29 +21,29 @@ struct Pair<A: Agent + Clone> {
 }
 
 impl<A: Agent + Clone> Pair<A> {
-    fn new(agent: AgentImpl<A>, priority: Priority) -> Pair<A> {
+    fn new(agent: AgentImpl<A>, the_priority: Priority) -> Pair<A> {
         Pair {
             agentimpl: agent,
-            priority: priority
+            priority: the_priority
         }
     }
 }
 
 impl<A: Agent + Clone + Hash + Eq> Schedule<A> {
-    pub fn new() -> Schedule<A> {
-        Schedule {
-            step: 0,
-            time: 0.0,
-            events: PriorityQueue::new(),
-        }
-    }
-    pub fn schedule_once(&mut self, agent: AgentImpl<A>, time:f64, ordering:i64) {
-        self.events.push(agent, Priority{time: time, ordering: ordering});
+    // pub fn new() -> Schedule<A> {
+    //     Schedule {
+    //         step: 0,
+    //         time: 0.0,
+    //         events: PriorityQueue::new(),
+    //     }
+    // }
+    pub fn schedule_once(&mut self, agent: AgentImpl<A>,the_time:f64, the_ordering:i64) {
+        self.events.push(agent, Priority{time: the_time, ordering: the_ordering});
     }
 
-    pub fn schedule_repeating(&mut self, mut agent: AgentImpl<A>, time:f64, ordering:i64) {
+    pub fn schedule_repeating(&mut self, mut agent: AgentImpl<A>, the_time:f64, the_ordering:i64) {
         agent.repeating = true;
-        let pr = Priority::new(time, ordering);
+        let pr = Priority::new(the_time, the_ordering);
         self.events.push(agent, pr);
     }
 

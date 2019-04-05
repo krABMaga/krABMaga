@@ -16,7 +16,7 @@ pub struct AgentImpl<A: Agent + Clone>{
 }
 
 impl<A: Agent + Clone> AgentImpl<A> {
-    pub fn new(agent: A) -> AgentImpl<A>
+    pub fn new(the_agent: A) -> AgentImpl<A>
         where A: Agent
     {
         unsafe {
@@ -24,7 +24,7 @@ impl<A: Agent + Clone> AgentImpl<A> {
 
             AgentImpl {
                     id: COUNTER,
-                    agent: agent,
+                    agent: the_agent,
                     repeating: false,
                 }
             }

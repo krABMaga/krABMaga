@@ -9,10 +9,10 @@ pub struct Priority{
 }
 
 impl Priority {
-    pub fn new(time: f64, ordering: i64) -> Priority {
+    pub fn new(the_time: f64, the_ordering: i64) -> Priority {
         Priority {
-            time: time,
-            ordering: ordering
+            time: the_time,
+            ordering: the_ordering
         }
     }
 }
@@ -27,7 +27,7 @@ impl Ord for Priority {
         if self.ordering > other.ordering {return Ordering::Less;}
         //return self.time.cmp(&other.time)
 
-        return Ordering::Equal
+        Ordering::Equal
     }
 }
 impl PartialOrd for Priority {
