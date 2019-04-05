@@ -1,5 +1,7 @@
 extern crate priority_queue;
-
+#[macro_use]
+extern crate criterion;
+use criterion::Criterion;
 
 use std::fmt;
 use abm::agent::Agent;
@@ -11,14 +13,20 @@ use std::default::Default;
 
 static mut COUNT: u32 = 0;
 
+fn criterion_benchmark(c: &mut Criterion) {
+    c.bench_function("Scheduling", |b| b.iter(|| schedule_test()));
+}
 
-#[test]
+criterion_group!(benches, criterion_benchmark);
+criterion_main!(benches);
+
+
 fn schedule_test() {
 
     let mut schedule: Schedule<Bird> = Default::default();
     assert!(schedule.events.is_empty());
 
-    for bird_id in 1..3{
+    for bird_id in 1..1000{
         let bird = Bird::new(bird_id);
         let pa = AgentImpl::new(bird);
         schedule.schedule_repeating(pa, 5.0, 100);
@@ -28,8 +36,8 @@ fn schedule_test() {
         //schedule: schedule.clone(),
     };
 
-    for step in 1..10{
-        println!("step {}", step);
+    for _step in 1..100{
+        //println!("step {}", step);
         schedule.step(&simstate);
     }
 
@@ -51,7 +59,7 @@ impl Bird {
 
 impl Agent for Bird {
     fn step(self, _simstate: &SimState) {
-        println!("{:?} ha fatto lo step", self.x);
+        //println!("{:?} ha fatto lo step", self.x);
         unsafe {
             COUNT += self.x;
         }
