@@ -9,37 +9,40 @@ use abm::schedule::Schedule;
 use abm::simulstate::SimState;
 use abm::field::Field;
 use std::default::Default;
+use priority_queue::PriorityQueue;
 
 #[test]
 fn schedule_test_1() {
 
-
     let mut schedule: Schedule<Bird> = Default::default();
     assert!(schedule.events.is_empty());
 
-    let mut vec: Vec<u32> = Vec::new();
+    let mut priority_queue = PriorityQueue::new();
 
     for bird_id in 1..4{
         let bird = Bird::new(bird_id);
         let pa = AgentImpl::new(bird);
-        vec.push(pa.id);
+        let mut pa_clone = pa.clone();
+        pa_clone.repeating = true;
+        priority_queue.push(pa_clone, Priority{time: 5.0, ordering: 100});
         schedule.schedule_repeating(pa, 5.0, 100);
     }
+
+    assert!(!schedule.events.is_empty());
+    assert_eq!(schedule.events, priority_queue);
 
     let simstate = SimState {
         //schedule: schedule.clone(),
     };
 
     schedule.step(&simstate);
-
-    assert_eq!(vec![1, 2, 3], vec);
 }
 
 #[test]
 fn schedule_test_2() {
 
     let mut schedule: Schedule<Bird> = Default::default();
-    let mut vec: Vec<u32> = Vec::new();
+    //let mut _vec: Vec<u32> = Vec::new();
 
     let bird1 = Bird {x: 1};
     let bird2 = Bird {x: 2};
@@ -47,29 +50,35 @@ fn schedule_test_2() {
     let pa1 = AgentImpl::new(bird1);
     let pa2 = AgentImpl::new(bird2);
     let pa3 = AgentImpl::new(bird3);
-    vec.push(pa1.id);
-    vec.push(pa2.id);
-    vec.push(pa3.id);
-    assert_eq!(vec![1, 2, 3], vec);
 
     let mut pa1_clone = pa1.clone();
     pa1_clone.repeating = true;
+    let mut pa2_clone = pa2.clone();
+    pa2_clone.repeating = true;
+    let mut pa3_clone = pa3.clone();
+    pa3_clone.repeating = true;
 
+    schedule.schedule_repeating(pa2, 8.0, 100);
     schedule.schedule_repeating(pa1, 5.0, 100);
-    schedule.schedule_repeating(pa2, 5.0, 100);
     schedule.schedule_repeating(pa3, 10.0, 100);
 
-    let pr = Priority {time: 5.0, ordering: 100};
-    let x = (&pa1_clone, &pr);
-    assert_eq!(Some(x), schedule.events.peek());
+    let pr1 = Priority {time: 5.0, ordering: 100};
+    let x1 = (pa1_clone, pr1);
+    assert_eq!(Some(x1), schedule.events.pop());
+    let pr2 = Priority {time: 8.0, ordering: 100};
+    let x2 = (pa2_clone, pr2);
+    assert_eq!(Some(x2), schedule.events.pop());
+    let pr3 = Priority {time: 10.0, ordering: 100};
+    let x3 = (pa3_clone, pr3);
+    assert_eq!(Some(x3), schedule.events.pop());
 
-    let simstate = SimState {};
-
-    schedule.step(&simstate);
-
-    schedule.step(&simstate);
-
-    assert_eq!(6, 6);
+    // let simstate = SimState {};
+    //
+    // // schedule.step(&simstate);
+    //
+    // schedule.step(&simstate);
+    //
+    // assert_eq!(6, 6);
 }
 
 #[test]
