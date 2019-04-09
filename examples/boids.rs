@@ -2,33 +2,35 @@ extern crate abm;
 
 extern crate priority_queue;
 
-
 use std::fmt;
 use abm::agent::Agent;
 use abm::agentimpl::AgentImpl;
 use abm::schedule::Schedule;
 use abm::simulstate::SimState;
-use std::default::Default;
 use std::time::{Instant};
+//use abm::field2D::Field2D;
+use abm::location::Real2D;
+use abm::location::Location2D;
 
 static mut COUNT: u128 = 0;
-static STEP: u128 = 1000;
-static NUM_AGENT: u128 = 1000000;
+static STEP: u128 = 10;
+static NUM_AGENT: u128 = 100;
+
 
 fn main() {
-
-    let mut schedule: Schedule<Bird> = Default::default();
+    let mut simstate: SimState<Bird> = SimState::new();
+    let mut schedule: Schedule<Bird> = Schedule::new();
     assert!(schedule.events.is_empty());
 
     for bird_id in 1..NUM_AGENT{
-        let bird = Bird::new(bird_id);
-        let pa = AgentImpl::new(bird);
+
+        let bird = Bird::new(bird_id, Real2D{x: 1.0, y: 1.0});
+        let bird_clone = bird.clone();
+        simstate.field.set_object_location(bird);
+        let pa = AgentImpl::new(bird_clone);
         schedule.schedule_repeating(pa, 5.0, 100);
     }
 
-    let simstate = SimState {
-        //schedule: schedule.clone(),
-    };
     let start = Instant::now();
     for _step in 1..STEP{
         //println!("step {}", step);
@@ -40,25 +42,37 @@ fn main() {
 
 }
 
-#[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone)]
 pub struct Bird {
     x: u128,
+    pos: Real2D,
 }
 
 impl Bird {
-    pub fn new(x: u128) -> Self {
+    pub fn new(x: u128, pos: Real2D) -> Self {
         Bird {
-            x
+            x,
+            pos
         }
     }
 }
 
 impl Agent for Bird {
-    fn step(self, _simstate: &SimState) {
-        //println!("{:?} ha fatto lo step", self.x);
+    fn step<P: Location2D>(self, simstate: &SimState<P>) {
+        let vec = simstate.field.get_neighbors_within_distance(self);
         unsafe {
             COUNT += self.x;
         }
+    }
+}
+
+impl Location2D for Bird {
+    fn get_location(self) -> Real2D {
+        self.pos
+    }
+
+    fn set_location(&mut self, loc: Real2D) {
+        self.pos = loc;
     }
 }
 

@@ -1,6 +1,7 @@
 extern crate priority_queue;
 #[macro_use]
 extern crate criterion;
+use abm::location::Location2D;
 use criterion::Criterion;
 
 use std::fmt;
@@ -58,7 +59,7 @@ impl Bird {
 }
 
 impl Agent for Bird {
-    fn step(self, _simstate: &SimState) {
+    fn step<P: Location2D>(self, _simstate: &SimState<P>) {
         //println!("{:?} ha fatto lo step", self.x);
         unsafe {
             COUNT += self.x;
