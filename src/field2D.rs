@@ -1,6 +1,7 @@
 //use crate::location::Location;
 use crate::location::Location2D;
 
+#[derive(Clone)]
 pub struct Field2D<P: Location2D> {
     pub vec : Vec<P>,
 }

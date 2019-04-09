@@ -1,5 +1,4 @@
 extern crate abm;
-
 extern crate priority_queue;
 
 use std::fmt;
@@ -8,7 +7,7 @@ use abm::agentimpl::AgentImpl;
 use abm::schedule::Schedule;
 use abm::simulstate::SimState;
 use std::time::{Instant};
-//use abm::field2D::Field2D;
+use abm::field2D::Field2D;
 use abm::location::Real2D;
 use abm::location::Location2D;
 
@@ -18,8 +17,9 @@ static NUM_AGENT: u128 = 100;
 
 
 fn main() {
+    let data = MyData::new();
     let mut simstate: SimState<Bird> = SimState::new();
-    let mut schedule: Schedule<Bird> = Schedule::new();
+    let mut schedule: Schedule<Bird, MyData<Location2D>>= Schedule::new();
     assert!(schedule.events.is_empty());
 
     for bird_id in 1..NUM_AGENT{
@@ -43,6 +43,18 @@ fn main() {
 }
 
 #[derive(Clone)]
+pub struct MyData<P: Location2D> {
+    field: Field2D<P>,
+}
+
+impl <P: Location2D> MyData<P> {
+    pub fn new() -> MyData<P> {
+        MyData {
+            field: Field2D::new(),
+        }
+    }
+}
+#[derive(Clone)]
 pub struct Bird {
     x: u128,
     pos: Real2D,
@@ -59,7 +71,7 @@ impl Bird {
 
 impl Agent for Bird {
     fn step<P: Location2D>(self, simstate: &SimState<P>) {
-        let vec = simstate.field.get_neighbors_within_distance(self);
+        //let vec = simstate.field.get_neighbors_within_distance(self);
         unsafe {
             COUNT += self.x;
         }

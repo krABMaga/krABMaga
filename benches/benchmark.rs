@@ -1,6 +1,7 @@
 extern crate priority_queue;
 #[macro_use]
 extern crate criterion;
+use abm::location::Real2D;
 use abm::location::Location2D;
 use criterion::Criterion;
 
@@ -24,18 +25,16 @@ criterion_main!(benches);
 
 fn schedule_test() {
 
-    let mut schedule: Schedule<Bird> = Default::default();
+    let mut schedule: Schedule<Bird> = Schedule::new();
     assert!(schedule.events.is_empty());
 
     for bird_id in 1..1000{
-        let bird = Bird::new(bird_id);
+        let bird = Bird::new(bird_id, Real2D{x: 1.0, y: 1.0});
         let pa = AgentImpl::new(bird);
         schedule.schedule_repeating(pa, 5.0, 100);
     }
 
-    let simstate = SimState {
-        //schedule: schedule.clone(),
-    };
+    let simstate: SimState<Bird> = SimState::new();
 
     for _step in 1..100{
         //println!("step {}", step);
@@ -45,16 +44,28 @@ fn schedule_test() {
 
 }
 
-#[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone)]
 pub struct Bird {
     x: u32,
+    pos: Real2D,
 }
 
 impl Bird {
-    pub fn new(x: u32) -> Self {
+    pub fn new(x: u32, pos: Real2D) -> Self {
         Bird {
-            x
+            x,
+            pos
         }
+    }
+}
+
+impl Location2D for Bird {
+    fn get_location(self) -> Real2D {
+        self.pos
+    }
+
+    fn set_location(&mut self, loc: Real2D) {
+        self.pos = loc;
     }
 }
 
