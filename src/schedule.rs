@@ -31,12 +31,12 @@ impl<A: Agent + Clone> Pair<A> {
 }
 
 impl<A: Agent + Clone, D> Schedule<A, D> {
-    pub fn new() -> Schedule<A, D> {
+    pub fn new(field: D) -> Schedule<A, D> {
         Schedule {
             step: 0,
             time: 0.0,
             events: PriorityQueue::new(),
-            field: D,
+            field: field,
         }
     }
     pub fn schedule_once(&mut self, agent: AgentImpl<A>,the_time:f64, the_ordering:i64) {
@@ -49,7 +49,7 @@ impl<A: Agent + Clone, D> Schedule<A, D> {
         self.events.push(agent, pr);
     }
 
-    pub fn step<P: Location2D>(&mut self, simstate: &SimState<P>){
+    pub fn step(&mut self, simstate: &SimState){
         self.step += 1;
         let events = &mut self.events;
         if events.is_empty() {

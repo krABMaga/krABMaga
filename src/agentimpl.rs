@@ -11,7 +11,7 @@ use crate::location::Location2D;
 
 static mut COUNTER: u32 = 0;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct AgentImpl<A: Agent + Clone>{
     pub id: u32,
     pub agent: A,
@@ -33,7 +33,7 @@ impl<A: Agent + Clone> AgentImpl<A> {
             }
     }
 
-    pub fn step<P: Location2D>(self, simstate: &SimState<P>) {
+    pub fn step(self, simstate: &SimState) {
         self.agent.step(simstate);
     }
 

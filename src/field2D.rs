@@ -1,31 +1,31 @@
 //use crate::location::Location;
 use crate::location::Location2D;
 
-#[derive(Clone)]
-pub struct Field2D<P: Location2D> {
-    pub vec : Vec<P>,
+pub struct Field2D {
+    pub vec : Vec<Box<dyn Location2D>>,
 }
 
-impl <P: Location2D> Field2D<P> {
-    pub fn new() -> Field2D<P> {
+impl Field2D {
+    pub fn new() -> Field2D {
         Field2D {
             vec: Vec::new(),
         }
     }
 
-    pub fn set_object_location(&mut self, object: P) {
-        self.vec.push(object);
+    pub fn set_object_location<P: 'static +  Location2D>(&mut self, object: P) {
+        self.vec.push(Box::new(object));
     }
 
-    pub fn get_neighbors_within_distance(&self, object: P) -> Vec<&P>{
+    pub fn get_neighbors_within_distance<P: 'static +  Location2D>(&self, object: P) {
         let mut vec = Vec::new();
         let x = (self.vec.len()/100)*10;
+        println!("{}", x);
         for i in 0..x {
             let elem = &self.vec[i];
             vec.push(elem);
         }
-        vec
     }
+
     fn get_objects_at_location(){
 
     }

@@ -11,15 +11,15 @@ use abm::field2D::Field2D;
 use abm::location::Real2D;
 use abm::location::Location2D;
 
-static mut COUNT: u128 = 0;
+static mut _COUNT: u128 = 0;
 static STEP: u128 = 10;
-static NUM_AGENT: u128 = 100;
+static NUM_AGENT: u128 = 10;
 
 
 fn main() {
-    let data = MyData::new();
-    let mut simstate: SimState<Bird> = SimState::new();
-    let mut schedule: Schedule<Bird, MyData<Location2D>>= Schedule::new();
+    let field = Field2D::new();
+    let mut simstate: SimState = SimState::new();
+    let mut schedule: Schedule<Bird, Field2D> = Schedule::new(field);
     assert!(schedule.events.is_empty());
 
     for bird_id in 1..NUM_AGENT{
@@ -30,6 +30,7 @@ fn main() {
         let pa = AgentImpl::new(bird_clone);
         schedule.schedule_repeating(pa, 5.0, 100);
     }
+    assert!(!schedule.events.is_empty());
 
     let start = Instant::now();
     for _step in 1..STEP{
@@ -42,18 +43,18 @@ fn main() {
 
 }
 
-#[derive(Clone)]
-pub struct MyData<P: Location2D> {
-    field: Field2D<P>,
-}
+// pub struct MyData{
+//     field: Field2D,
+// }
+//
+// impl MyData{
+//     pub fn new() -> MyData {
+//         MyData {
+//             field: Field2D::new(),
+//         }
+//     }
+// }
 
-impl <P: Location2D> MyData<P> {
-    pub fn new() -> MyData<P> {
-        MyData {
-            field: Field2D::new(),
-        }
-    }
-}
 #[derive(Clone)]
 pub struct Bird {
     x: u128,
@@ -70,11 +71,11 @@ impl Bird {
 }
 
 impl Agent for Bird {
-    fn step<P: Location2D>(self, simstate: &SimState<P>) {
-        //let vec = simstate.field.get_neighbors_within_distance(self);
-        unsafe {
-            COUNT += self.x;
-        }
+    fn step(self, simstate: &SimState) {
+        let vec = simstate.field.get_neighbors_within_distance(self);
+        // unsafe {
+        //     COUNT += self.x;
+        // }
     }
 }
 

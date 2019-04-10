@@ -2,12 +2,12 @@
 use crate::field2D::Field2D;
 use crate::location::Location2D;
 
-pub struct SimState<P: Location2D>{
-    pub field: Field2D<P>,
+pub struct SimState{
+    pub field: Field2D,
 }
 
-impl <P: Location2D> SimState<P> {
-    pub fn new() -> SimState<P> {
+impl SimState {
+    pub fn new() -> SimState {
         SimState {
             field: Field2D::new(),
         }
