@@ -15,11 +15,28 @@ static mut _COUNT: u128 = 0;
 static STEP: u128 = 10;
 static NUM_AGENT: u128 = 10;
 
+// pub struct MyData{
+//     field: Field2D,
+//     field2: Field2D,
+//      network: Network,
+// }
+//
+// impl MyData{
+//     pub fn new() -> MyData {
+//         MyData {
+//             field: Field2D::new(),
+//         }
+//     }
+// }
+
 
 fn main() {
     let field = Field2D::new();
+    //let field2 = Field2D::new();
+    //let net = Network::new();
+    //let data = MyData::new(field,field2,net);
     let mut simstate: SimState = SimState::new();
-    let mut schedule: Schedule<Bird, Field2D> = Schedule::new(field);
+    let mut schedule: Schedule<Bird, Field2D> = Schedule::new(field);//data
     assert!(schedule.events.is_empty());
 
     for bird_id in 1..NUM_AGENT{
@@ -43,17 +60,6 @@ fn main() {
 
 }
 
-// pub struct MyData{
-//     field: Field2D,
-// }
-//
-// impl MyData{
-//     pub fn new() -> MyData {
-//         MyData {
-//             field: Field2D::new(),
-//         }
-//     }
-// }
 
 #[derive(Clone)]
 pub struct Bird {
@@ -72,6 +78,7 @@ impl Bird {
 
 impl Agent for Bird {
     fn step(self, simstate: &SimState) {
+        //fn step(self, data: &MyData) {
         let vec = simstate.field.get_neighbors_within_distance(self);
         // unsafe {
         //     COUNT += self.x;
