@@ -34,7 +34,7 @@ fn schedule_test() {
         schedule.schedule_repeating(pa, 5.0, 100);
     }
 
-    let simstate: SimState<Bird> = SimState::new();
+    let simstate: SimState = SimState::new();
 
     for _step in 1..100{
         //println!("step {}", step);
@@ -70,7 +70,7 @@ impl Location2D for Bird {
 }
 
 impl Agent for Bird {
-    fn step<P: Location2D>(self, _simstate: &SimState<P>) {
+    fn step(self, _data: &SimState) {
         //println!("{:?} ha fatto lo step", self.x);
         unsafe {
             COUNT += self.x;

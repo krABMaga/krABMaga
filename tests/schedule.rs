@@ -1,9 +1,9 @@
 extern crate priority_queue;
 
-
 //use abm::location::Location2D;
 use std::fmt;
 use abm::agent::Agent;
+use abm::agent::MyData;
 use abm::priority::Priority;
 use abm::agentimpl::AgentImpl;
 use abm::schedule::Schedule;
@@ -11,7 +11,7 @@ use abm::simulstate::SimState;
 //use abm::field::Field;
 //use std::default::Default;
 //use priority_queue::PriorityQueue;
-use abm::field2D::Field2D;
+//use abm::field2D::Field2D;
 
 static mut COUNT: u32 = 0;
 
@@ -51,9 +51,10 @@ static mut COUNT: u32 = 0;
 #[test]
 fn schedule_test_2() {
 
-    let field = Field2D::new();
+
+    let data = MyData::new();
     let mut _simstate: SimState = SimState::new();
-    let mut schedule: Schedule<Bird, Field2D> = Schedule::new(field);
+    let mut schedule: Schedule<Bird> = Schedule::new(data);
 
     let bird1 = Bird {x: 1};
     let bird2 = Bird {x: 2};
@@ -114,7 +115,7 @@ impl Bird {
 }
 
 impl Agent for Bird {
-    fn step(self, _simstate: &SimState) {
+    fn step(self, _data: &MyData) {
         println!("{:?} ha fatto lo step", self.x);
         unsafe {
             COUNT += self.x;

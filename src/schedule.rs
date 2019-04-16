@@ -3,17 +3,17 @@ extern crate priority_queue;
 use priority_queue::PriorityQueue;
 use crate::priority::Priority;
 use crate::agent::Agent;
+use crate::agent::MyData;
 use crate::agentimpl::AgentImpl;
 use crate::simulstate::SimState;
 use crate::location::Location2D;
 //use crate::field2D::Field2D;
 
-#[derive(Clone, Default)]
-pub struct Schedule<A: Agent + Clone, D>{
+pub struct Schedule<A: Agent + Clone>{
     pub step: usize,
     pub time: f64,
     pub events: PriorityQueue<AgentImpl<A>,Priority>,
-    pub field: D,
+    pub field: MyData,
 }
 
 pub struct Pair<A: Agent + Clone> {
@@ -30,8 +30,8 @@ impl<A: Agent + Clone> Pair<A> {
     }
 }
 
-impl<A: Agent + Clone, D> Schedule<A, D> {
-    pub fn new(field: D) -> Schedule<A, D> {
+impl<A: Agent + Clone> Schedule<A> {
+    pub fn new(field: MyData) -> Schedule<A> {
         Schedule {
             step: 0,
             time: 0.0,
@@ -49,8 +49,9 @@ impl<A: Agent + Clone, D> Schedule<A, D> {
         self.events.push(agent, pr);
     }
 
-    pub fn step(&mut self, simstate: &SimState){
+    pub fn step(&mut self){
         self.step += 1;
+        println!("----{}----", self.step);
         let events = &mut self.events;
         if events.is_empty() {
             println!("coda eventi vuota");
@@ -103,7 +104,7 @@ impl<A: Agent + Clone, D> Schedule<A, D> {
                 self.schedule_once(agentimpl2, item.priority.time + 1.0, item.priority.ordering);
             }
 
-            item.agentimpl.step(simstate);
+            item.agentimpl.step(&self.field);
         }
     }
 }

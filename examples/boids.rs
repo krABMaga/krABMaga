@@ -1,13 +1,16 @@
 extern crate abm;
 extern crate priority_queue;
-
+// use crate::agent::Agent;
+// use crate::agentimpl::AgentImpl;
+// use crate::Schedule;
+// use crate::SimState;
 use std::fmt;
 use abm::agent::Agent;
+use abm::agent::MyData;
 use abm::agentimpl::AgentImpl;
 use abm::schedule::Schedule;
 use abm::simulstate::SimState;
 use std::time::{Instant};
-use abm::field2D::Field2D;
 use abm::location::Real2D;
 use abm::location::Location2D;
 
@@ -15,28 +18,14 @@ static mut _COUNT: u128 = 0;
 static STEP: u128 = 10;
 static NUM_AGENT: u128 = 10;
 
-// pub struct MyData{
-//     field: Field2D,
-//     field2: Field2D,
-//      network: Network,
-// }
-//
-// impl MyData{
-//     pub fn new() -> MyData {
-//         MyData {
-//             field: Field2D::new(),
-//         }
-//     }
-// }
-
-
 fn main() {
-    let field = Field2D::new();
-    //let field2 = Field2D::new();
-    //let net = Network::new();
-    //let data = MyData::new(field,field2,net);
+    // let field = Field2D::new();
+    // let field2 = Field2D::new();
+    // let field3 = Field2D::new();
+    //let data = MyData::new(field,field2,field3);
+    let data = MyData::new();
     let mut simstate: SimState = SimState::new();
-    let mut schedule: Schedule<Bird, Field2D> = Schedule::new(field);//data
+    let mut schedule: Schedule<Bird> = Schedule::new(data);//data
     assert!(schedule.events.is_empty());
 
     for bird_id in 1..NUM_AGENT{
@@ -52,7 +41,7 @@ fn main() {
     let start = Instant::now();
     for _step in 1..STEP{
         //println!("step {}", step);
-        schedule.step(&simstate);
+        schedule.step();
     }
     let duration = start.elapsed();
     println!("Time elapsed in testing schedule is: {:?}", duration);
@@ -77,9 +66,9 @@ impl Bird {
 }
 
 impl Agent for Bird {
-    fn step(self, simstate: &SimState) {
+    fn step(self, data: &MyData) {
         //fn step(self, data: &MyData) {
-        let vec = simstate.field.get_neighbors_within_distance(self);
+        let _vec = data.field1.get_neighbors_within_distance(self);
         // unsafe {
         //     COUNT += self.x;
         // }
