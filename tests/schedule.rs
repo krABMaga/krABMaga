@@ -3,7 +3,6 @@ extern crate priority_queue;
 //use abm::location::Location2D;
 use std::fmt;
 use abm::agent::Agent;
-use abm::agent::MyData;
 use abm::priority::Priority;
 use abm::agentimpl::AgentImpl;
 use abm::schedule::Schedule;

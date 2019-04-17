@@ -3,17 +3,15 @@ extern crate priority_queue;
 use priority_queue::PriorityQueue;
 use crate::priority::Priority;
 use crate::agent::Agent;
-use crate::agent::MyData;
 use crate::agentimpl::AgentImpl;
 use crate::simulstate::SimState;
 use crate::location::Location2D;
 //use crate::field2D::Field2D;
 
-pub struct Schedule<A: Agent + Clone>{
+pub struct Schedule<'a, A: Agent + Clone + 'a>{
     pub step: usize,
     pub time: f64,
     pub events: PriorityQueue<AgentImpl<A>,Priority>,
-    pub field: MyData,
 }
 
 pub struct Pair<A: Agent + Clone> {
@@ -31,12 +29,11 @@ impl<A: Agent + Clone> Pair<A> {
 }
 
 impl<A: Agent + Clone> Schedule<A> {
-    pub fn new(field: MyData) -> Schedule<A> {
+    pub fn new() -> Schedule<A> {
         Schedule {
             step: 0,
             time: 0.0,
             events: PriorityQueue::new(),
-            field: field,
         }
     }
     pub fn schedule_once(&mut self, agent: AgentImpl<A>,the_time:f64, the_ordering:i64) {
@@ -104,7 +101,7 @@ impl<A: Agent + Clone> Schedule<A> {
                 self.schedule_once(agentimpl2, item.priority.time + 1.0, item.priority.ordering);
             }
 
-            item.agentimpl.step(&self.field);
+            item.agentimpl.step();
         }
     }
 }

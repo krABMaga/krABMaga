@@ -12,11 +12,11 @@ impl Field2D {
         }
     }
 
-    pub fn set_object_location<P: 'static +  Location2D>(&mut self, object: P) {
+    pub fn set_object_location<'a, P: 'static + Location2D>(&mut self, object: P) {
         self.vec.push(Box::new(object));
     }
 
-    pub fn get_neighbors_within_distance<P: 'static +  Location2D>(&self, object: P) {
+    pub fn get_neighbors_within_distance<'a, P: Location2D>(&self, object: &'a P) {
         let mut vec = Vec::new();
         let x = (self.vec.len()/100)*10;
         println!("{}", x);

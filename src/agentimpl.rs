@@ -8,13 +8,12 @@ use std::fmt;
 use crate::simulstate::SimState;
 use std::clone::Clone;
 use crate::field2D::Field2D;
-use crate::agent::MyData;
 
 
 static mut COUNTER: u32 = 0;
 
 #[derive(Clone, Debug)]
-pub struct AgentImpl<A: Agent + Clone> {
+pub struct AgentImpl< A: Agent + Clone> {
     pub id: u32,
     pub agent: A,
     pub repeating: bool,
@@ -33,8 +32,8 @@ impl<A: Agent + Clone> AgentImpl<A> {
             }
     }
 
-    pub fn step(self, data: &MyData) {
-        self.agent.step(data);
+    pub fn step(self) {
+        self.agent.step();
     }
 
     pub fn id(self) -> u32 {
