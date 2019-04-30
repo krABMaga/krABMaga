@@ -5,21 +5,21 @@ use crate::agent::Agent;
 // use std::cmp::Eq;
 //use std::hash::{Hash};
 use std::fmt;
-use crate::simulstate::SimState;
+//use crate::simulstate::SimState;
 use std::clone::Clone;
-use crate::field2D::Field2D;
+//use crate::field2D::Field2D;
 
 
 static mut COUNTER: u32 = 0;
 
 #[derive(Clone, Debug)]
-pub struct AgentImpl< A: Agent + Clone> {
+pub struct AgentImpl<A: Agent + Clone> {
     pub id: u32,
     pub agent: A,
     pub repeating: bool,
 }
 
-impl<A: Agent + Clone> AgentImpl<A> {
+impl< A: Agent + Clone> AgentImpl< A> {
     pub fn new(the_agent: A) -> AgentImpl<A>{
         unsafe {
             COUNTER += 1;
@@ -53,7 +53,7 @@ impl<A: Agent + Clone> PartialEq for AgentImpl<A> {
     }
 }
 
-impl<A: Agent + Clone> Hash for AgentImpl<A> {
+impl< A: Agent + Clone> Hash for AgentImpl<A> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.id.hash(state);
     }

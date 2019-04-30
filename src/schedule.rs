@@ -4,11 +4,11 @@ use priority_queue::PriorityQueue;
 use crate::priority::Priority;
 use crate::agent::Agent;
 use crate::agentimpl::AgentImpl;
-use crate::simulstate::SimState;
-use crate::location::Location2D;
+//use crate::simulstate::SimState;
+//use crate::location::Location2D;
 //use crate::field2D::Field2D;
 
-pub struct Schedule<'a, A: Agent + Clone + 'a>{
+pub struct Schedule<A: Agent + Clone>{
     pub step: usize,
     pub time: f64,
     pub events: PriorityQueue<AgentImpl<A>,Priority>,

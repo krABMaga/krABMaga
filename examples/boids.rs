@@ -18,23 +18,26 @@ static NUM_AGENT: u128 = 10;
 
 
 fn main() {
-    let field = Field2D::new();
+    //let field = Field2D::new();
     // let field2 = Field2D::new();
     // let field3 = Field2D::new();
     //let data = MyData::new(field,field2,field3);
-    let data = State::new();
+    let mut data = State::new();
     let mut simstate: SimState = SimState::new();
     let mut schedule: Schedule<Bird> = Schedule::new();//data
     assert!(schedule.events.is_empty());
 
-    for bird_id in 1..NUM_AGENT{
-
-        let bird = Bird::new(bird_id, Real2D{x: 1.0, y: 1.0}, &data);
-        let bird_clone = bird.clone();
-        simstate.field.set_object_location(bird);
-        let pa = AgentImpl::new(bird_clone);
-        schedule.schedule_repeating(pa, 5.0, 100);
+    unsafe {
+        for bird_id in 1..NUM_AGENT{
+            let data_ref = &data as *const State;
+            let bird = Bird::new(bird_id, Real2D{x: 1.0, y: 1.0}, &*data_ref);
+            let bird_clone = bird.clone();
+            data.field1.set_object_location(bird);
+            let pa = AgentImpl::new(bird_clone);
+            schedule.schedule_repeating(pa, 5.0, 100);
+        }
     }
+
     assert!(!schedule.events.is_empty());
 
     let start = Instant::now();
@@ -85,13 +88,25 @@ impl<'a> Bird<'a> {
 }
 
 impl<'a> Agent for Bird<'a> {
-    fn step(self) {
-        //fn step(self, data: &MyData) {
-        let _vec = self.state.field1.get_neighbors_within_distance(self);
+    fn step(&self) {
+        //f step(self, data: &MyData) {
+        let vec = self.state.field1.get_neighbors_within_distance(self);
+
+        for elem in vec {
+            
+            if let Ok(bird) = elem.downcast::<Bird>() {
+                println!("Bird ({}): ", bird);
+            }
+        }
+
+
+    }
+
         // unsafe {
         //     COUNT += self.x;
         // }
-    }
+
+
 }
 
 impl<'a> Location2D for Bird<'a> {
