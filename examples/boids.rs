@@ -1,7 +1,7 @@
 extern crate abm;
 extern crate priority_queue;
 
-
+use std::any::Any;
 use std::fmt;
 use abm::agent::Agent;
 use abm::agentimpl::AgentImpl;
@@ -89,23 +89,11 @@ impl<'a> Bird<'a> {
 
 impl<'a> Agent for Bird<'a> {
     fn step(&self) {
-        //f step(self, data: &MyData) {
         let vec = self.state.field1.get_neighbors_within_distance(self);
-
         for elem in vec {
-            
-            if let Ok(bird) = elem.downcast::<Bird>() {
-                println!("Bird ({}): ", bird);
-            }
-        }
-
-
+             //print_if_bird(elem)
+         }
     }
-
-        // unsafe {
-        //     COUNT += self.x;
-        // }
-
 
 }
 
@@ -122,5 +110,11 @@ impl<'a> Location2D for Bird<'a> {
 impl<'a> fmt::Display for Bird<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.x)
+    }
+}
+
+fn print_if_bird(value: Box<dyn Any>) {
+    if let Ok(bird) = value.downcast::<Bird>() {
+        println!("bird ({})", bird);
     }
 }
