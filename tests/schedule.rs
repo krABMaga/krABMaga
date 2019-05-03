@@ -1,18 +1,20 @@
 extern crate priority_queue;
 
 //use abm::location::Location2D;
+use abm::location::Real2D;
+use abm::field2D::Field2D;
 use std::fmt;
 use abm::agent::Agent;
 use abm::priority::Priority;
 use abm::agentimpl::AgentImpl;
 use abm::schedule::Schedule;
-use abm::simulstate::SimState;
+use abm::location::Location2D;
 //use abm::field::Field;
 //use std::default::Default;
 //use priority_queue::PriorityQueue;
 //use abm::field2D::Field2D;
 
-static mut COUNT: u32 = 0;
+//static mut COUNT: u32 = 0;
 
 // #[test]
 // fn schedule_test_1() {
@@ -50,44 +52,44 @@ static mut COUNT: u32 = 0;
 #[test]
 fn schedule_test_2() {
 
+    let data = State::new();
+    let mut schedule: Schedule<Bird> = Schedule::new();
+    assert!(schedule.events.is_empty());
 
-    let data = MyData::new();
-    let mut _simstate: SimState = SimState::new();
-    let mut schedule: Schedule<Bird> = Schedule::new(data);
+    let bird1 = Bird {x: 1, pos: Real2D{x: 1.0, y: 1.0}, state: &data};
+    let bird2 = Bird {x: 2, pos: Real2D{x: 2.0, y: 2.0}, state: &data};
+    let bird3 = Bird {x: 3, pos: Real2D{x: 3.0, y: 3.0}, state: &data};
 
-    let bird1 = Bird {x: 1};
-    let bird2 = Bird {x: 2};
-    let bird3 = Bird {x: 3};
-    let pa1 = AgentImpl::new(bird1);
-    let pa2 = AgentImpl::new(bird2);
-    let pa3 = AgentImpl::new(bird3);
+    schedule.schedule_repeating(bird2.clone(), 8.0, 100);
+    schedule.schedule_repeating(bird1.clone(), 5.0, 100);
+    schedule.schedule_repeating(bird3.clone(), 10.0, 100);
 
-    let mut pa1_clone = pa1.clone();
-    pa1_clone.repeating = true;
-    let mut pa2_clone = pa2.clone();
-    pa2_clone.repeating = true;
-    let mut pa3_clone = pa3.clone();
-    pa3_clone.repeating = true;
-
-    schedule.schedule_repeating(pa2, 8.0, 100);
-    schedule.schedule_repeating(pa1, 5.0, 100);
-    schedule.schedule_repeating(pa3, 10.0, 100);
-
+    let mut ag1 = AgentImpl::new(bird1.clone());
+    //se no istanzia un agente impl diverso
+    ag1.id = 2;
+    ag1.repeating = true;
     let pr1 = Priority {time: 5.0, ordering: 100};
-    let x1 = (pa1_clone, pr1);
-    assert_eq!(Some(x1), schedule.events.pop());
-    let pr2 = Priority {time: 8.0, ordering: 100};
-    let x2 = (pa2_clone, pr2);
-    assert_eq!(Some(x2), schedule.events.pop());
-    let pr3 = Priority {time: 10.0, ordering: 100};
-    let x3 = (pa3_clone, pr3);
-    assert_eq!(Some(x3), schedule.events.pop());
+    let x1 = (ag1, pr1);
 
-    // let simstate = SimState {};
-    //
-    // // schedule.step(&simstate);
-    //
-    // schedule.step(&simstate);
+    assert_eq!(Some(x1), schedule.events.pop());
+
+    let mut ag2 = AgentImpl::new(bird2.clone());
+    //se no istanzia un agente impl diverso
+    ag2.id = 1;
+    ag2.repeating = true;
+    let pr2 = Priority {time: 8.0, ordering: 100};
+    let x2 = (ag2, pr2);
+
+    assert_eq!(Some(x2), schedule.events.pop());
+
+    let mut ag3 = AgentImpl::new(bird1.clone());
+    //se no istanzia un agente impl diverso
+    ag3.id = 3;
+    ag3.repeating = true;
+    let pr3 = Priority {time: 10.0, ordering: 100};
+    let x3 = (ag3, pr3);
+
+    assert_eq!(Some(x3), schedule.events.pop());
 }
 //
 // #[test]
@@ -100,29 +102,64 @@ fn schedule_test_2() {
 //     assert_eq!(Some(&pa_clone), field.hash_map.get(&1));
 // }
 
-#[derive(Clone, Default, Debug)]
-pub struct Bird {
-    x: u32,
+#[derive(Debug)]
+pub struct State<'a>{
+    pub field1: Field2D<Bird<'a>>,
 }
 
-impl Bird {
-    pub fn new(x: u32) -> Self {
+impl<'a> State<'a>{
+    pub fn new() -> State<'a> {
+        State {
+            field1: Field2D::new(),
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Bird<'a> {
+    pub x: u128,
+    pub pos: Real2D,
+    pub state: &'a State<'a>,
+}
+
+impl<'a > Bird<'a> {
+    pub fn new(x: u128, pos: Real2D, state: &'a State) -> Self {
         Bird {
-            x
+            x,
+            pos,
+            state,
         }
     }
 }
 
-impl Agent for Bird {
-    fn step(self, _data: &MyData) {
-        println!("{:?} ha fatto lo step", self.x);
-        unsafe {
-            COUNT += self.x;
-        }
+impl<'a> Eq for Bird<'a> {}
+
+impl<'a> PartialEq for Bird<'a> {
+    fn eq(&self, other: &Bird) -> bool {
+        self.x == other.x && self.pos == other.pos
     }
 }
 
-impl fmt::Display for Bird {
+impl<'a> Agent for Bird<'a> {
+    fn step(&self) {
+
+        let _vec = self.state.field1.get_neighbors_within_distance(self);
+
+    }
+
+}
+
+impl<'a > Location2D for Bird<'a> {
+    fn get_location(self) -> Real2D {
+        self.pos
+    }
+
+    fn set_location(&mut self, loc: Real2D) {
+        self.pos = loc;
+    }
+}
+
+impl<'a> fmt::Display for Bird<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.x)
     }

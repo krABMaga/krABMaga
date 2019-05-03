@@ -1,30 +1,34 @@
-//use crate::location::Location;
 use crate::location::Location2D;
-use std::fmt::Display;
 
-pub struct Field2D {
-    pub vec : Vec<Box<dyn Location2D>>,
+#[derive(Clone, Debug)]
+pub struct Field2D<A: Location2D + Clone> {
+    pub vec : Vec<A>,
 }
 
-impl Field2D {
-    pub fn new() -> Field2D {
+impl<A: Location2D + Clone> Field2D<A> {
+    pub fn new() -> Field2D<A> {
         Field2D {
             vec: Vec::new(),
         }
     }
 
-    pub fn set_object_location<'a, P: 'static + Location2D>(&mut self, object: P) {
-        self.vec.push(Box::new(object));
+    pub fn set_object_location(&mut self, object: A) {
+
+        self.vec.push(object);
         //print!("lunghezza vett {}", self.vec.len())
     }
 
-    pub fn get_neighbors_within_distance<'a, P: Location2D>(&self, object: &'a P) -> Vec<&Box<dyn Location2D>>{
-        let mut vec2 = Vec::new();
+    pub fn get_neighbors_within_distance(&self, _object: &A) -> Vec<A> {
+        let mut vec2: Vec<A> = Vec::new();
         //let x = (self.vec.len()/100)*10;
-        for i in 0..3 {
-            let elem = &self.vec[i];
-            vec2.push(elem);
+        for y in 1..100 {
+            vec2.push(self.vec[y].clone())
         }
+        //let x = self.vec.clone();
+        //x
+        // for i in 0..3 {
+        //     vec2.push(x[i]);
+        // }
         vec2
     }
 

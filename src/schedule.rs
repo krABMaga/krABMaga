@@ -4,9 +4,6 @@ use priority_queue::PriorityQueue;
 use crate::priority::Priority;
 use crate::agent::Agent;
 use crate::agentimpl::AgentImpl;
-//use crate::simulstate::SimState;
-//use crate::location::Location2D;
-//use crate::field2D::Field2D;
 
 pub struct Schedule<A: Agent + Clone>{
     pub step: usize,
@@ -29,6 +26,7 @@ impl<A: Agent + Clone> Pair<A> {
 }
 
 impl<A: Agent + Clone> Schedule<A> {
+
     pub fn new() -> Schedule<A> {
         Schedule {
             step: 0,
@@ -36,14 +34,16 @@ impl<A: Agent + Clone> Schedule<A> {
             events: PriorityQueue::new(),
         }
     }
+
     pub fn schedule_once(&mut self, agent: AgentImpl<A>,the_time:f64, the_ordering:i64) {
         self.events.push(agent, Priority{time: the_time, ordering: the_ordering});
     }
 
-    pub fn schedule_repeating(&mut self, mut agent: AgentImpl<A>, the_time:f64, the_ordering:i64) {
-        agent.repeating = true;
+    pub fn schedule_repeating(&mut self, agent: A, the_time:f64, the_ordering:i64) {
+        let mut a = AgentImpl::new(agent);
+        a.repeating = true;
         let pr = Priority::new(the_time, the_ordering);
-        self.events.push(agent, pr);
+        self.events.push(a, pr);
     }
 
     pub fn step(&mut self){
@@ -90,7 +90,6 @@ impl<A: Agent + Clone> Schedule<A> {
                 },
                 None => panic!("no item"),
             }
-
         }
 
         for item in cevents.into_iter() {
