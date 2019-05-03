@@ -21,7 +21,7 @@ impl<A: Location2D + Clone> Field2D<A> {
     pub fn get_neighbors_within_distance(&self, _object: &A) -> Vec<A> {
         let mut vec2: Vec<A> = Vec::new();
         //let x = (self.vec.len()/100)*10;
-        for y in 1..100 {
+        for y in 1..self.vec.len() {
             vec2.push(self.vec[y].clone())
         }
         //let x = self.vec.clone();

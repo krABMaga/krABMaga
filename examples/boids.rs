@@ -13,7 +13,7 @@ use abm::field2D::Field2D;
 
 static mut _COUNT: u128 = 0;
 static STEP: u128 = 10;
-static NUM_AGENT: u128 = 10000;
+static NUM_AGENT: u128 = 100;
 
 
 fn main() {

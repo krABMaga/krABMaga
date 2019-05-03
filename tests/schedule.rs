@@ -91,16 +91,44 @@ fn schedule_test_2() {
 
     assert_eq!(Some(x3), schedule.events.pop());
 }
-//
-// #[test]
-// fn field_test_1() {
-//     let bird = Bird{x: 1};
-//     let pa = AgentImpl::new(bird);
-//     let pa_clone = pa.clone();
-//     let mut field : Field<Bird> = Default::default();
-//     field.hash_map.insert(1, pa);
-//     assert_eq!(Some(&pa_clone), field.hash_map.get(&1));
-// }
+
+//va in overflow
+fn field_test_1() {
+
+    let mut data = State::new();
+    let mut schedule: Schedule<Bird> = Schedule::new();
+    assert!(schedule.events.is_empty());
+    let bird1;
+    let mut bird_vec: Vec<Bird> = Vec::new();
+
+    unsafe {
+        let data_ref = &data as *const State;
+        bird1 = Bird {x: 1, pos: Real2D{x: 1.0, y: 1.0}, state: &*data_ref};
+        let bird2 = Bird {x: 2, pos: Real2D{x: 2.0, y: 2.0}, state: &*data_ref};
+        let bird3 = Bird {x: 3, pos: Real2D{x: 3.0, y: 3.0}, state: &*data_ref};
+
+        data.field1.set_object_location(bird1.clone());
+        data.field1.set_object_location(bird2.clone());
+        data.field1.set_object_location(bird3.clone());
+
+        bird_vec.push(bird1.clone());
+        bird_vec.push(bird2);
+        bird_vec.push(bird3);
+
+    }
+
+    let x = bird1.state.field1.get_neighbors_within_distance(&bird1);
+
+    assert_eq!(bird_vec, x);
+
+
+    // let bird = Bird{x: 1};
+    // let pa = AgentImpl::new(bird);
+    // let pa_clone = pa.clone();
+    // let mut field : Field<Bird> = Default::default();
+    // field.hash_map.insert(1, pa);
+    // assert_eq!(Some(&pa_clone), field.hash_map.get(&1));
+}
 
 #[derive(Debug)]
 pub struct State<'a>{
