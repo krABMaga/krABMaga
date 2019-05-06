@@ -1,6 +1,9 @@
 extern crate abm;
 extern crate priority_queue;
 
+use rand::Rng;
+use std::hash::Hasher;
+use std::hash::Hash;
 use std::fmt;
 use abm::agent::Agent;
 //use abm::agentimpl::AgentImpl;
@@ -14,11 +17,16 @@ use abm::field2D::Field2D;
 static mut _COUNT: u128 = 0;
 static STEP: u128 = 10;
 static NUM_AGENT: u128 = 100;
-
+static WIDTH: f64 = 200.0;
+static HEIGTH: f64 = 200.0;
+static DISCRETIZATION: f64 = 10.0;
+static TOROIDAL: bool = true;
 
 fn main() {
+    let mut rng = rand::thread_rng();
 
-    let mut data = State::new();
+
+    let mut data = State::new(WIDTH, HEIGTH, DISCRETIZATION, TOROIDAL);
     //let mut simstate: SimState = SimState::new();
     let mut schedule = Schedule::new();//data
     //let mut schedule: Schedule<Bird> = Schedule::new();
@@ -27,9 +35,11 @@ fn main() {
     unsafe {
         for bird_id in 1..NUM_AGENT{
             let data_ref = &data as *const State;
-            let bird = Bird::new(bird_id, Real2D{x: 1.0, y: 1.0}, &*data_ref);
+            let r1: f64 = rng.gen();
+            let r2: f64 = rng.gen();
+            let bird = Bird::new(bird_id, Real2D{x: WIDTH*r1, y: HEIGTH*r2}, &*data_ref);
             //let bird_clone = bird.clone();
-            data.field1.set_object_location(bird.clone());
+            data.field1.set_object_location(bird.clone(), bird.pos.clone());
             //let pa = AgentImpl::new(bird_clone);
             schedule.schedule_repeating(bird, 5.0, 100);
         }
@@ -49,30 +59,39 @@ fn main() {
 
 }
 
-#[derive(Debug)]
 pub struct State<'a>{
     pub field1: Field2D<Bird<'a>>,
 }
 
 impl<'a> State<'a>{
-    pub fn new() -> State<'a> {
+    pub fn new(w: f64, h: f64, d: f64, t: bool) -> State<'a> {
         State {
-            field1: Field2D::new(),
+            field1: Field2D::new(w, h, d, t),
         }
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Bird<'a> {
-    pub x: u128,
+    pub id: u128,
     pub pos: Real2D,
     pub state: &'a State<'a>,
 }
 
+impl<'a> Hash for Bird<'a> {
+    fn hash<H>(&self, state: &mut H)
+    where
+        H: Hasher,
+    {
+        state.write_u128(self.id);
+        state.finish();
+    }
+}
+
 impl<'a > Bird<'a> {
-    pub fn new(x: u128, pos: Real2D, state: &'a State) -> Self {
+    pub fn new(id: u128, pos: Real2D, state: &'a State) -> Self {
         Bird {
-            x,
+            id,
             pos,
             state,
         }
@@ -83,7 +102,7 @@ impl<'a> Eq for Bird<'a> {}
 
 impl<'a> PartialEq for Bird<'a> {
     fn eq(&self, other: &Bird) -> bool {
-        self.x == other.x && self.pos == other.pos
+        self.id == other.id && self.pos == other.pos
     }
 }
 
@@ -108,6 +127,6 @@ impl<'a > Location2D for Bird<'a> {
 
 impl<'a> fmt::Display for Bird<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.x)
+        write!(f, "{}", self.id)
     }
 }

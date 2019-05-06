@@ -92,11 +92,11 @@ fn schedule_test_2() {
     assert_eq!(Some(x3), schedule.events.pop());
 }
 
-//va in overflow
+#[test]
 fn field_test_1() {
 
     let mut data = State::new();
-    let mut schedule: Schedule<Bird> = Schedule::new();
+    let schedule: Schedule<Bird> = Schedule::new();
     assert!(schedule.events.is_empty());
     let bird1;
     let mut bird_vec: Vec<Bird> = Vec::new();
@@ -118,9 +118,7 @@ fn field_test_1() {
     }
 
     let x = bird1.state.field1.get_neighbors_within_distance(&bird1);
-
     assert_eq!(bird_vec, x);
-
 
     // let bird = Bird{x: 1};
     // let pa = AgentImpl::new(bird);
