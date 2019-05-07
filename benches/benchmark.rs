@@ -9,7 +9,6 @@ use std::fmt;
 use abm::agent::Agent;
 use abm::agentimpl::AgentImpl;
 use abm::schedule::Schedule;
-use abm::simulstate::SimState;
 use std::default::Default;
 
 
