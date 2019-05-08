@@ -19,7 +19,7 @@ static STEP: u128 = 10;
 static NUM_AGENT: u128 = 10000;
 static WIDTH: f64 = 150.0;
 static HEIGTH: f64 = 150.0;
-static DISCRETIZATION: f64 = 10.0;
+static DISCRETIZATION: f64 = 10.0/1.5;
 static TOROIDAL: bool = true;
 
 fn main() {

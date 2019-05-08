@@ -1,11 +1,13 @@
 extern crate priority_queue;
+extern crate threads_pool;
 
+use threads_pool::*;
 use priority_queue::PriorityQueue;
 use crate::priority::Priority;
 use crate::agent::Agent;
 use crate::agentimpl::AgentImpl;
 
-pub struct Schedule<A: Agent + Clone>{
+pub struct Schedule<A: Agent + Clone + Send>{
     pub step: usize,
     pub time: f64,
     pub events: PriorityQueue<AgentImpl<A>,Priority>,
@@ -25,7 +27,7 @@ impl<A: Agent + Clone> Pair<A> {
     }
 }
 
-impl<A: Agent + Clone> Schedule<A> {
+impl<A: 'static +  Agent + Clone + Send> Schedule<A> {
 
     pub fn new() -> Schedule<A> {
         Schedule {
@@ -92,15 +94,21 @@ impl<A: Agent + Clone> Schedule<A> {
             }
         }
 
-        for item in cevents.into_iter() {
+        let pool = ThreadPool::new(4);
 
+
+        for item in cevents.into_iter() {
             let agentimpl2 = item.agentimpl.clone();
 
             if item.agentimpl.repeating {
                 self.schedule_once(agentimpl2, item.priority.time + 1.0, item.priority.ordering);
             }
+            pool.execute(move || {
 
-            item.agentimpl.step();
+
+                item.agentimpl.step();
+            });
+
         }
     }
 }

@@ -37,14 +37,23 @@ impl<A: Location2D + Clone + Hash + Eq + Display> Field2D<A> {
         //println!("{} {}", bag.x, bag.y);
             match self.fpos.get(&object) {
                 Some(x) => {
-                    if *x == pos {return}
+                    if *x == pos {
+                        println!("posizione 1");
+                        return;
+                    }
                     else {
+                        println!("posizione 2");
+
                         match self.findex.get(&object) {
                             Some(x) => {
                                 if *x == bag {
-                                    self.fpos.insert(object.clone(), pos.clone());
+                                    println!("posizione 3");
+
+                                    //clone entrambe
+                                    self.fpos.insert(object, pos);
                                     return;
                                 } else {
+                                    println!("posizione 4");
 
                                     let oldbag = self.findex.get(&object);
                                     let oldbag = match oldbag {
@@ -52,17 +61,26 @@ impl<A: Location2D + Clone + Hash + Eq + Display> Field2D<A> {
                                         None => panic!("error oldbag"),
                                     };
                                     let mut index = 0;
-                                    let vector =  match self.fbag.get(oldbag) {
-                                        Some(i) => i.to_vec(),
-                                        None => panic!("error vector from oldbag"),
-                                    };
+                                    //
+                                    //  CHANGE to vec
+                                    //+
+                                    println!("{}", object);
+                                    self.fbag.get_mut(oldbag).unwrap().retain(|x| *x == object);
 
-                                    for elem in vector {
-                                        if elem == object {
-                                            break;
-                                        }
-                                        index += 1;
-                                    }
+                                    // let mut vector =  match self.fbag.get_mut(oldbag) {
+                                    //     Some(i) => {
+                                    //         for elem in i {
+                                    //             // elem
+                                    //             if *elem == object {
+                                    //                 i.remove(index);
+                                    //                 break;
+                                    //             }
+                                    //             index += 1;
+                                    //         }
+                                    //
+                                    //     }
+                                    //     None => panic!("error vector from oldbag"),
+                                    // };
 
                                     self.findex.insert(object.clone(), bag.clone());
                                     self.fpos.insert(object.clone(), pos.clone());
@@ -88,19 +106,28 @@ impl<A: Location2D + Clone + Hash + Eq + Display> Field2D<A> {
                     }
                 },
                 None => {
+                    println!("posizione 5");
+
                     //println!("fallito inserimento");
                     self.findex.insert(object.clone(), bag.clone());
                     self.fpos.insert(object.clone(), pos.clone());
                     if !self.fbag.contains_key(&bag) {
+                        println!("posizione 6");
+
                         let mut vec: Vec<A> = Vec::new();
-                        vec.push(object.clone());
-                        self.fbag.insert(bag.clone(), vec);
+                        //clone
+                        vec.push(object);
+                        //clone bag
+                        self.fbag.insert(bag, vec);
                     } else {
+                        println!("posizione 7");
+
                         // let mut vec = match self.fbag.get(&bag) {
                         //     Some(v) => *v.push(object.clone()),
                         //     None => panic!("error vector from bag 2"),
                         // };
-                        self.fbag.get_mut(&bag).unwrap().push(object.clone());
+                        //clone object
+                        self.fbag.get_mut(&bag).unwrap().push(object);
 
 
                     }
@@ -166,14 +193,16 @@ impl<A: Location2D + Clone + Hash + Eq + Display> Field2D<A> {
                 if check == 1 {
                     for elem in vector {
                         //println!("conteggio -- i:{} j:{}", i, j);
-                        tor.push(elem.clone());
+                        //clone elem
+                        tor.push(elem);
                     }
                 } else if check == 0 {
                     for elem in vector {
                         //println!("conteggio 2-- i:{} j:{}", i, j);
-                    //    println!("dist {}  -- {}", distance(&loc, &(elem.clone().get_location()), self.width, self.heigth, self.toroidal), dist);
+                        //println!("dist {}  -- {}", distance(&loc, &(elem.clone().get_location()), self.width, self.heigth, self.toroidal), dist);
                         if distance(&loc, &(elem.clone().get_location()), self.width, self.heigth, self.toroidal) <= dist {
-                            tor.push(elem.clone());
+                            //elem clone
+                            tor.push(elem);
                         }
                     }
 
@@ -206,6 +235,10 @@ impl<A: Location2D + Clone + Hash + Eq + Display> Field2D<A> {
         }
         result
 
+    }
+
+    pub fn num_objects(&self) -> usize {
+        self.findex.len()
     }
 
     pub fn num_objects_at_location(&self, pos: Real2D) -> usize {
