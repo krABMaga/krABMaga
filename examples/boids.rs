@@ -16,10 +16,10 @@ use abm::field2D::Field2D;
 
 static mut _COUNT: u128 = 0;
 static STEP: u128 = 10;
-static NUM_AGENT: u128 = 2;
-static WIDTH: f64 = 10.0;
-static HEIGTH: f64 = 10.0;
-static DISCRETIZATION: f64 = 2.0;
+static NUM_AGENT: u128 = 10000;
+static WIDTH: f64 = 150.0;
+static HEIGTH: f64 = 150.0;
+static DISCRETIZATION: f64 = 10.0;
 static TOROIDAL: bool = true;
 
 fn main() {
@@ -27,41 +27,39 @@ fn main() {
 
 
     let mut data = State::new(WIDTH, HEIGTH, DISCRETIZATION, TOROIDAL);
-    //let mut simstate: SimState = SimState::new();
-    let mut schedule = Schedule::new();//data
-    //let mut schedule: Schedule<Bird> = Schedule::new();
+    let mut schedule: Schedule<Bird> = Schedule::new();
     assert!(schedule.events.is_empty());
 
-    // unsafe {
-    //     for bird_id in 0..NUM_AGENT{
-    //         let data_ref = &data as *const State;
-    //         let r1: f64 = rng.gen();
-    //         let r2: f64 = rng.gen();
-    //         let bird = Bird::new(bird_id, Real2D{x: WIDTH*r1, y: HEIGTH*r2}, &*data_ref);
-    //         //let bird_clone = bird.clone();
-    //         data.field1.set_object_location(bird.clone(), bird.pos.clone());
-    //         //let pa = AgentImpl::new(bird_clone);
-    //         schedule.schedule_repeating(bird, 5.0, 100);
-    //     }
-    // }
-    let data_ref = &data as *const State;
     unsafe {
-        let bird1 = Bird::new(1, Real2D{x: 1.0, y: 1.0}, &*data_ref);
-        let bird2 = Bird::new(2, Real2D{x: 1.0, y: 2.0}, &*data_ref);
-        let bird3 = Bird::new(3, Real2D{x: 4.0, y: 4.0}, &*data_ref);
-
-        data.field1.set_object_location(bird1.clone(), bird1.pos.clone());
-        data.field1.set_object_location(bird2.clone(), bird2.pos.clone());
-        data.field1.set_object_location(bird3.clone(), bird3.pos.clone());
-
-
-
-      schedule.schedule_repeating(bird1, 5.0, 100);
-       schedule.schedule_repeating(bird2, 5.0, 100);
-        schedule.schedule_repeating(bird3, 5.0, 100);
-
+        for bird_id in 0..NUM_AGENT{
+            let data_ref = &data as *const State;
+            let r1: f64 = rng.gen();
+            let r2: f64 = rng.gen();
+            let bird = Bird::new(bird_id, Real2D{x: WIDTH*r1, y: HEIGTH*r2}, &*data_ref);
+            //let bird_clone = bird.clone();
+            data.field1.set_object_location(bird.clone(), bird.pos.clone());
+            //let pa = AgentImpl::new(bird_clone);
+            schedule.schedule_repeating(bird, 5.0, 100);
+        }
     }
-    assert!(!schedule.events.is_empty());
+    // let data_ref = &data as *const State;
+    // unsafe {
+    //     let bird1 = Bird::new(1, Real2D{x: 1.0, y: 1.0}, &*data_ref);
+    //     let bird2 = Bird::new(2, Real2D{x: 1.0, y: 2.0}, &*data_ref);
+    //     let bird3 = Bird::new(3, Real2D{x: 4.0, y: 4.0}, &*data_ref);
+    //
+    //     data.field1.set_object_location(bird1.clone(), bird1.pos.clone());
+    //     data.field1.set_object_location(bird2.clone(), bird2.pos.clone());
+    //     data.field1.set_object_location(bird3.clone(), bird3.pos.clone());
+    //
+    //
+    //
+    //   schedule.schedule_repeating(bird1, 5.0, 100);
+    //    schedule.schedule_repeating(bird2, 5.0, 100);
+    //     schedule.schedule_repeating(bird3, 5.0, 100);
+    //
+    // }
+    // assert!(!schedule.events.is_empty());
 
     let start = Instant::now();
     for _ in 1..STEP{
@@ -71,7 +69,7 @@ fn main() {
     let duration = start.elapsed();
 
     println!("Time elapsed in testing schedule is: {:?}", duration);
-    println!("Step for seconds: {:?}", duration.as_millis()/STEP)
+    println!("Step for seconds: {:?}", STEP as u64/duration.as_secs());
 
 }
 
@@ -124,14 +122,10 @@ impl<'a> PartialEq for Bird<'a> {
 
 impl<'a> Agent for Bird<'a> {
     fn step(&self) {
-        let pos = Real2D {
-            x: 1.0,
-            y: 2.0,
-        };
 
-        let vec = self.state.field1.get_neighbors_within_distance(self, pos, 5.0);
+        let vec = self.state.field1.get_neighbors_within_distance(self.pos.clone(), 10.0);
         for elem in vec {
-            println!("{}", elem.id);
+            //println!("{}", elem.id);
         }
 
     }

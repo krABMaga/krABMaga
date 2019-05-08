@@ -1,14 +1,11 @@
 extern crate priority_queue;
 
-//use abm::location::Location2D;
 use std::hash::Hasher;
 use std::hash::Hash;
 use abm::location::Real2D;
 use abm::field2D::Field2D;
 use std::fmt;
 use abm::agent::Agent;
-// use abm::priority::Priority;
-// use abm::agentimpl::AgentImpl;
 use abm::schedule::Schedule;
 use abm::location::Location2D;
 
@@ -21,41 +18,8 @@ static STEP: u128 = 10;
 
 //static mut COUNT: u32 = 0;
 
-// #[test]
-// fn schedule_test_1() {
-//
-//     let field = Field2D::new();
-//     let mut simstate: SimState = SimState::new();
-//     let mut schedule: Schedule<Bird, Field2D> = Schedule::new(field);
-//     assert!(schedule.events.is_empty());
-//
-//     let mut priority_queue = PriorityQueue::new();
-//     let mut counter = 0;
-//
-//     for bird_id in 1..4{
-//         counter += bird_id;
-//         let bird = Bird::new(bird_id);
-//         let pa = AgentImpl::new(bird);
-//         let mut pa_clone = pa.clone();
-//         pa_clone.repeating = true;
-//         priority_queue.push(pa_clone, Priority{time: 5.0, ordering: 100});
-//         schedule.schedule_repeating(pa, 5.0, 100);
-//     }
-//
-//     assert!(!schedule.events.is_empty());
-//     //assert_eq!(schedule.events, priority_queue);
-//
-//     // let simstate = SimState {
-//     // };
-//     //
-//     // schedule.step(&simstate);
-//     // unsafe {
-//     //     assert_eq!(counter, COUNT);
-//     // }
-// }
-
 #[test]
-fn schedule_test_1() {
+fn field_2d_test_1() {
 
     let width = 100.0;
     let heigth = 100.0;
@@ -78,7 +42,7 @@ fn schedule_test_1() {
         };
 
         let real_pos = Real2D {x: 10.5, y: 10.0};
-        assert_eq!(&real_pos, pos);
+        assert_eq!(real_pos, *pos);
 
         data.field1.set_object_location(bird1.clone(), Real2D{x: 10.0, y: 10.0});
         let pos = match data.field1.get_object_location(bird1.clone()) {
@@ -87,12 +51,12 @@ fn schedule_test_1() {
         };
 
         let real_pos = Real2D {x: 10.0, y: 10.0};
-        assert_eq!(&real_pos, pos);
+        assert_eq!(real_pos, *pos);
 
         data.field1.set_object_location(bird2.clone(), bird2.pos.clone());
 
         let num = data.field1.num_objects_at_location(real_pos);
-        assert_eq!(1, num);
+        assert_eq!(2, num);
 
         schedule.schedule_repeating(bird1, 5.0, 100);
         schedule.schedule_repeating(bird2, 5.0, 100);
@@ -109,7 +73,7 @@ fn schedule_test_1() {
 }
 
 #[test]
-fn schedule_test_2() {
+fn field_2d_test_2() {
 
     let width = 10.0;
     let heigth = 10.0;
@@ -117,8 +81,8 @@ fn schedule_test_2() {
     let toroidal = false;
 
     let mut data = State::new(width, heigth, discretization, toroidal);
-    let mut schedule = Schedule::new();
-    assert!(schedule.events.is_empty());
+    //let mut schedule = Schedule::new();
+    //assert!(schedule.events.is_empty());
 
     let data_ref = &data as *const State;
     unsafe {
@@ -134,27 +98,76 @@ fn schedule_test_2() {
         data.field1.set_object_location(bird4.clone(), bird4.pos.clone());
         data.field1.set_object_location(bird5.clone(), bird5.pos.clone());
 
-        //non funziona con &bird1
-        let vec = data.field1.get_neighbors_within_distance(&bird5, Real2D{x: 5.2, y:5.2}, 3.0);
+        let vec = data.field1.get_neighbors_within_distance(Real2D{x: 5.2, y:5.2}, 3.0);
         assert_eq!(4, vec.len());
+
+        // bird2.pos = Real2D {x: 5.3, y:5.3};
+        //
+        // data.field1.set_object_location(bird2.clone(), bird2.pos.clone());
+        // let vec = data.field1.get_neighbors_within_distance(Real2D{x: 5.2, y:5.2}, 3.0);
+        // assert_eq!(5, vec.len());
 
         let bird6 = Bird::new(6, Real2D{x: 0.1, y: 0.1}, &*data_ref);
         data.field1.set_object_location(bird6.clone(), bird6.pos.clone());
 
-        let vec = data.field1.get_neighbors_within_distance(&bird6, Real2D{x: 5.2, y:5.2}, 5.0);
-        assert_eq!(4, vec.len());
+        let vec = data.field1.get_neighbors_within_distance(Real2D{x: 5.2, y:5.2}, 5.0);
+        assert_eq!(5, vec.len());
 
-        schedule.schedule_repeating(bird1, 5.0, 100);
-        schedule.schedule_repeating(bird2, 5.0, 100);
+        let num = data.field1.num_objects_at_location(Real2D{x: 5.0, y:2.0});
+        assert_eq!(2, num);
+
+        //schedule.schedule_repeating(bird1, 5.0, 100);
+        //schedule.schedule_repeating(bird2, 5.0, 100);
 
 
     }
 
-    assert!(!schedule.events.is_empty());
+    // assert!(!schedule.events.is_empty());
+    //
+    // for _ in 1..STEP{
+    //     schedule.step();
+    // }
 
-    for _ in 1..STEP{
-        schedule.step();
+}
+
+
+#[test]
+fn field_2d_test_3() {
+    let width = 10.0;
+    let heigth = 10.0;
+    let discretization = 0.5;
+    let toroidal = false;
+
+    let mut data = State::new(width, heigth, discretization, toroidal);
+    //let mut schedule = Schedule::new();
+    //assert!(schedule.events.is_empty());
+    let mut bird1;
+    let bird2;
+    let data_ref = &data as *const State;
+    unsafe {
+        bird1 = Bird::new(1, Real2D{x: 5.5, y: 5.5}, &*data_ref);
+        bird2 = Bird::new(2, Real2D{x: 4.0, y: 4.0}, &*data_ref);
+
+        data.field1.set_object_location(bird1.clone(), bird1.pos.clone());
+        data.field1.set_object_location(bird2.clone(), bird2.pos.clone());
     }
+
+    let pos_b1 = match data.field1.get_object_location(bird1.clone()) {
+        Some(i) => i,
+        None => panic!("non trovato"),
+    };
+    assert_eq!(bird1.pos, *pos_b1);
+
+    let new_pos = Real2D{x:7.0, y:9.2};
+    bird1.pos = new_pos.clone();
+    data.field1.set_object_location(bird1.clone(), new_pos);
+
+    let pos_b1 = match data.field1.get_object_location(bird1.clone()) {
+        Some(i) => i,
+        None => panic!("non trovato"),
+    };
+    assert_eq!(bird1.pos, *pos_b1);
+
 
 }
 //
@@ -198,41 +211,6 @@ fn schedule_test_2() {
 //     assert_eq!(Some(x3), schedule.events.pop());
 // }
 
-// #[test]
-// fn field_test_1() {
-//
-//     let mut data = State::new();
-//     let schedule: Schedule<Bird> = Schedule::new();
-//     assert!(schedule.events.is_empty());
-//     let bird1;
-//     let mut bird_vec: Vec<Bird> = Vec::new();
-//
-//     unsafe {
-//         let data_ref = &data as *const State;
-//         bird1 = Bird {x: 1, pos: Real2D{x: 1.0, y: 1.0}, state: &*data_ref};
-//         let bird2 = Bird {x: 2, pos: Real2D{x: 2.0, y: 2.0}, state: &*data_ref};
-//         let bird3 = Bird {x: 3, pos: Real2D{x: 3.0, y: 3.0}, state: &*data_ref};
-//
-//         data.field1.set_object_location(bird1.clone());
-//         data.field1.set_object_location(bird2.clone());
-//         data.field1.set_object_location(bird3.clone());
-//
-//         bird_vec.push(bird1.clone());
-//         bird_vec.push(bird2);
-//         bird_vec.push(bird3);
-//
-//     }
-//
-//     let x = bird1.state.field1.get_neighbors_within_distance(&bird1);
-//     assert_eq!(bird_vec, x);
-//
-//     // let bird = Bird{x: 1};
-//     // let pa = AgentImpl::new(bird);
-//     // let pa_clone = pa.clone();
-//     // let mut field : Field<Bird> = Default::default();
-//     // field.hash_map.insert(1, pa);
-//     // assert_eq!(Some(&pa_clone), field.hash_map.get(&1));
-// }
 
 pub struct State<'a>{
     pub field1: Field2D<Bird<'a>>,
@@ -288,7 +266,7 @@ impl<'a> Agent for Bird<'a> {
             y: 2.0,
         };
 
-        let vec = self.state.field1.get_neighbors_within_distance(self, pos, 5.0);
+        let vec = self.state.field1.get_neighbors_within_distance(pos, 5.0);
         for elem in vec {
             println!("{}", elem.id);
         }

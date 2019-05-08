@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use crate::location::Real2D;
 use std::hash::Hash;
 use crate::location::Int2D;
@@ -6,7 +7,7 @@ use std::collections::HashMap;
 use std::cmp;
 
 #[derive(Clone)]
-pub struct Field2D<A: Location2D + Clone + Hash + Eq> {
+pub struct Field2D<A: Location2D + Clone + Hash + Eq + Display> {
     pub vec : Vec<A>,
     pub findex: HashMap<A, Int2D>,
     pub fbag: HashMap<Int2D, Vec<A>>,
@@ -17,7 +18,7 @@ pub struct Field2D<A: Location2D + Clone + Hash + Eq> {
     pub toroidal: bool,
 }
 
-impl<A: Location2D + Clone + Hash + Eq> Field2D<A> {
+impl<A: Location2D + Clone + Hash + Eq + Display> Field2D<A> {
     pub fn new(w: f64, h: f64, d: f64, t: bool) -> Field2D<A> {
         Field2D {
             vec: Vec::new(),
@@ -33,7 +34,7 @@ impl<A: Location2D + Clone + Hash + Eq> Field2D<A> {
 
     pub fn set_object_location(&mut self, object: A, pos: Real2D) {
         let bag = self.discretize(&pos);
-        println!("{} {}", bag.x, bag.y);
+        //println!("{} {}", bag.x, bag.y);
             match self.fpos.get(&object) {
                 Some(x) => {
                     if *x == pos {return}
@@ -87,6 +88,7 @@ impl<A: Location2D + Clone + Hash + Eq> Field2D<A> {
                     }
                 },
                 None => {
+                    //println!("fallito inserimento");
                     self.findex.insert(object.clone(), bag.clone());
                     self.fpos.insert(object.clone(), pos.clone());
                     if !self.fbag.contains_key(&bag) {
@@ -94,11 +96,13 @@ impl<A: Location2D + Clone + Hash + Eq> Field2D<A> {
                         vec.push(object.clone());
                         self.fbag.insert(bag.clone(), vec);
                     } else {
-                        let mut vec = match self.fbag.get(&bag) {
-                            Some(i) => i.to_vec(),
-                            None => panic!("error vector from bag 2"),
-                        };
-                        vec.push(object.clone());
+                        // let mut vec = match self.fbag.get(&bag) {
+                        //     Some(v) => *v.push(object.clone()),
+                        //     None => panic!("error vector from bag 2"),
+                        // };
+                        self.fbag.get_mut(&bag).unwrap().push(object.clone());
+
+
                     }
                         //println!("{} {}", bag.x, bag.y);
                 }
@@ -108,7 +112,14 @@ impl<A: Location2D + Clone + Hash + Eq> Field2D<A> {
         //print!("lunghezza vett {}", self.vec.len())
     }
 
-    pub fn get_neighbors_within_distance(&self, object: &A, pos: Real2D, dist: f64) -> Vec<A> {
+    pub fn get_neighbors_within_distance(&self, pos: Real2D, dist: f64) -> Vec<A> {
+        // for (key, value) in self.fbag.clone() {
+        //     println!("chiave {} {}", key.x, key.y);
+        //     for elem in value {
+        //         println!("{}", elem);
+        //     }
+        // }
+
         let mut tor: Vec<A> = Vec::new();
 
         if dist <= 0.0 {
@@ -132,9 +143,9 @@ impl<A: Location2D + Clone + Hash + Eq> Field2D<A> {
             max_j = cmp::min(max_j, max_y-1);
         }
 
-        println!("punti: \n-{}-{}-{}-{}\n", min_i, max_i, min_j, max_j);
+        //println!("punti: \n-{}-{}-{}-{}\n", min_i, max_i, min_j, max_j);
 
-        let loc = object.clone().get_location();
+        let loc = pos.clone();
 
         for i in min_i..max_i {
             for j in min_j..max_j {
@@ -147,18 +158,20 @@ impl<A: Location2D + Clone + Hash + Eq> Field2D<A> {
                     continue;
                 }
                 let check = check_circle(&bag_id, self.discretization, self.width, self.heigth, &pos, dist, self.toroidal);
+                //TODO remove to vec
                 let vector =  match self.fbag.get(&bag_id) {
                     Some(i) => i.to_vec(),
                     None => panic!("errore vettore fbag"),
                 };
                 if check == 1 {
                     for elem in vector {
-                        println!("conteggio -- i:{} j:{}", i, j);
+                        //println!("conteggio -- i:{} j:{}", i, j);
                         tor.push(elem.clone());
                     }
                 } else if check == 0 {
                     for elem in vector {
-                        println!("conteggio 2-- i:{} j:{}", i, j);
+                        //println!("conteggio 2-- i:{} j:{}", i, j);
+                    //    println!("dist {}  -- {}", distance(&loc, &(elem.clone().get_location()), self.width, self.heigth, self.toroidal), dist);
                         if distance(&loc, &(elem.clone().get_location()), self.width, self.heigth, self.toroidal) <= dist {
                             tor.push(elem.clone());
                         }
