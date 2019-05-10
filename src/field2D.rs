@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use std::cmp;
 
 #[derive(Clone)]
-pub struct Field2D<A: Location2D + Clone + Hash + Eq + Display> {
+pub struct Field2D<A: Location2D + Clone + Hash + Eq + Display + Copy> {
     pub vec : Vec<A>,
     pub findex: HashMap<A, Int2D>,
     pub fbag: HashMap<Int2D, Vec<A>>,
@@ -18,7 +18,7 @@ pub struct Field2D<A: Location2D + Clone + Hash + Eq + Display> {
     pub toroidal: bool,
 }
 
-impl<A: Location2D + Clone + Hash + Eq + Display> Field2D<A> {
+impl<A: Location2D + Clone + Hash + Eq + Display + Copy> Field2D<A> {
     pub fn new(w: f64, h: f64, d: f64, t: bool) -> Field2D<A> {
         Field2D {
             vec: Vec::new(),
@@ -35,108 +35,111 @@ impl<A: Location2D + Clone + Hash + Eq + Display> Field2D<A> {
     pub fn set_object_location(&mut self, object: A, pos: Real2D) {
         let bag = self.discretize(&pos);
         //println!("{} {}", bag.x, bag.y);
-            match self.fpos.get(&object) {
-                Some(x) => {
-                    if *x == pos {
-                        println!("posizione 1");
-                        return;
-                    }
-                    else {
-                        println!("posizione 2");
 
-                        match self.findex.get(&object) {
-                            Some(x) => {
-                                if *x == bag {
-                                    println!("posizione 3");
+        // for (key, val) in self.fpos.iter() {
+        //     println!("key: {} val: {}", key, val);
+        // }
 
-                                    //clone entrambe
-                                    self.fpos.insert(object, pos);
-                                    return;
+
+        match self.fpos.get(&object) {
+            Some(x) => {
+                if *x == pos {
+                    //println!("posizione 1");
+                    return;
+                }
+                else {
+                    //println!("posizione 2");
+
+                    match self.findex.get(&object) {
+                        Some(x) => {
+                            if *x == bag {
+                                //println!("posizione 3");
+
+                                //clone entrambe
+                                self.fpos.insert(object, pos);
+                                return;
+                            } else {
+                                //println!("posizione 4");
+
+                                let oldbag = self.findex.get(&object);
+                                let oldbag = match oldbag {
+                                    Some(i) => i,
+                                    None => panic!("error oldbag"),
+                                };
+                                //let mut index = 0;
+                                //
+                                //  CHANGE to vec
+                                //+
+                                println!("{}", object);
+                                self.fbag.get_mut(oldbag).unwrap().retain(|x| *x == object);
+
+                                // let mut vector =  match self.fbag.get_mut(oldbag) {
+                                //     Some(i) => {
+                                //         for elem in i {
+                                //             // elem
+                                //             if *elem == object {
+                                //                 i.remove(index);
+                                //                 break;
+                                //             }
+                                //             index += 1;
+                                //         }
+                                //
+                                //     }
+                                //     None => panic!("error vector from oldbag"),
+                                // };
+
+                                self.findex.insert(object, bag);
+                                self.fpos.insert(object, pos);
+
+                                if !self.fbag.contains_key(&bag) {
+                                    let mut vec: Vec<A> = Vec::new();
+                                    vec.push(object);
+                                    self.fbag.insert(bag, vec);
                                 } else {
-                                    println!("posizione 4");
-
-                                    let oldbag = self.findex.get(&object);
-                                    let oldbag = match oldbag {
-                                        Some(i) => i,
-                                        None => panic!("error oldbag"),
+                                    let mut vec = match self.fbag.get(&bag) {
+                                        Some(i) => i.to_vec(),
+                                        None => panic!("error vector from bag"),
                                     };
-                                    let mut index = 0;
-                                    //
-                                    //  CHANGE to vec
-                                    //+
-                                    println!("{}", object);
-                                    self.fbag.get_mut(oldbag).unwrap().retain(|x| *x == object);
-
-                                    // let mut vector =  match self.fbag.get_mut(oldbag) {
-                                    //     Some(i) => {
-                                    //         for elem in i {
-                                    //             // elem
-                                    //             if *elem == object {
-                                    //                 i.remove(index);
-                                    //                 break;
-                                    //             }
-                                    //             index += 1;
-                                    //         }
-                                    //
-                                    //     }
-                                    //     None => panic!("error vector from oldbag"),
-                                    // };
-
-                                    self.findex.insert(object.clone(), bag.clone());
-                                    self.fpos.insert(object.clone(), pos.clone());
-
-                                    if !self.fbag.contains_key(&bag) {
-                                        let mut vec: Vec<A> = Vec::new();
-                                        vec.push(object.clone());
-                                        self.fbag.insert(bag.clone(), vec);
-                                    } else {
-                                        let mut vec = match self.fbag.get(&bag) {
-                                            Some(i) => i.to_vec(),
-                                            None => panic!("error vector from bag"),
-                                        };
-                                        vec.push(object.clone());
-                                    }
-
+                                    vec.push(object.clone());
                                 }
-                            },
-                            None => {
-                                panic!("Errore controllo esistenza")
+
                             }
+                        },
+                        None => {
+                            panic!("Errore controllo esistenza")
                         }
                     }
-                },
-                None => {
-                    println!("posizione 5");
-
-                    //println!("fallito inserimento");
-                    self.findex.insert(object.clone(), bag.clone());
-                    self.fpos.insert(object.clone(), pos.clone());
-                    if !self.fbag.contains_key(&bag) {
-                        println!("posizione 6");
-
-                        let mut vec: Vec<A> = Vec::new();
-                        //clone
-                        vec.push(object);
-                        //clone bag
-                        self.fbag.insert(bag, vec);
-                    } else {
-                        println!("posizione 7");
-
-                        // let mut vec = match self.fbag.get(&bag) {
-                        //     Some(v) => *v.push(object.clone()),
-                        //     None => panic!("error vector from bag 2"),
-                        // };
-                        //clone object
-                        self.fbag.get_mut(&bag).unwrap().push(object);
-
-
-                    }
-                        //println!("{} {}", bag.x, bag.y);
                 }
-            }
+            },
+            None => {
+                // println!("posizione 5");
 
-        //self.vec.push(object);
-        //print!("lunghezza vett {}", self.vec.len())
+                self.findex.insert(object, bag);
+                self.fpos.insert(object, pos);
+
+                if !self.fbag.contains_key(&bag) {
+                    // println!("posizione 6");
+
+                    let mut vec: Vec<A> = Vec::new();
+                    //clone
+                    vec.push(object);
+                    //clone bag
+                    self.fbag.insert(bag, vec);
+                } else {
+                    // println!("posizione 7");
+
+                    // let mut vec = match self.fbag.get(&bag) {
+                    //     Some(v) => *v.push(object.clone()),
+                    //     None => panic!("error vector from bag 2"),
+                    // };
+                    //clone object
+                    self.fbag.get_mut(&bag).unwrap().push(object);
+                }
+                    //println!("{} {}", bag.x, bag.y);
+            }
+        }
+    //self.vec.push(object);
+    //print!("lunghezza vett {}", self.vec.len())
     }
 
     pub fn get_neighbors_within_distance(&self, pos: Real2D, dist: f64) -> Vec<A> {
@@ -200,7 +203,7 @@ impl<A: Location2D + Clone + Hash + Eq + Display> Field2D<A> {
                     for elem in vector {
                         //println!("conteggio 2-- i:{} j:{}", i, j);
                         //println!("dist {}  -- {}", distance(&loc, &(elem.clone().get_location()), self.width, self.heigth, self.toroidal), dist);
-                        if distance(&loc, &(elem.clone().get_location()), self.width, self.heigth, self.toroidal) <= dist {
+                        if distance(&loc, &(elem.get_location()), self.width, self.heigth, self.toroidal) <= dist {
                             //elem clone
                             tor.push(elem);
                         }

@@ -6,7 +6,7 @@ use std::collections::HashMap;
 fn hash_test_1() {
     let libro1 = Libro{id: 1, costo: 2.0};
     let libro2 = Libro{id: 2, costo: 6.0};
-    let libro3 = Libro{id: 3, costo: 8.0};
+//    let libro3 = Libro{id: 3, costo: 8.0};
 
     let mut map = HashMap::new();
     map.insert(libro1.clone(), 1);

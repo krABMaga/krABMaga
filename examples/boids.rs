@@ -16,7 +16,7 @@ use abm::field2D::Field2D;
 
 static mut _COUNT: u128 = 0;
 static STEP: u128 = 10;
-static NUM_AGENT: u128 = 10000;
+static NUM_AGENT: u128 = 20000;
 static WIDTH: f64 = 150.0;
 static HEIGTH: f64 = 150.0;
 static DISCRETIZATION: f64 = 10.0/1.5;
@@ -85,7 +85,7 @@ impl<'a> State<'a>{
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct Bird<'a> {
     pub id: u128,
     pub pos: Real2D,
@@ -116,7 +116,7 @@ impl<'a> Eq for Bird<'a> {}
 
 impl<'a> PartialEq for Bird<'a> {
     fn eq(&self, other: &Bird) -> bool {
-        self.id == other.id && self.pos == other.pos
+        self.id == other.id
     }
 }
 
@@ -124,12 +124,10 @@ impl<'a> Agent for Bird<'a> {
     fn step(&self) {
 
         let vec = self.state.field1.get_neighbors_within_distance(self.pos.clone(), 10.0);
-        for elem in vec {
+        for _elem in vec {
             //println!("{}", elem.id);
         }
-
     }
-
 }
 
 impl<'a > Location2D for Bird<'a> {

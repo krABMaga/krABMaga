@@ -6,10 +6,10 @@ use abm::location::Real2D;
 use abm::field2D::Field2D;
 use std::fmt;
 use abm::agent::Agent;
-use abm::schedule::Schedule;
+//use abm::schedule::Schedule;
 use abm::location::Location2D;
 
-static STEP: u128 = 10;
+//static STEP: u128 = 10;
 // static NUM_AGENT: u128 = 2;
 // static WIDTH: f64 = 10.0;
 // static HEIGTH: f64 = 10.0;
@@ -28,29 +28,25 @@ fn field_2d_test_2_1() {
 
     let mut data = State::new(width, heigth, discretization, toroidal);
 
-
-
     let data_ref = &data as *const State;
-    unsafe {
 
+    unsafe {
         //TODO bound circle
-        let mut bird1 = Bird::new(1, Real2D{x: 5.0, y: 5.0}, &*data_ref);
+        let bird1 = Bird::new(1, Real2D{x: 5.0, y: 5.0}, &*data_ref);
         let mut bird2 = Bird::new(2, Real2D{x: 5.0, y: 6.0}, &*data_ref);
-        let mut bird3 = Bird::new(3, Real2D{x: 5.0, y: 6.99}, &*data_ref);
-        let mut bird4 = Bird::new(4, Real2D{x: 6.0, y: 6.0}, &*data_ref);
-        let mut bird5 = Bird::new(5, Real2D{x: 7.0, y: 7.0}, &*data_ref);
+        let bird3 = Bird::new(3, Real2D{x: 5.0, y: 6.99}, &*data_ref);
+        let bird4 = Bird::new(4, Real2D{x: 6.0, y: 6.0}, &*data_ref);
+        let bird5 = Bird::new(5, Real2D{x: 7.0, y: 7.0}, &*data_ref);
         let mut bird6 = Bird::new(6, Real2D{x: 9.0, y: 9.0}, &*data_ref);
 
-
-        data.field1.set_object_location(bird1.clone(), bird1.pos.clone());
-        data.field1.set_object_location(bird2.clone(), bird2.pos.clone());
-        data.field1.set_object_location(bird3.clone(), bird3.pos.clone());
-        data.field1.set_object_location(bird4.clone(), bird4.pos.clone());
-        data.field1.set_object_location(bird5.clone(), bird5.pos.clone());
-        data.field1.set_object_location(bird6.clone(), bird6.pos.clone());
+        data.field1.set_object_location(bird1, bird1.pos);
+        data.field1.set_object_location(bird2, bird2.pos);
+        data.field1.set_object_location(bird3, bird3.pos);
+        data.field1.set_object_location(bird4, bird4.pos);
+        data.field1.set_object_location(bird5, bird5.pos);
+        data.field1.set_object_location(bird6, bird6.pos);
 
         assert_eq!(6, data.field1.num_objects());
-
 
         let vec = data.field1.get_neighbors_within_distance(Real2D{x: 5.0, y: 5.0}, 5.0);
         assert_eq!(5, vec.len());
@@ -85,71 +81,36 @@ fn field_2d_test_2_1() {
         // let vec = data.field1.get_neighbors_within_distance(Real2D{x: 1.0, y: 1.0}, 5.0);
         //
         // assert_eq!(1, vec.len());
-        //assert!(vec.contains(&bird6));
+        // let pos_b2 = match data.field1.get_object_location(bird2) {
+        //     Some(i) => i,
+        //     None => panic!("non trovato"),
+        // };
+        // println!("pos b2 {}", pos_b2);
+
         bird2.pos = Real2D {x:0.5, y:0.5};
         bird6.pos = Real2D {x:7.5, y:7.5};
-        data.field1.set_object_location(bird2.clone(), bird2.pos.clone());
-        data.field1.set_object_location(bird6.clone(), bird6.pos.clone());
-
-        //assert_eq!(6, data.field1.num_objects());
-
-
+        data.field1.set_object_location(bird2, bird2.pos);
+        data.field1.set_object_location(bird6, bird6.pos);
+        assert_eq!(6, data.field1.num_objects());
+        // let pos_b2 = match data.field1.get_object_location(bird2) {
+        //     Some(i) => i,
+        //     None => panic!("non trovato"),
+        // };
+        // println!("pos post aggiornamento {}", pos_b2);
         let vec = data.field1.get_neighbors_within_distance(Real2D{x: 5.0, y: 5.0}, 4.0);
+
+        for elem in vec.clone() {
+            println!("{}", elem);
+        }
+
         //assert_eq!(5, vec.len());
         assert!(vec.contains(&bird1));
         assert!(vec.contains(&bird6));
         assert!(vec.contains(&bird3));
         assert!(vec.contains(&bird4));
         assert!(vec.contains(&bird5));
-
     }
 }
-
-fn distance(pos1: &Real2D, pos2: &Real2D, dim1: f64, dim2: f64, tor: bool) -> f64{
-
-    let dx;
-    let dy;
-
-    if tor {
-        dx = toroidal_distance(pos1.x, pos2.x, dim1);
-        dy = toroidal_distance(pos1.y, pos2.y, dim2);
-    } else {
-        dx = pos1.x - pos2.x;
-        dy = pos1.y - pos2.y;
-    }
-    (dx*dx + dy*dy).sqrt()
-}
-
-fn toroidal_distance(val1: f64, val2: f64, dim: f64) -> f64{
-
-    if (val1 - val2).abs() <= dim/2.0 {
-        return val1 - val2;
-    }
-
-    let d = toroidal_transform(val1, dim) - toroidal_transform(val2, dim);
-
-    if d*2.0 > dim {
-        d - dim
-    } else if d*2.0 < dim {
-        d + dim
-    } else {
-        d
-    }
-}
-
-fn toroidal_transform(val: f64, dim: f64) -> f64 {
-
-    if val >= 0.0 && val < dim {
-        val
-    } else {
-        let val = val%dim;
-        if val < 0.0 {
-            let _val = val + dim;
-        }
-        val
-    }
-}
-
 
 pub struct State<'a>{
     pub field1: Field2D<Bird<'a>>,
@@ -163,7 +124,7 @@ impl<'a> State<'a>{
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct Bird<'a> {
     pub id: u128,
     pub pos: Real2D,
@@ -194,7 +155,7 @@ impl<'a> Eq for Bird<'a> {}
 
 impl<'a> PartialEq for Bird<'a> {
     fn eq(&self, other: &Bird) -> bool {
-        self.id == other.id && self.pos == other.pos
+        self.id == other.id
     }
 }
 
@@ -229,3 +190,49 @@ impl<'a> fmt::Display for Bird<'a> {
         write!(f, "{}", self.id)
     }
 }
+
+//
+// fn distance(pos1: &Real2D, pos2: &Real2D, dim1: f64, dim2: f64, tor: bool) -> f64{
+//
+//     let dx;
+//     let dy;
+//
+//     if tor {
+//         dx = toroidal_distance(pos1.x, pos2.x, dim1);
+//         dy = toroidal_distance(pos1.y, pos2.y, dim2);
+//     } else {
+//         dx = pos1.x - pos2.x;
+//         dy = pos1.y - pos2.y;
+//     }
+//     (dx*dx + dy*dy).sqrt()
+// }
+//
+// fn toroidal_distance(val1: f64, val2: f64, dim: f64) -> f64{
+//
+//     if (val1 - val2).abs() <= dim/2.0 {
+//         return val1 - val2;
+//     }
+//
+//     let d = toroidal_transform(val1, dim) - toroidal_transform(val2, dim);
+//
+//     if d*2.0 > dim {
+//         d - dim
+//     } else if d*2.0 < dim {
+//         d + dim
+//     } else {
+//         d
+//     }
+// }
+//
+// fn toroidal_transform(val: f64, dim: f64) -> f64 {
+//
+//     if val >= 0.0 && val < dim {
+//         val
+//     } else {
+//         let val = val%dim;
+//         if val < 0.0 {
+//             let _val = val + dim;
+//         }
+//         val
+//     }
+// }

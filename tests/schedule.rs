@@ -224,7 +224,7 @@ impl<'a> State<'a>{
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct Bird<'a> {
     pub id: u128,
     pub pos: Real2D,

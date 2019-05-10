@@ -5,7 +5,7 @@ pub trait Location2D {
     fn set_location(&mut self, loc: Real2D);
 }
 
-#[derive(Clone, Default, Debug)]
+#[derive(Clone, Default, Debug, Copy)]
 pub struct Real2D {
     pub x: f64,
     pub y: f64,
@@ -25,7 +25,7 @@ impl PartialEq for Real2D {
     }
 }
 
-#[derive(Clone, Hash)]
+#[derive(Clone, Hash, Copy)]
 pub struct Int2D {
     pub x: i64,
     pub y: i64,
