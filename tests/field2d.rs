@@ -97,13 +97,51 @@ fn field_2d_test_2_1() {
         //     None => panic!("non trovato"),
         // };
         // println!("pos post aggiornamento {}", pos_b2);
+
+        // for (key, val) in data.field1.fpos.iter() {
+        //     println!("key: {} val: {}", key, val);
+        // }
+    }
+}
+
+fn field_2d_test_2_2() {
+    let width = 10.0;
+    let heigth = 10.0;
+    let discretization = 0.5;
+    let toroidal = true;
+
+    let mut data = State::new(width, heigth, discretization, toroidal);
+
+    let data_ref = &data as *const State;
+
+    unsafe {
+        //TODO bound circle
+        let bird1 = Bird::new(1, Real2D{x: 5.0, y: 5.0}, &*data_ref);
+        let mut bird2 = Bird::new(2, Real2D{x: 5.0, y: 6.0}, &*data_ref);
+        let bird3 = Bird::new(3, Real2D{x: 5.0, y: 6.99}, &*data_ref);
+        let bird4 = Bird::new(4, Real2D{x: 6.0, y: 6.0}, &*data_ref);
+        let bird5 = Bird::new(5, Real2D{x: 7.0, y: 7.0}, &*data_ref);
+        let mut bird6 = Bird::new(6, Real2D{x: 9.0, y: 9.0}, &*data_ref);
+
+        data.field1.set_object_location(bird1, bird1.pos);
+        data.field1.set_object_location(bird2, bird2.pos);
+        data.field1.set_object_location(bird3, bird3.pos);
+        data.field1.set_object_location(bird4, bird4.pos);
+        data.field1.set_object_location(bird5, bird5.pos);
+        data.field1.set_object_location(bird6, bird6.pos);
+
+        bird2.pos = Real2D {x:0.5, y:0.5};
+        bird6.pos = Real2D {x:7.5, y:7.5};
+        data.field1.set_object_location(bird2, bird2.pos);
+        data.field1.set_object_location(bird6, bird6.pos);
+
         let vec = data.field1.get_neighbors_within_distance(Real2D{x: 5.0, y: 5.0}, 4.0);
 
-        for elem in vec.clone() {
-            println!("{}", elem);
-        }
+        // for elem in vec.clone() {
+        //     println!("{}", elem);
+        // }
 
-        //assert_eq!(5, vec.len());
+        assert_eq!(5, vec.len());
         assert!(vec.contains(&bird1));
         assert!(vec.contains(&bird6));
         assert!(vec.contains(&bird3));
