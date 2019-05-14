@@ -103,6 +103,7 @@ fn field_2d_test_2_1() {
     }
 }
 
+#[test]
 fn field_2d_test_2_2() {
     let width = 10.0;
     let heigth = 10.0;

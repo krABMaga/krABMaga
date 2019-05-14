@@ -53,7 +53,12 @@ impl<A: Location2D + Clone + Hash + Eq + Display + Copy> Field2D<A> {
                                     None => panic!("error oldbag"),
                                 };
 
-                                self.fbag.get_mut(oldbag).unwrap().retain(|x| *x == object);
+                                //self.fbag.get_mut(oldbag).unwrap().retain(|x| *x == object);
+                                self.fbag.remove(&oldbag);
+                                // for (key, value) in self.fbag.iter() {
+                                //     println!("int 2d loc x {} y {}", key.x, key.y);
+                                // }
+                                // println!("--------" );
 
                                 self.findex.insert(object, bag);
                                 self.fpos.insert(object, pos);
@@ -67,8 +72,13 @@ impl<A: Location2D + Clone + Hash + Eq + Display + Copy> Field2D<A> {
                                         Some(i) => i.to_vec(),
                                         None => panic!("error vector from bag"),
                                     };
-                                    vec.push(object.clone());
+                                    vec.push(object);
                                 }
+
+                                // for (key, value) in self.fbag.iter() {
+                                //     println!("int 2d loc x {} y {}", key.x, key.y);
+                                // }
+                                // println!("|||||||||" );
 
                             }
                         },
@@ -120,10 +130,10 @@ impl<A: Location2D + Clone + Hash + Eq + Display + Copy> Field2D<A> {
         }
         //let loc = pos.clone();
 
-        println!("min_i {}", min_i);
-        println!("min_j {}", min_j);
-        println!("max_i {}", max_i);
-        println!("max_j {}", max_j);
+        // println!("min_i {}", min_i);
+        // println!("min_j {}", min_j);
+        // println!("max_i {}", max_i);
+        // println!("max_j {}", max_j);
 
         for i in min_i..max_i {
             for j in min_j..max_j {
@@ -136,7 +146,7 @@ impl<A: Location2D + Clone + Hash + Eq + Display + Copy> Field2D<A> {
                     continue;
                 }
 
-                println!("bag {} {}", bag_id.x, bag_id.y );
+                //println!("bag {} {}", bag_id.x, bag_id.y );
                 let check = check_circle(&bag_id, self.discretization, self.width, self.heigth, &pos, dist, self.toroidal);
                 //println!("check {}", check);
                 let vector =  match self.fbag.get(&bag_id) {
@@ -147,7 +157,7 @@ impl<A: Location2D + Clone + Hash + Eq + Display + Copy> Field2D<A> {
                 if check == 1 {
                     for elem in vector {
                         //println!("conteggio -- i:{} j:{}", i, j);
-                        println!("check=1 -- inserisco {}", elem);
+                        //println!("check=1 -- inserisco {}", elem);
                         tor.push(elem);
                     }
                 } else if check == 0 {
@@ -269,7 +279,7 @@ fn distance(pos1: &Real2D, pos2: &Real2D, dim1: f64, dim2: f64, tor: bool) -> f6
         dx = pos1.x - pos2.x;
         dy = pos1.y - pos2.y;
     }
-    println!("distance {}", (dx*dx + dy*dy).sqrt());
+    //println!("distance {}", (dx*dx + dy*dy).sqrt());
     (dx*dx + dy*dy).sqrt()
 }
 
