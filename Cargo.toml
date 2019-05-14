@@ -21,3 +21,6 @@ harness = false
 [[bin]]
 name = "boids"
  path = "examples/boids.rs"
+
+[profile.release]
+ debug = true

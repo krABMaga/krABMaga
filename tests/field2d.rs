@@ -118,7 +118,7 @@ fn field_2d_test_2_2() {
         //TODO bound circle
         let bird1 = Bird::new(1, Real2D{x: 5.0, y: 5.0}, &*data_ref);
         let mut bird2 = Bird::new(2, Real2D{x: 5.0, y: 6.0}, &*data_ref);
-        let bird3 = Bird::new(3, Real2D{x: 5.0, y: 6.99}, &*data_ref);
+        let bird3 = Bird::new(3, Real2D{x: 5.0, y: 7.0}, &*data_ref);
         let bird4 = Bird::new(4, Real2D{x: 6.0, y: 6.0}, &*data_ref);
         let bird5 = Bird::new(5, Real2D{x: 7.0, y: 7.0}, &*data_ref);
         let mut bird6 = Bird::new(6, Real2D{x: 9.0, y: 9.0}, &*data_ref);

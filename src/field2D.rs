@@ -1,3 +1,5 @@
+extern crate threads_pool;
+
 use std::fmt::Display;
 use crate::location::Real2D;
 use std::hash::Hash;
@@ -5,6 +7,8 @@ use crate::location::Int2D;
 use crate::location::Location2D;
 use std::collections::HashMap;
 use std::cmp;
+
+use threads_pool::*;
 
 #[derive(Clone)]
 pub struct Field2D<A: Location2D + Clone + Hash + Eq + Display + Copy> {
@@ -153,10 +157,19 @@ impl<A: Location2D + Clone + Hash + Eq + Display + Copy> Field2D<A> {
                     None => panic!("errore vettore fbag"),
                 };
 
+                //let pool = ThreadPool::new(4);
+
+
                 if check == 1 {
+
                     for elem in vector {
                         //println!("conteggio -- i:{} j:{}", i, j);
                         //println!("check=1 -- inserisco {}", elem);
+                        // pool.execute(move || {
+                        //
+                        //
+                        // });
+
                         tor.push(elem);
                     }
                 } else if check == 0 {
