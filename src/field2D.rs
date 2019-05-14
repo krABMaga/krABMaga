@@ -135,8 +135,8 @@ impl<A: Location2D + Clone + Hash + Eq + Display + Copy> Field2D<A> {
         // println!("max_i {}", max_i);
         // println!("max_j {}", max_j);
 
-        for i in min_i..max_i {
-            for j in min_j..max_j {
+        for i in min_i..max_i+1 {
+            for j in min_j..max_j+1 {
                 let bag_id = Int2D {
                     x: t_transform(i, max_x),
                     y: t_transform(j, max_y),
@@ -146,7 +146,6 @@ impl<A: Location2D + Clone + Hash + Eq + Display + Copy> Field2D<A> {
                     continue;
                 }
 
-                //println!("bag {} {}", bag_id.x, bag_id.y );
                 let check = check_circle(&bag_id, self.discretization, self.width, self.heigth, &pos, dist, self.toroidal);
                 //println!("check {}", check);
                 let vector =  match self.fbag.get(&bag_id) {
@@ -251,6 +250,11 @@ fn check_circle(bag: &Int2D, discretization: f64,width: f64, heigth: f64, pos: &
         x: sw.x,
         y: ne.y,
     };
+
+    // println!("nw {}", nw);
+    // println!("nw {}", sw);
+    // println!("nw {}", ne);
+    // println!("nw {}", se);
 
     if distance(&nw, &pos, width, heigth, tor) <= dis &&
         distance(&ne, &pos, width, heigth, tor) <= dis &&

@@ -33,7 +33,7 @@ fn field_2d_test_2_1() {
         //TODO bound circle
         let bird1 = Bird::new(1, Real2D{x: 5.0, y: 5.0}, &*data_ref);
         let mut bird2 = Bird::new(2, Real2D{x: 5.0, y: 6.0}, &*data_ref);
-        let bird3 = Bird::new(3, Real2D{x: 5.0, y: 6.99}, &*data_ref);
+        let bird3 = Bird::new(3, Real2D{x: 5.0, y: 7.0}, &*data_ref);
         let bird4 = Bird::new(4, Real2D{x: 6.0, y: 6.0}, &*data_ref);
         let bird5 = Bird::new(5, Real2D{x: 7.0, y: 7.0}, &*data_ref);
         let mut bird6 = Bird::new(6, Real2D{x: 9.0, y: 9.0}, &*data_ref);
@@ -149,6 +149,73 @@ fn field_2d_test_2_2() {
         assert!(vec.contains(&bird5));
     }
 }
+
+
+#[test]
+fn field_2d_test_2_3() {
+    let width = 10.0;
+    let heigth = 10.0;
+    let discretization = 0.5;
+    let toroidal = true;
+
+    let mut data = State::new(width, heigth, discretization, toroidal);
+
+    let data_ref = &data as *const State;
+
+    unsafe {
+        let bird1 = Bird::new(1, Real2D{x: 5.0, y: 5.0}, &*data_ref);
+        let mut bird2 = Bird::new(2, Real2D{x: 5.0, y: 6.0}, &*data_ref);
+        let bird3 = Bird::new(3, Real2D{x: 5.0, y: 7.0}, &*data_ref);
+        let bird4 = Bird::new(4, Real2D{x: 6.0, y: 6.0}, &*data_ref);
+        let bird5 = Bird::new(5, Real2D{x: 7.0, y: 7.0}, &*data_ref);
+        let mut bird6 = Bird::new(6, Real2D{x: 9.0, y: 9.0}, &*data_ref);
+
+        data.field1.set_object_location(bird1, bird1.pos);
+        data.field1.set_object_location(bird2, bird2.pos);
+        data.field1.set_object_location(bird3, bird3.pos);
+        data.field1.set_object_location(bird4, bird4.pos);
+        data.field1.set_object_location(bird5, bird5.pos);
+        data.field1.set_object_location(bird6, bird6.pos);
+
+        let vec = data.field1.get_neighbors_within_distance(Real2D{x: 5.0, y: 5.0}, 2.0);
+
+        assert_eq!(4, vec.len());
+        assert!(vec.contains(&bird1));
+        assert!(vec.contains(&bird2));
+        assert!(vec.contains(&bird3));
+        assert!(vec.contains(&bird4));
+
+        let vec = data.field1.get_neighbors_within_distance(Real2D{x: 9.0, y: 9.0}, 1.0);
+
+        assert_eq!(1, vec.len());
+        assert!(vec.contains(&bird6));
+
+        let vec = data.field1.get_neighbors_within_distance(Real2D{x: 9.0, y: 9.0}, 5.0);
+
+        assert_eq!(5, vec.len());
+        assert!(vec.contains(&bird5));
+        assert!(vec.contains(&bird2));
+        assert!(vec.contains(&bird3));
+        assert!(vec.contains(&bird4));
+        assert!(vec.contains(&bird6));
+
+        // let vec = data.field1.get_neighbors_within_distance(Real2D{x: 1.0, y: 1.0}, 5.0);
+        //
+        // assert_eq!(1, vec.len());
+        // let pos_b2 = match data.field1.get_object_location(bird2) {
+        //     Some(i) => i,
+        //     None => panic!("non trovato"),
+        // };
+        // println!("pos b2 {}", pos_b2);
+
+        bird2.pos = Real2D {x:0.5, y:0.5};
+        bird6.pos = Real2D {x:7.5, y:7.5};
+        data.field1.set_object_location(bird2, bird2.pos);
+        data.field1.set_object_location(bird6, bird6.pos);
+        assert_eq!(6, data.field1.num_objects());
+    }
+}
+
 
 pub struct State<'a>{
     pub field1: Field2D<Bird<'a>>,
