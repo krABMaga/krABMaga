@@ -1,14 +1,8 @@
-//use uid::Id as IdT;
 use std::hash::Hash;
 use std::hash::Hasher;
 use crate::agent::Agent;
-// use std::cmp::Eq;
-//use std::hash::{Hash};
 use std::fmt;
-//use crate::simulstate::SimState;
 use std::clone::Clone;
-//use crate::field2D::Field2D;
-
 
 static mut COUNTER: u32 = 0;
 

@@ -6,7 +6,6 @@ use abm::location::Real2D;
 use abm::field2D::Field2D;
 use std::fmt;
 use abm::agent::Agent;
-//use abm::schedule::Schedule;
 use abm::location::Location2D;
 
 //static STEP: u128 = 10;

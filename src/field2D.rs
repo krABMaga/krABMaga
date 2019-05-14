@@ -34,54 +34,26 @@ impl<A: Location2D + Clone + Hash + Eq + Display + Copy> Field2D<A> {
 
     pub fn set_object_location(&mut self, object: A, pos: Real2D) {
         let bag = self.discretize(&pos);
-        //println!("{} {}", bag.x, bag.y);
 
         match self.fpos.get(&object) {
             Some(x) => {
                 if *x == pos {
-                    //println!("posizione 1");
                     return;
                 }
                 else {
-                    //println!("posizione 2");
-
                     match self.findex.get(&object) {
                         Some(x) => {
                             if *x == bag {
-                                //println!("posizione 3");
-
-                                //clone entrambe
                                 self.fpos.insert(object, pos);
                                 return;
                             } else {
-                                //println!("posizione 4");
-
                                 let oldbag = self.findex.get(&object);
                                 let oldbag = match oldbag {
                                     Some(i) => i,
                                     None => panic!("error oldbag"),
                                 };
-                                //let mut index = 0;
-                                //
-                                //  CHANGE to vec
-                                //+
-                                //println!("{}", object);
-                                self.fbag.get_mut(oldbag).unwrap().retain(|x| *x == object);
 
-                                // let mut vector =  match self.fbag.get_mut(oldbag) {
-                                //     Some(i) => {
-                                //         for elem in i {
-                                //             // elem
-                                //             if *elem == object {
-                                //                 i.remove(index);
-                                //                 break;
-                                //             }
-                                //             index += 1;
-                                //         }
-                                //
-                                //     }
-                                //     None => panic!("error vector from oldbag"),
-                                // };
+                                self.fbag.get_mut(oldbag).unwrap().retain(|x| *x == object);
 
                                 self.findex.insert(object, bag);
                                 self.fpos.insert(object, pos);
@@ -107,43 +79,22 @@ impl<A: Location2D + Clone + Hash + Eq + Display + Copy> Field2D<A> {
                 }
             },
             None => {
-                // println!("posizione 5");
-
                 self.findex.insert(object, bag);
                 self.fpos.insert(object, pos);
 
                 if !self.fbag.contains_key(&bag) {
-                    // println!("posizione 6");
 
                     let mut vec: Vec<A> = Vec::new();
-                    //clone
                     vec.push(object);
-                    //clone bag
                     self.fbag.insert(bag, vec);
                 } else {
-                    // println!("posizione 7");
-
-                    // let mut vec = match self.fbag.get(&bag) {
-                    //     Some(v) => *v.push(object.clone()),
-                    //     None => panic!("error vector from bag 2"),
-                    // };
-                    //clone object
                     self.fbag.get_mut(&bag).unwrap().push(object);
                 }
-                    //println!("{} {}", bag.x, bag.y);
             }
         }
-    //self.vec.push(object);
-    //print!("lunghezza vett {}", self.vec.len())
     }
 
     pub fn get_neighbors_within_distance(&self, pos: Real2D, dist: f64) -> Vec<A> {
-        // for (key, value) in self.fbag.clone() {
-        //     println!("chiave {} {}", key.x, key.y);
-        //     for elem in value {
-        //         println!("{}", elem);
-        //     }
-        // }
 
         let mut tor: Vec<A> = Vec::new();
 
@@ -167,15 +118,12 @@ impl<A: Location2D + Clone + Hash + Eq + Display + Copy> Field2D<A> {
             min_j = cmp::max(0, min_j);
             max_j = cmp::min(max_j, max_y-1);
         }
-
-        // println!("min_i {}", min_i);
-        // println!("min_j {}", min_j);
-        // println!("max_i {}", max_i);
-        // println!("max_j {}", max_j);
-
-        //println!("punti: \n-{}-{}-{}-{}\n", min_i, max_i, min_j, max_j);
-
         //let loc = pos.clone();
+
+        println!("min_i {}", min_i);
+        println!("min_j {}", min_j);
+        println!("max_i {}", max_i);
+        println!("max_j {}", max_j);
 
         for i in min_i..max_i {
             for j in min_j..max_j {
@@ -183,52 +131,40 @@ impl<A: Location2D + Clone + Hash + Eq + Display + Copy> Field2D<A> {
                     x: t_transform(i, max_x),
                     y: t_transform(j, max_y),
                 };
-                //println!("bag_id {} {}", bag_id.x, bag_id.y);
+
                 if !self.fbag.contains_key(&bag_id) {
                     continue;
                 }
-                let check = check_circle(&bag_id, self.discretization, self.width, self.heigth, &pos, dist, self.toroidal);
 
-                //TODO remove to vec
+                println!("bag {} {}", bag_id.x, bag_id.y );
+                let check = check_circle(&bag_id, self.discretization, self.width, self.heigth, &pos, dist, self.toroidal);
+                //println!("check {}", check);
                 let vector =  match self.fbag.get(&bag_id) {
                     Some(i) => i.to_vec(),
                     None => panic!("errore vettore fbag"),
                 };
+
                 if check == 1 {
                     for elem in vector {
-                        println!("conteggio -- i:{} j:{}", i, j);
+                        //println!("conteggio -- i:{} j:{}", i, j);
                         println!("check=1 -- inserisco {}", elem);
-                        //clone elem
                         tor.push(elem);
                     }
                 } else if check == 0 {
                     for elem in vector {
-                        println!("conteggio 2-- i:{} j:{}", i, j);
-                        println!("distance {}  -- {}", distance(&pos, &(elem.get_location()), self.width, self.heigth, self.toroidal), dist);
+                        //println!("conteggio 2-- i:{} j:{}", i, j);
+                        //println!("distance {}  -- {}", distance(&pos, &(elem.get_location()), self.width, self.heigth, self.toroidal), dist);
                         if distance(&pos, &(elem.get_location()), self.width, self.heigth, self.toroidal) <= dist {
-                            //elem clone
-                            println!("check=0 -- inserisco {}", elem);
+                            //println!("check=0 -- inserisco {}", elem);
                             tor.push(elem);
                         }
-                        // else {
-                        //     tor.retain(|x| *x == elem);
-                        // }
                     }
-
                 }
             }
         }
 
-        // //let x = (self.vec.len()/100)*10;
-        // for y in 1..self.vec.len() {
-        //     tor.push(self.vec[y].clone())
-        // }
-        // //let x = self.vec.clone();
-        // //x
-        // // for i in 0..3 {
-        // //     vec2.push(x[i]);
-        // // }
         tor
+
     }
 
     pub fn get_objects_at_location(&self, pos: Real2D) -> Vec<&A>{
@@ -242,7 +178,6 @@ impl<A: Location2D + Clone + Hash + Eq + Display + Copy> Field2D<A> {
             }
         }
         result
-
     }
 
     pub fn num_objects(&self) -> usize {
@@ -269,6 +204,7 @@ impl<A: Location2D + Clone + Hash + Eq + Display + Copy> Field2D<A> {
     fn discretize(&self, pos: &Real2D) -> Int2D {
         let x_floor = (pos.x/self.discretization).floor();
         let x_floor = x_floor as i64;
+
         let y_floor = (pos.y/self.discretization).floor();
         let y_floor = y_floor as i64;
 
@@ -333,6 +269,7 @@ fn distance(pos1: &Real2D, pos2: &Real2D, dim1: f64, dim2: f64, tor: bool) -> f6
         dx = pos1.x - pos2.x;
         dy = pos1.y - pos2.y;
     }
+    println!("distance {}", (dx*dx + dy*dy).sqrt());
     (dx*dx + dy*dy).sqrt()
 }
 
