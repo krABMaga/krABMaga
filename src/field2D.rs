@@ -300,7 +300,7 @@ fn distance(pos1: &Real2D, pos2: &Real2D, dim1: f64, dim2: f64, tor: bool) -> f6
     (dx*dx + dy*dy).sqrt()
 }
 
-fn toroidal_distance(val1: f64, val2: f64, dim: f64) -> f64{
+pub fn toroidal_distance(val1: f64, val2: f64, dim: f64) -> f64{
 
     if (val1 - val2).abs() <= dim/2.0 {
         return val1 - val2;
@@ -317,7 +317,7 @@ fn toroidal_distance(val1: f64, val2: f64, dim: f64) -> f64{
     }
 }
 
-fn toroidal_transform(val: f64, dim: f64) -> f64 {
+pub fn toroidal_transform(val: f64, dim: f64) -> f64 {
 
     if val >= 0.0 && val < dim {
         val
