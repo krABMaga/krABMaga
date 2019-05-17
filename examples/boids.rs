@@ -246,10 +246,12 @@ impl<'a> Agent for Bird<'a> {
         }
 
         let _lastd = Real2D {x: dx, y:dy};
-        let _loc_x = toroidal_transform(self.pos.x + dx, WIDTH);
-        let _loc_y = toroidal_transform(self.pos.y + dy, WIDTH);
-        //self.state.field1.set_object_location(*self, Real2D{x: loc_x, y: loc_y})
+        let loc_x = toroidal_transform(self.pos.x + dx, WIDTH);
+        let loc_y = toroidal_transform(self.pos.y + dy, WIDTH);
 
+        // unsafe {
+        //     self.state.field1.set_object_location(*self, Real2D{x: loc_x, y: loc_y})
+        // }
     }
 }
 

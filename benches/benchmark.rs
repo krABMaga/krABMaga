@@ -1,6 +1,7 @@
 extern crate priority_queue;
 #[macro_use]
 extern crate criterion;
+
 use rand::Rng;
 use abm::field2D::Field2D;
 use std::hash::Hasher;
@@ -17,7 +18,7 @@ use std::default::Default;
 
 static mut _COUNT: u32 = 0;
 static STEP: u128 = 10;
-static NUM_AGENT: u128 = 20000;
+static NUM_AGENT: u128 = 10000;
 static WIDTH: f64 = 150.0;
 static HEIGTH: f64 = 150.0;
 static DISCRETIZATION: f64 = 10.0/1.5;

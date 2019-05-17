@@ -38,7 +38,6 @@ impl<A: Location2D + Clone + Hash + Eq + Display + Copy> Field2D<A> {
 
     pub fn set_object_location(&mut self, object: A, pos: Real2D) {
         let bag = self.discretize(&pos);
-
         match self.fpos.get(&object) {
             Some(x) => {
                 if *x == pos {
