@@ -1,3 +1,5 @@
+use std::sync::Arc;
+use std::sync::Mutex;
 use std::hash::Hash;
 use std::hash::Hasher;
 use crate::agent::Agent;
@@ -26,8 +28,8 @@ impl< A: Agent + Clone> AgentImpl< A> {
             }
     }
 
-    pub fn step(self) {
-        self.agent.step();
+    pub fn step<B>(self, state: B) {
+        self.agent.step(state);
     }
 
     pub fn id(self) -> u32 {

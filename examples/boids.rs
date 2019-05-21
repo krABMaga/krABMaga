@@ -1,6 +1,7 @@
 extern crate abm;
 extern crate priority_queue;
 
+use std::sync::{Arc, Mutex};
 use abm::field2D::toroidal_transform;
 use abm::field2D::toroidal_distance;
 //use std::fmt::Display;
@@ -9,6 +10,8 @@ use std::hash::Hasher;
 use std::hash::Hash;
 use std::fmt;
 use abm::agent::Agent;
+use abm::agent::S;
+
 //use abm::agentimpl::AgentImpl;
 use abm::schedule::Schedule;
 //use abm::simulstate::SimState;
@@ -31,21 +34,21 @@ static CONSISTENCY : f64 = 1.0;
 static MOMENTUM : f64 = 1.0;
 static JUMP : f64 = 0.7;
 
-
 fn main() {
     let mut rng = rand::thread_rng();
 
-
+    let state = Arc::new(Mutex::new(State::new(WIDTH, HEIGTH, DISCRETIZATION, TOROIDAL)));
     let mut data = State::new(WIDTH, HEIGTH, DISCRETIZATION, TOROIDAL);
     let mut schedule: Schedule<Bird> = Schedule::new();
     assert!(schedule.events.is_empty());
 
     unsafe {
         for bird_id in 0..NUM_AGENT{
-            let data_ref = &data as *const State;
+
+            //let data_ref = & data as *const State;
             let r1: f64 = rng.gen();
             let r2: f64 = rng.gen();
-            let bird = Bird::new(bird_id, Real2D{x: WIDTH*r1, y: HEIGTH*r2}, &*data_ref);
+            let bird = Bird::new(bird_id, Real2D{x: WIDTH*r1, y: HEIGTH*r2});
             //let bird_clone = bird.clone();
             data.field1.set_object_location(bird.clone(), bird.pos.clone());
             //let pa = AgentImpl::new(bird_clone);
@@ -66,26 +69,32 @@ fn main() {
 
 }
 
-pub struct State<'a>{
-    pub field1: Field2D<Bird<'a>>,
+pub struct State{
+    pub field1: Field2D<Bird>,
 }
 
-impl<'a> State<'a>{
-    pub fn new(w: f64, h: f64, d: f64, t: bool) -> State<'a> {
+impl State {
+    pub fn new(w: f64, h: f64, d: f64, t: bool) -> State {
         State {
             field1: Field2D::new(w, h, d, t),
         }
     }
 }
 
-#[derive(Clone, Copy)]
-pub struct Bird<'a> {
-    pub id: u128,
-    pub pos: Real2D,
-    pub state: &'a State<'a>,
+impl S for State {
+    type I = State;
+    fn get_state(self) -> Self::I {
+        self
+    }
 }
 
-impl<'a> Hash for Bird<'a> {
+#[derive(Clone, Copy)]
+pub struct Bird{
+    pub id: u128,
+    pub pos: Real2D,
+}
+
+impl Hash for Bird {
     fn hash<H>(&self, state: &mut H)
     where
         H: Hasher,
@@ -95,12 +104,11 @@ impl<'a> Hash for Bird<'a> {
     }
 }
 
-impl<'a > Bird<'a> {
-    pub fn new(id: u128, pos: Real2D, state: &'a State) -> Self {
+impl Bird {
+    pub fn new(id: u128, pos: Real2D) -> Self {
         Bird {
             id,
             pos,
-            state,
         }
     }
 
@@ -217,18 +225,18 @@ impl<'a > Bird<'a> {
     }
 }
 
-impl<'a> Eq for Bird<'a> {}
+impl Eq for Bird {}
 
-impl<'a> PartialEq for Bird<'a> {
+impl PartialEq for Bird {
     fn eq(&self, other: &Bird) -> bool {
         self.id == other.id
     }
 }
 
-impl<'a> Agent for Bird<'a> {
-    fn step(&self) {
+impl Agent for Bird {
+    fn step<B>(&self, state: B) {
 
-        let vec = self.state.field1.get_neighbors_within_distance(self.pos, 10.0);
+        let vec = state.field1.get_neighbors_within_distance(self.pos, 10.0);
         let avoid = self.avoidance(&vec);
         let cohe = self.cohesion(&vec);
         let rand = self.randomness();
@@ -248,14 +256,18 @@ impl<'a> Agent for Bird<'a> {
         let _lastd = Real2D {x: dx, y:dy};
         let loc_x = toroidal_transform(self.pos.x + dx, WIDTH);
         let loc_y = toroidal_transform(self.pos.y + dy, WIDTH);
-
+        //let mut state = STATE.lock().unwrap();
+        //state.field1.set_object_location(*self, Real2D{x: loc_x, y: loc_y});
+        //let ag = self.clone();
+        //self.state.field1.set_object_location(self, Real2D{x: loc_x, y: loc_y});
+        // let raw_1 = & self as & Bird;
         // unsafe {
-        //     self.state.field1.set_object_location(*self, Real2D{x: loc_x, y: loc_y})
+        //      raw_1.state.field1.set_object_location(*raw_1, Real2D{x: loc_x, y: loc_y})
         // }
     }
 }
 
-impl<'a > Location2D for Bird<'a> {
+impl Location2D for Bird {
     fn get_location(self) -> Real2D {
         self.pos
     }
@@ -265,7 +277,7 @@ impl<'a > Location2D for Bird<'a> {
     }
 }
 
-impl<'a> fmt::Display for Bird<'a> {
+impl fmt::Display for Bird {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.id)
     }

@@ -1,6 +1,8 @@
 extern crate priority_queue;
 extern crate threads_pool;
 
+use std::sync::Arc;
+use std::sync::Mutex;
 use threads_pool::*;
 use priority_queue::PriorityQueue;
 use crate::priority::Priority;
@@ -48,7 +50,7 @@ impl<A: 'static +  Agent + Clone + Send> Schedule<A> {
         self.events.push(a, pr);
     }
 
-    pub fn step(&mut self){
+    pub fn step<B: 'static +  Send>(&mut self, state: Arc<Mutex<B>>){
         self.step += 1;
         println!("----{}----", self.step);
         let events = &mut self.events;
@@ -99,14 +101,14 @@ impl<A: 'static +  Agent + Clone + Send> Schedule<A> {
 
         for item in cevents.into_iter() {
             let agentimpl2 = item.agentimpl.clone();
-
+            let data = Arc::clone(&state);
             if item.agentimpl.repeating {
                 self.schedule_once(agentimpl2, item.priority.time + 1.0, item.priority.ordering);
             }
             pool.execute(move || {
+                let mut data = data.lock().unwrap();
 
-
-                item.agentimpl.step();
+                item.agentimpl.step(data);
             });
 
         }
