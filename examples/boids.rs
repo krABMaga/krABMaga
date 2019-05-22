@@ -1,6 +1,7 @@
 extern crate abm;
 extern crate priority_queue;
 
+use abm::agent::Stat;
 use std::sync::{Arc, Mutex};
 use abm::field2D::toroidal_transform;
 use abm::field2D::toroidal_distance;
@@ -10,7 +11,7 @@ use std::hash::Hasher;
 use std::hash::Hash;
 use std::fmt;
 use abm::agent::Agent;
-use abm::agent::S;
+//use abm::agent::Stat;
 
 //use abm::agentimpl::AgentImpl;
 use abm::schedule::Schedule;
@@ -60,7 +61,7 @@ fn main() {
     let start = Instant::now();
     for _ in 1..STEP{
         //println!("step {}", step);
-        schedule.step();
+        schedule.step(state);
     }
     let duration = start.elapsed();
 
@@ -81,7 +82,7 @@ impl State {
     }
 }
 
-impl S for State {
+impl Stat for State {
     type I = State;
     fn get_state(self) -> Self::I {
         self
@@ -92,16 +93,6 @@ impl S for State {
 pub struct Bird{
     pub id: u128,
     pub pos: Real2D,
-}
-
-impl Hash for Bird {
-    fn hash<H>(&self, state: &mut H)
-    where
-        H: Hasher,
-    {
-        state.write_u128(self.id);
-        state.finish();
-    }
 }
 
 impl Bird {
@@ -225,17 +216,9 @@ impl Bird {
     }
 }
 
-impl Eq for Bird {}
-
-impl PartialEq for Bird {
-    fn eq(&self, other: &Bird) -> bool {
-        self.id == other.id
-    }
-}
-
 impl Agent for Bird {
     fn step<B>(&self, state: B) {
-
+                
         let vec = state.field1.get_neighbors_within_distance(self.pos, 10.0);
         let avoid = self.avoidance(&vec);
         let cohe = self.cohesion(&vec);
@@ -264,6 +247,25 @@ impl Agent for Bird {
         // unsafe {
         //      raw_1.state.field1.set_object_location(*raw_1, Real2D{x: loc_x, y: loc_y})
         // }
+    }
+}
+
+
+impl Hash for Bird {
+    fn hash<H>(&self, state: &mut H)
+    where
+        H: Hasher,
+    {
+        state.write_u128(self.id);
+        state.finish();
+    }
+}
+
+impl Eq for Bird {}
+
+impl PartialEq for Bird {
+    fn eq(&self, other: &Bird) -> bool {
+        self.id == other.id
     }
 }
 

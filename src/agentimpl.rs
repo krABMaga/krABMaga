@@ -1,10 +1,13 @@
+use crate::agent::Stat;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::hash::Hash;
 use std::hash::Hasher;
 use crate::agent::Agent;
+
 use std::fmt;
 use std::clone::Clone;
+
 
 static mut COUNTER: u32 = 0;
 
@@ -28,7 +31,7 @@ impl< A: Agent + Clone> AgentImpl< A> {
             }
     }
 
-    pub fn step<B>(self, state: B) {
+    pub fn step<B>(self, state: Arc<Mutex<State>>) {
         self.agent.step(state);
     }
 

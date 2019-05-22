@@ -1,10 +1,10 @@
-//use crate::field2D::Field2D;
+//use std::sync::{Arc, Mutex};
 
 pub trait Agent {
-    fn step<B: S>(&self, state: B);
+    fn step<B>(&self, state: B);
 }
 
-pub trait S {
+pub trait Stat {
     type I;
     fn get_state(self) -> Self::I;
 }
