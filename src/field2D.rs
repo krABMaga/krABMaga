@@ -8,7 +8,7 @@ use crate::location::Location2D;
 use std::collections::HashMap;
 use std::cmp;
 
-use threads_pool::*;
+//use threads_pool::*;
 
 #[derive(Clone)]
 pub struct Field2D<A: Location2D + Clone + Hash + Eq + Display + Copy> {
@@ -155,9 +155,6 @@ impl<A: Location2D + Clone + Hash + Eq + Display + Copy> Field2D<A> {
                     Some(i) => i.to_vec(),
                     None => panic!("errore vettore fbag"),
                 };
-
-                //let pool = ThreadPool::new(4);
-
 
                 if check == 1 {
 

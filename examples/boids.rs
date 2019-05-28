@@ -1,7 +1,10 @@
 extern crate abm;
 extern crate priority_queue;
 
-use abm::agent::Stat;
+#[macro_use]
+extern crate lazy_static;
+
+//use abm::agent::Stat;
 use std::sync::{Arc, Mutex};
 use abm::field2D::toroidal_transform;
 use abm::field2D::toroidal_distance;
@@ -35,6 +38,11 @@ static CONSISTENCY : f64 = 1.0;
 static MOMENTUM : f64 = 1.0;
 static JUMP : f64 = 0.7;
 
+
+lazy_static! {
+    static ref GLOBAL_STATE: Mutex<State> = Mutex::new(State::new(WIDTH, HEIGTH, DISCRETIZATION, TOROIDAL));
+}
+
 fn main() {
     let mut rng = rand::thread_rng();
 
@@ -61,7 +69,7 @@ fn main() {
     let start = Instant::now();
     for _ in 1..STEP{
         //println!("step {}", step);
-        schedule.step(state);
+        schedule.step();
     }
     let duration = start.elapsed();
 
@@ -79,13 +87,6 @@ impl State {
         State {
             field1: Field2D::new(w, h, d, t),
         }
-    }
-}
-
-impl Stat for State {
-    type I = State;
-    fn get_state(self) -> Self::I {
-        self
     }
 }
 
@@ -217,9 +218,11 @@ impl Bird {
 }
 
 impl Agent for Bird {
-    fn step<B>(&self, state: B) {
-                
-        let vec = state.field1.get_neighbors_within_distance(self.pos, 10.0);
+    fn step(&self) {
+
+        //GLOBAL_STATE.lock().unwrap();
+        let vec = GLOBAL_STATE.lock().unwrap().field1.get_neighbors_within_distance(self.pos, 10.0);
+        //let vec: Vec<Bird> = Vec::new();
         let avoid = self.avoidance(&vec);
         let cohe = self.cohesion(&vec);
         let rand = self.randomness();
@@ -240,7 +243,7 @@ impl Agent for Bird {
         let loc_x = toroidal_transform(self.pos.x + dx, WIDTH);
         let loc_y = toroidal_transform(self.pos.y + dy, WIDTH);
         //let mut state = STATE.lock().unwrap();
-        //state.field1.set_object_location(*self, Real2D{x: loc_x, y: loc_y});
+        GLOBAL_STATE.lock().unwrap().field1.set_object_location(*self, Real2D{x: loc_x, y: loc_y});
         //let ag = self.clone();
         //self.state.field1.set_object_location(self, Real2D{x: loc_x, y: loc_y});
         // let raw_1 = & self as & Bird;

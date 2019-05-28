@@ -1,6 +1,5 @@
-use crate::agent::Stat;
-use std::sync::Arc;
-use std::sync::Mutex;
+//use crate::agent::Stat;
+use std::sync::{Arc, Mutex};
 use std::hash::Hash;
 use std::hash::Hasher;
 use crate::agent::Agent;
@@ -31,8 +30,8 @@ impl< A: Agent + Clone> AgentImpl< A> {
             }
     }
 
-    pub fn step<B>(self, state: Arc<Mutex<State>>) {
-        self.agent.step(state);
+    pub fn step(self) {
+        self.agent.step();
     }
 
     pub fn id(self) -> u32 {

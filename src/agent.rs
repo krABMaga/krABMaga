@@ -1,10 +1,10 @@
 //use std::sync::{Arc, Mutex};
 
 pub trait Agent {
-    fn step<B>(&self, state: B);
+    fn step(&self);
 }
 
-pub trait Stat {
-    type I;
-    fn get_state(self) -> Self::I;
-}
+// pub trait Stat {
+//     type I;
+//     fn get_state(self) -> Self::I;
+// }
