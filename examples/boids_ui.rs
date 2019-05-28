@@ -2,10 +2,12 @@ extern crate abm;
 extern crate priority_queue;
 extern crate piston_window;
 
+use piston_window::*;
+
 #[macro_use]
 extern crate lazy_static;
 
-use std::sync:: Mutex;
+use std::sync::Mutex;
 use abm::field2D::toroidal_transform;
 use abm::field2D::toroidal_distance;
 use rand::Rng;
@@ -21,7 +23,7 @@ use abm::field2D::Field2D;
 
 static mut _COUNT: u128 = 0;
 static STEP: u128 = 10;
-static NUM_AGENT: u128 = 10000;
+static NUM_AGENT: u128 = 100;
 static WIDTH: f64 = 150.0;
 static HEIGTH: f64 = 150.0;
 static DISCRETIZATION: f64 = 10.0/1.5;
@@ -39,31 +41,48 @@ lazy_static! {
 }
 
 fn main() {
+    println!("--- change toml to run boids ---" );
     let mut rng = rand::thread_rng();
     let mut schedule: Schedule<Bird> = Schedule::new();
     assert!(schedule.events.is_empty());
 
     for bird_id in 0..NUM_AGENT{
-
         let r1: f64 = rng.gen();
         let r2: f64 = rng.gen();
         let bird = Bird::new(bird_id, Real2D{x: WIDTH*r1, y: HEIGTH*r2});
         GLOBAL_STATE.lock().unwrap().field1.set_object_location(bird, bird.pos);
         schedule.schedule_repeating(bird, 5.0, 100);
     }
-
     assert!(!schedule.events.is_empty());
 
     let start = Instant::now();
 
-    for _ in 1..STEP{
-        schedule.step();
+    let mut window: PistonWindow =
+        WindowSettings::new("Hello Piston!", [150, 150])
+        .exit_on_esc(true).build().unwrap();
+
+    window.set_lazy(true);
+    while let Some(event) = window.next() {
+        window.draw_2d(&event, |context, graphics| {
+                clear([1.0; 4], graphics);
+                for elem in GLOBAL_STATE.lock().unwrap().field1.vec.iter() {
+                    let pos = elem.pos;
+                    rectangle([1.0, 0.0, 0.0, 1.0], // red
+                          [pos.x, pos.y, 1.0, 1.0],
+                          context.transform,
+                          graphics);
+                    println!("{} {}", pos.x, pos.y);
+                }
+
+                schedule.step();
+        });
     }
 
     let duration = start.elapsed();
 
     println!("Time elapsed in testing schedule is: {:?}", duration);
     println!("Step for seconds: {:?}", STEP as u64/duration.as_secs());
+
 }
 
 pub struct State{
@@ -230,14 +249,9 @@ impl Agent for Bird {
         let _lastd = Real2D {x: dx, y:dy};
         let loc_x = toroidal_transform(self.pos.x + dx, WIDTH);
         let loc_y = toroidal_transform(self.pos.y + dy, WIDTH);
-        //let mut state = STATE.lock().unwrap();
+
         GLOBAL_STATE.lock().unwrap().field1.set_object_location(*self, Real2D{x: loc_x, y: loc_y});
-        //let ag = self.clone();
-        //self.state.field1.set_object_location(self, Real2D{x: loc_x, y: loc_y});
-        // let raw_1 = & self as & Bird;
-        // unsafe {
-        //      raw_1.state.field1.set_object_location(*raw_1, Real2D{x: loc_x, y: loc_y})
-        // }
+
     }
 }
 
