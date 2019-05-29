@@ -54,6 +54,7 @@ fn main() {
         schedule.schedule_repeating(bird, 5.0, 100);
     }
     assert!(!schedule.events.is_empty());
+    assert!(!GLOBAL_STATE.lock().unwrap().field1.fpos.is_empty());
 
     let start = Instant::now();
 
@@ -65,13 +66,17 @@ fn main() {
     while let Some(event) = window.next() {
         window.draw_2d(&event, |context, graphics| {
                 clear([1.0; 4], graphics);
-                for elem in GLOBAL_STATE.lock().unwrap().field1.vec.iter() {
-                    let pos = elem.pos;
+
+                if GLOBAL_STATE.lock().unwrap().field1.fpos.is_empty() {
+                    println!("Vuoto");
+                }
+
+                for (_key, value) in GLOBAL_STATE.lock().unwrap().field1.fpos.iter() {
+
                     rectangle([1.0, 0.0, 0.0, 1.0], // red
-                          [pos.x, pos.y, 1.0, 1.0],
+                          [value.x, value.y, 1.0, 1.0],
                           context.transform,
                           graphics);
-                    println!("{} {}", pos.x, pos.y);
                 }
 
                 schedule.step();
