@@ -40,7 +40,7 @@ lazy_static! {
 }
 
 lazy_static! {
-    static ref LAST_D: Mutex<Real2D> = Mutex::new(Real2D{x:1.0, y:1.0});
+    static ref LAST_D: Mutex<Real2D> = Mutex::new(Real2D{x:0.0, y:0.0});
 }
 
 fn main() {
@@ -62,7 +62,7 @@ fn main() {
     let start = Instant::now();
 
     let mut window: PistonWindow =
-        WindowSettings::new("Hello Piston!", [150, 150])
+        WindowSettings::new("Boids Simulation", [150, 150])
         .exit_on_esc(true).build().unwrap();
 
     //window.set_lazy(true);
@@ -71,12 +71,9 @@ fn main() {
         window.draw_2d(&event, |context, graphics| {
                 clear([1.0; 4], graphics);
                 schedule.step();
-
-                //let bird = Bird::new(0, Real2D{x: 7.0, y: 7.0});
                 // if GLOBAL_STATE.lock().unwrap().field1.fpos.is_empty() {
                 //     println!("Vuoto");
                 // }
-
                 for (_key, value) in GLOBAL_STATE.lock().unwrap().field1.fpos.iter() {
                     //println!("{} {}", value.x, value.y );
                     rectangle([1.0, 0.0, 0.0, 1.0], // red
@@ -84,8 +81,6 @@ fn main() {
                           context.transform,
                           graphics);
                 }
-
-
         });
     }
 
@@ -212,6 +207,9 @@ impl Bird {
 
         let mut count = 0;
 
+        let xx = LAST_D.lock().unwrap().x;
+        let yy = LAST_D.lock().unwrap().y;
+
         for i in 0..vec.len() {
             //CONDIZIONE?
             if self != vec[i] {
@@ -219,8 +217,8 @@ impl Bird {
                 let _dy = toroidal_distance(self.pos.y, vec[i].pos.y, HEIGTH);
                 count += 1;
                 //momentum
-                x += self.pos.x;
-                y += self.pos.y;
+                x += xx;
+                y += yy;
             }
         }
         if count > 0 {
@@ -262,6 +260,7 @@ impl Agent for Bird {
         LAST_D.lock().unwrap().x = dx;
         LAST_D.lock().unwrap().y = dy;
 
+        //println!("new lastd {} {}", dx, dy);
 
         let loc_x = toroidal_transform(self.pos.x + dx, WIDTH);
         let loc_y = toroidal_transform(self.pos.y + dy, WIDTH);
