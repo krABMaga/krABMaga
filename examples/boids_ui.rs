@@ -35,9 +35,12 @@ static CONSISTENCY : f64 = 1.0;
 static MOMENTUM : f64 = 1.0;
 static JUMP : f64 = 0.7;
 
-
 lazy_static! {
     static ref GLOBAL_STATE: Mutex<State> = Mutex::new(State::new(WIDTH, HEIGTH, DISCRETIZATION, TOROIDAL));
+}
+
+lazy_static! {
+    static ref LAST_D: Mutex<Real2D> = Mutex::new(Real2D{x:1.0, y:1.0});
 }
 
 fn main() {
@@ -62,24 +65,27 @@ fn main() {
         WindowSettings::new("Hello Piston!", [150, 150])
         .exit_on_esc(true).build().unwrap();
 
-    window.set_lazy(true);
+    //window.set_lazy(true);
+
     while let Some(event) = window.next() {
         window.draw_2d(&event, |context, graphics| {
                 clear([1.0; 4], graphics);
+                schedule.step();
 
-                if GLOBAL_STATE.lock().unwrap().field1.fpos.is_empty() {
-                    println!("Vuoto");
-                }
+                //let bird = Bird::new(0, Real2D{x: 7.0, y: 7.0});
+                // if GLOBAL_STATE.lock().unwrap().field1.fpos.is_empty() {
+                //     println!("Vuoto");
+                // }
 
                 for (_key, value) in GLOBAL_STATE.lock().unwrap().field1.fpos.iter() {
-
+                    //println!("{} {}", value.x, value.y );
                     rectangle([1.0, 0.0, 0.0, 1.0], // red
                           [value.x, value.y, 1.0, 1.0],
                           context.transform,
                           graphics);
                 }
 
-                schedule.step();
+
         });
     }
 
@@ -234,15 +240,16 @@ impl Agent for Bird {
 
         //GLOBAL_STATE.lock().unwrap();
         let vec = GLOBAL_STATE.lock().unwrap().field1.get_neighbors_within_distance(self.pos, 10.0);
+        //println!("len {}", vec.len());
         //let vec: Vec<Bird> = Vec::new();
         let avoid = self.avoidance(&vec);
         let cohe = self.cohesion(&vec);
         let rand = self.randomness();
         let cons = self.consistency(&vec);
-        let mom = self.pos;
+        //let mom = LAST_D.lock().unwrap();
 
-        let mut dx = COHESION*cohe.x + AVOIDANCE*avoid.x + CONSISTENCY*cons.x + RANDOMNESS*rand.x + MOMENTUM*mom.x;
-        let mut dy = COHESION*cohe.y + AVOIDANCE*avoid.y + CONSISTENCY*cons.y + RANDOMNESS*rand.y + MOMENTUM*mom.y;
+        let mut dx = COHESION*cohe.x + AVOIDANCE*avoid.x + CONSISTENCY*cons.x + RANDOMNESS*rand.x + MOMENTUM*LAST_D.lock().unwrap().x;
+        let mut dy = COHESION*cohe.y + AVOIDANCE*avoid.y + CONSISTENCY*cons.y + RANDOMNESS*rand.y + MOMENTUM*LAST_D.lock().unwrap().y;
 
         let dis = (dx*dx + dy*dy).sqrt();
         if dis > 0.0 {
@@ -251,10 +258,16 @@ impl Agent for Bird {
 
         }
 
-        let _lastd = Real2D {x: dx, y:dy};
+
+        LAST_D.lock().unwrap().x = dx;
+        LAST_D.lock().unwrap().y = dy;
+
+
         let loc_x = toroidal_transform(self.pos.x + dx, WIDTH);
         let loc_y = toroidal_transform(self.pos.y + dy, WIDTH);
 
+        //println!("prima {} {}", self.pos.x, self.pos.y );
+        //println!("dopo {} {}", loc_x, loc_y );
         GLOBAL_STATE.lock().unwrap().field1.set_object_location(*self, Real2D{x: loc_x, y: loc_y});
 
     }

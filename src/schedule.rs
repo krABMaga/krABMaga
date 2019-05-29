@@ -95,7 +95,7 @@ impl<A: 'static +  Agent + Clone + Send> Schedule<A> {
             }
         }
 
-        let pool = ThreadPool::new(1);
+        let pool = ThreadPool::new(4);
 
 
         for item in cevents.into_iter() {
