@@ -1,7 +1,7 @@
 //use std::sync::{Arc, Mutex};
 
 pub trait Agent {
-    fn step(&self);
+    fn step(&mut self);
 }
 
 // pub trait Stat {

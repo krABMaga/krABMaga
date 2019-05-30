@@ -306,7 +306,7 @@ pub fn toroidal_distance(val1: f64, val2: f64, dim: f64) -> f64{
 
     if d*2.0 > dim {
         d - dim
-    } else if d*2.0 < dim {
+    } else if d*2.0 < -dim {
         d + dim
     } else {
         d
@@ -318,9 +318,9 @@ pub fn toroidal_transform(val: f64, dim: f64) -> f64 {
     if val >= 0.0 && val < dim {
         val
     } else {
-        let val = val%dim;
+        let mut val = val%dim;
         if val < 0.0 {
-            let _val = val + dim;
+            val = val + dim;
         }
         val
     }

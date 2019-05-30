@@ -260,7 +260,7 @@ impl<'a> PartialEq for Bird<'a> {
 }
 
 impl<'a> Agent for Bird<'a> {
-    fn step(&self) {
+    fn step(&mut self) {
         let pos = Real2D {
             x: 1.0,
             y: 2.0,

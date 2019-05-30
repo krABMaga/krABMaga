@@ -21,7 +21,7 @@ use abm::field2D::Field2D;
 
 static mut _COUNT: u128 = 0;
 static STEP: u128 = 10;
-static NUM_AGENT: u128 = 1000;
+static NUM_AGENT: u128 = 10000;
 static WIDTH: f64 = 150.0;
 static HEIGTH: f64 = 150.0;
 static DISCRETIZATION: f64 = 10.0/1.5;
@@ -206,10 +206,11 @@ impl Bird {
 }
 
 impl Agent for Bird {
-    fn step(&self) {
+    fn step(&mut self) {
 
         //GLOBAL_STATE.lock().unwrap();
         let vec = GLOBAL_STATE.lock().unwrap().field1.get_neighbors_within_distance(self.pos, 10.0);
+        //println!("{}", vec.len());
         //let vec: Vec<Bird> = Vec::new();
         let avoid = self.avoidance(&vec);
         let cohe = self.cohesion(&vec);

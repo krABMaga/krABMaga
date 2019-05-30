@@ -2,6 +2,8 @@ extern crate abm;
 extern crate priority_queue;
 extern crate piston_window;
 
+use std::sync::Arc;
+use abm::schedule::simulate;
 use piston_window::*;
 
 #[macro_use]
@@ -23,7 +25,7 @@ use abm::field2D::Field2D;
 
 static mut _COUNT: u128 = 0;
 static STEP: u128 = 10;
-static NUM_AGENT: u128 = 100;
+static NUM_AGENT: u128 = 2;
 static WIDTH: f64 = 150.0;
 static HEIGTH: f64 = 150.0;
 static DISCRETIZATION: f64 = 10.0/1.5;
@@ -39,9 +41,9 @@ lazy_static! {
     static ref GLOBAL_STATE: Mutex<State> = Mutex::new(State::new(WIDTH, HEIGTH, DISCRETIZATION, TOROIDAL));
 }
 
-lazy_static! {
-    static ref LAST_D: Mutex<Real2D> = Mutex::new(Real2D{x:0.0, y:0.0});
-}
+// lazy_static! {
+//     static ref LAST_D: Mutex<Real2D> = Mutex::new(Real2D{x:0.0, y:0.0});
+// }
 
 fn main() {
     println!("--- change toml to run boids ---" );
@@ -52,9 +54,14 @@ fn main() {
     for bird_id in 0..NUM_AGENT{
         let r1: f64 = rng.gen();
         let r2: f64 = rng.gen();
-        let bird = Bird::new(bird_id, Real2D{x: WIDTH*r1, y: HEIGTH*r2});
+        //agg last_d
+        let last_d = Real2D {x: 0.0, y: 0.0};
+
+        //let bird = Bird::new(bird_id, Real2D{x: WIDTH*r1, y: HEIGTH*r2});
+        let bird = Bird::new(bird_id, Real2D{x: WIDTH*r1, y: HEIGTH*r2}, last_d);
+
         GLOBAL_STATE.lock().unwrap().field1.set_object_location(bird, bird.pos);
-        schedule.schedule_repeating(bird, 5.0, 100);
+        schedule.schedule_repeating(bird, 0.0, 0);
     }
     assert!(!schedule.events.is_empty());
     assert!(!GLOBAL_STATE.lock().unwrap().field1.fpos.is_empty());
@@ -66,22 +73,30 @@ fn main() {
         .exit_on_esc(true).build().unwrap();
 
     //window.set_lazy(true);
+    // let sched: Arc<Mutex<Schedule<Bird>>> = Arc::new(Mutex::new(schedule));
+    //
+    //
+    // while let Some(event) = window.next() {
+    //     let s = sched.clone();
+    //     window.draw_2d(&event, |context, graphics| {
+    //             clear([1.0; 4], graphics);
+    //             let x: Schedule<Bird> = s.lock().unwrap();
+    //             simulate(s.lock().unwrap());
+    //             // if GLOBAL_STATE.lock().unwrap().field1.fpos.is_empty() {
+    //             //     println!("Vuoto");
+    //             // }
+    //             for (_key, value) in GLOBAL_STATE.lock().unwrap().field1.fpos.iter() {
+    //                 //println!("{} {}", value.x, value.y );
+    //                 rectangle([1.0, 0.0, 0.0, 1.0], // red
+    //                       [value.x, value.y, 1.0, 1.0],
+    //                       context.transform,
+    //                       graphics);
+    //             }
+    //     });
+    // }
 
-    while let Some(event) = window.next() {
-        window.draw_2d(&event, |context, graphics| {
-                clear([1.0; 4], graphics);
-                schedule.step();
-                // if GLOBAL_STATE.lock().unwrap().field1.fpos.is_empty() {
-                //     println!("Vuoto");
-                // }
-                for (_key, value) in GLOBAL_STATE.lock().unwrap().field1.fpos.iter() {
-                    //println!("{} {}", value.x, value.y );
-                    rectangle([1.0, 0.0, 0.0, 1.0], // red
-                          [value.x, value.y, 1.0, 1.0],
-                          context.transform,
-                          graphics);
-                }
-        });
+    loop {
+        simulate(schedule);
     }
 
     let duration = start.elapsed();
@@ -107,13 +122,15 @@ impl State {
 pub struct Bird{
     pub id: u128,
     pub pos: Real2D,
+    pub last_d: Real2D,
 }
 
 impl Bird {
-    pub fn new(id: u128, pos: Real2D) -> Self {
+    pub fn new(id: u128, pos: Real2D, last_d: Real2D) -> Self {
         Bird {
             id,
             pos,
+            last_d,
         }
     }
 
@@ -132,10 +149,10 @@ impl Bird {
             if self != vec[i] {
                 let dx = toroidal_distance(self.pos.x, vec[i].pos.x, WIDTH);
                 let dy = toroidal_distance(self.pos.y, vec[i].pos.y, HEIGTH);
-                let square = (dx*dx + dy*dy).sqrt();
+                let square = dx*dx + dy*dy;
                 count += 1;
-                x += dx/(square*square) + 1.0;
-                y += dy/(square*square) + 1.0;
+                x += dx/(square*square + 1.0);
+                y += dy/(square*square + 1.0);
             }
         }
         if count > 0 {
@@ -207,14 +224,20 @@ impl Bird {
 
         let mut count = 0;
 
-        let xx = LAST_D.lock().unwrap().x;
-        let yy = LAST_D.lock().unwrap().y;
+        //let xx = LAST_D.lock().unwrap().x;
+        //let yy = LAST_D.lock().unwrap().y;
+        //impl last_d
 
         for i in 0..vec.len() {
             //CONDIZIONE?
             if self != vec[i] {
-                let _dx = toroidal_distance(self.pos.x, vec[i].pos.x, WIDTH);
-                let _dy = toroidal_distance(self.pos.y, vec[i].pos.y, HEIGTH);
+                //sbagliato flocker???
+                //let _dx = toroidal_distance(self.pos.x, vec[i].pos.x, WIDTH);
+                //let _dy = toroidal_distance(self.pos.y, vec[i].pos.y, HEIGTH);
+
+                let xx = vec[i].last_d.x;
+                let yy = vec[i].last_d.y;
+
                 count += 1;
                 //momentum
                 x += xx;
@@ -224,7 +247,7 @@ impl Bird {
         if count > 0 {
             x = x/count as f64;
             y = y/count as f64;
-            let real = Real2D {x: -x/count as f64, y: y/count as f64};
+            let real = Real2D {x: x/count as f64, y: y/count as f64};
             return real;
         } else {
             let real = Real2D {x: x, y: y};
@@ -234,10 +257,10 @@ impl Bird {
 }
 
 impl Agent for Bird {
-    fn step(&self) {
+    fn step(&mut self) {
 
         //GLOBAL_STATE.lock().unwrap();
-        let vec = GLOBAL_STATE.lock().unwrap().field1.get_neighbors_within_distance(self.pos, 10.0);
+        let vec = GLOBAL_STATE.lock().unwrap().field1.get_neighbors_within_distance(self.pos, 50.0);
         //println!("len {}", vec.len());
         //let vec: Vec<Bird> = Vec::new();
         let avoid = self.avoidance(&vec);
@@ -246,27 +269,37 @@ impl Agent for Bird {
         let cons = self.consistency(&vec);
         //let mom = LAST_D.lock().unwrap();
 
-        let mut dx = COHESION*cohe.x + AVOIDANCE*avoid.x + CONSISTENCY*cons.x + RANDOMNESS*rand.x + MOMENTUM*LAST_D.lock().unwrap().x;
-        let mut dy = COHESION*cohe.y + AVOIDANCE*avoid.y + CONSISTENCY*cons.y + RANDOMNESS*rand.y + MOMENTUM*LAST_D.lock().unwrap().y;
+        //let mut dx = COHESION*cohe.x + AVOIDANCE*avoid.x + CONSISTENCY*cons.x + RANDOMNESS*rand.x + MOMENTUM*LAST_D.lock().unwrap().x;
+        //let mut dy = COHESION*cohe.y + AVOIDANCE*avoid.y + CONSISTENCY*cons.y + RANDOMNESS*rand.y + MOMENTUM*LAST_D.lock().unwrap().y;
+
+        let mut dx = COHESION*cohe.x + AVOIDANCE*avoid.x + CONSISTENCY*cons.x + RANDOMNESS*rand.x + MOMENTUM*self.last_d.x;
+        let mut dy = COHESION*cohe.y + AVOIDANCE*avoid.y + CONSISTENCY*cons.y + RANDOMNESS*rand.y + MOMENTUM*self.last_d.y;
 
         let dis = (dx*dx + dy*dy).sqrt();
         if dis > 0.0 {
             dx = dx/dis*JUMP;
             dy = dy/dis*JUMP;
-
         }
 
+        //LAST_D.lock().unwrap().x = dx;
+        //LAST_D.lock().unwrap().y = dy;
 
-        LAST_D.lock().unwrap().x = dx;
-        LAST_D.lock().unwrap().y = dy;
+        self.last_d.x = dx;
+        self.last_d.x = dy;
 
         //println!("new lastd {} {}", dx, dy);
 
         let loc_x = toroidal_transform(self.pos.x + dx, WIDTH);
-        let loc_y = toroidal_transform(self.pos.y + dy, WIDTH);
+        let loc_y = toroidal_transform(self.pos.y + dy, HEIGTH);
 
+        let loc_x =self.pos.x + 1.0;
+        let loc_y =self.pos.y + 1.0;
+
+        self.pos.x = loc_x;
+        self.pos.y = loc_y;
         //println!("prima {} {}", self.pos.x, self.pos.y );
         //println!("dopo {} {}", loc_x, loc_y );
+        println!("id {} pos {} {}", self.id, self.pos.x, self.pos.y);
         GLOBAL_STATE.lock().unwrap().field1.set_object_location(*self, Real2D{x: loc_x, y: loc_y});
 
     }

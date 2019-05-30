@@ -1,5 +1,5 @@
 //use crate::agent::Stat;
-use std::sync::{Arc, Mutex};
+//use std::sync::{Arc, Mutex};
 use std::hash::Hash;
 use std::hash::Hasher;
 use crate::agent::Agent;
@@ -30,7 +30,7 @@ impl< A: Agent + Clone> AgentImpl< A> {
             }
     }
 
-    pub fn step(self) {
+    pub fn step(&mut self) {
         self.agent.step();
     }
 

@@ -110,7 +110,7 @@ impl<'a> PartialEq for Bird<'a> {
 }
 
 impl<'a> Agent for Bird<'a> {
-    fn step(&self) {
+    fn step(&mut self) {
 
         let vec = self.state.field1.get_neighbors_within_distance(self.pos.clone(), 10.0);
         for _elem in vec {
