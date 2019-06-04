@@ -106,80 +106,83 @@ impl<A: 'static +  Agent + Clone + Send> Schedule<A> {
 
             // pool.execute(move || {
             //     //let mut data = data.lock().unwrap();
-            //     item.agentimpl.step();
+                 item.agentimpl.step();
             //     //let agentimpl2 = item.agentimpl.clone();
             //
-            //     if item.agentimpl.repeating {
-            //         self.schedule_once(item.agentimpl, item.priority.time + 1.0, item.priority.ordering);
-            //     }
+                 if item.agentimpl.repeating {
+                     self.schedule_once(item.agentimpl, item.priority.time + 1.0, item.priority.ordering);
+                 }
             // });
 
         }
     }
 }
 
-pub fn simulate<A: 'static +  Agent + Clone + Send>(mut schedule: Schedule<A>){
-    schedule.step += 1;
-    println!("----{}----", schedule.step);
-    let events = &mut schedule.events;
-    if events.is_empty() {
-        println!("coda eventi vuota");
-        return
-    }
+pub fn simulate<A: 'static +  Agent + Clone + Send>( mut schedule: Arc<Mutex<Schedule<A>>>){
 
-    let mut cevents: Vec<Pair<A>> = Vec::new();
+        //let sched: Arc<Mutex<Schedule<A>>> = Arc::new(Mutex::new(*schedule);
 
-    match events.peek() {
-        Some(item) => {
-            let (_agent, priority) = item;
-            schedule.time = priority.time;
-        },
-        None => panic!("agente non trovato"),
-    }
-
-    loop {
-        if events.is_empty() {
-            break;
-        }
-
-        match events.peek() {
-            Some(item) => {
-                let (_agent, priority) = item;
-                if priority.time > schedule.time {
-                    break;
-                }
-            },
-            None => panic!("agente non trovato"),
-        }
-
-        let item = events.pop();
-        match item {
-            Some(item) => {
-                let (agent, priority) = item;
-                // let x = agent.id.clone();
-                // println!("{}", x);
-                cevents.push(Pair::new(agent, priority));
-            },
-            None => panic!("no item"),
-        }
-    }
-
-    let pool = ThreadPool::new(4);
-
-    let sched: Arc<Mutex<Schedule<A>>> = Arc::new(Mutex::new(schedule));
-
-    for mut item in cevents.into_iter() {
-        //let data = Arc::clone(&state);
-        let s = sched.clone();
-        pool.execute(move || {
-            //let mut data = data.lock().unwrap();
-            item.agentimpl.step();
-            //let agentimpl2 = item.agentimpl.clone();
-
-            if item.agentimpl.repeating {
-                s.lock().unwrap().schedule_once(item.agentimpl, item.priority.time + 1.0, item.priority.ordering);
-            }
-        });
-
-    }
+//     schedule.step += 1;
+//     let mut cevents: Vec<Pair<A>> = Vec::new();
+//     println!("----{}----", schedule.step);
+// {
+//     let events = &mut schedule.events;
+//     if events.is_empty() {
+//         println!("coda eventi vuota");
+//         return
+//     }
+//
+//     match events.peek() {
+//         Some(item) => {
+//             let (_agent, priority) = item;
+//             schedule.time = priority.time;
+//         },
+//         None => panic!("agente non trovato"),
+//     }
+//
+//     loop {
+//         if events.is_empty() {
+//             break;
+//         }
+//
+//         match events.peek() {
+//             Some(item) => {
+//                 let (_agent, priority) = item;
+//                 if priority.time > schedule.time {
+//                     break;
+//                 }
+//             },
+//             None => panic!("agente non trovato"),
+//         }
+//
+//         let item = events.pop();
+//         match item {
+//             Some(item) => {
+//                 let (agent, priority) = item;
+//                 // let x = agent.id.clone();
+//                 // println!("{}", x);
+//                 cevents.push(Pair::new(agent, priority));
+//             },
+//             None => panic!("no item"),
+//         }
+//     }
+// }
+//     let pool = ThreadPool::new(4);
+//
+//
+//
+//     for mut item in cevents.into_iter() {
+//         //let data = Arc::clone(&state);
+//         let s = sched.clone();
+//         pool.execute(move || {
+//             //let mut data = data.lock().unwrap();
+//             item.agentimpl.step();
+//             //let agentimpl2 = item.agentimpl.clone();
+//
+//             if item.agentimpl.repeating {
+//                 s.lock().unwrap().schedule_once(item.agentimpl, item.priority.time + 1.0, item.priority.ordering);
+//             }
+//         });
+//
+//     }
 }

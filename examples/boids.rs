@@ -5,7 +5,6 @@ extern crate piston_window;
 #[macro_use]
 extern crate lazy_static;
 
-use std::sync:: Mutex;
 use abm::field2D::toroidal_transform;
 use abm::field2D::toroidal_distance;
 use rand::Rng;
@@ -18,10 +17,13 @@ use std::time::{Instant};
 use abm::location::Real2D;
 use abm::location::Location2D;
 use abm::field2D::Field2D;
+use abm::schedule::simulate;
+use std::sync::Arc;
+use std::sync::Mutex;
 
 static mut _COUNT: u128 = 0;
 static STEP: u128 = 10;
-static NUM_AGENT: u128 = 10000;
+static NUM_AGENT: u128 = 1000;
 static WIDTH: f64 = 150.0;
 static HEIGTH: f64 = 150.0;
 static DISCRETIZATION: f64 = 10.0/1.5;
@@ -33,9 +35,8 @@ static CONSISTENCY : f64 = 1.0;
 static MOMENTUM : f64 = 1.0;
 static JUMP : f64 = 0.7;
 
-
 lazy_static! {
-    static ref GLOBAL_STATE: Mutex<State> = Mutex::new(State::new(WIDTH, HEIGTH, DISCRETIZATION, TOROIDAL));
+    static  ref GLOBAL_STATE: Mutex<State> = Mutex::new(State::new(WIDTH, HEIGTH, DISCRETIZATION, TOROIDAL));
 }
 
 fn main() {
@@ -60,10 +61,11 @@ fn main() {
         schedule.step();
     }
 
+
     let duration = start.elapsed();
 
     println!("Time elapsed in testing schedule is: {:?}", duration);
-    println!("Step for seconds: {:?}", STEP as u64/duration.as_secs());
+//    println!("Step for seconds: {:?}", STEP as u64/duration.as_secs());
 }
 
 pub struct State{
@@ -208,9 +210,18 @@ impl Bird {
 impl Agent for Bird {
     fn step(&mut self) {
 
-        //GLOBAL_STATE.lock().unwrap();
         let vec = GLOBAL_STATE.lock().unwrap().field1.get_neighbors_within_distance(self.pos, 10.0);
-        //println!("{}", vec.len());
+    {
+        let fpos = GLOBAL_STATE.lock().unwrap();
+        let fpos = fpos.field1.get_object_location(*self);
+        let fpos = fpos.unwrap();
+        println!("{} {} {} {}", self.id, self.pos,fpos,vec.len());
+
+    }
+
+        //GLOBAL_STATE.lock().unwrap();
+
+    //    println!("{}", ;
         //let vec: Vec<Bird> = Vec::new();
         let avoid = self.avoidance(&vec);
         let cohe = self.cohesion(&vec);
@@ -231,8 +242,15 @@ impl Agent for Bird {
         let _lastd = Real2D {x: dx, y:dy};
         let loc_x = toroidal_transform(self.pos.x + dx, WIDTH);
         let loc_y = toroidal_transform(self.pos.y + dy, WIDTH);
+
+        self.pos = Real2D{x: loc_x, y: loc_y};
+
         //let mut state = STATE.lock().unwrap();
         GLOBAL_STATE.lock().unwrap().field1.set_object_location(*self, Real2D{x: loc_x, y: loc_y});
+        //GLOBAL_STATE.lock().unwrap().field1.set_object_location(*self, self.pos);
+
+
+
         //let ag = self.clone();
         //self.state.field1.set_object_location(self, Real2D{x: loc_x, y: loc_y});
         // let raw_1 = & self as & Bird;

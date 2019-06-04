@@ -25,7 +25,7 @@ use abm::field2D::Field2D;
 
 static mut _COUNT: u128 = 0;
 static STEP: u128 = 10;
-static NUM_AGENT: u128 = 2;
+static NUM_AGENT: u128 = 200;
 static WIDTH: f64 = 150.0;
 static HEIGTH: f64 = 150.0;
 static DISCRETIZATION: f64 = 10.0/1.5;
@@ -72,16 +72,16 @@ fn main() {
         WindowSettings::new("Boids Simulation", [150, 150])
         .exit_on_esc(true).build().unwrap();
 
-    //window.set_lazy(true);
-    // let sched: Arc<Mutex<Schedule<Bird>>> = Arc::new(Mutex::new(schedule));
-    //
-    //
+    window.set_lazy(true);
+    //let sched: Arc<Mutex<Schedule<Bird>>> = Arc::new(Mutex::new(schedule));
+
+
     // while let Some(event) = window.next() {
     //     let s = sched.clone();
     //     window.draw_2d(&event, |context, graphics| {
     //             clear([1.0; 4], graphics);
-    //             let x: Schedule<Bird> = s.lock().unwrap();
-    //             simulate(s.lock().unwrap());
+    //             //let x: Schedule<Bird> = s.lock().unwrap();
+    //             schedule.step();
     //             // if GLOBAL_STATE.lock().unwrap().field1.fpos.is_empty() {
     //             //     println!("Vuoto");
     //             // }
@@ -95,9 +95,27 @@ fn main() {
     //     });
     // }
 
-    loop {
-        simulate(schedule);
+    while let Some(e) = window.next() {
+
+        schedule.step();
+        window.draw_2d(&e, |c, g| {
+
+            clear([0.5, 0.5, 0.5, 1.0], g);
+            for (_key, value) in GLOBAL_STATE.lock().unwrap().field1.fpos.iter() {
+                        //println!("{} {}", value.x, value.y );
+                        rectangle([1.0, 0.0, 0.0, 1.0], // red
+                              [value.x, value.y, 3.0, 3.0],
+                              c.transform,
+                              g);
+                    }
+        });
+
     }
+
+    // loop {
+    //     //simulate(schedule);
+    //     schedule.step();
+    // }
 
     let duration = start.elapsed();
 
@@ -259,48 +277,35 @@ impl Bird {
 impl Agent for Bird {
     fn step(&mut self) {
 
+        let vec = GLOBAL_STATE.lock().unwrap().field1.get_neighbors_within_distance(self.pos, 10.0);
+
         //GLOBAL_STATE.lock().unwrap();
-        let vec = GLOBAL_STATE.lock().unwrap().field1.get_neighbors_within_distance(self.pos, 50.0);
-        //println!("len {}", vec.len());
+
+    //    println!("{}", ;
         //let vec: Vec<Bird> = Vec::new();
         let avoid = self.avoidance(&vec);
         let cohe = self.cohesion(&vec);
         let rand = self.randomness();
         let cons = self.consistency(&vec);
-        //let mom = LAST_D.lock().unwrap();
+        let mom = self.pos;
 
-        //let mut dx = COHESION*cohe.x + AVOIDANCE*avoid.x + CONSISTENCY*cons.x + RANDOMNESS*rand.x + MOMENTUM*LAST_D.lock().unwrap().x;
-        //let mut dy = COHESION*cohe.y + AVOIDANCE*avoid.y + CONSISTENCY*cons.y + RANDOMNESS*rand.y + MOMENTUM*LAST_D.lock().unwrap().y;
-
-        let mut dx = COHESION*cohe.x + AVOIDANCE*avoid.x + CONSISTENCY*cons.x + RANDOMNESS*rand.x + MOMENTUM*self.last_d.x;
-        let mut dy = COHESION*cohe.y + AVOIDANCE*avoid.y + CONSISTENCY*cons.y + RANDOMNESS*rand.y + MOMENTUM*self.last_d.y;
+        let mut dx = COHESION*cohe.x + AVOIDANCE*avoid.x + CONSISTENCY*cons.x + RANDOMNESS*rand.x + MOMENTUM*mom.x;
+        let mut dy = COHESION*cohe.y + AVOIDANCE*avoid.y + CONSISTENCY*cons.y + RANDOMNESS*rand.y + MOMENTUM*mom.y;
 
         let dis = (dx*dx + dy*dy).sqrt();
         if dis > 0.0 {
             dx = dx/dis*JUMP;
             dy = dy/dis*JUMP;
+
         }
-
-        //LAST_D.lock().unwrap().x = dx;
-        //LAST_D.lock().unwrap().y = dy;
-
-        self.last_d.x = dx;
-        self.last_d.x = dy;
-
-        //println!("new lastd {} {}", dx, dy);
-
+    
+        let _lastd = Real2D {x: dx, y: dy};
         let loc_x = toroidal_transform(self.pos.x + dx, WIDTH);
         let loc_y = toroidal_transform(self.pos.y + dy, HEIGTH);
+        self.last_d = _lastd;
+        self.pos = Real2D{x: loc_x + dx, y: loc_y + dy};
 
-        let loc_x =self.pos.x + 1.0;
-        let loc_y =self.pos.y + 1.0;
-
-        self.pos.x = loc_x;
-        self.pos.y = loc_y;
-        //println!("prima {} {}", self.pos.x, self.pos.y );
-        //println!("dopo {} {}", loc_x, loc_y );
-        println!("id {} pos {} {}", self.id, self.pos.x, self.pos.y);
-        GLOBAL_STATE.lock().unwrap().field1.set_object_location(*self, Real2D{x: loc_x, y: loc_y});
+        GLOBAL_STATE.lock().unwrap().field1.set_object_location(*self, self.pos);
 
     }
 }
