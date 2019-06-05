@@ -40,9 +40,9 @@ impl<A: Location2D + Clone + Hash + Eq + Display + Copy> Field2D<A> {
         let bag = self.discretize(&pos);
         match self.fpos.get(&object) {
             Some(x) => {
-                println!("caso 0");
+                //println!("caso 0");
                 if *x == pos {
-                    println!("caso x == pos");
+                    //println!("caso x == pos");
 
                     return;
                 }
@@ -50,11 +50,11 @@ impl<A: Location2D + Clone + Hash + Eq + Display + Copy> Field2D<A> {
                     match self.findex.get(&object) {
                         Some(x) => {
                             if *x == bag {
-                                println!("caso 1");
+                                //println!("caso 1");
                                 self.fpos.insert(object, pos);
                                 return;
                             } else {
-                                println!("caso 2");
+                                //println!("caso 2");
 
                                 let oldbag = self.findex.get(&object);
                                 let oldbag = match oldbag {
@@ -71,7 +71,7 @@ impl<A: Location2D + Clone + Hash + Eq + Display + Copy> Field2D<A> {
 
                                 self.findex.insert(object, bag);
                                 self.fpos.insert(object, pos);
-                                println!("{} {}", bag.x, bag.y);
+                                //println!("{} {}", bag.x, bag.y);
 
                                 if !self.fbag.contains_key(&bag) {
                                     let mut vec: Vec<A> = Vec::new();
@@ -83,6 +83,7 @@ impl<A: Location2D + Clone + Hash + Eq + Display + Copy> Field2D<A> {
                                         None => panic!("error vector from bag"),
                                     };
                                     vec.push(object);
+                                    self.fbag.insert(bag, vec);
                                 }
 
                                 // for (key, value) in self.fbag.iter() {
@@ -99,7 +100,7 @@ impl<A: Location2D + Clone + Hash + Eq + Display + Copy> Field2D<A> {
                 }
             },
             None => {
-                println!("caso 3");
+                //println!("caso 3");
 
                 self.findex.insert(object, bag);
                 self.fpos.insert(object, pos);
