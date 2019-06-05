@@ -1,9 +1,6 @@
 extern crate abm;
 extern crate priority_queue;
 extern crate piston_window;
-
-use std::sync::Arc;
-use abm::schedule::simulate;
 use piston_window::*;
 
 #[macro_use]
@@ -22,10 +19,10 @@ use std::time::{Instant};
 use abm::location::Real2D;
 use abm::location::Location2D;
 use abm::field2D::Field2D;
-
+use std::{thread, time};
 static mut _COUNT: u128 = 0;
 static STEP: u128 = 10;
-static NUM_AGENT: u128 = 200;
+static NUM_AGENT: u128 = 1000;
 static WIDTH: f64 = 150.0;
 static HEIGTH: f64 = 150.0;
 static DISCRETIZATION: f64 = 10.0/1.5;
@@ -37,29 +34,25 @@ static CONSISTENCY : f64 = 1.0;
 static MOMENTUM : f64 = 1.0;
 static JUMP : f64 = 0.7;
 
-static THREAD_NUMBER : u32 = 4;
+
 
 lazy_static! {
     static ref GLOBAL_STATE: Mutex<State> = Mutex::new(State::new(WIDTH, HEIGTH, DISCRETIZATION, TOROIDAL));
 }
 
-// lazy_static! {
-//     static ref LAST_D: Mutex<Real2D> = Mutex::new(Real2D{x:0.0, y:0.0});
-// }
 
 fn main() {
     println!("--- change toml to run boids ---" );
     let mut rng = rand::thread_rng();
-    let mut schedule: Schedule<Bird> = Schedule::new(THREAD_NUMBER);
+    let mut schedule: Schedule<Bird> = Schedule::new();
     assert!(schedule.events.is_empty());
 
     for bird_id in 0..NUM_AGENT{
         let r1: f64 = rng.gen();
         let r2: f64 = rng.gen();
-        //agg last_d
+
         let last_d = Real2D {x: 0.0, y: 0.0};
 
-        //let bird = Bird::new(bird_id, Real2D{x: WIDTH*r1, y: HEIGTH*r2});
         let bird = Bird::new(bird_id, Real2D{x: WIDTH*r1, y: HEIGTH*r2}, last_d);
 
         GLOBAL_STATE.lock().unwrap().field1.set_object_location(bird, bird.pos);
@@ -71,31 +64,9 @@ fn main() {
     let start = Instant::now();
 
     let mut window: PistonWindow =
-        WindowSettings::new("Boids Simulation", [150, 150])
+        WindowSettings::new("Boids Simulation", [750, 750])
         .exit_on_esc(true).build().unwrap();
 
-    window.set_lazy(true);
-    //let sched: Arc<Mutex<Schedule<Bird>>> = Arc::new(Mutex::new(schedule));
-
-
-    // while let Some(event) = window.next() {
-    //     let s = sched.clone();
-    //     window.draw_2d(&event, |context, graphics| {
-    //             clear([1.0; 4], graphics);
-    //             //let x: Schedule<Bird> = s.lock().unwrap();
-    //             schedule.step();
-    //             // if GLOBAL_STATE.lock().unwrap().field1.fpos.is_empty() {
-    //             //     println!("Vuoto");
-    //             // }
-    //             for (_key, value) in GLOBAL_STATE.lock().unwrap().field1.fpos.iter() {
-    //                 //println!("{} {}", value.x, value.y );
-    //                 rectangle([1.0, 0.0, 0.0, 1.0], // red
-    //                       [value.x, value.y, 1.0, 1.0],
-    //                       context.transform,
-    //                       graphics);
-    //             }
-    //     });
-    // }
 
     while let Some(e) = window.next() {
 
@@ -106,19 +77,16 @@ fn main() {
             for (_key, value) in GLOBAL_STATE.lock().unwrap().field1.fpos.iter() {
                         //println!("{} {}", value.x, value.y );
                         rectangle([1.0, 0.0, 0.0, 1.0], // red
-                              [value.x, value.y, 3.0, 3.0],
+                              [value.x*5.0, value.y*5.0, 3.0, 3.0],
                               c.transform,
                               g);
                     }
-        });
 
+
+        });
     }
 
-    // loop {
-    //     //simulate(schedule);
-    //     schedule.step();
-    // }
-
+    
     let duration = start.elapsed();
 
     println!("Time elapsed in testing schedule is: {:?}", duration);
@@ -285,7 +253,7 @@ impl Agent for Bird {
         let cohe = self.cohesion(&vec);
         let rand = self.randomness();
         let cons = self.consistency(&vec);
-        let mom = self.pos;
+        let mom = self.last_d;
 
         let mut dx = COHESION*cohe.x + AVOIDANCE*avoid.x + CONSISTENCY*cons.x + RANDOMNESS*rand.x + MOMENTUM*mom.x;
         let mut dy = COHESION*cohe.y + AVOIDANCE*avoid.y + CONSISTENCY*cons.y + RANDOMNESS*rand.y + MOMENTUM*mom.y;

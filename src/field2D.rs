@@ -40,16 +40,22 @@ impl<A: Location2D + Clone + Hash + Eq + Display + Copy> Field2D<A> {
         let bag = self.discretize(&pos);
         match self.fpos.get(&object) {
             Some(x) => {
+                println!("caso 0");
                 if *x == pos {
+                    println!("caso x == pos");
+
                     return;
                 }
                 else {
                     match self.findex.get(&object) {
                         Some(x) => {
                             if *x == bag {
+                                println!("caso 1");
                                 self.fpos.insert(object, pos);
                                 return;
                             } else {
+                                println!("caso 2");
+
                                 let oldbag = self.findex.get(&object);
                                 let oldbag = match oldbag {
                                     Some(i) => i,
@@ -65,6 +71,7 @@ impl<A: Location2D + Clone + Hash + Eq + Display + Copy> Field2D<A> {
 
                                 self.findex.insert(object, bag);
                                 self.fpos.insert(object, pos);
+                                println!("{} {}", bag.x, bag.y);
 
                                 if !self.fbag.contains_key(&bag) {
                                     let mut vec: Vec<A> = Vec::new();
@@ -92,6 +99,8 @@ impl<A: Location2D + Clone + Hash + Eq + Display + Copy> Field2D<A> {
                 }
             },
             None => {
+                println!("caso 3");
+
                 self.findex.insert(object, bag);
                 self.fpos.insert(object, pos);
 
@@ -108,7 +117,6 @@ impl<A: Location2D + Clone + Hash + Eq + Display + Copy> Field2D<A> {
     }
 
     pub fn get_neighbors_within_distance(&self, pos: Real2D, dist: f64) -> Vec<A> {
-
         let mut tor: Vec<A> = Vec::new();
 
         if dist <= 0.0 {
@@ -159,13 +167,6 @@ impl<A: Location2D + Clone + Hash + Eq + Display + Copy> Field2D<A> {
                 if check == 1 {
 
                     for elem in vector {
-                        //println!("conteggio -- i:{} j:{}", i, j);
-                        //println!("check=1 -- inserisco {}", elem);
-                        // pool.execute(move || {
-                        //
-                        //
-                        // });
-
                         tor.push(elem);
                     }
                 } else if check == 0 {

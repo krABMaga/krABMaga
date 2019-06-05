@@ -21,8 +21,8 @@ use abm::field2D::Field2D;
 use std::sync::Mutex;
 
 static mut _COUNT: u128 = 0;
-static STEP: u128 = 1000;
-static NUM_AGENT: u128 = 10000;
+static STEP: u128 = 150;
+static NUM_AGENT: u128 = 2;
 static WIDTH: f64 = 150.0;
 static HEIGTH: f64 = 150.0;
 static DISCRETIZATION: f64 = 10.0/1.5;
@@ -45,15 +45,16 @@ fn main() {
     let mut schedule: Schedule<Bird> = Schedule::new();
     assert!(schedule.events.is_empty());
 
-    for bird_id in 0..NUM_AGENT{
 
-        let r1: f64 = rng.gen();
-        let r2: f64 = rng.gen();
-        let last_d = Real2D {x: 0.0, y: 0.0};
-        let bird = Bird::new(bird_id, Real2D{x: WIDTH*r1, y: HEIGTH*r2}, last_d);
-        GLOBAL_STATE.lock().unwrap().field1.set_object_location(bird, bird.pos);
-        schedule.schedule_repeating(bird, 0.0, 0);
-    }
+    let last_d = Real2D {x: 0.0, y: 0.0};
+    let bird = Bird::new(0, Real2D{x: 0.0 ,y: 0.0}, last_d);
+    GLOBAL_STATE.lock().unwrap().field1.set_object_location(bird, bird.pos);
+    schedule.schedule_repeating(bird, 0.0, 0);
+
+    let last_d = Real2D {x: 0.0, y: 0.0};
+    let bird = Bird::new(1, Real2D{x: 0.1 ,y: 0.1}, last_d);
+    GLOBAL_STATE.lock().unwrap().field1.set_object_location(bird, bird.pos);
+    schedule.schedule_repeating(bird, 0.0, 0);
 
     assert!(!schedule.events.is_empty());
 
@@ -214,14 +215,15 @@ impl Bird {
 impl Agent for Bird {
     fn step(&mut self) {
 
-        let vec = GLOBAL_STATE.lock().unwrap().field1.get_neighbors_within_distance(self.pos, 10.0);
-    // {
-    //     let fpos = GLOBAL_STATE.lock().unwrap();
-    //     let fpos = fpos.field1.get_object_location(*self);
-    //     let fpos = fpos.unwrap();
-    //     println!("{} {} {} {}", self.id, self.pos,fpos,vec.len());
-    //
-    // }
+        let vec = GLOBAL_STATE.lock().unwrap().field1.get_neighbors_within_distance(self.pos, 20.0);
+    {
+        let fpos = GLOBAL_STATE.lock().unwrap();
+        let fpos = fpos.field1.get_object_location(*self);
+        let fpos = fpos.unwrap();
+        println!("{} {} {} {}", self.id, self.pos,fpos,vec.len());
+
+    }
+
 
         let avoid = self.avoidance(&vec);
         let cohe = self.cohesion(&vec);
@@ -240,8 +242,8 @@ impl Agent for Bird {
         }
 
         let _lastd = Real2D {x: dx, y:dy};
-        let loc_x = toroidal_transform(self.pos.x + dx, WIDTH);
-        let loc_y = toroidal_transform(self.pos.y + dy, WIDTH);
+        let loc_x = toroidal_transform(self.pos.x + 1.0, WIDTH);
+        let loc_y = toroidal_transform(self.pos.y + 1.0, WIDTH);
 
         self.pos = Real2D{x: loc_x, y: loc_y};
 
