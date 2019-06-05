@@ -37,7 +37,7 @@ static CONSISTENCY : f64 = 1.0;
 static MOMENTUM : f64 = 1.0;
 static JUMP : f64 = 0.7;
 
-static THREAD_NUMBER = 4;
+static THREAD_NUMBER : 4;
 
 lazy_static! {
     static ref GLOBAL_STATE: Mutex<State> = Mutex::new(State::new(WIDTH, HEIGTH, DISCRETIZATION, TOROIDAL));
