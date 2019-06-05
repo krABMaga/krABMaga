@@ -11,14 +11,10 @@ opt-level = 3
 
 [dependencies]
 priority-queue = "0.5.4"
-uid = "0.1.4"
 criterion = "0.1.2"
-indexmap = "1.0.2"
 rand = "0.6.5"
-threads_pool = "0.1.17"
 lazy_static = "1.3.0"
 piston_window = "0.81.0"
-thread-pool = "0.1.1"
 
 [[bench]]
 name = "benchmark"

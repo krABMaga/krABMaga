@@ -1,12 +1,8 @@
-//use crate::agent::Stat;
-//use std::sync::{Arc, Mutex};
 use std::hash::Hash;
 use std::hash::Hasher;
 use crate::agent::Agent;
-
 use std::fmt;
 use std::clone::Clone;
-
 
 static mut COUNTER: u32 = 0;
 

@@ -12,15 +12,13 @@ use std::hash::Hasher;
 use std::hash::Hash;
 use std::fmt;
 use abm::agent::Agent;
-use abm::schedule::Schedule;
-use std::time::{Instant};
+//use abm::schedule::Schedule;
 use abm::location::Real2D;
 use abm::location::Location2D;
 use abm::field2D::Field2D;
-use std::{thread, time};
 static mut _COUNT: u128 = 0;
-static STEP: u128 = 10;
-static NUM_AGENT: u128 = 1000;
+static _STEP: u128 = 10;
+static _NUM_AGENT: u128 = 1000;
 static WIDTH: f64 = 10.0;
 static HEIGTH: f64 = 10.0;
 static DISCRETIZATION: f64 = 0.5;
@@ -45,9 +43,6 @@ lazy_static! {
 #[test]
 fn field_2d_test_2_1() {
 
-    let mut rng = rand::thread_rng();
-    let mut schedule: Schedule<Bird> = Schedule::new();
-    assert!(schedule.events.is_empty());
     let last_d = Real2D {x: 0.0, y: 0.0};
 
     let bird1 = Bird::new(1, Real2D{x: 5.0, y: 5.0}, last_d);
@@ -127,8 +122,6 @@ fn field_2d_test_2_1() {
 #[test]
 fn field_2d_test_vicinato() {
 
-    let mut schedule: Schedule<Bird> = Schedule::new();
-    assert!(schedule.events.is_empty());
     let last_d = Real2D {x: 0.0, y: 0.0};
 
     let mut bird1 = Bird::new(1, Real2D{x: 0.0, y: 0.0}, last_d);

@@ -19,7 +19,8 @@ use std::time::{Instant};
 use abm::location::Real2D;
 use abm::location::Location2D;
 use abm::field2D::Field2D;
-use std::{thread, time};
+//use std::{thread, time};
+
 static mut _COUNT: u128 = 0;
 static STEP: u128 = 10;
 static NUM_AGENT: u128 = 200;
@@ -42,7 +43,6 @@ lazy_static! {
 
 
 fn main() {
-    println!("--- change toml to run boids ---" );
     let mut rng = rand::thread_rng();
     let mut schedule: Schedule<Bird> = Schedule::new();
     assert!(schedule.events.is_empty());
@@ -75,14 +75,11 @@ fn main() {
 
             clear([0.5, 0.5, 0.5, 1.0], g);
             for (_key, value) in GLOBAL_STATE.lock().unwrap().field1.fpos.iter() {
-                        //println!("{} {}", value.x, value.y );
-                        rectangle([1.0, 0.0, 0.0, 1.0], // red
+                        rectangle([1.0, 0.0, 0.0, 1.0],
                               [value.x*5.0, value.y*5.0, 10.0, 10.0],
                               c.transform,
                               g);
                     }
-
-
         });
     }
 
@@ -166,7 +163,6 @@ impl Bird {
         let mut count = 0;
 
         for i in 0..vec.len() {
-            //CONDIZIONE?
             if self != vec[i] {
                 let dx = toroidal_distance(self.pos.x, vec[i].pos.x, WIDTH);
                 let dy = toroidal_distance(self.pos.y, vec[i].pos.y, HEIGTH);
@@ -212,22 +208,12 @@ impl Bird {
 
         let mut count = 0;
 
-        //let xx = LAST_D.lock().unwrap().x;
-        //let yy = LAST_D.lock().unwrap().y;
-        //impl last_d
-
         for i in 0..vec.len() {
-            //CONDIZIONE?
             if self != vec[i] {
-                //sbagliato flocker???
-                //let _dx = toroidal_distance(self.pos.x, vec[i].pos.x, WIDTH);
-                //let _dy = toroidal_distance(self.pos.y, vec[i].pos.y, HEIGTH);
 
                 let xx = vec[i].last_d.x;
                 let yy = vec[i].last_d.y;
-
                 count += 1;
-                //momentum
                 x += xx;
                 y += yy;
             }

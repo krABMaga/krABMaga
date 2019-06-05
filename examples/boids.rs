@@ -142,7 +142,6 @@ impl Bird {
         let mut count = 0;
 
         for i in 0..vec.len() {
-            //CONDIZIONE?
             if self != vec[i] {
                 let dx = toroidal_distance(self.pos.x, vec[i].pos.x, WIDTH);
                 let dy = toroidal_distance(self.pos.y, vec[i].pos.y, HEIGTH);
@@ -189,12 +188,10 @@ impl Bird {
         let mut count = 0;
 
         for i in 0..vec.len() {
-            //CONDIZIONE?
             if self != vec[i] {
                 let _dx = toroidal_distance(self.pos.x, vec[i].pos.x, WIDTH);
                 let _dy = toroidal_distance(self.pos.y, vec[i].pos.y, HEIGTH);
                 count += 1;
-                //momentum
                 x += self.pos.x;
                 y += self.pos.y;
             }
@@ -215,13 +212,6 @@ impl Agent for Bird {
     fn step(&mut self) {
 
         let vec = GLOBAL_STATE.lock().unwrap().field1.get_neighbors_within_distance(self.pos, 10.0);
-    // {
-    //     let fpos = GLOBAL_STATE.lock().unwrap();
-    //     let fpos = fpos.field1.get_object_location(*self);
-    //     let fpos = fpos.unwrap();
-    //     println!("{} {} {} {}", self.id, self.pos,fpos,vec.len());
-    //
-    // }
 
         let avoid = self.avoidance(&vec);
         let cohe = self.cohesion(&vec);
@@ -236,7 +226,6 @@ impl Agent for Bird {
         if dis > 0.0 {
             dx = dx/dis*JUMP;
             dy = dy/dis*JUMP;
-
         }
 
         let _lastd = Real2D {x: dx, y:dy};

@@ -1,13 +1,5 @@
 extern crate priority_queue;
-extern crate threads_pool;
-extern crate thread_pool;
 
-use thread_pool::ThreadPool;
-
-use std::sync::Arc;
-use std::sync::Mutex;
-use std::sync::Barrier;
-use std::thread;
 use priority_queue::PriorityQueue;
 use crate::priority::Priority;
 use crate::agent::Agent;

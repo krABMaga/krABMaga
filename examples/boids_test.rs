@@ -1,6 +1,5 @@
 extern crate abm;
 extern crate priority_queue;
-extern crate piston_window;
 
 #[macro_use]
 extern crate lazy_static;
@@ -17,12 +16,10 @@ use std::time::{Instant};
 use abm::location::Real2D;
 use abm::location::Location2D;
 use abm::field2D::Field2D;
-
 use std::sync::Mutex;
 
 static mut _COUNT: u128 = 0;
 static STEP: u128 = 150;
-static NUM_AGENT: u128 = 2;
 static WIDTH: f64 = 150.0;
 static HEIGTH: f64 = 150.0;
 static DISCRETIZATION: f64 = 10.0/1.5;
@@ -34,14 +31,11 @@ static CONSISTENCY : f64 = 1.0;
 static MOMENTUM : f64 = 1.0;
 static JUMP : f64 = 0.7;
 
-
-
 lazy_static! {
     static  ref GLOBAL_STATE: Mutex<State> = Mutex::new(State::new(WIDTH, HEIGTH, DISCRETIZATION, TOROIDAL));
 }
 
 fn main() {
-    let mut rng = rand::thread_rng();
     let mut schedule: Schedule<Bird> = Schedule::new();
     assert!(schedule.events.is_empty());
 
