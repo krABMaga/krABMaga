@@ -22,7 +22,7 @@ use abm::field2D::Field2D;
 use std::{thread, time};
 static mut _COUNT: u128 = 0;
 static STEP: u128 = 10;
-static NUM_AGENT: u128 = 1000;
+static NUM_AGENT: u128 = 200;
 static WIDTH: f64 = 150.0;
 static HEIGTH: f64 = 150.0;
 static DISCRETIZATION: f64 = 10.0/1.5;
@@ -77,7 +77,7 @@ fn main() {
             for (_key, value) in GLOBAL_STATE.lock().unwrap().field1.fpos.iter() {
                         //println!("{} {}", value.x, value.y );
                         rectangle([1.0, 0.0, 0.0, 1.0], // red
-                              [value.x*5.0, value.y*5.0, 3.0, 3.0],
+                              [value.x*5.0, value.y*5.0, 10.0, 10.0],
                               c.transform,
                               g);
                     }
@@ -86,7 +86,7 @@ fn main() {
         });
     }
 
-    
+
     let duration = start.elapsed();
 
     println!("Time elapsed in testing schedule is: {:?}", duration);
