@@ -23,7 +23,7 @@ use std::sync::Mutex;
 
 static mut _COUNT: u128 = 0;
 static STEP: u128 = 10;
-static NUM_AGENT: u128 = 1000;
+static NUM_AGENT: u128 = 10000;
 static WIDTH: f64 = 150.0;
 static HEIGTH: f64 = 150.0;
 static DISCRETIZATION: f64 = 10.0/1.5;
@@ -35,13 +35,15 @@ static CONSISTENCY : f64 = 1.0;
 static MOMENTUM : f64 = 1.0;
 static JUMP : f64 = 0.7;
 
+static THREAD_NUMBER = 4;
+
 lazy_static! {
     static  ref GLOBAL_STATE: Mutex<State> = Mutex::new(State::new(WIDTH, HEIGTH, DISCRETIZATION, TOROIDAL));
 }
 
 fn main() {
     let mut rng = rand::thread_rng();
-    let mut schedule: Schedule<Bird> = Schedule::new();
+    let mut schedule: Schedule<Bird> = Schedule::new(THREAD_NUMBER);
     assert!(schedule.events.is_empty());
 
     for bird_id in 0..NUM_AGENT{
@@ -65,7 +67,7 @@ fn main() {
     let duration = start.elapsed();
 
     println!("Time elapsed in testing schedule is: {:?}", duration);
-//    println!("Step for seconds: {:?}", STEP as u64/duration.as_secs());
+    println!("Step for seconds: {:?}", STEP as u64/duration.as_secs());
 }
 
 pub struct State{
@@ -211,13 +213,13 @@ impl Agent for Bird {
     fn step(&mut self) {
 
         let vec = GLOBAL_STATE.lock().unwrap().field1.get_neighbors_within_distance(self.pos, 10.0);
-    {
-        let fpos = GLOBAL_STATE.lock().unwrap();
-        let fpos = fpos.field1.get_object_location(*self);
-        let fpos = fpos.unwrap();
-        println!("{} {} {} {}", self.id, self.pos,fpos,vec.len());
-
-    }
+    // {
+    //     let fpos = GLOBAL_STATE.lock().unwrap();
+    //     let fpos = fpos.field1.get_object_location(*self);
+    //     let fpos = fpos.unwrap();
+    //     println!("{} {} {} {}", self.id, self.pos,fpos,vec.len());
+    //
+    // }
 
         //GLOBAL_STATE.lock().unwrap();
 

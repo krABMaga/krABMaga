@@ -4,6 +4,8 @@ extern crate threads_pool;
 //use std::sync::{Arc, Mutex};
 use std::sync::Arc;
 use std::sync::Mutex;
+use std::sync::Barrier;
+use std::thread;
 
 use threads_pool::*;
 use priority_queue::PriorityQueue;
@@ -15,8 +17,10 @@ pub struct Schedule<A:'static + Agent + Clone + Send>{
     pub step: usize,
     pub time: f64,
     pub events: PriorityQueue<AgentImpl<A>,Priority>,
+    pub nthreads:usize,
 }
 
+#[derive(Clone)]
 pub struct Pair<A: 'static + Agent + Clone> {
     agentimpl: AgentImpl<A>,
     priority: Priority,
@@ -33,11 +37,12 @@ impl<A: 'static + Agent + Clone> Pair<A> {
 
 impl<A: 'static +  Agent + Clone + Send> Schedule<A> {
 
-    pub fn new() -> Schedule<A> {
+    pub fn new(nthreads:usize) -> Schedule<A> {
         Schedule {
             step: 0,
             time: 0.0,
             events: PriorityQueue::new(),
+            nthreads:nthreads,
         }
     }
 
@@ -98,24 +103,33 @@ impl<A: 'static +  Agent + Clone + Send> Schedule<A> {
             }
         }
 
-        let pool = ThreadPool::new(4);
+        let pool = ThreadPool::new(100);
+
+
+        let  newagents: Vec<Pair<A>> = Vec::new();
+        let  newagents_guard = Arc::new((Mutex::new(newagents)));
 
 
         for mut item in cevents.into_iter() {
             //let data = Arc::clone(&state);
+            let newagents_guard = newagents_guard.clone();
 
-            // pool.execute(move || {
-            //     //let mut data = data.lock().unwrap();
+
+             pool.execute(move || {
                  item.agentimpl.step();
-            //     //let agentimpl2 = item.agentimpl.clone();
-            //
-                 if item.agentimpl.repeating {
-                     self.schedule_once(item.agentimpl, item.priority.time + 1.0, item.priority.ordering);
-                 }
-            // });
-
+                 newagents_guard.lock().unwrap().push(item);
+             });
         }
+
+
+         let newagents: Vec<Pair<A>> =  newagents_guard.lock().unwrap().to_vec();
+         for mut item in newagents {
+             if item.agentimpl.repeating {
+                 self.schedule_once(item.agentimpl, item.priority.time + 1.0, item.priority.ordering);
+             }
+         }
     }
+
 }
 
 pub fn simulate<A: 'static +  Agent + Clone + Send>( mut schedule: Arc<Mutex<Schedule<A>>>){

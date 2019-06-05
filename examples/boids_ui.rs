@@ -37,6 +37,8 @@ static CONSISTENCY : f64 = 1.0;
 static MOMENTUM : f64 = 1.0;
 static JUMP : f64 = 0.7;
 
+static THREAD_NUMBER = 4;
+
 lazy_static! {
     static ref GLOBAL_STATE: Mutex<State> = Mutex::new(State::new(WIDTH, HEIGTH, DISCRETIZATION, TOROIDAL));
 }
@@ -48,7 +50,7 @@ lazy_static! {
 fn main() {
     println!("--- change toml to run boids ---" );
     let mut rng = rand::thread_rng();
-    let mut schedule: Schedule<Bird> = Schedule::new();
+    let mut schedule: Schedule<Bird> = Schedule::new(THREAD_NUMBER);
     assert!(schedule.events.is_empty());
 
     for bird_id in 0..NUM_AGENT{
@@ -279,10 +281,6 @@ impl Agent for Bird {
 
         let vec = GLOBAL_STATE.lock().unwrap().field1.get_neighbors_within_distance(self.pos, 10.0);
 
-        //GLOBAL_STATE.lock().unwrap();
-
-    //    println!("{}", ;
-        //let vec: Vec<Bird> = Vec::new();
         let avoid = self.avoidance(&vec);
         let cohe = self.cohesion(&vec);
         let rand = self.randomness();
@@ -298,7 +296,7 @@ impl Agent for Bird {
             dy = dy/dis*JUMP;
 
         }
-    
+
         let _lastd = Real2D {x: dx, y: dy};
         let loc_x = toroidal_transform(self.pos.x + dx, WIDTH);
         let loc_y = toroidal_transform(self.pos.y + dy, HEIGTH);
