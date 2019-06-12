@@ -72,7 +72,41 @@ impl Agent for Bird {
 
 ### Model definition
 
+Rust-AB simulation comprises several fields definitions and state variables, that must be placed in a struct (the simulation state). We define the Boids simulation state by declaring a new struct named _State_. 
 
+According to the model and the agent definition, we designed the agents interactions using the _Field2D_ environment, for this reason the state struct contains only a _Field2D_ declaration. Moreover, the Rust memory model does not allow the programmer to share data across several functions invocations. To access the simulation state inside the agent _step_ function, we have to declare the _State_ instance as a global variable, and exploit a semaphore (or mutex) to safely read it. Notice that  the _State_ struct  needs to be  initialized at running time using the macro ```lazy_static!``` (line 8-10).
+
+```rust
+pub struct State{
+    pub field1: Field2D<Bird>,
+}
+impl State {
+    pub fn new(w: f64, h: f64, d: f64, t: bool) -> State { State {field1: Field2D::new(w, h, d, t),}}
+}
+//Global variables definition
+lazy_static! {
+    static  ref GLOBAL_STATE: Mutex<State> = Mutex::new(State::new(WIDTH, HEIGTH, DISCRETIZATION, TOROIDAL));
+}
+```
+
+
+Finally, the  main simulation function is defined. At line 2 a new Rust-AB _Schedule_ is defined, while from line 3 to 11 are randomly initialized a number of agents, placed in the _Field2D_ (line 9), and scheduled using the _schedule_repeating_ method (line 10). At line 12 the schedule step is called for a certain number of times.
+
+```rust
+fn main() {
+    let mut schedule: Schedule<Bird> = Schedule::new();
+    let mut rng = rand::thread_rng();
+    for bird_id in 0..NUM_AGENT{
+        let r1: f64 = rng.gen();
+        let r2: f64 = rng.gen();
+        let last_d = Real2D {x: 0.0, y: 0.0};
+        let bird = Bird::new(bird_id, Real2D{x: WIDTH*r1, y: HEIGTH*r2},last_d);
+        GLOBAL_STATE.lock().unwrap().field1.set_object_location(bird,bird.pos);
+        schedule.schedule_repeating(bird,0.0,0);
+    }
+    for _ in 1..STEP{ schedule.step(); }
+}
+```
 
 ## License
 
