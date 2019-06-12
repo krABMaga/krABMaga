@@ -2,6 +2,18 @@
 
 [![Build Status](https://travis-ci.org/spagnuolocarmine/abm.svg?branch=master)](https://travis-ci.org/spagnuolocarmine/abm)
 
+Rust-AN is a discrete events simulation engine for developing ABM simulation that is written in a novel programming language named Rust. Rust-AB is designed to be a _ready-to-use_ tool for the ABM community and for this reason the architectural concepts of the well-adopted MASON library were re-engineered.
+
+
+## Examples: Boids Simulation
+
+The Boids model by C. Raynolds, 1986, is a steering behavior ABM for autonomous agents, which simulates the flocking behavior of birds. The agent behavior is derived by a linear combination of three independent rules: _Separation_: steer in order to avoid crowding local flockmates; _Alignment_: steer towards the average heading of local flockmates; _Cohesion_: steer to move towards the average position (center of mass) of local flockmates.
+
+### Agent definition
+
+### Model definition
+
+
 
 ## License
 
