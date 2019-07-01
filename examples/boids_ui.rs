@@ -19,11 +19,11 @@ use std::time::{Instant};
 use abm::location::Real2D;
 use abm::location::Location2D;
 use abm::field2D::Field2D;
-//use std::{thread, time};
+use std::{thread, time};
 
 static mut _COUNT: u128 = 0;
-static STEP: u128 = 10;
-static NUM_AGENT: u128 = 200;
+
+static NUM_AGENT: u128 = 100;
 static WIDTH: f64 = 150.0;
 static HEIGTH: f64 = 150.0;
 static DISCRETIZATION: f64 = 10.0/1.5;
@@ -35,7 +35,7 @@ static CONSISTENCY : f64 = 1.0;
 static MOMENTUM : f64 = 1.0;
 static JUMP : f64 = 0.7;
 
-
+use std::io::{stdin,stdout,Write};
 
 lazy_static! {
     static ref GLOBAL_STATE: Mutex<State> = Mutex::new(State::new(WIDTH, HEIGTH, DISCRETIZATION, TOROIDAL));
@@ -73,21 +73,53 @@ fn main() {
         schedule.step();
         window.draw_2d(&e, |c, g| {
 
-            clear([0.5, 0.5, 0.5, 1.0], g);
+            clear([0.0, 0.0, 0.0, 1.0], g);
             for (_key, value) in GLOBAL_STATE.lock().unwrap().field1.fpos.iter() {
-                        rectangle([1.0, 0.0, 0.0, 1.0],
-                              [value.x*5.0, value.y*5.0, 10.0, 10.0],
-                              c.transform,
-                              g);
-                    }
+
+                let shape = polygon::Polygon::new([1.0,0.0,0.0, 1.0]);
+
+                let mut rotation;
+                let size = 5.0;
+                let radius= size / 2.0;
+
+                if (value.y.sin() == 0.0) && (value.x.cos()==0.0){
+                    rotation = 0.0;
+                }else{
+                    rotation = value.y.atan2(value.x);
+                }
+
+                let transform = c.transform
+                    .trans(value.x*5.0, value.y*5.0)
+                    .rot_rad(rotation)
+                    .trans(-radius,-radius);
+
+                let point = [
+                    [0.0,radius],
+                    [size, size],
+                    [size,0.0]
+                ];
+
+                shape.draw(
+                    &point,
+                    &c.draw_state,
+                    transform,
+                    g
+                );
+                if _key.id == 0 {
+                    println!("{:?}",value.y.atan2(value.x));
+                    println!("Agent id: {:?} x: {:?}, y: {:?} ",_key.id, value.x,value.y)
+                }
+            }
         });
+        let ten_millis = time::Duration::from_millis(50);
+        thread::sleep(ten_millis);
     }
 
 
     let duration = start.elapsed();
 
-    println!("Time elapsed in testing schedule is: {:?}", duration);
-    println!("Step for seconds: {:?}", STEP as u64/duration.as_secs());
+//    println!("Time elapsed in testing schedule is: {:?}", duration);
+//    println!("Step for seconds: {:?}", STEP as u64/duration.as_secs());
 
 }
 

@@ -21,10 +21,10 @@ use abm::field2D::Field2D;
 use std::sync::Mutex;
 
 static mut _COUNT: u128 = 0;
-static STEP: u128 = 1000;
-static NUM_AGENT: u128 = 10000;
-static WIDTH: f64 = 150.0;
-static HEIGTH: f64 = 150.0;
+static STEP: u128 = 50;
+static NUM_AGENT: u128 = 1638400;
+static WIDTH: f64 =200.0;
+static HEIGTH: f64 = 200.0;
 static DISCRETIZATION: f64 = 10.0/1.5;
 static TOROIDAL: bool = true;
 static COHESION : f64 = 1.0;
@@ -244,8 +244,9 @@ impl Hash for Bird {
     where
         H: Hasher,
     {
-        state.write_u128(self.id);
-        state.finish();
+        self.id.hash(state);
+    //    state.write_u128(self.id);
+    //    state.finish();
     }
 }
 
@@ -269,6 +270,6 @@ impl Location2D for Bird {
 
 impl fmt::Display for Bird {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.id)
+       write!(f, "{}", self.id)
     }
 }

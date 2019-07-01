@@ -1,14 +1,15 @@
 use std::fmt::Display;
 use crate::location::Real2D;
 use std::hash::Hash;
+
 use crate::location::Int2D;
 use crate::location::Location2D;
-use std::collections::HashMap;
+//use std::collections::HashMap;
+use hashbrown::HashMap;
 use std::cmp;
 
 #[derive(Clone)]
 pub struct Field2D<A: Location2D + Clone + Hash + Eq + Display + Copy> {
-    pub vec : Vec<A>,
     pub findex: HashMap<A, Int2D>,
     pub fbag: HashMap<Int2D, Vec<A>>,
     pub fpos: HashMap<A, Real2D>,
@@ -21,7 +22,6 @@ pub struct Field2D<A: Location2D + Clone + Hash + Eq + Display + Copy> {
 impl<A: Location2D + Clone + Hash + Eq + Display + Copy> Field2D<A> {
     pub fn new(w: f64, h: f64, d: f64, t: bool) -> Field2D<A> {
         Field2D {
-            vec: Vec::new(),
             findex: HashMap::new(),
             fbag: HashMap::new(),
             fpos: HashMap::new(),
@@ -92,7 +92,15 @@ impl<A: Location2D + Clone + Hash + Eq + Display + Copy> Field2D<A> {
     }
 
     pub fn get_neighbors_within_distance(&self, pos: Real2D, dist: f64) -> Vec<A> {
-        let mut tor: Vec<A> = Vec::new();
+    
+        let density = (self.width * self.heigth)/f64::from(self.findex.len() as i32);
+        let sdist = (dist * dist) as usize;
+        let mut tor: Vec<A> = Vec::with_capacity(density as usize * sdist);
+
+//      let mut tor: Vec<A> = Vec::new();
+
+
+
 
         if dist <= 0.0 {
             return tor;
@@ -122,18 +130,17 @@ impl<A: Location2D + Clone + Hash + Eq + Display + Copy> Field2D<A> {
                     y: t_transform(j, max_y),
                 };
 
-                if !self.fbag.contains_key(&bag_id) {
-                    continue;
-                }
+            //    if !self.fbag.contains_key(&bag_id) {
+            //        continue;
+            //    }
 
                 let check = check_circle(&bag_id, self.discretization, self.width, self.heigth, &pos, dist, self.toroidal);
                 let vector =  match self.fbag.get(&bag_id) {
                     Some(i) => i.to_vec(),
-                    None => panic!("errore vettore fbag"),
+                    None => continue,
                 };
 
                 if check == 1 {
-
                     for elem in vector {
                         tor.push(elem);
                     }

@@ -32,7 +32,7 @@ impl<A: 'static +  Agent + Clone + Send> Schedule<A> {
         Schedule {
             step: 0,
             time: 0.0,
-            events: PriorityQueue::new()
+            events: PriorityQueue::new(),
         }
     }
 
@@ -93,7 +93,7 @@ impl<A: 'static +  Agent + Clone + Send> Schedule<A> {
                 None => panic!("no item"),
             }
         }
-        println!("STEP,{},SCHEDULE,{}", self.step,cevents.len());
+        //println!("STEP,{},SCHEDULE,{}", self.step,cevents.len());
         for mut item in cevents.into_iter() {
 
                  item.agentimpl.step();
