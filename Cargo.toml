@@ -2,7 +2,7 @@
 name = "abm"
 version = "0.0.1"
 authors = ["Alessia Antelmi <aantelmi@unisa.it>","Matteo D'Auria <matdauria@unisa.it>","Daniele De Vinco <danieledevinco1996@gmail.com", "Carmine Spagnuolo <spagnuolocarmine@gmail.com>"]
-edition = "2019"
+edition = "2018"
 license = "MIT"
 keywords = ["discrete", "simulation","agent based model","agent based simulation"]
 categories = ["science", "simulation","agent based model"]
