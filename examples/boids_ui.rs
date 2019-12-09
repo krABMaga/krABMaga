@@ -71,7 +71,7 @@ fn main() {
     while let Some(e) = window.next() {
 
         schedule.step();
-        window.draw_2d(&e, |c, g| {
+        window.draw_2d(&e, |c, g, _| {
 
             clear([0.0, 0.0, 0.0, 1.0], g);
             for (_key, value) in GLOBAL_STATE.lock().unwrap().field1.fpos.iter() {

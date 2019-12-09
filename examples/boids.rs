@@ -22,7 +22,7 @@ use std::sync::Mutex;
 
 static mut _COUNT: u128 = 0;
 static STEP: u128 = 50;
-static NUM_AGENT: u128 = 1638400;
+static NUM_AGENT: u128 = 8400;
 static WIDTH: f64 =200.0;
 static HEIGTH: f64 = 200.0;
 static DISCRETIZATION: f64 = 10.0/1.5;
@@ -60,6 +60,7 @@ fn main() {
     let start = Instant::now();
 
     for _ in 1..STEP{
+	println!("step");
         schedule.step();
     }
 

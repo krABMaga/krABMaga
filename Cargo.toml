@@ -22,11 +22,16 @@ priority-queue = "0.5.4"
 criterion = "0.1.2"
 rand = "0.6.5"
 lazy_static = "1.3.0"
-piston_window = "0.81.0"
-piston = "0.48.0"
-piston2d-graphics = "0.32.0"
-pistoncore-glutin_window = "0.61.0"
-piston2d-opengl_graphics = "0.65.0"
+piston_window = "0.105.0"
+piston = "0.49.0"
+piston2d-graphics = "0.35.0"
+pistoncore-glutin_window = "0.63.0"
+piston2d-opengl_graphics = "0.70.0"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+metal = "0.17.0"
+cocoa = "0.19.1"
+objc = "0.2.7"
 
 [[bench]]
 name = "benchmark"
@@ -34,4 +39,4 @@ harness = false
 
 [[bin]]
 name = "boids"
-path = "examples/boids.rs"
+path = "examples/boids_ui.rs"
