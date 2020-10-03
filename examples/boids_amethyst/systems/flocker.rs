@@ -18,62 +18,6 @@ pub struct FlockerSystem;
 
 // Vector calculation helper methods.
 impl FlockerSystem {
-    
-    fn avoidance (agent: &AgentAdapter, vec: &Vec<AgentAdapter>) -> Real2D {
-        if vec.is_empty() {
-            let real = Real2D {x: 0.0, y: 0.0};
-            return real;
-        }
-
-        let mut x = 0.0;
-        let mut y = 0.0;
-
-        let mut count = 0;
-
-        for i in 0..vec.len() {
-            if *agent != vec[i] {
-                let dx = toroidal_distance(agent.pos.x, vec[i].pos.x, WIDTH.into());
-                let dy = toroidal_distance(agent.pos.y, vec[i].pos.y, HEIGHT.into());
-                let square = dx*dx + dy*dy;
-                count += 1;
-                x += dx/(square*square + 1.0);
-                y += dy/(square*square + 1.0);
-            }
-        }
-        if count > 0 {
-            x = x/count as f64;
-            y = y/count as f64;
-        }
-
-        Real2D {x: 400.0*x, y: 400.0*y}
-    }
-
-    fn cohesion (agent: &AgentAdapter, vec: &Vec<AgentAdapter>) -> Real2D {
-        if vec.is_empty() {
-            return Real2D {x: 0.0, y: 0.0};
-        }
-
-        let mut x = 0.0;
-        let mut y = 0.0;
-
-        let mut count = 0;
-
-        for i in 0..vec.len() {
-            if *agent != vec[i] {
-                let dx = toroidal_distance(agent.pos.x, vec[i].pos.x, WIDTH.into());
-                let dy = toroidal_distance(agent.pos.y, vec[i].pos.y, HEIGHT.into());
-                count += 1;
-                x += dx;
-                y += dy;
-            }
-        }
-        if count > 0 {
-            x = x/count as f64;
-            y = y/count as f64;
-        }
-
-        Real2D {x: -x/10.0, y: -y/10.0}
-    }
 
     fn randomness() -> Real2D {
         let mut rng = rand::thread_rng();
@@ -90,32 +34,33 @@ impl FlockerSystem {
         }
     }
 
-    fn consistency (agent: &AgentAdapter, vec: &Vec<AgentAdapter>) -> Real2D {
-        if vec.is_empty() {
-            return Real2D {x: 0.0, y: 0.0};
-        }
-
-        let mut x = 0.0;
-        let mut y = 0.0;
-
-        let mut count = 0;
-
-        for i in 0..vec.len() {
-            if *agent != vec[i] {
-
-                let xx = vec[i].last_d.x;
-                let yy = vec[i].last_d.y;
-                count += 1;
-                x += xx;
-                y += yy;
+    fn process_neighbors (agent: &AgentAdapter, vec: &Vec<AgentAdapter>) -> (Real2D, Real2D, Real2D, Real2D, Real2D) {
+        let count = vec.len() - 1; // Do not count ourself within the vector.
+        let [mut avoidance, mut cohesion, mut consistency] = [Real2D{x: 0.,y: 0.}; 3];
+                
+        for other in vec.iter() {
+            if agent != other {
+                let dx = toroidal_distance(agent.pos.x, other.pos.x, WIDTH.into());
+                let dy = toroidal_distance(agent.pos.y, other.pos.y, HEIGHT.into());
+                let square = dx*dx + dy*dy;
+                avoidance.x += dx/(square*square + 1.0);
+                avoidance.y += dy/(square*square + 1.0);
+                cohesion.x += dx;
+                cohesion.y += dy;
+                consistency.x += other.last_d.x;
+                consistency.y = other.last_d.y;
             }
         }
         if count > 0 {
-            x = x/count as f64;
-            y = y/count as f64;
+            avoidance.x = 400.0 *avoidance.x/count as f64;
+            avoidance.y = 400.0 * avoidance.y/count as f64;
+            cohesion.x = -0.1 * cohesion.x/count as f64;
+            cohesion.y = -0.1 *cohesion.y/count as f64;
+            consistency.x = consistency.x/count as f64;
+            consistency.y = consistency.y/count as f64;
         }
         
-        Real2D {x, y}
+        (avoidance, cohesion, FlockerSystem::randomness(), consistency, agent.last_d)
     }
 }
 
@@ -128,17 +73,15 @@ impl<'s> System<'s> for FlockerSystem {
         WriteStorage<'s, AgentAdapter>,
         WriteExpect<'s, Field2D<AgentAdapter>>,
 	);
-
-	fn run(&mut self, (mut transforms, mut agent_adapters, mut field): Self::SystemData) {
-        // We specify which groups of components we're gonna operate on, by fetching them from their respective
-        // storages, similar to a SQL query. The components returned per cycle are owned by the same entity.
-		for(agent_adapter, transform) in (&mut agent_adapters, &mut transforms).join() {
+    
+    fn run(&mut self, (mut transforms, mut agent_adapters, mut field): Self::SystemData) {
+        for(agent_adapter, transform) in (&mut agent_adapters, &mut transforms).join() {
             let vec = field.get_neighbors_within_distance(agent_adapter.pos, NEIGHBOR_DISTANCE);
-            let avoidance = FlockerSystem::avoidance(agent_adapter, &vec);
-            let cohesion = FlockerSystem::cohesion(agent_adapter, &vec);
-            let randomness = FlockerSystem::randomness();
-            let consistency = FlockerSystem::consistency(agent_adapter, &vec);
-            let momentum = agent_adapter.last_d;
+            let (avoidance, cohesion, randomness, consistency, momentum) = if vec.is_empty() {
+                (Real2D{x: 0.,y: 0.}, Real2D{x: 0.,y: 0.}, FlockerSystem::randomness(), Real2D{x: 0.,y: 0.}, agent_adapter.last_d)
+            } else {
+                FlockerSystem::process_neighbors(agent_adapter, &vec)
+            };
 
             let mut dx = COHESION*cohesion.x + AVOIDANCE*avoidance.x + CONSISTENCY*consistency.x + RANDOMNESS*randomness.x + MOMENTUM*momentum.x;
             let mut dy = COHESION*cohesion.y + AVOIDANCE*avoidance.y + CONSISTENCY*consistency.y + RANDOMNESS*randomness.y + MOMENTUM*momentum.y;
@@ -177,6 +120,6 @@ impl<'s> System<'s> for FlockerSystem {
             // Actually set the new transform translation so that the sprite will render in the new position.
             transform.set_translation_xyz(new_x as f32, new_y as f32, 0.0);
         }
-	}
+    }
 
 }
