@@ -14,6 +14,8 @@ Simply run `cargo run`, or `cargo run --release` for a slower to compile, faster
 - The movements look sudden, sometimes flockers flying together try to collide with each other slightly while moving. This might be caused by the use of set_translation_xyz() instead of appending the vector movement, thus causing the translations to not look perfectly smooth.
 	- PARTIALLY SOLVED: The conflicts between consistent flockers were mainly caused by the bounding box. The only issue that remains is that, when a collision happens with a group of agents, the agent's rotation matrix goes slightly crazy while trying to choose the next direction to pick.
 
+- Some dead agents seem to have no collision activated for unknown reasons, resulting in agents just going through them. Seems to happen more with dead agents near the perimeter of the Field2D: maybe it's related to some toroidal calculation?
+
 # References:
 - https://github.com/spagnuolocarmine/abm/blob/master/examples/boids_ui.rs
 - https://github.com/eclab/mason/tree/f89201872a91c2176e5dcbcdd1960d3fa6fe1f91/mason/src/main/java/sim/app/flockers

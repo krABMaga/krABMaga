@@ -16,15 +16,18 @@ pub struct AgentAdapter {
     // The position of the agent in a 2D field.
     pub pos: Real2D,
     // The last known position, used to calculate momentum.
-    pub last_d: Real2D
+    pub last_d: Real2D,
+    // If true, the agent does not move.
+    pub dead: bool
 }
 
 impl AgentAdapter {
-	pub fn new(id: u128, pos: Real2D, last_d: Real2D) -> AgentAdapter {
+	pub fn new(id: u128, pos: Real2D, last_d: Real2D, dead: bool) -> AgentAdapter {
 		AgentAdapter {
             id,
             pos,
-            last_d
+            last_d,
+            dead
 		}
 	}
 }

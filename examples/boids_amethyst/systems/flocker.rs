@@ -35,20 +35,22 @@ impl FlockerSystem {
     }
 
     fn process_neighbors (agent: &AgentAdapter, vec: &Vec<AgentAdapter>) -> (Real2D, Real2D, Real2D, Real2D, Real2D) {
-        let count = vec.len() - 1; // Do not count ourself within the vector.
+        let count = vec.len();
         let [mut avoidance, mut cohesion, mut consistency] = [Real2D{x: 0.,y: 0.}; 3];
                 
         for other in vec.iter() {
             if agent != other {
-                let dx = toroidal_distance(agent.pos.x, other.pos.x, WIDTH.into());
-                let dy = toroidal_distance(agent.pos.y, other.pos.y, HEIGHT.into());
+                let dx = toroidal_distance(agent.pos.x, other.pos.x, WIDTH);
+                let dy = toroidal_distance(agent.pos.y, other.pos.y, HEIGHT);
                 let square = dx*dx + dy*dy;
                 avoidance.x += dx/(square*square + 1.0);
                 avoidance.y += dy/(square*square + 1.0);
-                cohesion.x += dx;
-                cohesion.y += dy;
-                consistency.x += other.last_d.x;
-                consistency.y += other.last_d.y;
+                if !other.dead {
+                    cohesion.x += dx;
+                    cohesion.y += dy;
+                    consistency.x += other.last_d.x;
+                    consistency.y += other.last_d.y;
+                }
             }
         }
         if count > 0 {
@@ -76,6 +78,9 @@ impl<'s> System<'s> for FlockerSystem {
     
     fn run(&mut self, (mut transforms, mut agent_adapters, mut field): Self::SystemData) {
         for(agent_adapter, transform) in (&mut agent_adapters, &mut transforms).join() {
+            if agent_adapter.dead {
+                continue;
+            }
             let vec = field.get_neighbors_within_distance(agent_adapter.pos, NEIGHBOR_DISTANCE);
             let (avoidance, cohesion, randomness, consistency, momentum) = if vec.is_empty() {
                 (Real2D{x: 0.,y: 0.}, Real2D{x: 0.,y: 0.}, FlockerSystem::randomness(), Real2D{x: 0.,y: 0.}, agent_adapter.last_d)
@@ -115,9 +120,9 @@ impl<'s> System<'s> for FlockerSystem {
             transform.set_translation_xyz(new_x as f32, new_y as f32, 0.0);
             /* DEBUG
             if agent_adapter.id == 0 {
-                println!("dx: {}, dy: {}\navoidance: {}\ncohesion: {}\nconsistency: {}\nrandomness: {}\n", dx, dy, avoidance, cohesion, consistency, randomness);
-                std::thread::sleep(std::time::Duration::from_millis(1000));
-            } */
+                println!("dx: {}, dy: {}\navoidance: {}\ncohesion: {}\nconsistency: {}\nlast_pos: {}\n", dx, dy, avoidance, cohesion, consistency, old_vel);
+                std::thread::sleep(std::time::Duration::from_millis(250));
+            }*/
         }
     }
 

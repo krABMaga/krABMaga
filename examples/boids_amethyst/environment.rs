@@ -20,6 +20,11 @@ pub const HEIGHT : f64 = 400.0;
 pub const DISCRETIZATION: f64 = 10.0/1.5;
 pub const TOROIDAL: bool = true;
 pub const NUM_AGENT: u128 = 250;
+pub const DEAD_PROB: f64 = 0.1;
+// Red
+pub const LIVE_FLOCKER_RGBA: (f32, f32, f32, f32) = (255.0, 0.0, 0.0, 1.0);
+// Black
+pub const DEAD_FLOCKER_RGBA: (f32, f32, f32, f32) = (0., 0., 0., 1.);
 
 pub struct Environment;
 
@@ -54,36 +59,45 @@ fn initialize_camera(world: &mut World) {
 fn initialize_flockers(world: &mut World, sprite_sheet_handle: Handle<SpriteSheet>, field: &mut Field2D<AgentAdapter>) {
 	let sprite_render = SpriteRender::new(sprite_sheet_handle, 0);
 
-	// A red tint.
-	let tint = Tint(Srgba::new(255.0, 0.0, 0.0, 1.0));
+	let (r, g, b, a) = LIVE_FLOCKER_RGBA;
+	let global_tint = Tint(Srgba::new(r, g, b, a));
+	let (r, g, b, a) = DEAD_FLOCKER_RGBA;
+	let dead_tint = Tint(Srgba::new(r, g, b, a));
 
 	let mut rng = rand::thread_rng();
 	for bird_id in 0..NUM_AGENT{
-		/* DEBUG
-		if bird_id == 1 {
-			tint = Tint(Srgba::new(0., 255., 0., 1.));
-		} */
+		let mut tint_to_use = global_tint;
         let x: f64 = WIDTH * rng.gen::<f64>();
         let y: f64 = HEIGHT * rng.gen::<f64>();
 
-        let last_pos =  Real2D {x: 0.0, y: 0.0};
+        let last_d =  Real2D {x:0.,y: 0.};
 
 		let mut transform = Transform::default();
 		transform.set_translation_xyz(x as f32, y as f32, 0.0);
 		// Sprite size is 64x64, we scale it down.
 		transform.set_scale(Vector3::new(0.15, 0.15, 1.0));
+		// Chance for the flocker to be dead from the start of the simulation
+		let dead = rng.gen_bool(DEAD_PROB);
+		if dead {
+			tint_to_use = dead_tint;
+		}
+		/* DEBUG
+		if bird_id == 0 {
+			dead = false;
+			tint_to_use = Tint(Srgba::new(0., 255., 0., 1.));
+		}*/
 		// An adapter that will handle communication with the RustAB framework, mainly to fetch the neighbor agents
-		let agent_adapter = AgentAdapter::new(bird_id, Real2D {x: x.into(),y: y.into()}, last_pos);
+		let agent_adapter = AgentAdapter::new(bird_id, Real2D {x: x,y: y}, last_d, dead);
 
 		field.set_object_location(agent_adapter, agent_adapter.pos);
 		world
 			.create_entity()
 			.with(sprite_render.clone())
-			.with(tint)
+			.with(tint_to_use)
 			.with(transform)
 			.with(agent_adapter)
 			.build();
-    }
+	}
 }
 
 // Load the assets asynchronously.
