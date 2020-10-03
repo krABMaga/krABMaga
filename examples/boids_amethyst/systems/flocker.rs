@@ -48,7 +48,7 @@ impl FlockerSystem {
                 cohesion.x += dx;
                 cohesion.y += dy;
                 consistency.x += other.last_d.x;
-                consistency.y = other.last_d.y;
+                consistency.y += other.last_d.y;
             }
         }
         if count > 0 {
@@ -92,23 +92,17 @@ impl<'s> System<'s> for FlockerSystem {
                 dy = dy/dis*JUMP;
             }
 
-            let _last_pos = Real2D {x: dx, y: dy};
-            let loc_x = toroidal_transform(agent_adapter.pos.x + dx, WIDTH.into());
-            let loc_y = toroidal_transform(agent_adapter.pos.y + dx, HEIGHT.into());
-            agent_adapter.last_d = _last_pos;
-            let new_x = loc_x + dx;
-            let new_y = loc_y + dy;
-            let old_x: f64 = agent_adapter.pos.x;
-            let old_y: f64 = agent_adapter.pos.y;
+            let new_x = toroidal_transform(agent_adapter.pos.x + dx, WIDTH.into());
+            let new_y = toroidal_transform(agent_adapter.pos.y + dy, HEIGHT.into());
+            let last_d = Real2D {x: dx, y: dy};
+            agent_adapter.last_d = last_d;
             
             agent_adapter.pos = Real2D { x: new_x, y: new_y};
             field.set_object_location(*agent_adapter, agent_adapter.pos);
-            let diff_y = new_y - old_y;
-            let diff_x = new_x - old_x;
-            let rotation = if diff_y.sin() == 0.0 && diff_x.cos() == 0.0 {
+            let rotation = if last_d.x == 0.0 || last_d.y == 0.0 {
                 0.
             } else {
-                diff_y.atan2(diff_x)
+                last_d.y.atan2(last_d.x)
             };
             let rotation = (rotation - (PI * 0.50)) as f32;
             //let cur_rot = transform.rotation().angle();
@@ -119,6 +113,11 @@ impl<'s> System<'s> for FlockerSystem {
             
             // Actually set the new transform translation so that the sprite will render in the new position.
             transform.set_translation_xyz(new_x as f32, new_y as f32, 0.0);
+            /* DEBUG
+            if agent_adapter.id == 0 {
+                println!("dx: {}, dy: {}\navoidance: {}\ncohesion: {}\nconsistency: {}\nrandomness: {}\n", dx, dy, avoidance, cohesion, consistency, randomness);
+                std::thread::sleep(std::time::Duration::from_millis(1000));
+            } */
         }
     }
 

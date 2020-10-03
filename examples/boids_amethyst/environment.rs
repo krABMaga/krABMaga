@@ -59,6 +59,10 @@ fn initialize_flockers(world: &mut World, sprite_sheet_handle: Handle<SpriteShee
 
 	let mut rng = rand::thread_rng();
 	for bird_id in 0..NUM_AGENT{
+		/* DEBUG
+		if bird_id == 1 {
+			tint = Tint(Srgba::new(0., 255., 0., 1.));
+		} */
         let x: f64 = WIDTH * rng.gen::<f64>();
         let y: f64 = HEIGHT * rng.gen::<f64>();
 
