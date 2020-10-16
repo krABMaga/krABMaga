@@ -25,6 +25,12 @@ impl PartialEq for Real2D {
     }
 }
 
+//TODO: unify with Location2D
+pub trait DiscreteLocation2D {
+    fn get_location(self) -> Int2D;
+    fn set_location(&mut self, loc: Int2D);
+}
+
 #[derive(Clone, Hash, Copy)]
 pub struct Int2D {
     pub x: i64,
