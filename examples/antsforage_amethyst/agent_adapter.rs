@@ -194,6 +194,7 @@ impl AgentAdapter {
                         self.has_food = !self.has_food;
                     }
                 }
+                _ => ()
             }
         }
     }

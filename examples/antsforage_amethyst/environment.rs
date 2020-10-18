@@ -89,7 +89,7 @@ fn initialize_static_objects(
     world: &mut World,
     sprite_render: SpriteRender,
     sites_grid: &mut SitesGrid,
-    _obstacles_grid: &mut ObstaclesGrid,
+    obstacles_grid: &mut ObstaclesGrid,
     to_food_grid: &mut ToFoodGrid,
     to_home_grid: &mut ToHomeGrid,
 ) {
@@ -151,6 +151,17 @@ fn initialize_static_objects(
         .with(food)
         .build();
 
+    /* General formula to calculate an ellipsis, used to draw obstacles.
+        x and y define a specific cell
+        horizontal and vertical define the ellipsis position (bottom left: 0,0)
+        size defines the ellipsis' size (smaller value = bigger ellipsis)
+     */
+    let ellipsis = |x: f32, y: f32, horizontal: f32, vertical: f32, size: f32| -> bool {
+        ((x - horizontal) * size + (y - vertical) * size)
+            * ((x - horizontal) * size + (y - vertical) * size) / 36.
+            + ((x - horizontal) * size - (y - vertical) * size)
+            * ((x - horizontal) * size - (y - vertical) * size) / 1024. <= 1.
+    };
     // Generate 1x1 tints that represent pheromones. We save the entity index in the grid to be able to
     // send an event containing said index and a f32 representing the pheromone's intensity, to update the tint.
     for i in 0..WIDTH {
@@ -167,6 +178,21 @@ fn initialize_static_objects(
                 .build();
             to_food_grid.grid.set_value_at_pos(&Int2D { x: i, y: j }, (cell.id(), 0.));
             to_home_grid.grid.set_value_at_pos(&Int2D { x: i, y: j }, (cell.id(), 0.));
+
+            // Generates elliptic obstacles
+            if ellipsis(i as f32, j as f32, 100., 145., 0.407) || ellipsis(i as f32, j as f32, 90., 55., 0.407) {
+                let obstacle = StaticObject::new(1, loc, StaticObjectType::OBSTACLE);
+                obstacles_grid.grid.set_value_at_pos(&Int2D { x: i, y: j }, obstacle);
+                // Generate the entity for visualization purposes
+                let mut transform = Transform::default();
+                transform.set_translation_xyz(i as f32, j as f32, 0.);
+                world.create_entity()
+                    .with(sprite_render.clone())
+                    .with(obstacle)
+                    .with(transform)
+                    .with(Tint(Srgba::new(0.5, 0.25, 0.25, 1.))) // Brown
+                    .build();
+            }
         }
     }
 }

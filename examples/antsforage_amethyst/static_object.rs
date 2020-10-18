@@ -12,7 +12,7 @@ use abm::{location::{DiscreteLocation2D, Int2D}};
 pub enum StaticObjectType {
     HOME,
     FOOD,
-    //OBSTACLE
+    OBSTACLE,
 }
 
 #[derive(Clone, Copy)]
@@ -22,30 +22,29 @@ pub struct StaticObject {
     // The position of the object.
     pub loc: Int2D,
     // The type of the object
-    pub object_type: StaticObjectType
-
+    pub object_type: StaticObjectType,
 }
 
 impl StaticObject {
-	pub fn new(id: u128, loc: Int2D, object_type: StaticObjectType) -> StaticObject {
-		StaticObject {
+    pub fn new(id: u128, loc: Int2D, object_type: StaticObjectType) -> StaticObject {
+        StaticObject {
             id,
             loc,
-            object_type
-		}
+            object_type,
+        }
     }
 }
 
 // Implements Component so that we can attach it to entities and fetch it in systems.
 impl Component for StaticObject {
-	type Storage = DenseVecStorage<Self>;
+    type Storage = DenseVecStorage<Self>;
 }
 
 
 impl Hash for StaticObject {
     fn hash<H>(&self, state: &mut H)
-    where
-        H: Hasher,
+        where
+            H: Hasher,
     {
         state.write_u128(self.id);
         state.finish();
