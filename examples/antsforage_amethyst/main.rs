@@ -3,13 +3,14 @@ extern crate abm;
 
 use amethyst::{core::transform::TransformBundle, prelude::*, renderer::{RenderingBundle, plugins::{RenderFlat2D, RenderToWindow}, types::DefaultBackend}, utils::application_root_dir, utils::fps_counter::FpsCounterBundle};
 use crate::environment::Environment;
-
+use crate::main_system_bundle::MainSystemBundle;
 
 mod environment;
 mod systems;
 mod resources;
 mod agent_adapter;
 mod static_object;
+mod main_system_bundle;
 
 // Only used to calculate the diagonal cutdown. Remove once const fns are powerful enough to handle float arithmetic.
 #[macro_use]
@@ -17,7 +18,7 @@ extern crate lazy_static;
 
 fn main() -> amethyst::Result<()> {
     amethyst::start_logger(Default::default());
-    
+
     let app_root = application_root_dir()?
         .join("examples")
         .join("antsforage_amethyst");
@@ -26,7 +27,6 @@ fn main() -> amethyst::Result<()> {
     let display_config_path = app_root
         .join("config")
         .join("display.ron");
-    println!("{:?}",display_config_path);
 
     // The folder containing our assets, graphical and ron spritesheet configs
     let assets_dir = app_root.join("assets");
@@ -46,8 +46,7 @@ fn main() -> amethyst::Result<()> {
         )?
         .with_bundle(TransformBundle::new())?
         .with_bundle(FpsCounterBundle::default())?
-        .with(systems::AntSystem, "ant_system", &[])
-        .with(systems::FPSSystem{print_elapsed: 0.}, "fps", &[]);
+        .with_bundle(MainSystemBundle)?;
 
     // Run our simulation by setting the initial state to Environment, the one and only state.
     let mut game = Application::new(assets_dir, Environment, game_data)?;

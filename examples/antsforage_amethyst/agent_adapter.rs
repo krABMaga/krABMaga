@@ -5,6 +5,9 @@ use abm::{location::{DiscreteLocation2D, Int2D}};
 use rand::Rng;
 
 use crate::{environment::{HEIGHT, WIDTH}, resources::AntsGrid, resources::ObstaclesGrid, resources::SitesGrid, resources::ToFoodGrid, resources::ToHomeGrid, static_object::StaticObjectType};
+use crate::environment::TintEvent;
+use amethyst::core::ecs::shrev::EventChannel;
+use crate::environment::TintEvent::UpdateTint;
 
 pub const REWARD: f64 = 1.;
 pub const MOMENTUM_PROBABILITY: f64 = 0.8;
@@ -42,31 +45,32 @@ pub struct AgentAdapter {
 }
 
 impl AgentAdapter {
-	pub fn new(id: u128, loc: Int2D, has_food: bool, reward: f64) -> AgentAdapter {
-		AgentAdapter {
+    pub fn new(id: u128, loc: Int2D, has_food: bool, reward: f64) -> AgentAdapter {
+        AgentAdapter {
             id,
             loc,
             last: None,
             has_food,
-            reward
-		}
+            reward,
+        }
     }
-    
+
     // Deposit a pheromone related to food or home, so that other agents will take in account this value when choosing the next step's direction.
     pub fn deposit_pheromone(
         &mut self,
         to_home_grid: &mut ToHomeGrid,
-        to_food_grid: &mut ToFoodGrid
+        to_food_grid: &mut ToFoodGrid,
+        event_channel: &mut EventChannel<TintEvent>,
     ) {
         let x = self.loc.x;
         let y = self.loc.y;
 
         // TODO support for multiple algorithms
-        let mut max = if self.has_food {
+        let (index, mut max) = if self.has_food {
             to_food_grid.grid.get_value_at_pos(&self.loc)
         } else {
             to_home_grid.grid.get_value_at_pos(&self.loc)
-        }.unwrap_or(0.);
+        }.unwrap();
         // Find the highest pheromone we care about in the surrounding 3x3 area
         for dx in -1..2 {
             for dy in -1..2 {
@@ -75,35 +79,32 @@ impl AgentAdapter {
                 if _x < 0 || _y < 0 || _x >= WIDTH || _y >= HEIGHT { // No going out of the field
                     continue;
                 }
-                // TODO: cleanup this monster
                 // Fetch the pheromone in the surrounding area, decrease it a bit and add the reward to it
-                let m = if self.has_food {
-                    to_food_grid.grid.get_value_at_pos(&Int2D{x:_x, y:_y}).unwrap_or(0.)
-                    * {if dx * dy != 0 {
-                        *DIAGONAL_CUTDOWN // On the corners, we deposit less pheromones
-                    } else {
-                        UPDATE_CUTDOWN
-                    }} + self.reward
+                let (_, pheromone) = if self.has_food {
+                    to_food_grid.grid.get_value_at_pos(&Int2D { x: _x, y: _y }).unwrap()
                 } else {
-                    to_home_grid.grid.get_value_at_pos(&Int2D{x:_x, y:_y}).unwrap_or(0.)
-                    * {if dx * dy != 0 {
+                    to_home_grid.grid.get_value_at_pos(&Int2D { x: _x, y: _y }).unwrap()
+                };
+                let m = pheromone
+                    * {
+                    if dx * dy != 0 {
                         *DIAGONAL_CUTDOWN // On the corners, we deposit less pheromones
                     } else {
                         UPDATE_CUTDOWN
-                    }} + self.reward
-                };
-                if m>max {
+                    }
+                } + self.reward;
+                if m > max {
                     max = m;
                 }
             }
         }
         if self.has_food {
-            to_food_grid.grid.set_value_at_pos(&self.loc, max)
+            to_food_grid.grid.set_value_at_pos(&self.loc, (index, max))
         } else {
-            to_home_grid.grid.set_value_at_pos(&self.loc, max)
+            to_home_grid.grid.set_value_at_pos(&self.loc, (index, max))
         }
+        event_channel.single_write(UpdateTint(index, max, self.has_food));
         self.reward = 0.;
-
     }
 
     // Handles movement
@@ -113,7 +114,7 @@ impl AgentAdapter {
         obstacles_grid: &ObstaclesGrid,
         sites_grid: &SitesGrid,
         to_home_grid: &ToHomeGrid,
-        to_food_grid: &ToFoodGrid
+        to_food_grid: &ToFoodGrid,
     ) {
         let mut rng = rand::thread_rng();
         let mut max = -1.; //impossibly bad pheromone
@@ -128,20 +129,20 @@ impl AgentAdapter {
             for dy in -1..2 {
                 let new_x = dx + x;
                 let new_y = dy + y;
-                let new_int2d = Int2D{x: new_x,y: new_y};
+                let new_int2d = Int2D { x: new_x, y: new_y };
                 if (dx == 0 && dy == 0) // Skip if we're trying to stay still, if we're trying to exit the field or we encounter an obstacle
                     || new_x < 0 || new_y < 0
                     || new_x >= WIDTH || new_y >= HEIGHT
                     || obstacles_grid.grid.get_value_at_pos(&new_int2d).is_some()
-                    {
-                        continue;
-                    }
-                let m = if self.has_food { // Consider the pheromone left by other agents
-                    to_home_grid.grid.get_value_at_pos(&new_int2d).unwrap_or(0.)
+                {
+                    continue;
+                }
+                let (_, m) = if self.has_food { // Consider the pheromone left by other agents
+                    to_home_grid.grid.get_value_at_pos(&new_int2d).unwrap()
                 } else {
-                    to_food_grid.grid.get_value_at_pos(&new_int2d).unwrap_or(0.)
+                    to_food_grid.grid.get_value_at_pos(&new_int2d).unwrap()
                 };
-                if m>max { // We found a new maximum, reset the count
+                if m > max { // We found a new maximum, reset the count
                     count = 2; // If we find two possible steps, chance will be 0.5. If we find a third, 0.33 etc...
                 }
                 if m > max || (m == max && rng.gen_bool(1. / count as f64)) { // Latter expression is to take a random step towards paths with a good pheromone
@@ -158,27 +159,26 @@ impl AgentAdapter {
                     let xm = x + (x - last_pos.x);
                     let ym = y + (y - last_pos.y);
                     // Don't go outside the field or in an obstacle
-                    if xm >= 0 && xm < WIDTH && ym >= 0 && ym < HEIGHT && obstacles_grid.grid.get_value_at_pos(&Int2D{x: xm,y: ym}).is_none() {
+                    if xm >= 0 && xm < WIDTH && ym >= 0 && ym < HEIGHT && obstacles_grid.grid.get_value_at_pos(&Int2D { x: xm, y: ym }).is_none() {
                         max_x = xm;
                         max_y = ym;
                     }
                 }
             }
         } else if rng.gen_bool(RANDOM_ACTION_PROBABILITY) { // Consider going randomly
-            let xd: i64 = rng.gen_range(-1,2);
-            let yd: i64 = rng.gen_range(-1,2);
+            let xd: i64 = rng.gen_range(-1, 2);
+            let yd: i64 = rng.gen_range(-1, 2);
             let xm = x + xd;
             let ym = y + yd;
             // Don't go outside the field, in an obstacle and do not stay still
-            if !(xd == 0 && yd == 0) && xm >= 0 && xm < WIDTH && ym >= 0 && ym < HEIGHT && obstacles_grid.grid.get_value_at_pos(&Int2D{x: xm, y:ym}).is_none() {
+            if !(xd == 0 && yd == 0) && xm >= 0 && xm < WIDTH && ym >= 0 && ym < HEIGHT && obstacles_grid.grid.get_value_at_pos(&Int2D { x: xm, y: ym }).is_none() {
                 max_x = xm;
                 max_y = ym;
             }
-
         }
-        self.loc = Int2D{x: max_x, y: max_y};
+        self.loc = Int2D { x: max_x, y: max_y };
         ant_grid.grid.set_object_location(self, self.loc);
-        self.last = Some(Int2D{x,y});
+        self.last = Some(Int2D { x, y });
         // TODO cleanup?
         if let Some(site) = sites_grid.grid.get_value_at_pos(&self.loc) {
             match site {
@@ -187,30 +187,28 @@ impl AgentAdapter {
                         self.reward = REWARD;
                         self.has_food = !self.has_food;
                     }
-                },
+                }
                 StaticObjectType::FOOD => {
                     if !self.has_food {
                         self.reward = REWARD;
                         self.has_food = !self.has_food;
                     }
-                },
-                _ => ()
+                }
             }
         }
     }
-    
 }
 
 // Implements Component so that we can attach it to entities and fetch it in systems.
 impl Component for AgentAdapter {
-	type Storage = DenseVecStorage<Self>;
+    type Storage = DenseVecStorage<Self>;
 }
 
 
 impl Hash for AgentAdapter {
     fn hash<H>(&self, state: &mut H)
-    where
-        H: Hasher,
+        where
+            H: Hasher,
     {
         state.write_u128(self.id);
         state.finish();
