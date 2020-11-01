@@ -1,6 +1,6 @@
 use std::f64::consts::PI;
 
-use abm::{field2D::Field2D, field2D::toroidal_distance, field2D::toroidal_transform, location::Real2D};
+use abm::{field_2d::Field2D, field_2d::toroidal_distance, field_2d::toroidal_transform, location::Real2D};
 use amethyst::{core::Transform, ecs::{Join, System, WriteExpect, WriteStorage}};
 use rand::Rng;
 

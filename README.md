@@ -38,7 +38,7 @@ impl Bird {
     pub fn cohesion (self, vec: &Vec<Bird>) -> Real2D {..}
     pub fn consistency (self, vec: &Vec<Bird>) -> Real2D {..}
  }
-impl Location2D for Bird {
+impl Location2D<Real2D> for Bird {
     fn get_location(self) -> Real2D { self.pos }
     fn set_location(&mut self, loc: Real2D) { self.pos = loc; }
 }

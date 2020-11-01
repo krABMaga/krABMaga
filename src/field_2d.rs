@@ -4,12 +4,11 @@ use std::hash::Hash;
 
 use crate::location::Int2D;
 use crate::location::Location2D;
-//use std::collections::HashMap;
 use hashbrown::HashMap;
 use std::cmp;
 
 #[derive(Clone)]
-pub struct Field2D<A: Location2D + Clone + Hash + Eq + Display + Copy> {
+pub struct Field2D<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> {
     pub findex: HashMap<A, Int2D>,
     pub fbag: HashMap<Int2D, Vec<A>>,
     pub fpos: HashMap<A, Real2D>,
@@ -19,7 +18,7 @@ pub struct Field2D<A: Location2D + Clone + Hash + Eq + Display + Copy> {
     pub toroidal: bool,
 }
 
-impl<A: Location2D + Clone + Hash + Eq + Display + Copy> Field2D<A> {
+impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> Field2D<A> {
     pub fn new(w: f64, h: f64, d: f64, t: bool) -> Field2D<A> {
         Field2D {
             findex: HashMap::new(),

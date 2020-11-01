@@ -5,8 +5,8 @@ extern crate piston_window;
 #[macro_use]
 extern crate lazy_static;
 
-use abm::field2D::toroidal_transform;
-use abm::field2D::toroidal_distance;
+use abm::field_2d::toroidal_transform;
+use abm::field_2d::toroidal_distance;
 use rand::Rng;
 use std::hash::Hasher;
 use std::hash::Hash;
@@ -16,7 +16,7 @@ use abm::schedule::Schedule;
 use std::time::{Instant};
 use abm::location::Real2D;
 use abm::location::Location2D;
-use abm::field2D::Field2D;
+use abm::field_2d::Field2D;
 
 use std::sync::Mutex;
 
@@ -259,7 +259,7 @@ impl PartialEq for Bird {
     }
 }
 
-impl Location2D for Bird {
+impl Location2D<Real2D> for Bird {
     fn get_location(self) -> Real2D {
         self.pos
     }

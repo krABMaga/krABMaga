@@ -37,10 +37,6 @@ objc = "0.2.7"
 name = "benchmark"
 harness = false
 
-[[bin]]
-name = "boids"
-path = "examples/boids_ui.rs"
-
 [dev-dependencies.amethyst]
 version = "0.15.3"
 features = ["vulkan"]

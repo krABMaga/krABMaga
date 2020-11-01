@@ -1,4 +1,4 @@
-use abm::{field2D::Field2D, location::Real2D};
+use abm::{field_2d::Field2D, location::Real2D};
 use amethyst::{assets::{AssetStorage, Loader, Handle}, core::math::Vector3, core::transform::Transform, prelude::*, renderer::{
 		Camera,
 		ImageFormat,

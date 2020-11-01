@@ -1,7 +1,7 @@
 use std::{fmt, hash::Hash, hash::Hasher};
 
 use amethyst::ecs::{Component, DenseVecStorage};
-use abm::{location::{DiscreteLocation2D, Int2D}};
+use abm::location::{Int2D, Location2D};
 
 
 /*
@@ -59,7 +59,7 @@ impl PartialEq for StaticObject {
     }
 }
 
-impl DiscreteLocation2D for StaticObject {
+impl Location2D<Int2D> for StaticObject {
     fn get_location(self) -> Int2D {
         self.loc
     }

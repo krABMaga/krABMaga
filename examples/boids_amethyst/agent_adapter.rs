@@ -55,7 +55,7 @@ impl PartialEq for AgentAdapter {
     }
 }
 
-impl Location2D for AgentAdapter {
+impl Location2D<Real2D> for AgentAdapter {
     fn get_location(self) -> Real2D {
         self.pos
     }

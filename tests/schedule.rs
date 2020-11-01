@@ -3,7 +3,7 @@ extern crate priority_queue;
 use std::hash::Hasher;
 use std::hash::Hash;
 use abm::location::Real2D;
-use abm::field2D::Field2D;
+use abm::field_2d::Field2D;
 use std::fmt;
 use abm::agent::Agent;
 use abm::schedule::Schedule;
@@ -275,7 +275,7 @@ impl<'a> Agent for Bird<'a> {
 
 }
 
-impl<'a > Location2D for Bird<'a> {
+impl<'a > Location2D<Real2D> for Bird<'a> {
     fn get_location(self) -> Real2D {
         self.pos
     }

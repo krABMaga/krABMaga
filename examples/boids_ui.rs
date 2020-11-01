@@ -7,18 +7,17 @@ use piston_window::*;
 extern crate lazy_static;
 
 use std::sync::Mutex;
-use abm::field2D::toroidal_transform;
-use abm::field2D::toroidal_distance;
+use abm::field_2d::toroidal_transform;
+use abm::field_2d::toroidal_distance;
 use rand::Rng;
 use std::hash::Hasher;
 use std::hash::Hash;
 use std::fmt;
 use abm::agent::Agent;
 use abm::schedule::Schedule;
-use std::time::{Instant};
 use abm::location::Real2D;
 use abm::location::Location2D;
-use abm::field2D::Field2D;
+use abm::field_2d::Field2D;
 use std::{thread, time};
 
 static mut _COUNT: u128 = 0;
@@ -34,8 +33,6 @@ static RANDOMNESS : f64 = 1.0;
 static CONSISTENCY : f64 = 1.0;
 static MOMENTUM : f64 = 1.0;
 static JUMP : f64 = 0.7;
-
-use std::io::{stdin,stdout,Write};
 
 lazy_static! {
     static ref GLOBAL_STATE: Mutex<State> = Mutex::new(State::new(WIDTH, HEIGTH, DISCRETIZATION, TOROIDAL));
@@ -61,7 +58,7 @@ fn main() {
     assert!(!schedule.events.is_empty());
     assert!(!GLOBAL_STATE.lock().unwrap().field1.fpos.is_empty());
 
-    let start = Instant::now();
+//    let start = Instant::now();
 
     let mut window: PistonWindow =
         WindowSettings::new("Boids Simulation", [750, 750])
@@ -78,7 +75,7 @@ fn main() {
 
                 let shape = polygon::Polygon::new([1.0,0.0,0.0, 1.0]);
 
-                let mut rotation;
+                let rotation;
                 let size = 5.0;
                 let radius= size / 2.0;
 
@@ -116,7 +113,7 @@ fn main() {
     }
 
 
-    let duration = start.elapsed();
+//    let duration = start.elapsed();
 
 //    println!("Time elapsed in testing schedule is: {:?}", duration);
 //    println!("Step for seconds: {:?}", STEP as u64/duration.as_secs());
@@ -312,7 +309,7 @@ impl PartialEq for Bird {
     }
 }
 
-impl Location2D for Bird {
+impl Location2D<Real2D> for Bird {
     fn get_location(self) -> Real2D {
         self.pos
     }

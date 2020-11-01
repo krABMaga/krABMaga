@@ -1,7 +1,7 @@
 use std::{fmt, hash::Hash, hash::Hasher};
 
 use amethyst::ecs::{Component, DenseVecStorage};
-use abm::{location::{DiscreteLocation2D, Int2D}};
+use abm::location::{Int2D, Location2D};
 use rand::Rng;
 
 use crate::{environment::{HEIGHT, WIDTH}, resources::AntsGrid, resources::ObstaclesGrid, resources::SitesGrid, resources::ToFoodGrid, resources::ToHomeGrid, static_object::StaticObjectType};
@@ -224,7 +224,7 @@ impl PartialEq for AgentAdapter {
     }
 }
 
-impl DiscreteLocation2D for AgentAdapter {
+impl Location2D<Int2D> for AgentAdapter {
     fn get_location(self) -> Int2D {
         self.loc
     }

@@ -4,7 +4,6 @@ use crate::location::{Int2D};
 use hashbrown::HashMap;
 
 
-//TODO: generalize over Location2D
 // A crude implementation of a grid, with agents as keys and their locations as values.
 pub struct Grid2D<A: Eq + Hash + Clone + Copy> {
 	pub locs: HashMap<A, Int2D>,
@@ -14,10 +13,9 @@ pub struct Grid2D<A: Eq + Hash + Clone + Copy> {
 
 
 impl<A: Eq + Hash + Clone + Copy> Grid2D<A> {
-	// TODO: generalize width and height?
 	pub fn new(width: i64, height: i64) -> Grid2D<A> {
 		Grid2D {
-			locs: HashMap::new(), // TODO: pre-allocate memory?
+			locs: HashMap::with_capacity((width * height) as usize),
 			width,
 			height,
 		}
@@ -29,5 +27,9 @@ impl<A: Eq + Hash + Clone + Copy> Grid2D<A> {
 			.or_insert(new_pos);
 		agent_loc.x = new_pos.x;
 		agent_loc.y = new_pos.y;
+	}
+
+	pub fn get_object_location(&self, agent: &A) -> Option<&Int2D> {
+		self.locs.get(agent)
 	}
 }
