@@ -1,8 +1,8 @@
 use std::fmt;
 
-pub trait Location2D {
-    fn get_location(self) -> Real2D;
-    fn set_location(&mut self, loc: Real2D);
+pub trait Location2D<T: fmt::Display + Eq + PartialEq + Copy> {
+    fn get_location(self) -> T;
+    fn set_location(&mut self, loc: T);
 }
 
 #[derive(Clone, Default, Debug, Copy)]
@@ -29,6 +29,12 @@ impl PartialEq for Real2D {
 pub struct Int2D {
     pub x: i64,
     pub y: i64,
+}
+
+impl fmt::Display for Int2D {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{} {}", self.x, self.y)
+    }
 }
 
 impl Eq for Int2D {}

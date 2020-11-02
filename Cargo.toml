@@ -1,11 +1,11 @@
 [package]
 name = "abm"
 version = "0.0.1"
-authors = ["Alessia Antelmi <aantelmi@unisa.it>","Matteo D'Auria <matdauria@unisa.it>","Daniele De Vinco <danieledevinco1996@gmail.com", "Carmine Spagnuolo <spagnuolocarmine@gmail.com>"]
+authors = ["Alessia Antelmi <aantelmi@unisa.it>", "Matteo D'Auria <matdauria@unisa.it>", "Daniele De Vinco <danieledevinco1996@gmail.com", "Carmine Spagnuolo <spagnuolocarmine@gmail.com>"]
 edition = "2018"
 license = "MIT"
-keywords = ["discrete", "simulation","agent based model","agent based simulation"]
-categories = ["science", "simulation","agent based model"]
+keywords = ["discrete", "simulation", "agent based model", "agent based simulation"]
+categories = ["science", "simulation", "agent based model"]
 readme = "README.md"
 homepage = "https://github.com/spagnuolocarmine/abm"
 repository = "https://github.com/spagnuolocarmine/abm"
@@ -36,7 +36,3 @@ objc = "0.2.7"
 [[bench]]
 name = "benchmark"
 harness = false
-
-[[bin]]
-name = "boids"
-path = "examples/boids_ui.rs"

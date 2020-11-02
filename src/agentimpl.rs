@@ -1,8 +1,8 @@
+use crate::agent::Agent;
+use std::clone::Clone;
+use std::fmt;
 use std::hash::Hash;
 use std::hash::Hasher;
-use crate::agent::Agent;
-use std::fmt;
-use std::clone::Clone;
 
 static mut COUNTER: u32 = 0;
 
@@ -13,17 +13,17 @@ pub struct AgentImpl<A: Agent + Clone> {
     pub repeating: bool,
 }
 
-impl< A: Agent + Clone> AgentImpl< A> {
-    pub fn new(the_agent: A) -> AgentImpl<A>{
+impl<A: Agent + Clone> AgentImpl<A> {
+    pub fn new(the_agent: A) -> AgentImpl<A> {
         unsafe {
             COUNTER += 1;
 
             AgentImpl {
-                    id: COUNTER,
-                    agent: the_agent,
-                    repeating: false,
-                }
+                id: COUNTER,
+                agent: the_agent,
+                repeating: false,
             }
+        }
     }
 
     pub fn step(&mut self) {
@@ -47,7 +47,7 @@ impl<A: Agent + Clone> PartialEq for AgentImpl<A> {
     }
 }
 
-impl< A: Agent + Clone> Hash for AgentImpl<A> {
+impl<A: Agent + Clone> Hash for AgentImpl<A> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.id.hash(state);
     }
