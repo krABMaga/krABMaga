@@ -1,6 +1,6 @@
 use crate::location::Int2D;
 
-// A crude implementation of a matrix based grid, for easy access of specific positions.
+/// A crude implementation of a matrix based grid, for quick access of specific positions.
 pub struct SimpleGrid2D<T: Copy + Clone> {
     pub locs: Vec<Vec<Option<T>>>,
     pub width: i64,
@@ -8,6 +8,7 @@ pub struct SimpleGrid2D<T: Copy + Clone> {
 }
 
 impl<T: Copy + Clone> SimpleGrid2D<T> {
+    /// Initializes a SimpleGrid2D that wraps a width * height matrix, with values of type Option<T>.
     pub fn new(width: i64, height: i64) -> SimpleGrid2D<T> {
         SimpleGrid2D {
             locs: vec![vec![None; height as usize]; width as usize],
@@ -16,16 +17,66 @@ impl<T: Copy + Clone> SimpleGrid2D<T> {
         }
     }
 
+    /// Fetches the value contained within a cell of the matrix.
+    ///
+    /// None if the cell's empty, Some(T) otherwise.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use abm::simple_grid_2d::SimpleGrid2D;
+    /// # use abm::location::Int2D;
+    ///
+    /// let mut simple_grid = SimpleGrid2D::new(10, 10);
+    /// let value = 5;
+    /// let loc = Int2D{x: 2, y: 2};
+    /// simple_grid.set_value_at_pos(&loc, value);
+    /// let cell_value = simple_grid.get_value_at_pos(&loc);
+    /// assert_eq!(cell_value, Some(5));
+    /// ```
     pub fn get_value_at_pos(&self, pos: &Int2D) -> Option<T> {
         return self.locs[pos.x as usize][pos.y as usize];
     }
 
+    /// Sets the value of a matrix's cell to a copy of T.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use abm::simple_grid_2d::SimpleGrid2D;
+    /// # use abm::location::Int2D;
+    ///
+    /// let mut simple_grid = SimpleGrid2D::new(10, 10);
+    /// let value = 5;
+    /// let loc = Int2D{x: 2, y: 2};
+    /// simple_grid.set_value_at_pos(&loc, value);
+    /// let cell_value = simple_grid.get_value_at_pos(&loc);
+    /// assert_eq!(cell_value, Some(5));
+    /// ```
     pub fn set_value_at_pos(&mut self, pos: &Int2D, value: T) {
         self.locs[pos.x as usize][pos.y as usize] = Some(value);
     }
 }
 
 impl<T: Copy + Clone + PartialOrd> SimpleGrid2D<T> {
+    /// Returns a copy of the minimum T value, wrapped in an Option, contained within the matrix.
+    ///
+    /// Returns None if the matrix is empty.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use abm::simple_grid_2d::SimpleGrid2D;
+    /// # use abm::location::Int2D;
+    ///
+    /// let mut simple_grid = SimpleGrid2D::new(10, 10);
+    /// for x in 0..10 {
+    ///     for y in 0..10 {
+    ///         simple_grid.set_value_at_pos(&Int2D{x, y}, x+y);
+    ///     }
+    /// }
+    /// assert_eq!(simple_grid.min(), Some(0));
+    /// ```
     pub fn min(&self) -> Option<T> {
         let mut min: Option<T> = None;
         for i in self.locs.iter() {
@@ -44,6 +95,24 @@ impl<T: Copy + Clone + PartialOrd> SimpleGrid2D<T> {
         min
     }
 
+    /// Returns a copy of the maximum T value, wrapped in an Option, contained within the matrix.
+    ///
+    /// Returns None if the matrix is empty.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use abm::simple_grid_2d::SimpleGrid2D;
+    /// # use abm::location::Int2D;
+    ///
+    /// let mut simple_grid = SimpleGrid2D::new(10, 10);
+    /// for x in 0..10 {
+    ///     for y in 0..10 {
+    ///         simple_grid.set_value_at_pos(&Int2D{x, y}, x+y);
+    ///     }
+    /// }
+    /// assert_eq!(simple_grid.max(), Some(18));
+    /// ```
     pub fn max(&self) -> Option<T> {
         let mut max: Option<T> = None;
         for i in self.locs.iter() {
