@@ -1,10 +1,17 @@
 use std::fmt;
 
-pub trait Location2D {
-    fn get_location(self) -> Real2D;
-    fn set_location(&mut self, loc: Real2D);
+/// A trait specifying the position of a struct.
+///
+/// # Safety
+///
+/// The generic type T bounds are lax, they can support types different than Real2D and Int2D,
+/// but it has been tested properly only with those two.
+pub trait Location2D<T: fmt::Display + Eq + PartialEq + Copy> {
+    fn get_location(self) -> T;
+    fn set_location(&mut self, loc: T);
 }
 
+/// A structure describing a two-dimensional, f64 position, for use in continuous fields.
 #[derive(Clone, Default, Debug, Copy)]
 pub struct Real2D {
     pub x: f64,
@@ -25,10 +32,17 @@ impl PartialEq for Real2D {
     }
 }
 
+/// A structure describing a two-dimensional, i64 position, for use in discrete fields such as a grid.
 #[derive(Clone, Hash, Copy)]
 pub struct Int2D {
     pub x: i64,
     pub y: i64,
+}
+
+impl fmt::Display for Int2D {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{} {}", self.x, self.y)
+    }
 }
 
 impl Eq for Int2D {}
