@@ -36,3 +36,7 @@ objc = "0.2.7"
 [[bench]]
 name = "benchmark"
 harness = false
+
+[dev-dependencies.amethyst]
+version = "0.15.3"
+features = ["vulkan"]
