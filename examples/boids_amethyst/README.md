@@ -2,7 +2,7 @@
 An initial attempt at implementing a visualization layer for an agent based simulation, by relying on RustAB for part of the logic.
 Flockers was chosen since it's one of the easiest simulations.
 
-![](47y8baYdYg.gif)
+![](dlnJqGql3M.gif)
 
 # How to run
 Simply run `cargo run`, or `cargo run --release` for a slower to compile, faster to execute option.
