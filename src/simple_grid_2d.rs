@@ -132,6 +132,23 @@ impl<T: Copy + Clone + PartialOrd> SimpleGrid2D<T> {
     }
 }
 
+impl SimpleGrid2D<f64> {
+    /// Multiply all the grid cells by a specific value. If the value becomes smaller than
+    /// round_if_lower, round it to round_to.
+    pub fn multiply_with_rounding(&mut self, value: f64, round_if_lower: f64, round_to: f64) {
+        for i in self.locs.iter_mut() {
+            for j in i.iter_mut() {
+                if let Some(val) = j {
+                    *val *= value;
+                    if *val < round_if_lower {
+                        *val = round_to;
+                    }
+                }
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::location::Int2D;
