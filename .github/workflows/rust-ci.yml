@@ -28,6 +28,12 @@ jobs:
             cargo-arg: amethyst_metal
 
     steps:
+      - name: Ubuntu Required Deps
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt update
+          sudo apt install gcc pkg-config openssl libasound2-dev cmake build-essential python3 libfreetype6-dev libexpat1-dev libxcb-composite0-dev libssl-dev libx11-dev pulseaudio
+
       - uses: actions/checkout@v2
 
       - uses: actions-rs/toolchain@v1
