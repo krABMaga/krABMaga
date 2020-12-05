@@ -5,7 +5,8 @@ Flockers was chosen since it's one of the easiest simulations.
 ![](dlnJqGql3M.gif)
 
 # How to run
-Simply run `cargo run`, or `cargo run --release` for a slower to compile, faster to execute option.
+Simply run `cargo run --example boids_amethyst --features amethyst_vulkan`, or add the  `--release` flag for a slower to compile, faster to execute option.
+If you're on macOS, you have to use the metal renderer backend. To do so, swap `amethyst_vulkan` with `amethyst_metal`.
 
 # Current issues
 - The sprite bounding box seems to not be properly aligned to the sprite itself. The collision actually

@@ -4,7 +4,8 @@ An initial attempt at implementing the ants foraging simulation, with a visualiz
 ![](eELHp8s7FW.gif)
 
 # How to run
-Simply run `cargo run --example antsforage_amethyst`, or add the `--release` flag for a slower to compile, faster to execute option.
+Simply run `cargo run --example antsforage_amethyst --features amethyst_vulkan`, or add the `--release` flag for a slower to compile, faster to execute option.
+If you're on macOS, you have to use the metal renderer backend. To do so, swap `amethyst_vulkan` with `amethyst_metal`.
 
 # Current issues
 - [x] Obstacles are not implemented yet; Implemented on 18/10/2020

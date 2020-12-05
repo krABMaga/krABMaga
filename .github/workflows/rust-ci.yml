@@ -1,0 +1,49 @@
+name: Rust CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, macos-latest ]
+        rust:
+          - stable
+          - nightly
+          - beta
+        include:
+          - os: ubuntu-latest
+            cargo-arg: amethyst_vulkan
+
+          - os: macos-latest
+            cargo-arg: amethyst_metal
+
+  steps:
+    - uses: actions/checkout@v2
+
+    - uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: ${{ matrix.rust }}
+        override: true
+
+    - name: Build
+      uses: actions-rs/cargo@v1
+      with:
+        command: build
+        args: --all --examples --features ${{ matrix.cargo-arg }}
+
+    - name: Test
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --features ${{ matrix.cargo-arg }}
