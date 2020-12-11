@@ -37,6 +37,14 @@ objc = "0.2.7"
 name = "benchmark"
 harness = false
 
-[dev-dependencies.amethyst]
+# Must be kept separate and asked to the user due to missing support for conditional compilation of features
+# https://github.com/rust-lang/cargo/issues/7914
+[features]
+amethyst_metal = ["amethyst", "amethyst/metal"]
+amethyst_vulkan = ["amethyst", "amethyst/vulkan"]
+
+[dependencies.amethyst]
 version = "0.15.3"
-features = ["vulkan"]
+optional = true
+default-features = false
+features = ["renderer"]
