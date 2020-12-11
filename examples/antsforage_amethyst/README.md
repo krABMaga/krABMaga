@@ -8,7 +8,10 @@ Simply run `cargo run --example antsforage_amethyst --features amethyst_vulkan`,
 If you're on macOS, you have to use the metal renderer backend. To do so, swap `amethyst_vulkan` with `amethyst_metal`.
 
 # Dependencies
-If you're on linux, follow the instructions [here](https://github.com/amethyst/amethyst#dependencies)
+- If you're on linux, follow the instructions [here](https://github.com/amethyst/amethyst#dependencies).
+- On macOS, it may be required to update Xcode to the latest version, to allow for gfx-backend-metal to compile the required shaders.
+- As of currently (11/12/2020), rustc 1.48.0 is not supported due to a [bug](https://github.com/amethyst/amethyst/issues/2524) with the winit version Amethyst uses.
+For this reason, the project forces the default rustc toolchain version to be used to the 1.47.0.
 
 # Current issues
 - [x] Obstacles are not implemented yet; Implemented on 18/10/2020
