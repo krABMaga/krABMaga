@@ -1,7 +1,7 @@
 # Rust-AB 🚀 🤖
 **An Agent-Based Simulation engine written in Rust**
  
-[![Build Status](https://travis-ci.org/spagnuolocarmine/abm.svg?branch=master)](https://travis-ci.org/spagnuolocarmine/abm)
+![Rust CI](https://github.com/spagnuolocarmine/rust-ab/workflows/Rust%20CI/badge.svg)
 
 **Rust-AB** is a discrete events simulation engine for developing ABM simulation that is written in a novel programming language named Rust. Rust-AB is designed to be a _ready-to-use_ tool for the ABM community and for this reason the architectural concepts of the well-adopted MASON library were re-engineered to exploit the Rust peculiarities.
 
@@ -34,9 +34,9 @@ impl Bird {
     pub fn new(id: u128, pos: Real2D, last_d: Real2D) -> Self {
         Bird {id, pos, last_d}
     }
-    pub fn avoidance (self, vec: &Vec<Bird>) -> Real2D {..}
-    pub fn cohesion (self, vec: &Vec<Bird>) -> Real2D {..}
-    pub fn consistency (self, vec: &Vec<Bird>) -> Real2D {..}
+    pub fn avoidance (self, _vec: &Vec<Bird>) -> Real2D {..}
+    pub fn cohesion (self, _vec: &Vec<Bird>) -> Real2D {..}
+    pub fn consistency (self, _vec: &Vec<Bird>) -> Real2D {..}
  }
 impl Location2D<Real2D> for Bird {
     fn get_location(self) -> Real2D { self.pos }

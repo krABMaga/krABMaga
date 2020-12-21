@@ -1,7 +1,7 @@
 pub use self::ant::AntSystem;
 pub use self::fps::FPSSystem;
-pub use self::tint_handler::TintHandler;
+pub use self::pheromone_tint_handler::PheromoneTintHandler;
 
 mod ant;
 mod fps;
-mod tint_handler;
+mod pheromone_tint_handler;

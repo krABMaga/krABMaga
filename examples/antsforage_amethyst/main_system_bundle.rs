@@ -1,9 +1,10 @@
+use crate::systems::{AntSystem, FPSSystem, PheromoneTintHandler};
+use amethyst::core::ecs::DispatcherBuilder;
 use amethyst::core::SystemBundle;
 use amethyst::prelude::World;
-use amethyst::core::ecs::DispatcherBuilder;
 use amethyst::Error;
-use crate::systems::{AntSystem, FPSSystem, TintHandler};
 
+/// A simple bundle containing all the systems of our simulation.
 pub struct MainSystemBundle;
 
 impl<'a, 'b> SystemBundle<'a, 'b> for MainSystemBundle {
@@ -14,7 +15,11 @@ impl<'a, 'b> SystemBundle<'a, 'b> for MainSystemBundle {
     ) -> Result<(), Error> {
         builder.add(AntSystem, "ant_system", &[]);
         builder.add(FPSSystem { print_elapsed: 0. }, "fps", &[]);
-        builder.add(TintHandler::new(world), "tint_handler", &[]);
+        builder.add(
+            PheromoneTintHandler::new(world),
+            "pheromone_tint_handler",
+            &[],
+        );
         Ok(())
     }
 }

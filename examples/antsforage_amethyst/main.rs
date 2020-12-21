@@ -1,16 +1,26 @@
-extern crate amethyst;
 extern crate abm;
+extern crate amethyst;
 
-use amethyst::{core::transform::TransformBundle, prelude::*, renderer::{RenderingBundle, plugins::{RenderFlat2D, RenderToWindow}, types::DefaultBackend}, utils::application_root_dir, utils::fps_counter::FpsCounterBundle};
 use crate::environment::Environment;
 use crate::main_system_bundle::MainSystemBundle;
+use amethyst::{
+    core::transform::TransformBundle,
+    prelude::*,
+    renderer::{
+        plugins::{RenderFlat2D, RenderToWindow},
+        types::DefaultBackend,
+        RenderingBundle,
+    },
+    utils::application_root_dir,
+    utils::fps_counter::FpsCounterBundle,
+};
 
-mod environment;
-mod systems;
-mod resources;
 mod agent_adapter;
-mod static_object;
+mod environment;
 mod main_system_bundle;
+mod resources;
+mod static_object;
+mod systems;
 
 // Only used to calculate the diagonal cutdown. Remove once const fns are powerful enough to handle float arithmetic.
 #[macro_use]
@@ -24,9 +34,7 @@ fn main() -> amethyst::Result<()> {
         .join("antsforage_amethyst");
 
     // Window config such as size and window title
-    let display_config_path = app_root
-        .join("config")
-        .join("display.ron");
+    let display_config_path = app_root.join("config").join("display.ron");
 
     // The folder containing our assets, graphical and ron spritesheet configs
     let assets_dir = app_root.join("assets");
@@ -34,7 +42,7 @@ fn main() -> amethyst::Result<()> {
     // The "components", or bundles, of our simulation. Here we're simply saying we
     // want an application with rendering (with a white background), where we are
     // going to render 2D graphics, positioning them through a Transform, and with
-    // our custom defined system FlockerSystem.
+    // several bundles: Transform and FpsCounter by Amethyst, and our custom MainSystem one.
     let game_data = GameDataBuilder::default()
         .with_bundle(
             RenderingBundle::<DefaultBackend>::new()

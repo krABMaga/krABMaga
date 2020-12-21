@@ -1,40 +1,36 @@
 use std::{fmt, hash::Hash, hash::Hasher};
 
-use amethyst::ecs::{Component, DenseVecStorage};
 use abm::location::{Location2D, Real2D};
+use amethyst::ecs::{Component, DenseVecStorage};
 
-
-/*
-	Adapter that represents an entity as an agent for RustAB calculations.
-	Used, in particular, to represent the agent in the Field2D instance, to be able to fetch neighbors.
-*/
-
+/// Adapter that represents an entity as an agent for RustAB calculations.
+/// Used, in particular, to represent the agent in the Field2D instance, to be able to fetch neighbors.
 #[derive(Clone, Copy)]
 pub struct AgentAdapter {
-    // An unique id, so that we do not run neighbor calculations with ourself.
+    /// An unique id, so that we do not run neighbor calculations with ourself.
     pub id: u128,
-    // The position of the agent in a 2D field.
+    /// The position of the agent in a 2D field.
     pub pos: Real2D,
-    // The last known position, used to calculate momentum.
+    /// The last known position, used to calculate momentum.
     pub last_d: Real2D,
-    // If true, the agent does not move.
-    pub dead: bool
+    /// If true, the agent does not move.
+    pub dead: bool,
 }
 
 impl AgentAdapter {
-	pub fn new(id: u128, pos: Real2D, last_d: Real2D, dead: bool) -> AgentAdapter {
-		AgentAdapter {
+    pub fn new(id: u128, pos: Real2D, last_d: Real2D, dead: bool) -> AgentAdapter {
+        AgentAdapter {
             id,
             pos,
             last_d,
-            dead
-		}
-	}
+            dead,
+        }
+    }
 }
 
 // Implements Component so that we can attach it to entities and fetch it in systems.
 impl Component for AgentAdapter {
-	type Storage = DenseVecStorage<Self>;
+    type Storage = DenseVecStorage<Self>;
 }
 
 impl Hash for AgentAdapter {

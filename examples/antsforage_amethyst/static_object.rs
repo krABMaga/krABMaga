@@ -1,13 +1,9 @@
 use std::{fmt, hash::Hash, hash::Hasher};
 
-use amethyst::ecs::{Component, DenseVecStorage};
 use abm::location::{Int2D, Location2D};
+use amethyst::ecs::{Component, DenseVecStorage};
 
-
-/*
-    A static object, like a wall, an obstacle or anything that doesn't move.
-*/
-
+/// The type of the static object
 #[derive(Clone, Copy)]
 pub enum StaticObjectType {
     HOME,
@@ -15,6 +11,8 @@ pub enum StaticObjectType {
     OBSTACLE,
 }
 
+/// A simple wrapper over StaticObjectType to implement Component on it. Used for objects that are not
+/// supposed to move during the simulation's run, like obstacles, nests and food sources.
 #[derive(Clone, Copy)]
 pub struct StaticObject {
     // An unique id.
@@ -40,11 +38,10 @@ impl Component for StaticObject {
     type Storage = DenseVecStorage<Self>;
 }
 
-
 impl Hash for StaticObject {
     fn hash<H>(&self, state: &mut H)
-        where
-            H: Hasher,
+    where
+        H: Hasher,
     {
         state.write_u128(self.id);
         state.finish();
