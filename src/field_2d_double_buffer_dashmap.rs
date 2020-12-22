@@ -6,7 +6,9 @@ use crate::location::Int2D;
 use crate::location::Location2D;
 use std::cmp;
 use DBdashmap::DBashMap;
-
+use crate::bag_ref::Ref;
+use std::sync::{RwLock,RwLockReadGuard,Arc};
+use std::collections::HashMap;
 
 pub struct Field2D<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> {
     pub findex: DBashMap<A, Int2D>,
@@ -46,16 +48,17 @@ impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> Field2D<A>  {
                     self.fbag.insert(bag,v);
             }
         };
-    
+
+
     }
 
-    pub fn get_neighbors_within_distance(&self, pos: Real2D, dist: f64) -> Vec<&A> {
-    
+    pub fn get_neighbors_within_distance(&self, pos: Real2D, dist: f64) -> Vec<Ref<A>> {
+        
         let density = (self.width * self.heigth)/f64::from(self.findex.r_len() as i32);
         let sdist = (dist * dist) as usize;
-        let mut tor: Vec<&A> = Vec::with_capacity(density as usize * sdist);
+        let mut tor: Vec<Ref<A>> = Vec::with_capacity(density as usize * sdist);
         // let mut tor: Vec<&A> = Vec::new();
-
+        
         if dist <= 0.0 {
             return tor;
         }
@@ -96,12 +99,12 @@ impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> Field2D<A>  {
 
                 if check == 1 {
                     for elem in vector {
-                        tor.push(elem);
+                        tor.push(Ref::new(None,elem));
                     }
                 } else if check == 0 {
                     for elem in vector {
                         if distance(&pos, &(elem.get_location()), self.width, self.heigth, self.toroidal) <= dist {
-                            tor.push(elem);
+                            tor.push(Ref::new(None,elem));
                         }
                     }
                 }
@@ -251,11 +254,11 @@ pub fn toroidal_transform(val: f64, dim: f64) -> f64 {
 
 impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> DoubleBufferedField for Field2D<A>{
     fn update(&mut self){
-      
         self.fpos.update();
         self.fbag.update();
         self.findex.update();
     }
 }
+
 
 
