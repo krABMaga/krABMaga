@@ -26,9 +26,9 @@ impl<A: Agent + Clone> AgentImpl<A> {
         }
     }
 
-    pub fn step(&mut self) {
-        self.agent.step();
-    }
+    // pub fn step(&mut self) {
+    //     self.agent.step();
+    // }
 
     pub fn id(self) -> u32 {
         self.id

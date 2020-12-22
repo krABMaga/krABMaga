@@ -1,3 +1,7 @@
+use crate::state::State;
+
 pub trait Agent {
-    fn step(&mut self);
+    type SimState: State + Sync + Send;
+
+    fn step(&mut self,state: &Self::SimState);
 }
