@@ -27,6 +27,10 @@ piston = "0.49.0"
 piston2d-graphics = "0.35.0"
 pistoncore-glutin_window = "0.63.0"
 piston2d-opengl_graphics = "0.70.0"
+cfg-if = "1.0.0"
+DBdashmap = { path = "DBdashmap"}
+num_cpus = "1.13.0"
+rayon="1.5.0"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 metal = "0.17.0"
@@ -42,9 +46,14 @@ harness = false
 [features]
 amethyst_metal = ["amethyst", "amethyst/metal"]
 amethyst_vulkan = ["amethyst", "amethyst/vulkan"]
+sequential = []
+parallel = []
 
 [dependencies.amethyst]
 version = "0.15.3"
 optional = true
 default-features = false
 features = ["renderer"]
+
+
+

@@ -1,7 +1,6 @@
 use crate::location::Real2D;
 use std::fmt::Display;
 use std::hash::Hash;
-
 use crate::location::Int2D;
 use crate::location::Location2D;
 use hashbrown::HashMap;
@@ -50,21 +49,18 @@ impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> Field2D<A> {
                                     None => panic!("error oldbag"),
                                 };
 
-                                self.fbag.remove(&oldbag);
+                                self.fbag.get_mut(&oldbag).unwrap().retain( |entry| *entry != object);
                                 self.findex.insert(object, bag);
                                 self.fpos.insert(object, pos);
 
-                                if !self.fbag.contains_key(&bag) {
-                                    let mut vec: Vec<A> = Vec::new();
-                                    vec.push(object);
-                                    self.fbag.insert(bag, vec);
-                                } else {
-                                    let mut vec = match self.fbag.get(&bag) {
-                                        Some(i) => i.to_vec(),
-                                        None => panic!("error vector from bag"),
-                                    };
-                                    vec.push(object);
-                                    self.fbag.insert(bag, vec);
+                                
+                                match self.fbag.get_mut(&bag){
+                                    Some(vec) => vec.push(object),
+                                    None =>{
+                                        let mut vec = Vec::new();
+                                        vec.push(object);
+                                        self.fbag.insert(bag,vec);
+                                    }
                                 }
                             }
                         }
@@ -76,12 +72,14 @@ impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> Field2D<A> {
                 self.findex.insert(object, bag);
                 self.fpos.insert(object, pos);
 
-                if !self.fbag.contains_key(&bag) {
-                    let mut vec: Vec<A> = Vec::new();
-                    vec.push(object);
-                    self.fbag.insert(bag, vec);
-                } else {
-                    self.fbag.get_mut(&bag).unwrap().push(object);
+                
+                match self.fbag.get_mut(&bag){
+                    Some(vec) => vec.push(object),
+                    None =>{
+                            let mut vec = Vec::new();
+                            vec.push(object);
+                            self.fbag.insert(bag,vec);
+                    }
                 }
             }
         }
@@ -164,18 +162,18 @@ impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> Field2D<A> {
         tor
     }
 
-    pub fn get_objects_at_location(&self, pos: Real2D) -> Vec<&A> {
-        let bag = self.discretize(&pos);
-        let mut result = Vec::new();
-        for (key, val) in self.fbag.iter() {
-            if *key == bag {
-                for elem in val {
-                    result.push(elem);
-                }
-            }
-        }
-        result
-    }
+    // pub fn get_objects_at_location(&self, pos: Real2D) -> Vec<&A> {
+    //     let bag = self.discretize(&pos);
+    //     let mut result = Vec::new();
+    //     for (key, val) in self.fbag.iter() {
+    //         if *key == bag {
+    //             for elem in val {
+    //                 result.push(elem);
+    //             }
+    //         }
+    //     }
+    //     result
+    // }
 
     pub fn num_objects(&self) -> usize {
         self.findex.len()
@@ -184,6 +182,7 @@ impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> Field2D<A> {
     pub fn num_objects_at_location(&self, pos: Real2D) -> usize {
         let bag = self.discretize(&pos);
         let mut result = Vec::new();
+        
         for (key, val) in self.fbag.iter() {
             if *key == bag {
                 for elem in val {
@@ -194,9 +193,9 @@ impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> Field2D<A> {
         result.len()
     }
 
-    pub fn get_object_location(&self, obj: A) -> Option<&Real2D> {
-        self.fpos.get(&obj)
-    }
+    // pub fn get_object_location(&self, obj: A) -> Option<&Real2D> {
+    //     self.fpos.get(&obj)
+    // }
 
     fn discretize(&self, pos: &Real2D) -> Int2D {
         let x_floor = (pos.x / self.discretization).floor();
