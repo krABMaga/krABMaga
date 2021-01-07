@@ -7,8 +7,7 @@ use crate::location::Location2D;
 use std::cmp;
 use DBdashmap::DBashMap;
 use crate::bag_ref::Ref;
-use std::sync::{RwLock,RwLockReadGuard,Arc};
-use std::collections::HashMap;
+
 
 pub struct Field2D<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> {
     pub findex: DBashMap<A, Int2D>,
