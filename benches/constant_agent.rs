@@ -19,12 +19,12 @@ use std::hash::Hash;
 use std::hash::Hasher;
 use std::time::Instant;
 use crate::abm::field::DoubleBufferedField;
+use std::sync::atomic::{Ordering::Relaxed,AtomicUsize};
 
 static mut _COUNT: u128 = 0;
 static STEP: u128 = 50;
-static NUM_AGENT: u128 = 8400;
-static WIDTH: f64 = 200.0;
-static HEIGTH: f64 = 200.0;
+static NUM_AGENT: u128 = 102400;
+static SIZE: [f64;15] = [200.0, 283.0, 400.0, 566.0, 800.0, 1131.0, 1600.0, 2262.0, 3200.0, 4526.0, 6400.0, 9051.0, 12800.0, 16549.0, 20298.0];
 static DISCRETIZATION: f64 = 10.0 / 1.5;
 static TOROIDAL: bool = true;
 static COHESION: f64 = 1.0;
@@ -33,49 +33,56 @@ static RANDOMNESS: f64 = 1.0;
 static CONSISTENCY: f64 = 1.0;
 static MOMENTUM: f64 = 1.0;
 static JUMP: f64 = 0.7;
-
+static INDEX: AtomicUsize = AtomicUsize::new(0);
 
 fn main() {
-    let mut rng = rand::thread_rng();
-    let mut schedule: Schedule<Bird> = Schedule::new();
-    // assert!(schedule.events.is_empty());
+    println!("num_agent;total_step;steps_for_second");
+    for i in 0..15{
+        INDEX.store(i,Relaxed);
 
-    let mut state = BoidsState::new(WIDTH, HEIGTH, DISCRETIZATION, TOROIDAL);
-    for bird_id in 0..NUM_AGENT {
+        let mut rng = rand::thread_rng();
+        let mut schedule: Schedule<Bird> = Schedule::new();
+        // assert!(schedule.events.is_empty());
+
+        let mut state = BoidsState::new(SIZE[INDEX.load(Relaxed)], SIZE[INDEX.load(Relaxed)], DISCRETIZATION, TOROIDAL);
+        for bird_id in 0..NUM_AGENT {
+            
+            let r1: f64 = rng.gen();
+            let r2: f64 = rng.gen();
+            let last_d = Real2D { x: 0.0, y: 0.0 };
+            let bird = Bird::new(
+                bird_id,
+                Real2D {
+                    x: SIZE[INDEX.load(Relaxed)] * r1,
+                    y: SIZE[INDEX.load(Relaxed)] * r2,
+                },
+                last_d,
+            );
+            state
+                .field1
+                .set_object_location(bird, bird.pos);
         
-        let r1: f64 = rng.gen();
-        let r2: f64 = rng.gen();
-        let last_d = Real2D { x: 0.0, y: 0.0 };
-        let bird = Bird::new(
-            bird_id,
-            Real2D {
-                x: WIDTH * r1,
-                y: HEIGTH * r2,
-            },
-            last_d,
+            schedule.schedule_repeating(bird, 0.0, 0);
+        }
+
+        // assert!(!schedule.events.is_empty());
+        let dur = std::time::Duration::from_secs(600);
+        
+        let start = Instant::now();
+        
+        while start.elapsed() <= dur{
+            schedule.step(&mut state);
+        }
+
+        
+
+        
+        println!("{};{};{:?}",
+            SIZE[INDEX.load(Relaxed)],
+            schedule.step,
+            schedule.step as f64 /( dur.as_nanos() as f64 * 1e-9)
         );
-        state
-            .field1
-            .set_object_location(bird, bird.pos);
-    
-        schedule.schedule_repeating(bird, 0.0, 0);
     }
-
-    // assert!(!schedule.events.is_empty());
-
-    let start = Instant::now();
-
-    for _ in 0..STEP {
-        schedule.step(&mut state);
-    }
-
-    let run_duration = start.elapsed();
-
-    println!("Time elapsed in testing schedule is: {:?}", run_duration);
-    println!("(boids)Total Step:{}\nStep for seconds: {:?}",
-        schedule.step,
-        schedule.step as f64 /(run_duration.as_nanos() as f64 * 1e-9)
-    );
 }
 
 pub struct BoidsState {
@@ -122,8 +129,8 @@ impl Bird {
 
         for i in 0..vec.len() {
             if self != *vec[i] {
-                let dx = toroidal_distance(self.pos.x, vec[i].pos.x, WIDTH);
-                let dy = toroidal_distance(self.pos.y, vec[i].pos.y, HEIGTH);
+                let dx = toroidal_distance(self.pos.x, vec[i].pos.x, SIZE[INDEX.load(Relaxed)]);
+                let dy = toroidal_distance(self.pos.y, vec[i].pos.y, SIZE[INDEX.load(Relaxed)]);
                 let square = (dx * dx + dy * dy).sqrt();
                 count += 1;
                 x += dx / (square * square) + 1.0;
@@ -160,8 +167,8 @@ impl Bird {
 
         for i in 0..vec.len() {
             if self != *vec[i] {
-                let dx = toroidal_distance(self.pos.x, vec[i].pos.x, WIDTH);
-                let dy = toroidal_distance(self.pos.y, vec[i].pos.y, HEIGTH);
+                let dx = toroidal_distance(self.pos.x, vec[i].pos.x, SIZE[INDEX.load(Relaxed)]);
+                let dy = toroidal_distance(self.pos.y, vec[i].pos.y, SIZE[INDEX.load(Relaxed)]);
                 count += 1;
                 x += dx;
                 y += dy;
@@ -212,8 +219,8 @@ impl Bird {
 
         for i in 0..vec.len() {
             if self != *vec[i] {
-                let _dx = toroidal_distance(self.pos.x, vec[i].pos.x, WIDTH);
-                let _dy = toroidal_distance(self.pos.y, vec[i].pos.y, HEIGTH);
+                let _dx = toroidal_distance(self.pos.x, vec[i].pos.x, SIZE[INDEX.load(Relaxed)]);
+                let _dy = toroidal_distance(self.pos.y, vec[i].pos.y, SIZE[INDEX.load(Relaxed)]);
                 count += 1;
                 x += self.pos.x;
                 y += self.pos.y;
@@ -266,8 +273,8 @@ impl Agent for Bird {
         }
 
         let _lastd = Real2D { x: dx, y: dy };
-        let loc_x = toroidal_transform(self.pos.x + dx, WIDTH);
-        let loc_y = toroidal_transform(self.pos.y + dy, WIDTH);
+        let loc_x = toroidal_transform(self.pos.x + dx, SIZE[INDEX.load(Relaxed)]);
+        let loc_y = toroidal_transform(self.pos.y + dy, SIZE[INDEX.load(Relaxed)]);
 
         self.pos = Real2D { x: loc_x, y: loc_y };
         drop(vec);

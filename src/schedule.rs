@@ -29,7 +29,7 @@ impl<A: 'static + Agent + Clone> Pair<A> {
 
 impl<A: 'static + Agent + Clone + Send> Schedule<A> {
     pub fn new() -> Schedule<A> {
-        println!("Sequential schedule");
+        //println!("Sequential schedule");
         Schedule {
             step: 0,
             time: 0.0,

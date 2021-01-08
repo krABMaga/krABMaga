@@ -4,10 +4,11 @@ use ahash::RandomState;
 use core::hash::{BuildHasher, Hash};
 use core::ops::{Deref, DerefMut};
 use std::sync::MutexGuard;
+use std::sync::RwLockReadGuard;
 
 // -- Shared
 pub struct Ref<'a, K, V> {
-    k: &'a K,
+    guard: Option<RwLockReadGuard<'a,HashMap<K, V>>>,
     v: &'a V,
 }
 
@@ -19,24 +20,17 @@ unsafe impl<'a, K: Eq + Hash + Send + Sync, V: Send + Sync> Sync
 }
 
 impl<'a, K: Eq + Hash, V> Ref<'a, K, V> {
-    pub(crate) fn new( k: &'a K, v: &'a V) -> Self {
+    pub(crate) fn new(guard: Option<RwLockReadGuard<'a,HashMap<K, V>>>, k: &'a K, v: &'a V) -> Self {
         Self {
-            k,
+            guard,
             v,
         }
-    }
-
-    pub fn key(&self) -> &K {
-        self.k
     }
 
     pub fn value(&self) -> &V {
         self.v
     }
 
-    pub fn pair(&self) -> (&K, &V) {
-        (self.k, self.v)
-    }
 }
 
 impl<'a, K: Eq + Hash, V> Deref for Ref<'a, K, V> {

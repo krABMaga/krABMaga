@@ -1,16 +1,18 @@
-use crate::location::Real2D;
-use std::fmt::Display;
-use std::hash::Hash;
+use crate::bag_ref::Ref;
 use crate::location::Int2D;
 use crate::location::Location2D;
-use hashbrown::HashMap;
+use crate::location::Real2D;
 use std::cmp;
+use std::collections::HashMap;
+use std::fmt::Display;
+use std::hash::Hash;
+use std::sync::{Arc, RwLock};
 
-#[derive(Clone)]
+// #[derive(Clone)]
 pub struct Field2D<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> {
-    pub findex: HashMap<A, Int2D>,
-    pub fbag: HashMap<Int2D, Vec<A>>,
-    pub fpos: HashMap<A, Real2D>,
+    pub findex: Arc<RwLock<HashMap<A, Int2D>>>,
+    pub fbag: Arc<RwLock<HashMap<Int2D, Vec<A>>>>,
+    pub fpos: Arc<RwLock<HashMap<A, Real2D>>>,
     pub width: f64,
     pub heigth: f64,
     pub discretization: f64,
@@ -20,9 +22,9 @@ pub struct Field2D<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> {
 impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> Field2D<A> {
     pub fn new(w: f64, h: f64, d: f64, t: bool) -> Field2D<A> {
         Field2D {
-            findex: HashMap::new(),
-            fbag: HashMap::new(),
-            fpos: HashMap::new(),
+            findex: Arc::new(RwLock::new(HashMap::new())),
+            fbag: Arc::new(RwLock::new(HashMap::new())),
+            fpos: Arc::new(RwLock::new(HashMap::new())),
             width: w,
             heigth: h,
             discretization: d,
@@ -30,36 +32,41 @@ impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> Field2D<A> {
         }
     }
 
-    pub fn set_object_location(&mut self, object: A, pos: Real2D) {
+    pub fn set_object_location(&self, object: A, pos: Real2D) {
         let bag = self.discretize(&pos);
-        match self.fpos.get(&object) {
+        let mut fpos = self.fpos.write().unwrap();
+        let mut findex = self.findex.write().unwrap();
+        let mut fbag = self.fbag.write().unwrap();
+
+        match fpos.get(&object) {
             Some(x) => {
                 if *x == pos {
                     return;
                 } else {
-                    match self.findex.get(&object) {
+                    match findex.get(&object) {
                         Some(x) => {
                             if *x == bag {
-                                self.fpos.insert(object, pos);
+                                fpos.insert(object, pos);
                                 return;
                             } else {
-                                let oldbag = self.findex.get(&object);
+                                let oldbag = findex.get(&object);
                                 let oldbag = match oldbag {
                                     Some(i) => i,
                                     None => panic!("error oldbag"),
                                 };
 
-                                self.fbag.get_mut(&oldbag).unwrap().retain( |entry| *entry != object);
-                                self.findex.insert(object, bag);
-                                self.fpos.insert(object, pos);
+                                fbag.get_mut(&oldbag)
+                                    .unwrap()
+                                    .retain(|entry| *entry != object);
+                                findex.insert(object, bag);
+                                fpos.insert(object, pos);
 
-                                
-                                match self.fbag.get_mut(&bag){
+                                match fbag.get_mut(&bag) {
                                     Some(vec) => vec.push(object),
-                                    None =>{
+                                    None => {
                                         let mut vec = Vec::new();
                                         vec.push(object);
-                                        self.fbag.insert(bag,vec);
+                                        fbag.insert(bag, vec);
                                     }
                                 }
                             }
@@ -69,96 +76,99 @@ impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> Field2D<A> {
                 }
             }
             None => {
-                self.findex.insert(object, bag);
-                self.fpos.insert(object, pos);
+                findex.insert(object, bag);
+                fpos.insert(object, pos);
 
-                
-                match self.fbag.get_mut(&bag){
+                match fbag.get_mut(&bag) {
                     Some(vec) => vec.push(object),
-                    None =>{
-                            let mut vec = Vec::new();
-                            vec.push(object);
-                            self.fbag.insert(bag,vec);
+                    None => {
+                        let mut vec = Vec::new();
+                        vec.push(object);
+                        fbag.insert(bag, vec);
                     }
                 }
             }
         }
     }
 
-    pub fn get_neighbors_within_distance(&self, pos: Real2D, dist: f64) -> Vec<A> {
-        let density = (self.width * self.heigth) / f64::from(self.findex.len() as i32);
+    pub fn get_neighbors_within_distance(&self, pos: Real2D, dist: f64) -> Vec<Ref<A>> {
+        let findex = self.findex.read().unwrap();
+
+        let density = (self.width * self.heigth) / f64::from(findex.len() as i32);
         let sdist = (dist * dist) as usize;
-        let mut tor: Vec<A> = Vec::with_capacity(density as usize * sdist);
+        let mut tor: Vec<Ref<A>> = Vec::with_capacity(density as usize * sdist);
 
         //      let mut tor: Vec<A> = Vec::new();
 
-        if dist <= 0.0 {
-            return tor;
-        }
+        if dist > 0.0 {
+            let disc_dist = (dist / self.discretization).floor() as i64;
+            let disc_pos = self.discretize(&pos);
+            let max_x = (self.width / self.discretization).ceil() as i64;
+            let max_y = (self.heigth / self.discretization).ceil() as i64;
 
-        let disc_dist = (dist / self.discretization).floor() as i64;
-        let disc_pos = self.discretize(&pos);
-        let max_x = (self.width / self.discretization).ceil() as i64;
-        let max_y = (self.heigth / self.discretization).ceil() as i64;
+            let mut min_i = disc_pos.x - disc_dist;
+            let mut max_i = disc_pos.x + disc_dist;
+            let mut min_j = disc_pos.y - disc_dist;
+            let mut max_j = disc_pos.y + disc_dist;
 
-        let mut min_i = disc_pos.x - disc_dist;
-        let mut max_i = disc_pos.x + disc_dist;
-        let mut min_j = disc_pos.y - disc_dist;
-        let mut max_j = disc_pos.y + disc_dist;
+            if self.toroidal {
+                min_i = cmp::max(0, min_i);
+                max_i = cmp::min(max_i, max_x - 1);
+                min_j = cmp::max(0, min_j);
+                max_j = cmp::min(max_j, max_y - 1);
+            }
 
-        if self.toroidal {
-            min_i = cmp::max(0, min_i);
-            max_i = cmp::min(max_i, max_x - 1);
-            min_j = cmp::max(0, min_j);
-            max_j = cmp::min(max_j, max_y - 1);
-        }
+            for i in min_i..max_i + 1 {
+                for j in min_j..max_j + 1 {
+                    let bag_id = Int2D {
+                        x: t_transform(i, max_x),
+                        y: t_transform(j, max_y),
+                    };
 
-        for i in min_i..max_i + 1 {
-            for j in min_j..max_j + 1 {
-                let bag_id = Int2D {
-                    x: t_transform(i, max_x),
-                    y: t_transform(j, max_y),
-                };
+                    //    if !self.fbag.contains_key(&bag_id) {
+                    //        continue;
+                    //    }
 
-                //    if !self.fbag.contains_key(&bag_id) {
-                //        continue;
-                //    }
+                    let check = check_circle(
+                        &bag_id,
+                        self.discretization,
+                        self.width,
+                        self.heigth,
+                        &pos,
+                        dist,
+                        self.toroidal,
+                    );
+                    let fbag = Arc::new(self.fbag.read().unwrap());
+                    let vector = match fbag.get(&bag_id) {
+                        Some(i) => i,
+                        None => continue,
+                    };
 
-                let check = check_circle(
-                    &bag_id,
-                    self.discretization,
-                    self.width,
-                    self.heigth,
-                    &pos,
-                    dist,
-                    self.toroidal,
-                );
-                let vector = match self.fbag.get(&bag_id) {
-                    Some(i) => i.to_vec(),
-                    None => continue,
-                };
-
-                if check == 1 {
-                    for elem in vector {
-                        tor.push(elem);
-                    }
-                } else if check == 0 {
-                    for elem in vector {
-                        if distance(
-                            &pos,
-                            &(elem.get_location()),
-                            self.width,
-                            self.heigth,
-                            self.toroidal,
-                        ) <= dist
-                        {
-                            tor.push(elem);
+                    if check == 1 {
+                        for elem in vector {
+                            tor.push(Ref::new(Some(Arc::clone(&fbag)), unsafe {
+                                &*(elem as *const A)
+                            }));
+                        }
+                    } else if check == 0 {
+                        for elem in vector {
+                            if distance(
+                                &pos,
+                                &(elem.get_location()),
+                                self.width,
+                                self.heigth,
+                                self.toroidal,
+                            ) <= dist
+                            {
+                                tor.push(Ref::new(Some(Arc::clone(&fbag)), unsafe {
+                                    &*(elem as *const A)
+                                }));
+                            }
                         }
                     }
                 }
             }
         }
-
         tor
     }
 
@@ -175,23 +185,23 @@ impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> Field2D<A> {
     //     result
     // }
 
-    pub fn num_objects(&self) -> usize {
-        self.findex.len()
-    }
+    // pub fn num_objects(&self) -> usize {
+    //     self.findex.read().unwrap().len()
+    // }
 
-    pub fn num_objects_at_location(&self, pos: Real2D) -> usize {
-        let bag = self.discretize(&pos);
-        let mut result = Vec::new();
-        
-        for (key, val) in self.fbag.iter() {
-            if *key == bag {
-                for elem in val {
-                    result.push(elem);
-                }
-            }
-        }
-        result.len()
-    }
+    // pub fn num_objects_at_location(&self, pos: Real2D) -> usize {
+    //     let bag = self.discretize(&pos);
+    //     let mut result = Vec::new();
+
+    //     for (key, val) in self.fbag.iter() {
+    //         if *key == bag {
+    //             for elem in val {
+    //                 result.push(elem);
+    //             }
+    //         }
+    //     }
+    //     result.len()
+    // }
 
     // pub fn get_object_location(&self, obj: A) -> Option<&Real2D> {
     //     self.fpos.get(&obj)
@@ -299,4 +309,9 @@ pub fn toroidal_transform(val: f64, dim: f64) -> f64 {
         }
         val
     }
+}
+
+impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> crate::field::DoubleBufferedField
+    for Field2D<A>
+{
 }

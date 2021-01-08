@@ -1,9 +1,7 @@
 extern crate abm;
-extern crate piston_window;
-extern crate priority_queue;
 
-#[macro_use]
-extern crate lazy_static;
+use criterion::*;
+
 use abm::bag_ref::Ref;
 use abm::agent::Agent;
 use abm::toroidal_transform;
@@ -17,14 +15,12 @@ use rand::Rng;
 use std::fmt;
 use std::hash::Hash;
 use std::hash::Hasher;
-use std::time::Instant;
-use crate::abm::field::DoubleBufferedField;
-
+use abm::field::DoubleBufferedField;
+use cfg_if::cfg_if;
 static mut _COUNT: u128 = 0;
-static STEP: u128 = 50;
-static NUM_AGENT: u128 = 8400;
-static WIDTH: f64 = 200.0;
-static HEIGTH: f64 = 200.0;
+static STEP: usize = 50;
+static WIDTH: f64 = 1008.0;
+static HEIGTH: f64 = 1008.0;
 static DISCRETIZATION: f64 = 10.0 / 1.5;
 static TOROIDAL: bool = true;
 static COHESION: f64 = 1.0;
@@ -33,21 +29,104 @@ static RANDOMNESS: f64 = 1.0;
 static CONSISTENCY: f64 = 1.0;
 static MOMENTUM: f64 = 1.0;
 static JUMP: f64 = 0.7;
+static WEAK_N:usize = 306000;
+static STRONG_N: usize = 3_006_000;
+static SUPER_STRONG_N: usize = 12_800_000;
+static thread_cfg: [usize;9] = [2,4,8,16,32,36,64,72,128];
+
+cfg_if!{
+    if #[cfg(feature ="sequential")]{
+        
+        fn benchmark_boids(c: &mut Criterion){
+            let mut weak_group = c.benchmark_group("Weak Scaling");
+            weak_group.sampling_mode(SamplingMode::Flat);
+            weak_group.sample_size(10);
+            let (mut state,mut schedule) = setup(WEAK_N/128,1);
+            weak_group.bench_function(BenchmarkId::new("boids",1),
+                |b|{ b.iter(|| simulate(STEP,&mut schedule,&mut state) ) });
+            weak_group.finish();
+
+            let mut strong_group = c.benchmark_group("Strong Scaling");
+            strong_group.sampling_mode(SamplingMode::Flat);
+            strong_group.sample_size(10);
+            let (mut state,mut schedule) = setup(STRONG_N/128,1);
+            strong_group.bench_function(BenchmarkId::new("boids",1),
+                |b|{ b.iter(|| simulate(STEP,&mut schedule,&mut state) ) });
+            strong_group.finish();
 
 
-fn main() {
+            let mut super_strong_group = c.benchmark_group("Super Strong Scaling");
+            super_strong_group.sampling_mode(SamplingMode::Flat);
+            super_strong_group.sample_size(10);
+            let (mut state,mut schedule) = setup(SUPER_STRONG_N/128,1);
+            super_strong_group.bench_function(BenchmarkId::new("boids",1),
+                |b|{ b.iter(|| simulate(STEP,&mut schedule,&mut state) ) });
+            super_strong_group.finish();
+        }
+    }
+    else{
+        fn benchmark_boids(c: &mut Criterion){
+            let mut weak_group = c.benchmark_group("Weak Scaling");
+            weak_group.sampling_mode(SamplingMode::Flat);
+            weak_group.sample_size(10);
+            for n_thread in thread_cfg.iter(){
+                let (mut state,mut schedule) = setup(WEAK_N/128 as usize * n_thread,*n_thread);
+                weak_group.bench_function(BenchmarkId::new("boids",n_thread),
+                    |b|{ b.iter(|| simulate(STEP,&mut schedule,&mut state) ) });
+                
+               }
+            weak_group.finish();
+
+            let mut strong_group = c.benchmark_group("Strong Scaling");
+            strong_group.sampling_mode(SamplingMode::Flat);
+            strong_group.sample_size(10);
+            for n_thread in thread_cfg.iter(){
+                let (mut state,mut schedule) = setup(STRONG_N/128 as usize * n_thread,*n_thread);
+                strong_group.bench_function(BenchmarkId::new("boids",n_thread),
+                    |b|{ b.iter(|| simulate(STEP,&mut schedule,&mut state) ) });
+                
+            }
+
+            strong_group.finish();
+            
+            let mut super_strong_group = c.benchmark_group("Super Strong Scaling");
+            super_strong_group.sampling_mode(SamplingMode::Flat);
+            super_strong_group.sample_size(10);
+            for n_thread in thread_cfg.iter(){
+                let (mut state,mut schedule) = setup(SUPER_STRONG_N/128 as usize * n_thread,*n_thread);
+                super_strong_group.bench_function(BenchmarkId::new("boids",n_thread),
+                    |b|{ b.iter(|| simulate(STEP,&mut schedule,&mut state) ) });
+            }
+
+            super_strong_group.finish();
+        }
+    }
+}
+
+criterion_group!(benches, benchmark_boids);
+criterion_main!(benches);
+
+fn setup(n_agent:usize, n_thread:usize) ->(BoidsState,abm::Schedule<Bird>) {
     let mut rng = rand::thread_rng();
-    let mut schedule: Schedule<Bird> = Schedule::new();
+    
+    cfg_if!{
+        if #[cfg(feature ="sequential")]{
+            let mut schedule: Schedule<Bird> = Schedule::new();
+        }
+        else{
+            let mut schedule: Schedule<Bird> = Schedule::with_threads(n_thread);
+        }
+    }
     // assert!(schedule.events.is_empty());
 
     let mut state = BoidsState::new(WIDTH, HEIGTH, DISCRETIZATION, TOROIDAL);
-    for bird_id in 0..NUM_AGENT {
+    for bird_id in 0..n_agent {
         
         let r1: f64 = rng.gen();
         let r2: f64 = rng.gen();
         let last_d = Real2D { x: 0.0, y: 0.0 };
         let bird = Bird::new(
-            bird_id,
+            bird_id as u128,
             Real2D {
                 x: WIDTH * r1,
                 y: HEIGTH * r2,
@@ -61,23 +140,14 @@ fn main() {
         schedule.schedule_repeating(bird, 0.0, 0);
     }
 
-    // assert!(!schedule.events.is_empty());
-
-    let start = Instant::now();
-
-    for _ in 0..STEP {
-        schedule.step(&mut state);
-    }
-
-    let run_duration = start.elapsed();
-
-    println!("Time elapsed in testing schedule is: {:?}", run_duration);
-    println!("(boids)Total Step:{}\nStep for seconds: {:?}",
-        schedule.step,
-        schedule.step as f64 /(run_duration.as_nanos() as f64 * 1e-9)
-    );
+    (state,schedule)
 }
 
+fn simulate(step:usize,schedule:&mut abm::Schedule<Bird>, state: &mut BoidsState){
+    for _ in 0..step {
+        schedule.step(state);
+    }
+}
 pub struct BoidsState {
     pub field1: Field2D<Bird>,
 }
