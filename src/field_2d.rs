@@ -204,8 +204,12 @@ impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> Field2D<A> {
     //     result.len()
     // }
 
-    // pub fn get_object_location(&self, obj: A) -> Option<&Real2D> {
-    //     self.fpos.get(&obj)
+    // pub fn get_object_location(&self, obj: A) -> Option<Ref<Real2D>> {
+    //     let fpos = Arc::new(self.fpos.read().unwrap());
+    //     let pos = fpos.get(&obj);
+    //     match pos{
+    //         Some(x) => Some( Ref::new( Some(Arc::clone(&fpos)), unsafe{ &*(x as *const Real2D)})) 
+    //     }
     // }
 
     fn discretize(&self, pos: &Real2D) -> Int2D {

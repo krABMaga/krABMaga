@@ -22,9 +22,9 @@ use crate::abm::field::DoubleBufferedField;
 
 static mut _COUNT: u128 = 0;
 static STEP: u128 = 50;
-static NUM_AGENT: u128 = 8400;
-static WIDTH: f64 = 200.0;
-static HEIGTH: f64 = 200.0;
+static NUM_AGENT: u128 = 20390;
+static WIDTH: f64 = 1008.0;
+static HEIGTH: f64 = 1008.0;
 static DISCRETIZATION: f64 = 10.0 / 1.5;
 static TOROIDAL: bool = true;
 static COHESION: f64 = 1.0;
