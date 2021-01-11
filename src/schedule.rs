@@ -115,6 +115,8 @@ impl<A: 'static + Agent + Clone + Send> Schedule<A> {
                 );
             }
         }
+        
+        state.update();
         // println!("Time spent calling step method, step {} : {:?}",self.step,start.elapsed());
 
     }
