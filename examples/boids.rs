@@ -264,10 +264,10 @@ impl Agent for Bird {
             dy = dy / dis * JUMP;
         }
 
-        let _lastd = Real2D { x: dx, y: dy };
+        self.last_d = Real2D { x: dx, y: dy };
         let loc_x = toroidal_transform(self.pos.x + dx, WIDTH);
         let loc_y = toroidal_transform(self.pos.y + dy, WIDTH);
-
+        
         self.pos = Real2D { x: loc_x, y: loc_y };
         drop(vec);
         state
