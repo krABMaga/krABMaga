@@ -1,12 +1,9 @@
 extern crate abm;
 
-use criterion::*;
-
-use abm::bag_ref::Ref;
 use abm::agent::Agent;
-use abm::toroidal_transform;
-use abm::toroidal_distance;
-use abm::Field2D;
+use abm::field_2d::toroidal_transform;
+use abm::field_2d::toroidal_distance;
+use abm::field_2d::Field2D;
 use abm::location::Location2D;
 use abm::location::Real2D;
 use abm::Schedule;
@@ -32,7 +29,7 @@ static JUMP: f64 = 0.7;
 static WEAK_N:usize = 306_000;
 static STRONG_N: usize = 3_006_000;
 static SUPER_STRONG_N: usize = 12_800_000;
-static thread_cfg: [usize;2] = [2,4];//,8,16,32,36,64,72,128];
+static thread_cfg: [usize;9] = [2,4,8,16,32,36,64,72,128];
 
 cfg_if!{
     if #[cfg(feature ="sequential")]{
@@ -180,7 +177,7 @@ impl Bird {
         Bird { id, pos, last_d }
     }
 
-    pub fn avoidance(self, vec: &Vec<Ref<Bird>>) -> Real2D {
+    pub fn avoidance(self, vec: &Vec<&Bird>) -> Real2D {
         if vec.is_empty() {
             let real = Real2D { x: 0.0, y: 0.0 };
             return real;
@@ -218,7 +215,7 @@ impl Bird {
         }
     }
 
-    pub fn cohesion(self, vec: &Vec<Ref<Bird>>) -> Real2D {
+    pub fn cohesion(self, vec: &Vec<&Bird>) -> Real2D {
         if vec.is_empty() {
             let real = Real2D { x: 0.0, y: 0.0 };
             return real;
@@ -270,7 +267,7 @@ impl Bird {
         return real;
     }
 
-    pub fn consistency(self, vec: &Vec<Ref<Bird>>) -> Real2D {
+    pub fn consistency(self, vec: &Vec<&Bird>) -> Real2D {
         if vec.is_empty() {
             let real = Real2D { x: 0.0, y: 0.0 };
             return real;
