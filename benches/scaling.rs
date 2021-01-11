@@ -29,82 +29,83 @@ static RANDOMNESS: f64 = 1.0;
 static CONSISTENCY: f64 = 1.0;
 static MOMENTUM: f64 = 1.0;
 static JUMP: f64 = 0.7;
-static WEAK_N:usize = 306000;
+static WEAK_N:usize = 306_000;
 static STRONG_N: usize = 3_006_000;
 static SUPER_STRONG_N: usize = 12_800_000;
-static thread_cfg: [usize;9] = [2,4,8,16,32,36,64,72,128];
+static thread_cfg: [usize;2] = [2,4];//,8,16,32,36,64,72,128];
 
 cfg_if!{
     if #[cfg(feature ="sequential")]{
         
-        fn benchmark_boids(c: &mut Criterion){
-            let mut weak_group = c.benchmark_group("Weak Scaling");
-            weak_group.sampling_mode(SamplingMode::Flat);
-            weak_group.sample_size(10);
-            let (mut state,mut schedule) = setup(WEAK_N/128,1);
-            weak_group.bench_function(BenchmarkId::new("boids",1),
-                |b|{ b.iter(|| simulate(STEP,&mut schedule,&mut state) ) });
-            weak_group.finish();
-
-            let mut strong_group = c.benchmark_group("Strong Scaling");
-            strong_group.sampling_mode(SamplingMode::Flat);
-            strong_group.sample_size(10);
-            let (mut state,mut schedule) = setup(STRONG_N/128,1);
-            strong_group.bench_function(BenchmarkId::new("boids",1),
-                |b|{ b.iter(|| simulate(STEP,&mut schedule,&mut state) ) });
-            strong_group.finish();
-
-
-            let mut super_strong_group = c.benchmark_group("Super Strong Scaling");
-            super_strong_group.sampling_mode(SamplingMode::Flat);
-            super_strong_group.sample_size(10);
-            let (mut state,mut schedule) = setup(SUPER_STRONG_N/128,1);
-            super_strong_group.bench_function(BenchmarkId::new("boids",1),
-                |b|{ b.iter(|| simulate(STEP,&mut schedule,&mut state) ) });
-            super_strong_group.finish();
+        fn weak_scaling(){
+            println!("Weak Scaling Seq");
+           
+            let (mut state,mut schedule) = setup(WEAK_N/128  as usize,1);
+            let start = std::time::Instant::now();
+            simulate(STEP,&mut schedule,&mut state);
+            println!("1;{};{:.2}",WEAK_N/128  as usize,start.elapsed().as_nanos() as f64 * 1e-9);
         }
+    
+        fn strong_scaling(){
+            println!("Strong Scaling Seq");
+            let (mut state,mut schedule) = setup(STRONG_N/128  as usize,1);
+            let start = std::time::Instant::now();
+            simulate(STEP,&mut schedule,&mut state);
+            println!("1;{};{:.2}",STRONG_N/128  as usize,start.elapsed().as_nanos() as f64 * 1e-9);
+        
+        }
+
+        fn super_strong_scaling(){
+            println!("Super Strong Scaling Seq");
+            let (mut state,mut schedule) = setup(SUPER_STRONG_N/128  as usize,1);
+            let start = std::time::Instant::now();
+            simulate(STEP,&mut schedule,&mut state);
+            println!("1;{};{:.2}",SUPER_STRONG_N/128 as usize,start.elapsed().as_nanos() as f64 * 1e-9);
+            
+        }
+
     }
     else{
-        fn benchmark_boids(c: &mut Criterion){
-            let mut weak_group = c.benchmark_group("Weak Scaling");
-            weak_group.sampling_mode(SamplingMode::Flat);
-            weak_group.sample_size(10);
+        fn weak_scaling(){
+            println!("Weak Scaling");
             for n_thread in thread_cfg.iter(){
-                let (mut state,mut schedule) = setup(WEAK_N/128 as usize * n_thread,*n_thread);
-                weak_group.bench_function(BenchmarkId::new("boids",n_thread),
-                    |b|{ b.iter(|| simulate(STEP,&mut schedule,&mut state) ) });
-                
-               }
-            weak_group.finish();
-
-            let mut strong_group = c.benchmark_group("Strong Scaling");
-            strong_group.sampling_mode(SamplingMode::Flat);
-            strong_group.sample_size(10);
-            for n_thread in thread_cfg.iter(){
-                let (mut state,mut schedule) = setup(STRONG_N/128 as usize * n_thread,*n_thread);
-                strong_group.bench_function(BenchmarkId::new("boids",n_thread),
-                    |b|{ b.iter(|| simulate(STEP,&mut schedule,&mut state) ) });
-                
+                let (mut state,mut schedule) = setup(WEAK_N/128  as usize * n_thread,*n_thread);
+                let start = std::time::Instant::now();
+                simulate(STEP,&mut schedule,&mut state);
+               println!("{};{};{:.2}",n_thread,WEAK_N/128  as usize * n_thread,start.elapsed().as_nanos() as f64 * 1e-9);
             }
-
-            strong_group.finish();
-            
-            let mut super_strong_group = c.benchmark_group("Super Strong Scaling");
-            super_strong_group.sampling_mode(SamplingMode::Flat);
-            super_strong_group.sample_size(10);
-            for n_thread in thread_cfg.iter(){
-                let (mut state,mut schedule) = setup(SUPER_STRONG_N/128 as usize * n_thread,*n_thread);
-                super_strong_group.bench_function(BenchmarkId::new("boids",n_thread),
-                    |b|{ b.iter(|| simulate(STEP,&mut schedule,&mut state) ) });
-            }
-
-            super_strong_group.finish();
         }
+
+        fn strong_scaling(){
+            println!("Strong Scaling");
+            for n_thread in thread_cfg.iter(){
+                let (mut state,mut schedule) = setup(STRONG_N/128  as usize * n_thread,*n_thread);
+                let start = std::time::Instant::now();
+                simulate(STEP,&mut schedule,&mut state);
+               println!("{};{};{:.2}",n_thread,STRONG_N/128  as usize * n_thread,start.elapsed().as_nanos() as f64 * 1e-9);
+                
+            }
+        }
+        
+        fn super_strong_scaling(){
+            println!("Super Strong Scaling");
+            for n_thread in thread_cfg.iter(){
+                let (mut state,mut schedule) = setup(SUPER_STRONG_N/128  as usize * n_thread,*n_thread);
+                let start = std::time::Instant::now();
+                simulate(STEP,&mut schedule,&mut state);
+                println!("{};{};{:.2}",n_thread,SUPER_STRONG_N/128  as usize * n_thread,start.elapsed().as_nanos() as f64 * 1e-9);
+                
+            }
+        }
+
     }
 }
 
-criterion_group!(benches, benchmark_boids);
-criterion_main!(benches);
+fn main(){
+    weak_scaling();
+    strong_scaling();
+    super_strong_scaling();
+}
 
 fn setup(n_agent:usize, n_thread:usize) ->(BoidsState,abm::Schedule<Bird>) {
     let mut rng = rand::thread_rng();

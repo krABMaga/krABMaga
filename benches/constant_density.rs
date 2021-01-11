@@ -49,7 +49,7 @@ fn main() {
         let mut rng = rand::thread_rng();
         let mut schedule: Schedule<Bird> = Schedule::new();
         // assert!(schedule.events.is_empty());
-
+        
         let mut state = BoidsState::new(WIDTH * (mult as f64).powf(0.5), HEIGTH * (mult as f64).powf(0.5), DISCRETIZATION, TOROIDAL);
         for bird_id in 0..num_agent {
             
