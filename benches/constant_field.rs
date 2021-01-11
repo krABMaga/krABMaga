@@ -37,11 +37,12 @@ static JUMP: f64 = 0.7;
 fn main() {
     println!("num_agent;total_step;steps_for_second");
     for i in 0..15{
+        println!("ao");
         let num_agent = NUM_AGENT * 2u128.pow(i);
         let mut rng = rand::thread_rng();
         let mut schedule: Schedule<Bird> = Schedule::new();
         // assert!(schedule.events.is_empty());
-
+        
         let mut state = BoidsState::new(WIDTH, HEIGTH, DISCRETIZATION, TOROIDAL);
         for bird_id in 0..num_agent {
             
@@ -64,13 +65,15 @@ fn main() {
         }
 
         // assert!(!schedule.events.is_empty());
-        let dur = std::time::Duration::from_secs(600);
+        let dur = std::time::Duration::from_secs(1);
         
         let start = Instant::now();
         
         while start.elapsed() <= dur{
             schedule.step(&mut state);
         }
+
+        let dur = start.elapsed();
 
         
 

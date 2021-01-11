@@ -4,11 +4,10 @@ extern crate priority_queue;
 
 #[macro_use]
 extern crate lazy_static;
-use abm::bag_ref::Ref;
 use abm::agent::Agent;
-use abm::toroidal_transform;
-use abm::toroidal_distance;
-use abm::Field2D;
+use abm::field_2d::toroidal_transform;
+use abm::field_2d::toroidal_distance;
+use abm::field_2d::Field2D;
 use abm::location::Location2D;
 use abm::location::Real2D;
 use abm::Schedule;
@@ -22,7 +21,7 @@ use crate::abm::field::DoubleBufferedField;
 
 static mut _COUNT: u128 = 0;
 static STEP: u128 = 50;
-static NUM_AGENT: u128 = 20390;
+static NUM_AGENT: u128 = 100390;
 static WIDTH: f64 = 1008.0;
 static HEIGTH: f64 = 1008.0;
 static DISCRETIZATION: f64 = 10.0 / 1.5;
@@ -109,7 +108,7 @@ impl Bird {
         Bird { id, pos, last_d }
     }
 
-    pub fn avoidance(self, vec: &Vec<Ref<Bird>>) -> Real2D {
+    pub fn avoidance(self, vec: &Vec<&Bird>) -> Real2D {
         if vec.is_empty() {
             let real = Real2D { x: 0.0, y: 0.0 };
             return real;
@@ -147,7 +146,7 @@ impl Bird {
         }
     }
 
-    pub fn cohesion(self, vec: &Vec<Ref<Bird>>) -> Real2D {
+    pub fn cohesion(self, vec: &Vec<&Bird>) -> Real2D {
         if vec.is_empty() {
             let real = Real2D { x: 0.0, y: 0.0 };
             return real;
@@ -199,7 +198,7 @@ impl Bird {
         return real;
     }
 
-    pub fn consistency(self, vec: &Vec<Ref<Bird>>) -> Real2D {
+    pub fn consistency(self, vec: &Vec<&Bird>) -> Real2D {
         if vec.is_empty() {
             let real = Real2D { x: 0.0, y: 0.0 };
             return real;

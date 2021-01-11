@@ -4,7 +4,7 @@ use crate::agent::Agent;
 use crate::agentimpl::AgentImpl;
 use crate::priority::Priority;
 use priority_queue::PriorityQueue;
-
+use crate::state::State;
 
 pub struct Schedule<A: 'static + Agent + Clone + Send> {
     pub step: usize,
@@ -54,8 +54,10 @@ impl<A: 'static + Agent + Clone + Send> Schedule<A> {
         self.events.push(a, pr);
     }
 
-    pub fn step(&mut self,state: &<A as Agent>::SimState){
-      
+    pub fn step(&mut self,state: &mut <A as Agent>::SimState){
+        if self.step == 0{
+            state.update();
+        }
         self.step += 1;
 
 
