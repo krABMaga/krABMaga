@@ -1,6 +1,4 @@
 use crate::visualization::sprite_render_factory::SpriteRenderFactory;
-use amethyst::assets::Loader;
-use amethyst::core::ecs::shred::FetchMut;
 use amethyst::prelude::World;
 
 pub trait OnStateInit {

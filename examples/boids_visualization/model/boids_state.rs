@@ -1,8 +1,7 @@
 use crate::model::bird::Bird;
 use abm::field::DoubleBufferedField;
+use abm::field_2d::Field2D;
 use abm::state::State;
-use abm::Field2D;
-use std::sync::Mutex;
 
 pub static WIDTH: f64 = 400.;
 pub static HEIGHT: f64 = 400.;

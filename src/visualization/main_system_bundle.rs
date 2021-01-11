@@ -26,8 +26,7 @@ impl<'a, 'b, T: 'static + Agent + Render + Clone + Send + Sync> SystemBundle<'a,
             marker: PhantomData,
         };
         builder.add(sim, "simulation_system", &[]);
-        // TODO: capire cosa clona i bird
-        //builder.add(rendering, "renderer_system", &[]);
+        builder.add(rendering, "renderer_system", &[]);
         Ok(())
     }
 }

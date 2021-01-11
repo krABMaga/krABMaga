@@ -1,3 +1,4 @@
+use crate::agent::Agent;
 use amethyst::core::ecs::Component;
 use amethyst::core::math::Vector3;
 use amethyst::core::Transform;
@@ -6,7 +7,7 @@ use amethyst::renderer::SpriteRender;
 
 /// A trait that specifies a struct can be rendered somehow.
 /// It requires a Storage associated type, one can just use DenseVecStorage<Self> unless futher optimization is required.
-pub trait Render: Component + Send + Sync {
+pub trait Render: Agent + Component + Send + Sync {
     /// Specifies the asset to use when drawing the struct in an Amethyst window.
     /// This should be overwritten to return a string which can point to two things:
     /// 1) An emoji code, a list can be found here: https://www.webfx.com/tools/emoji-cheat-sheet/
@@ -16,7 +17,7 @@ pub trait Render: Component + Send + Sync {
     /// Specifies the position of the sprite in the window.
     /// This is separate from Location2D because we require f32s, and the user may want to separate window
     /// position from the actual model's.
-    fn position(&self) -> (f32, f32);
+    fn position(&self, state: &Self::SimState) -> (f32, f32);
 
     /// Specifies the scale of the sprite in the window.
     fn scale(&self) -> (f32, f32);
@@ -24,9 +25,14 @@ pub trait Render: Component + Send + Sync {
     /// Rotation of the sprite in radians
     fn rotation(&self) -> f32;
 
-    fn setup_graphics(self, sprite_render: SpriteRender, world: &mut World) {
+    fn setup_graphics(
+        self,
+        sprite_render: SpriteRender,
+        world: &mut World,
+        state: &Self::SimState,
+    ) {
         let mut transform = Transform::default();
-        let (x, y) = self.position();
+        let (x, y) = self.position(state);
         let (scale_x, scale_y) = self.scale();
         transform.set_translation_xyz(x, y, 0.);
         transform.set_scale(Vector3::new(scale_x, scale_y, 1.));
@@ -39,12 +45,7 @@ pub trait Render: Component + Send + Sync {
     }
 
     /// Update the graphical position and orientation based on the info coming from the model
-    fn update(&mut self, transform: &mut Transform) {
-        let (pos_x, pos_y) = self.position();
-        println!("Agent: {:?} {:?}", self.position(), transform);
-        println!("Setting transform with {:?} {:?}!", pos_x, pos_y);
-        transform.set_translation_xyz(pos_x, pos_y, 0.);
-    }
+    fn update(&mut self, transform: &mut Transform, state: &Self::SimState);
 }
 
 pub enum SpriteType {

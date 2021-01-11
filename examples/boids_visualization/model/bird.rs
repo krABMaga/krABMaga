@@ -2,9 +2,8 @@ use crate::model::boids_state::{
     BoidsState, AVOIDANCE, COHESION, CONSISTENCY, HEIGHT, JUMP, MOMENTUM, RANDOMNESS, WIDTH,
 };
 use abm::agent::Agent;
+use abm::field_2d::{toroidal_distance, toroidal_transform};
 use abm::location::{Location2D, Real2D};
-use abm::visualization::renderable::Render;
-use abm::{toroidal_distance, toroidal_transform};
 use core::fmt;
 use rand::Rng;
 use std::hash::{Hash, Hasher};
@@ -21,7 +20,7 @@ impl Bird {
         Bird { id, pos, last_d }
     }
 
-    pub fn avoidance(self, vec: &Vec<Ref<Bird>>) -> Real2D {
+    pub fn avoidance(self, vec: &Vec<&Bird>) -> Real2D {
         if vec.is_empty() {
             let real = Real2D { x: 0.0, y: 0.0 };
             return real;
@@ -59,7 +58,7 @@ impl Bird {
         }
     }
 
-    pub fn cohesion(self, vec: &Vec<Ref<Bird>>) -> Real2D {
+    pub fn cohesion(self, vec: &Vec<&Bird>) -> Real2D {
         if vec.is_empty() {
             let real = Real2D { x: 0.0, y: 0.0 };
             return real;
@@ -111,7 +110,7 @@ impl Bird {
         return real;
     }
 
-    pub fn consistency(self, vec: &Vec<Ref<Bird>>) -> Real2D {
+    pub fn consistency(self, vec: &Vec<&Bird>) -> Real2D {
         if vec.is_empty() {
             let real = Real2D { x: 0.0, y: 0.0 };
             return real;
@@ -150,8 +149,6 @@ impl Agent for Bird {
     type SimState = BoidsState;
 
     fn step(&mut self, state: &BoidsState) {
-        println!("step ran!");
-
         let vec = state.field1.get_neighbors_within_distance(self.pos, 10.0);
 
         let avoid = self.avoidance(&vec);
@@ -177,25 +174,11 @@ impl Agent for Bird {
             dy = dy / dis * JUMP;
         }
 
-        let _lastd = Real2D { x: dx, y: dy };
+        self.last_d = Real2D { x: dx, y: dy };
         let loc_x = toroidal_transform(self.pos.x + dx, WIDTH);
         let loc_y = toroidal_transform(self.pos.y + dy, WIDTH);
-        println!(
-            "Last pos: {} {}, new pos: {} {}, trait pos: {} {}",
-            self.pos.x,
-            self.pos.y,
-            loc_x,
-            loc_y,
-            self.position().0,
-            self.position().1
-        );
 
         self.pos = Real2D { x: loc_x, y: loc_y };
-        println!(
-            "Updated trait pos: {} {}",
-            self.position().0,
-            self.position().1
-        );
         drop(vec);
         state
             .field1
