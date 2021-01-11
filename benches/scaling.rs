@@ -29,7 +29,7 @@ static JUMP: f64 = 0.7;
 static WEAK_N:usize = 306_000;
 static STRONG_N: usize = 3_006_000;
 static SUPER_STRONG_N: usize = 12_800_000;
-static thread_cfg: [usize;9] = [2,4,8,16,32,36,64,72,128];
+static thread_cfg: [usize;9] = [2,4,8,16,32,36,64,72,96];
 
 cfg_if!{
     if #[cfg(feature ="sequential")]{
@@ -37,27 +37,27 @@ cfg_if!{
         fn weak_scaling(){
             println!("Weak Scaling Seq");
            
-            let (mut state,mut schedule) = setup(WEAK_N/128  as usize,1);
+            let (mut state,mut schedule) = setup(WEAK_N/96  as usize,1);
             let start = std::time::Instant::now();
             simulate(STEP,&mut schedule,&mut state);
-            println!("1;{};{:.2}",WEAK_N/128  as usize,start.elapsed().as_nanos() as f64 * 1e-9);
+            println!("1;{};{:.2}",WEAK_N/96  as usize,start.elapsed().as_nanos() as f64 * 1e-9);
         }
     
         fn strong_scaling(){
             println!("Strong Scaling Seq");
-            let (mut state,mut schedule) = setup(STRONG_N/128  as usize,1);
+            let (mut state,mut schedule) = setup(STRONG_N/96  as usize,1);
             let start = std::time::Instant::now();
             simulate(STEP,&mut schedule,&mut state);
-            println!("1;{};{:.2}",STRONG_N/128  as usize,start.elapsed().as_nanos() as f64 * 1e-9);
+            println!("1;{};{:.2}",STRONG_N/96  as usize,start.elapsed().as_nanos() as f64 * 1e-9);
         
         }
 
         fn super_strong_scaling(){
             println!("Super Strong Scaling Seq");
-            let (mut state,mut schedule) = setup(SUPER_STRONG_N/128  as usize,1);
+            let (mut state,mut schedule) = setup(SUPER_STRONG_N/96  as usize,1);
             let start = std::time::Instant::now();
             simulate(STEP,&mut schedule,&mut state);
-            println!("1;{};{:.2}",SUPER_STRONG_N/128 as usize,start.elapsed().as_nanos() as f64 * 1e-9);
+            println!("1;{};{:.2}",SUPER_STRONG_N/96 as usize,start.elapsed().as_nanos() as f64 * 1e-9);
             
         }
 
@@ -66,31 +66,30 @@ cfg_if!{
         fn weak_scaling(){
             println!("Weak Scaling");
             for n_thread in thread_cfg.iter(){
-                let (mut state,mut schedule) = setup(WEAK_N/128  as usize * n_thread,*n_thread);
+                let (mut state,mut schedule) = setup(WEAK_N/96  as usize * n_thread,*n_thread);
                 let start = std::time::Instant::now();
                 simulate(STEP,&mut schedule,&mut state);
-               println!("{};{};{:.2}",n_thread,WEAK_N/128  as usize * n_thread,start.elapsed().as_nanos() as f64 * 1e-9);
+               println!("{};{};{:.2}",n_thread,WEAK_N/96  as usize * n_thread,start.elapsed().as_nanos() as f64 * 1e-9);
             }
         }
 
         fn strong_scaling(){
             println!("Strong Scaling");
             for n_thread in thread_cfg.iter(){
-                let (mut state,mut schedule) = setup(STRONG_N/128  as usize * n_thread,*n_thread);
+                let (mut state,mut schedule) = setup(STRONG_N/96  as usize * n_thread,*n_thread);
                 let start = std::time::Instant::now();
                 simulate(STEP,&mut schedule,&mut state);
-               println!("{};{};{:.2}",n_thread,STRONG_N/128  as usize * n_thread,start.elapsed().as_nanos() as f64 * 1e-9);
-                
+               println!("{};{};{:.2}",n_thread,STRONG_N/96  as usize * n_thread,start.elapsed().as_nanos() as f64 * 1e-9);    
             }
         }
         
         fn super_strong_scaling(){
             println!("Super Strong Scaling");
             for n_thread in thread_cfg.iter(){
-                let (mut state,mut schedule) = setup(SUPER_STRONG_N/128  as usize * n_thread,*n_thread);
+                let (mut state,mut schedule) = setup(SUPER_STRONG_N/96  as usize * n_thread,*n_thread);
                 let start = std::time::Instant::now();
                 simulate(STEP,&mut schedule,&mut state);
-                println!("{};{};{:.2}",n_thread,SUPER_STRONG_N/128  as usize * n_thread,start.elapsed().as_nanos() as f64 * 1e-9);
+                println!("{};{};{:.2}",n_thread,SUPER_STRONG_N/96  as usize * n_thread,start.elapsed().as_nanos() as f64 * 1e-9);
                 
             }
         }
