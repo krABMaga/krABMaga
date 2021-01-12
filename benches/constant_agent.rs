@@ -37,53 +37,55 @@ static INDEX: AtomicUsize = AtomicUsize::new(0);
 static thread_cfg: [usize;6] = [2,4,8,16,32,36];
 
 fn main() {
-    println!("num_thread;num_agent;total_step;steps_for_second");
-    for i in 0..15{
-        INDEX.store(i,Relaxed);
+    println!("num_thread;field_size;total_step;steps_for_second");
+    for n_thread in thread_cfg.iter(){
+        for i in 0..15{
+            INDEX.store(i,Relaxed);
 
-        let mut rng = rand::thread_rng();
-        let mut schedule: Schedule<Bird> = Schedule::new();
-        // assert!(schedule.events.is_empty());
+            let mut rng = rand::thread_rng();
+            let mut schedule: Schedule<Bird> = Schedule::with_threads(*n_thread);
+            // assert!(schedule.events.is_empty());
 
-        let mut state = BoidsState::new(SIZE[INDEX.load(Relaxed)], SIZE[INDEX.load(Relaxed)], DISCRETIZATION, TOROIDAL);
-        for bird_id in 0..NUM_AGENT {
+            let mut state = BoidsState::new(SIZE[INDEX.load(Relaxed)], SIZE[INDEX.load(Relaxed)], DISCRETIZATION, TOROIDAL);
+            for bird_id in 0..NUM_AGENT {
+                
+                let r1: f64 = rng.gen();
+                let r2: f64 = rng.gen();
+                let last_d = Real2D { x: 0.0, y: 0.0 };
+                let bird = Bird::new(
+                    bird_id,
+                    Real2D {
+                        x: SIZE[INDEX.load(Relaxed)] * r1,
+                        y: SIZE[INDEX.load(Relaxed)] * r2,
+                    },
+                    last_d,
+                );
+                state
+                    .field1
+                    .set_object_location(bird, bird.pos);
             
-            let r1: f64 = rng.gen();
-            let r2: f64 = rng.gen();
-            let last_d = Real2D { x: 0.0, y: 0.0 };
-            let bird = Bird::new(
-                bird_id,
-                Real2D {
-                    x: SIZE[INDEX.load(Relaxed)] * r1,
-                    y: SIZE[INDEX.load(Relaxed)] * r2,
-                },
-                last_d,
+                schedule.schedule_repeating(bird, 0.0, 0);
+            }
+
+            // assert!(!schedule.events.is_empty());
+            let dur = std::time::Duration::from_secs(1);
+            
+            let start = Instant::now();
+            
+            while start.elapsed() <= dur{
+                schedule.step(&mut state);
+            }
+
+            
+
+            
+            println!("{};{};{};{:?}",
+                schedule.pool.current_num_threads(),
+                SIZE[INDEX.load(Relaxed)],
+                schedule.step,
+                schedule.step as f64 /( dur.as_nanos() as f64 * 1e-9)
             );
-            state
-                .field1
-                .set_object_location(bird, bird.pos);
-        
-            schedule.schedule_repeating(bird, 0.0, 0);
         }
-
-        // assert!(!schedule.events.is_empty());
-        let dur = std::time::Duration::from_secs(600);
-        
-        let start = Instant::now();
-        
-        while start.elapsed() <= dur{
-            schedule.step(&mut state);
-        }
-
-        
-
-        
-        println!("{};{};{};{:?}",
-            schedule.pool.current_num_threads(),
-            SIZE[INDEX.load(Relaxed)],
-            schedule.step,
-            schedule.step as f64 /( dur.as_nanos() as f64 * 1e-9)
-        );
     }
 }
 

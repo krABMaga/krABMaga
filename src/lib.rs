@@ -6,6 +6,8 @@ pub mod simple_grid_2d;
 pub mod field;
 pub mod state;
 pub mod field_2d;
+pub mod utils;
+
 use cfg_if::cfg_if;
 
 

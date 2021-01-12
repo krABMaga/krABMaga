@@ -39,7 +39,7 @@ fn main() {
         for i in 0..15{
             let num_agent = NUM_AGENT * 2u128.pow(i);
             let mut rng = rand::thread_rng();
-            let mut schedule: Schedule<Bird> = Schedule::new();
+            let mut schedule: Schedule<Bird> = Schedule::with_threads(*n_thread);
             // assert!(schedule.events.is_empty());
             
             let mut state = BoidsState::new(WIDTH, HEIGTH, DISCRETIZATION, TOROIDAL);
@@ -64,7 +64,7 @@ fn main() {
             }
 
             // assert!(!schedule.events.is_empty());
-            let dur = std::time::Duration::from_secs(600);
+            let dur = std::time::Duration::from_secs(1);
             
             let start = Instant::now();
             

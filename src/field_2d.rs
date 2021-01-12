@@ -5,14 +5,14 @@ use crate::field::DoubleBufferedField;
 use crate::location::Int2D;
 use crate::location::Location2D;
 use std::cmp;
-use DBdashmap::DBashMap;
+use crate::utils::dbdashmap::DBDashMap;
 
 
 
 pub struct Field2D<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> {
-    pub findex: DBashMap<A, Int2D>,
-    pub fbag: DBashMap<Int2D, Vec<A>>,
-    pub fpos: DBashMap<A, Real2D>,
+    pub findex: DBDashMap<A, Int2D>,
+    pub fbag: DBDashMap<Int2D, Vec<A>>,
+    pub fpos: DBDashMap<A, Real2D>,
     pub width: f64,
     pub heigth: f64,
     pub discretization: f64,
@@ -22,9 +22,9 @@ pub struct Field2D<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> {
 impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> Field2D<A>  {
     pub fn new(w: f64, h: f64, d: f64, t: bool) -> Field2D<A> {
         Field2D {
-            findex: DBashMap::new(),
-            fbag: DBashMap::new(),
-            fpos: DBashMap::new(),
+            findex: DBDashMap::new(),
+            fbag: DBDashMap::new(),
+            fpos: DBDashMap::new(),
             width: w,
             heigth: h,
             discretization: d,

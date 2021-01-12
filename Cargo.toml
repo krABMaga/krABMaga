@@ -28,10 +28,10 @@ piston2d-graphics = "0.35.0"
 pistoncore-glutin_window = "0.63.0"
 piston2d-opengl_graphics = "0.70.0"
 cfg-if = "1.0.0"
-DBdashmap = { path = "DBdashmap"}
 num_cpus = "1.13.0"
 rayon="1.5.0"
 clap="2.33.3"
+ahash="0.6.2"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 metal = "0.17.0"

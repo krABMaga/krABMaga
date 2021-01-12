@@ -1,8 +1,6 @@
 extern crate abm;
 extern crate piston_window;
 extern crate priority_queue;
-
-#[macro_use]
 extern crate lazy_static;
 use abm::agent::Agent;
 use abm::field_2d::toroidal_transform;
@@ -21,9 +19,9 @@ use crate::abm::field::DoubleBufferedField;
 
 static mut _COUNT: u128 = 0;
 static STEP: u128 = 50;
-static NUM_AGENT: u128 = 100390;
-static WIDTH: f64 = 1008.0;
-static HEIGTH: f64 = 1008.0;
+static NUM_AGENT: u128 = 8390;
+static WIDTH: f64 = 208.0;
+static HEIGTH: f64 = 208.0;
 static DISCRETIZATION: f64 = 10.0 / 1.5;
 static TOROIDAL: bool = true;
 static COHESION: f64 = 1.0;
