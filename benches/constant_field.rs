@@ -4,11 +4,10 @@ extern crate priority_queue;
 
 #[macro_use]
 extern crate lazy_static;
-use abm::bag_ref::Ref;
 use abm::agent::Agent;
-use abm::toroidal_transform;
-use abm::toroidal_distance;
-use abm::Field2D;
+use abm::field_2d::toroidal_transform;
+use abm::field_2d::toroidal_distance;
+use abm::field_2d::Field2D;
 use abm::location::Location2D;
 use abm::location::Real2D;
 use abm::Schedule;
@@ -32,57 +31,59 @@ static RANDOMNESS: f64 = 1.0;
 static CONSISTENCY: f64 = 1.0;
 static MOMENTUM: f64 = 1.0;
 static JUMP: f64 = 0.7;
-
+static thread_cfg: [usize;6] = [2,4,8,16,32,36];
 
 fn main() {
-    println!("num_agent;total_step;steps_for_second");
-    for i in 0..15{
-        println!("ao");
-        let num_agent = NUM_AGENT * 2u128.pow(i);
-        let mut rng = rand::thread_rng();
-        let mut schedule: Schedule<Bird> = Schedule::new();
-        // assert!(schedule.events.is_empty());
-        
-        let mut state = BoidsState::new(WIDTH, HEIGTH, DISCRETIZATION, TOROIDAL);
-        for bird_id in 0..num_agent {
+    println!("num_thread;num_agent;total_step;steps_for_second");
+    for n_thread in thread_cfg.iter(){
+        for i in 0..15{
+            let num_agent = NUM_AGENT * 2u128.pow(i);
+            let mut rng = rand::thread_rng();
+            let mut schedule: Schedule<Bird> = Schedule::new();
+            // assert!(schedule.events.is_empty());
             
-            let r1: f64 = rng.gen();
-            let r2: f64 = rng.gen();
-            let last_d = Real2D { x: 0.0, y: 0.0 };
-            let bird = Bird::new(
-                bird_id,
-                Real2D {
-                    x: WIDTH * r1,
-                    y: HEIGTH * r2,
-                },
-                last_d,
+            let mut state = BoidsState::new(WIDTH, HEIGTH, DISCRETIZATION, TOROIDAL);
+            for bird_id in 0..num_agent {
+                
+                let r1: f64 = rng.gen();
+                let r2: f64 = rng.gen();
+                let last_d = Real2D { x: 0.0, y: 0.0 };
+                let bird = Bird::new(
+                    bird_id,
+                    Real2D {
+                        x: WIDTH * r1,
+                        y: HEIGTH * r2,
+                    },
+                    last_d,
+                );
+                state
+                    .field1
+                    .set_object_location(bird, bird.pos);
+            
+                schedule.schedule_repeating(bird, 0.0, 0);
+            }
+
+            // assert!(!schedule.events.is_empty());
+            let dur = std::time::Duration::from_secs(600);
+            
+            let start = Instant::now();
+            
+            while start.elapsed() <= dur{
+                schedule.step(&mut state);
+            }
+
+            let dur = start.elapsed();
+
+            
+
+            
+            println!("{};{};{};{:?}",
+                schedule.pool.num_thread(),
+                num_agent,
+                schedule.step,
+                schedule.step as f64 /( dur.as_nanos() as f64 * 1e-9)
             );
-            state
-                .field1
-                .set_object_location(bird, bird.pos);
-        
-            schedule.schedule_repeating(bird, 0.0, 0);
         }
-
-        // assert!(!schedule.events.is_empty());
-        let dur = std::time::Duration::from_secs(1);
-        
-        let start = Instant::now();
-        
-        while start.elapsed() <= dur{
-            schedule.step(&mut state);
-        }
-
-        let dur = start.elapsed();
-
-        
-
-        
-        println!("{};{};{:?}",
-            num_agent,
-            schedule.step,
-            schedule.step as f64 /( dur.as_nanos() as f64 * 1e-9)
-        );
     }
 }
 
@@ -117,7 +118,7 @@ impl Bird {
         Bird { id, pos, last_d }
     }
 
-    pub fn avoidance(self, vec: &Vec<Ref<Bird>>) -> Real2D {
+    pub fn avoidance(self, vec: &Vec<&Bird>) -> Real2D {
         if vec.is_empty() {
             let real = Real2D { x: 0.0, y: 0.0 };
             return real;
@@ -155,7 +156,7 @@ impl Bird {
         }
     }
 
-    pub fn cohesion(self, vec: &Vec<Ref<Bird>>) -> Real2D {
+    pub fn cohesion(self, vec: &Vec<&Bird>) -> Real2D {
         if vec.is_empty() {
             let real = Real2D { x: 0.0, y: 0.0 };
             return real;
@@ -207,7 +208,7 @@ impl Bird {
         return real;
     }
 
-    pub fn consistency(self, vec: &Vec<Ref<Bird>>) -> Real2D {
+    pub fn consistency(self, vec: &Vec<&Bird>) -> Real2D {
         if vec.is_empty() {
             let real = Real2D { x: 0.0, y: 0.0 };
             return real;

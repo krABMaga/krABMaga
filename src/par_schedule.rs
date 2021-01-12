@@ -12,7 +12,7 @@ use lazy_static::*;
 use clap::{App, Arg};
 
 lazy_static!{
-    static ref THREAD_NUM: usize = 
+    pub static ref THREAD_NUM: usize = 
                                 {
                                 let matches = App::new("Boids").
                                 arg(
@@ -44,7 +44,7 @@ pub struct Schedule<A:'static + Agent + Clone + Send>{
     pub step: usize,
     pub time: f64,
     pub events: Mutex<PriorityQueue<AgentImpl<A>,Priority>>,
-    pool: ThreadPool
+    pub pool: ThreadPool
 }
 
 #[derive(Clone)]
@@ -84,11 +84,11 @@ impl<A: 'static +  Agent + Clone + Send + Sync > Schedule<A> {
         }
     }
 
-    pub fn schedule_once(&self, agent: AgentImpl<A>,the_time:f64, the_ordering:i64) {
+    pub fn schedule_once(&mut self, agent: AgentImpl<A>,the_time:f64, the_ordering:i64) {
         self.events.lock().unwrap().push(agent, Priority{time: the_time, ordering: the_ordering});
     }
 
-    pub fn schedule_repeating(&self, agent: A, the_time:f64, the_ordering:i64) {
+    pub fn schedule_repeating(&mut self, agent: A, the_time:f64, the_ordering:i64) {
         let mut a = AgentImpl::new(agent);
         a.repeating = true;
         let pr = Priority::new(the_time, the_ordering);
@@ -171,8 +171,6 @@ impl<A: 'static +  Agent + Clone + Send + Sync > Schedule<A> {
                         item.agentimpl.agent.step(&state);
                         if item.agentimpl.repeating{
                             reschedule.push( ( item.agentimpl, Priority{ time: item.priority.time+1.0, ordering: item.priority.ordering}) );
-
-                           
                         }
                     }
                     let mut events = self.events.lock().unwrap();
