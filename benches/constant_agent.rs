@@ -1,24 +1,18 @@
-extern crate abm;
-extern crate piston_window;
-extern crate priority_queue;
-
-#[macro_use]
-extern crate lazy_static;
-
-use abm::agent::Agent;
-use abm::field_2d::toroidal_transform;
-use abm::field_2d::toroidal_distance;
-use abm::field_2d::Field2D;
-use abm::location::Location2D;
-use abm::location::Real2D;
-use abm::Schedule;
-use abm::state::State;
+extern crate rust_ab;
+use rust_ab::engine::agent::Agent;
+use rust_ab::engine::field::field_2d::toroidal_transform;
+use rust_ab::engine::field::field_2d::toroidal_distance;
+use rust_ab::engine::field::field_2d::Field2D;
+use rust_ab::engine::location::Location2D;
+use rust_ab::engine::location::Real2D;
+use rust_ab::Schedule;
+use rust_ab::engine::state::State;
 use rand::Rng;
 use std::fmt;
 use std::hash::Hash;
 use std::hash::Hasher;
 use std::time::Instant;
-use crate::abm::field::DoubleBufferedField;
+use rust_ab::engine::field::field::Field;
 use std::sync::atomic::{Ordering::Relaxed,AtomicUsize};
 
 static mut _COUNT: u128 = 0;

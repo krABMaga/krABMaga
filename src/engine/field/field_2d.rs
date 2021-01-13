@@ -2,8 +2,8 @@ use std::fmt::Display;
 use crate::engine::location::Real2D;
 use std::hash::Hash;
 use crate::engine::field::field::Field;
-use crate::location::Int2D;
-use crate::location::Location2D;
+use crate::engine::location::Int2D;
+use crate::engine::location::Location2D;
 use std::cmp;
 use crate::utils::dbdashmap::DBDashMap;
 
@@ -251,7 +251,7 @@ pub fn toroidal_transform(val: f64, dim: f64) -> f64 {
 }
 
 
-impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> DoubleBufferedField for Field2D<A>{
+impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> Field for Field2D<A>{
     fn update(&mut self){
         self.fpos.update();
         self.fbag.update();

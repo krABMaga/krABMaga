@@ -1,6 +1,6 @@
 use std::hash::Hash;
 
-use crate::location::Int2D;
+use crate::engine::location::Int2D;
 use hashbrown::HashMap;
 
 /// A crude implementation of a grid that wraps a HashMap, with agents as keys and their locations as values.
