@@ -24,8 +24,8 @@ impl<T: Copy + Clone> NumberGrid2D<T> {
     /// # Example
     ///
     /// ```rust
-    /// # use abm::simple_grid_2d::NumberGrid2D;
-    /// # use abm::location::Int2D;
+    /// # use rust_ab::engine::field::number_grid_2d::NumberGrid2D;
+    /// # use rust_ab::engine::location::Int2D;
     ///
     /// let mut simple_grid = NumberGrid2D::new(10, 10);
     /// let value = 5;
@@ -43,8 +43,8 @@ impl<T: Copy + Clone> NumberGrid2D<T> {
     /// # Example
     ///
     /// ```rust
-    /// # use abm::simple_grid_2d::NumberGrid2D;
-    /// # use abm::location::Int2D;
+    /// # use rust_ab::engine::field::number_grid_2d::NumberGrid2D;
+    /// # use rust_ab::engine::location::Int2D;
     ///
     /// let mut simple_grid = NumberGrid2D::new(10, 10);
     /// let value = 5;
@@ -66,8 +66,8 @@ impl<T: Copy + Clone + PartialOrd> NumberGrid2D<T> {
     /// # Example
     ///
     /// ```rust
-    /// # use abm::simple_grid_2d::NumberGrid2D;
-    /// # use abm::location::Int2D;
+    /// # use rust_ab::engine::field::number_grid_2d::NumberGrid2D;
+    /// # use rust_ab::engine::location::Int2D;
     ///
     /// let mut simple_grid = NumberGrid2D::new(10, 10);
     /// for x in 0..10 {
@@ -102,8 +102,8 @@ impl<T: Copy + Clone + PartialOrd> NumberGrid2D<T> {
     /// # Example
     ///
     /// ```rust
-    /// # use abm::simple_grid_2d::NumberGrid2D;
-    /// # use abm::location::Int2D;
+    /// # use rust_ab::engine::field::number_grid_2d::NumberGrid2D;
+    /// # use rust_ab::engine::location::Int2D;
     ///
     /// let mut simple_grid = NumberGrid2D::new(10, 10);
     /// for x in 0..10 {
@@ -151,8 +151,8 @@ impl NumberGrid2D<f64> {
 
 #[cfg(test)]
 mod tests {
-    use crate::engine::location::Int2D;
     use crate::engine::field::number_grid_2d::NumberGrid2D;
+    use crate::engine::location::Int2D;
 
     #[test]
     fn simple_grid_2d() {

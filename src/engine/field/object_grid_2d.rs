@@ -25,12 +25,19 @@ impl<A: Eq + Hash + Clone + Copy> Grid2D<A> {
     /// # Example
     ///
     /// ```rust
-    /// use abm::agent::Agent;
-    /// use abm::grid_2d::Grid2D;
-    /// use abm::location::Int2D;
+    /// use rust_ab::engine::agent::Agent;
+    /// use rust_ab::engine::field::object_grid_2d::Grid2D;
+    /// use rust_ab::engine::location::Int2D;
+    /// use rust_ab::engine::state::State;
+    ///
+    /// struct S {};
+    /// impl State for S{}
+    ///
     /// #[derive(Copy, Clone, Eq, PartialEq, Hash)]
     /// struct A {};
-    /// impl Agent for A {fn step(&mut self) {
+    /// impl Agent for A {type SimState = S;
+    ///
+    /// fn step(&mut self, state: &S) {
     ///         println!("Stepping!");
     ///     }
     /// }
@@ -51,12 +58,19 @@ impl<A: Eq + Hash + Clone + Copy> Grid2D<A> {
     /// # Example
     ///
     /// ```rust
-    /// use abm::agent::Agent;
-    /// use abm::grid_2d::Grid2D;
-    /// use abm::location::Int2D;
+    /// use rust_ab::engine::agent::Agent;
+    /// use rust_ab::engine::field::object_grid_2d::Grid2D;
+    /// use rust_ab::engine::location::Int2D;
+    /// use rust_ab::engine::state::State;
+    ///
+    /// struct S {};
+    /// impl State for S{}
+    ///
     /// #[derive(Copy, Clone, Eq, PartialEq, Hash)]
     /// struct A {};
-    /// impl Agent for A {fn step(&mut self) {
+    /// impl Agent for A {type SimState = S;
+    ///
+    /// fn step(&mut self, state: &S) {
     ///         println!("Stepping!");
     ///     }
     /// }
