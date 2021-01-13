@@ -1,10 +1,10 @@
 extern crate priority_queue;
 
-use crate::agent::Agent;
-use crate::agentimpl::AgentImpl;
-use crate::priority::Priority;
+use crate::engine::agent::Agent;
+use crate::engine::agentimpl::AgentImpl;
+use crate::engine::priority::Priority;
 use priority_queue::PriorityQueue;
-use crate::state::State;
+use crate::engine::state::State;
 
 pub struct Schedule<A: 'static + Agent + Clone + Send> {
     pub step: usize,

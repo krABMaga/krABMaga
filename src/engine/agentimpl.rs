@@ -1,4 +1,4 @@
-use crate::agent::Agent;
+use crate::engine::agent::Agent;
 use std::clone::Clone;
 use std::fmt;
 use std::hash::Hash;

@@ -15,7 +15,7 @@ use std::fmt;
 use std::hash::Hash;
 use std::hash::Hasher;
 use std::time::Instant;
-use crate::abm::field::DoubleBufferedField;
+use crate::abm::field::Field;
 
 static mut _COUNT: u128 = 0;
 static STEP: u128 = 50;

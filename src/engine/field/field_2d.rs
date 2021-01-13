@@ -1,7 +1,7 @@
 use std::fmt::Display;
-use crate::location::Real2D;
+use crate::engine::location::Real2D;
 use std::hash::Hash;
-use crate::field::DoubleBufferedField;
+use crate::engine::field::field::Field;
 use crate::location::Int2D;
 use crate::location::Location2D;
 use std::cmp;

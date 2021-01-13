@@ -2,10 +2,10 @@ extern crate priority_queue;
 
 
 use priority_queue::PriorityQueue;
-use crate::priority::Priority;
-use crate::agent::Agent;
-use crate::agentimpl::AgentImpl;
-use crate::state::State;
+use crate::engine::priority::Priority;
+use crate::engine::agent::Agent;
+use crate::engine::agentimpl::AgentImpl;
+use crate::engine::state::State;
 use std::sync::Mutex;
 use rayon::{ThreadPoolBuilder,ThreadPool};
 use lazy_static::*;

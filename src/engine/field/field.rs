@@ -1,3 +1,3 @@
-pub trait DoubleBufferedField{
+pub trait Field{
     fn update(&mut self){}
 }
