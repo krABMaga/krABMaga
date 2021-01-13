@@ -4,6 +4,7 @@ use crate::agent::Agent;
 use crate::agentimpl::AgentImpl;
 use crate::priority::Priority;
 use priority_queue::PriorityQueue;
+use crate::state::State;
 
 pub struct Schedule<A: 'static + Agent + Clone + Send> {
     pub step: usize,
@@ -28,6 +29,7 @@ impl<A: 'static + Agent + Clone> Pair<A> {
 
 impl<A: 'static + Agent + Clone + Send> Schedule<A> {
     pub fn new() -> Schedule<A> {
+        //println!("Sequential schedule");
         Schedule {
             step: 0,
             time: 0.0,
@@ -52,9 +54,14 @@ impl<A: 'static + Agent + Clone + Send> Schedule<A> {
         self.events.push(a, pr);
     }
 
-    pub fn step(&mut self) {
+    pub fn step(&mut self,state: &mut <A as Agent>::SimState){
+        if self.step == 0{
+            state.update();
+        }
         self.step += 1;
 
+
+        // let start: std::time::Instant = std::time::Instant::now();
         let events = &mut self.events;
         if events.is_empty() {
             println!("coda eventi vuota");
@@ -97,9 +104,9 @@ impl<A: 'static + Agent + Clone + Send> Schedule<A> {
                 None => panic!("no item"),
             }
         }
-        //println!("STEP,{},SCHEDULE,{}", self.step,cevents.len());
+       
         for mut item in cevents.into_iter() {
-            item.agentimpl.step();
+            item.agentimpl.agent.step(state);
             if item.agentimpl.repeating {
                 self.schedule_once(
                     item.agentimpl,
@@ -108,5 +115,9 @@ impl<A: 'static + Agent + Clone + Send> Schedule<A> {
                 );
             }
         }
+        
+        state.update();
+        // println!("Time spent calling step method, step {} : {:?}",self.step,start.elapsed());
+
     }
 }

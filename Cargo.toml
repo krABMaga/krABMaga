@@ -19,7 +19,7 @@ opt-level = 3
 [dependencies]
 hashbrown = "0.3"
 priority-queue = "0.5.4"
-criterion = "0.1.2"
+criterion =  "0.3.3"
 rand = "0.6.5"
 lazy_static = "1.3.0"
 piston_window = "0.105.0"
@@ -27,6 +27,11 @@ piston = "0.49.0"
 piston2d-graphics = "0.35.0"
 pistoncore-glutin_window = "0.63.0"
 piston2d-opengl_graphics = "0.70.0"
+cfg-if = "1.0.0"
+num_cpus = "1.13.0"
+rayon="1.5.0"
+clap="2.33.3"
+ahash="0.6.2"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 metal = "0.17.0"
@@ -34,7 +39,19 @@ cocoa = "0.19.1"
 objc = "0.2.7"
 
 [[bench]]
-name = "benchmark"
+name = "scaling"
+harness = false
+
+[[bench]]
+name = "constant_field"
+harness = false
+
+[[bench]]
+name = "constant_density"
+harness = false
+
+[[bench]]
+name = "constant_agent"
 harness = false
 
 # Must be kept separate and asked to the user due to missing support for conditional compilation of features
@@ -42,9 +59,14 @@ harness = false
 [features]
 amethyst_metal = ["amethyst", "amethyst/metal"]
 amethyst_vulkan = ["amethyst", "amethyst/vulkan"]
+sequential = []
+parallel = []
 
 [dependencies.amethyst]
 version = "0.15.3"
 optional = true
 default-features = false
 features = ["renderer"]
+
+
+
