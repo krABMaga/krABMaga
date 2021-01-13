@@ -1,7 +1,7 @@
 [package]
 name = "rust-ab"
 version = "0.5.0"
-authors = ["Carmine Spagnuolo <spagnuolocarmine@gmail.com>", "Alessia Antelmi <aantelmi@unisa.it>", "Matteo D'Auria <matdauria@unisa.it>", "Daniele De Vinco <danieledevinco1996@gmail.com", "Francesco Foglia <frafonia@gmail.com>", "Pasquale Caramante"]
+authors = ["Carmine Spagnuolo <spagnuolocarmine@gmail.com>", "Alessia Antelmi <aantelmi@unisa.it>", "Matteo D'Auria <matdauria@unisa.it>", "Daniele De Vinco <danieledevinco1996@gmail.com", "Francesco Foglia <frafonia@gmail.com>", "Pasquale Caramante <pasqcaramante@gmail.com>"]
 edition = "2018"
 license = "MIT"
 keywords = ["discrete", "simulation", "agent based model", "agent based simulation"]
