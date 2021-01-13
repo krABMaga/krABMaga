@@ -1,7 +1,7 @@
 use crate::location::Int2D;
 
 /// A crude implementation of a matrix based grid, for quick access of specific positions.
-pub struct SimpleGrid2D<T: Copy + Clone> {
+pub struct NumberGrid2D<T: Copy + Clone> {
     pub locs: Vec<Vec<Option<T>>>,
     pub width: i64,
     pub height: i64,
