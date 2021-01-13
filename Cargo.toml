@@ -1,14 +1,14 @@
 [package]
 name = "rust-ab"
-version = "0.5"
+version = "0.5.0"
 authors = ["Carmine Spagnuolo <spagnuolocarmine@gmail.com>", "Alessia Antelmi <aantelmi@unisa.it>", "Matteo D'Auria <matdauria@unisa.it>", "Daniele De Vinco <danieledevinco1996@gmail.com", "Francesco Foglia <frafonia@gmail.com>", "Pasquale Caramante"]
 edition = "2018"
 license = "MIT"
 keywords = ["discrete", "simulation", "agent based model", "agent based simulation"]
 categories = ["science", "simulation", "agent based model"]
 readme = "README.md"
-homepage = "https://github.com/spagnuolocarmine/abm"
-repository = "https://github.com/spagnuolocarmine/abm"
+homepage = "https://github.com/spagnuolocarmine/rust-ab"
+repository = "https://github.com/spagnuolocarmine/rust-ab"
 
 [profile.dev]
 opt-level = 3

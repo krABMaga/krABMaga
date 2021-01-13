@@ -5,10 +5,21 @@
 
 **Rust-AB** is a discrete events simulation engine for developing ABM simulation that is written in a novel programming language named Rust. Rust-AB is designed to be a _ready-to-use_ tool for the ABM community and for this reason the architectural concepts of the well-adopted MASON library were re-engineered to exploit the Rust peculiarities.
 
+# Examples
 
 ## Boids Simulation Example
 
 The Boids model by C. Raynolds, 1986, is a steering behavior ABM for autonomous agents, which simulates the flocking behavior of birds. The agent behavior is derived by a linear combination of three independent rules: _Separation_: steer in order to avoid crowding local flockmates; _Alignment_: steer towards the average heading of local flockmates; _Cohesion_: steer to move towards the average position (center of mass) of local flockmates.
+
+- Single core execution
+```cargo run --example boids --features sequential```
+- Single core execution
+```cargo run --example boids --features parallel ```
+<!--
+## Boids Simulation Example
+
+The Boids model by C. Raynolds, 1986, is a steering behavior ABM for autonomous agents, which simulates the flocking behavior of birds. The agent behavior is derived by a linear combination of three independent rules: _Separation_: steer in order to avoid crowding local flockmates; _Alignment_: steer towards the average heading of local flockmates; _Cohesion_: steer to move towards the average position (center of mass) of local flockmates.
+
 
 ### Agent definition
 
@@ -108,7 +119,7 @@ fn main() {
     for _ in 1..STEP{ schedule.step(); }
 }
 ```
-
+-->
 ## Support conference paper
 
 - __On Evaluating Rust as a Programming Language for the Future of Massive Agent-based Simulations__. Alessia Antelmi, Gennaro Cordasco, Matteo D’Auria, Daniele De Vinco, Alberto Negro, and Carmine Spagnuolo. 19th Asia Simulation Conference. 2019.
