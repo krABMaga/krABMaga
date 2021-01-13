@@ -168,6 +168,16 @@ impl<'a,K: 'a + Eq+Hash, V: 'a, S: BuildHasher + Clone + Default> DBDashMap<K,V,
     pub fn r_len(&self) -> usize{
         self.r_shards.iter().map( |shard| shard.len() ).sum()
     }
+    
+    pub fn keys(&self) -> Vec<&K>{   
+        let mut ris = vec![];
+        for shard in self.r_shards.iter(){
+            for key in shard.keys(){
+                ris.push(key);
+            }
+        }
+        ris
+    }
 }
 
 const fn ptr_size_bits() -> usize {
