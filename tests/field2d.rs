@@ -1,21 +1,19 @@
-extern crate abm;
 extern crate priority_queue;
 
 #[macro_use]
 extern crate lazy_static;
 
-use abm::agent::Agent;
-use abm::field_2d::toroidal_distance;
-use abm::field_2d::toroidal_transform;
 use rand::Rng;
+use rust_ab::engine::agent::Agent;
+use rust_ab::engine::field::field::Field;
+use rust_ab::engine::field::field_2d::{toroidal_distance, toroidal_transform, Field2D};
+use rust_ab::engine::location::{Location2D, Real2D};
+use rust_ab::engine::schedule::Schedule;
+use rust_ab::engine::state::State;
 use std::fmt;
 use std::hash::Hash;
 use std::hash::Hasher;
 use std::sync::Mutex;
-//use abm::schedule::Schedule;
-use abm::field_2d::Field2D;
-use abm::location::Location2D;
-use abm::location::Real2D;
 
 static mut _COUNT: u128 = 0;
 static _STEP: u128 = 10;
@@ -31,18 +29,11 @@ static CONSISTENCY: f64 = 1.0;
 static MOMENTUM: f64 = 1.0;
 static JUMP: f64 = 0.7;
 
-lazy_static! {
-    static ref GLOBAL_STATE: Mutex<State> =
-        Mutex::new(State::new(WIDTH, HEIGTH, DISCRETIZATION, TOROIDAL));
-}
-
-lazy_static! {
-    static ref GLOBAL_STATE_2: Mutex<State> =
-        Mutex::new(State::new(150.0, 150.0, 10.0 / 1.5, TOROIDAL));
-}
-
 #[test]
 fn field_2d_test_2_1() {
+    let mut state = BoidsState::new(WIDTH, HEIGTH, DISCRETIZATION, TOROIDAL);
+    let mut schedule: Schedule<Bird> = Schedule::new();
+
     let last_d = Real2D { x: 0.0, y: 0.0 };
 
     let bird1 = Bird::new(1, Real2D { x: 5.0, y: 5.0 }, last_d);
@@ -52,85 +43,55 @@ fn field_2d_test_2_1() {
     let bird5 = Bird::new(5, Real2D { x: 7.0, y: 7.0 }, last_d);
     let mut bird6 = Bird::new(6, Real2D { x: 9.0, y: 9.0 }, last_d);
 
-    GLOBAL_STATE
-        .lock()
-        .unwrap()
-        .field1
-        .set_object_location(bird1, bird1.pos);
-    GLOBAL_STATE
-        .lock()
-        .unwrap()
-        .field1
-        .set_object_location(bird2, bird2.pos);
-    GLOBAL_STATE
-        .lock()
-        .unwrap()
-        .field1
-        .set_object_location(bird3, bird3.pos);
-    GLOBAL_STATE
-        .lock()
-        .unwrap()
-        .field1
-        .set_object_location(bird4, bird4.pos);
-    GLOBAL_STATE
-        .lock()
-        .unwrap()
-        .field1
-        .set_object_location(bird5, bird5.pos);
-    GLOBAL_STATE
-        .lock()
-        .unwrap()
-        .field1
-        .set_object_location(bird6, bird6.pos);
+    state.field1.set_object_location(bird1, bird1.pos);
+    state.field1.set_object_location(bird2, bird2.pos);
+    state.field1.set_object_location(bird3, bird3.pos);
+    state.field1.set_object_location(bird4, bird4.pos);
+    state.field1.set_object_location(bird5, bird5.pos);
+    state.field1.set_object_location(bird6, bird6.pos);
 
-    assert_eq!(6, GLOBAL_STATE.lock().unwrap().field1.num_objects());
+    schedule.step(&mut state);
 
-    let vec = GLOBAL_STATE
-        .lock()
-        .unwrap()
+    assert_eq!(6, state.field1.num_objects());
+
+    let vec = state
         .field1
         .get_neighbors_within_distance(Real2D { x: 5.0, y: 5.0 }, 5.0);
     assert_eq!(5, vec.len());
-    assert!(vec.contains(&bird1));
-    assert!(vec.contains(&bird2));
-    assert!(vec.contains(&bird3));
-    assert!(vec.contains(&bird4));
-    assert!(vec.contains(&bird5));
-    assert!(!vec.contains(&bird6));
+    assert!(vec.contains(&&bird1));
+    assert!(vec.contains(&&bird2));
+    assert!(vec.contains(&&bird3));
+    assert!(vec.contains(&&bird4));
+    assert!(vec.contains(&&bird5));
+    assert!(!vec.contains(&&bird6));
 
-    let vec = GLOBAL_STATE
-        .lock()
-        .unwrap()
+    let vec = state
         .field1
         .get_neighbors_within_distance(Real2D { x: 5.0, y: 5.0 }, 2.0);
 
     assert_eq!(4, vec.len());
-    assert!(vec.contains(&bird1));
-    assert!(vec.contains(&bird2));
-    assert!(vec.contains(&bird3));
-    assert!(vec.contains(&bird4));
+    assert!(vec.contains(&&bird1));
+    assert!(vec.contains(&&bird2));
+    assert!(vec.contains(&&bird3));
+    assert!(vec.contains(&&bird4));
 
-    let vec = GLOBAL_STATE
-        .lock()
-        .unwrap()
+    let vec = state
         .field1
         .get_neighbors_within_distance(Real2D { x: 9.0, y: 9.0 }, 1.0);
 
     assert_eq!(1, vec.len());
-    assert!(vec.contains(&bird6));
+    assert!(vec.contains(&&bird6));
 
-    let vec = GLOBAL_STATE
-        .lock()
-        .unwrap()
+    let vec = state
         .field1
         .get_neighbors_within_distance(Real2D { x: 9.0, y: 9.0 }, 5.0);
 
     assert_eq!(5, vec.len());
-    assert!(vec.contains(&bird5));
-    assert!(vec.contains(&bird2));
-    assert!(vec.contains(&bird3));
-    assert!(vec.contains(&bird4));
-    assert!(vec.contains(&bird6));
+    assert!(vec.contains(&&bird5));
+    assert!(vec.contains(&&bird2));
+    assert!(vec.contains(&&bird3));
+    assert!(vec.contains(&&bird4));
+    assert!(vec.contains(&&bird6));
 
     // let vec = data.field1.get_neighbors_within_distance(Real2D{x: 1.0, y: 1.0}, 5.0);
     //
@@ -143,17 +104,11 @@ fn field_2d_test_2_1() {
 
     bird2.pos = Real2D { x: 0.5, y: 0.5 };
     bird6.pos = Real2D { x: 7.5, y: 7.5 };
-    GLOBAL_STATE
-        .lock()
-        .unwrap()
-        .field1
-        .set_object_location(bird2, bird2.pos);
-    GLOBAL_STATE
-        .lock()
-        .unwrap()
-        .field1
-        .set_object_location(bird6, bird6.pos);
-    assert_eq!(6, GLOBAL_STATE.lock().unwrap().field1.num_objects());
+    state.field1.set_object_location(bird2, bird2.pos);
+    state.field1.set_object_location(bird6, bird6.pos);
+
+    schedule.step(&mut state);
+    assert_eq!(6, state.field1.num_objects());
     // let pos_b2 = match data.field1.get_object_location(bird2) {
     //     Some(i) => i,
     //     None => panic!("non trovato"),
@@ -167,23 +122,20 @@ fn field_2d_test_2_1() {
 
 #[test]
 fn field_2d_test_vicinato() {
+    let mut state = BoidsState::new(150.0, 150.0, 10.0 / 1.5, TOROIDAL);
+    //let mut schedule: Schedule<Bird> = Schedule::new();
+
     let last_d = Real2D { x: 0.0, y: 0.0 };
 
     let mut bird1 = Bird::new(1, Real2D { x: 0.0, y: 0.0 }, last_d);
     let mut bird2 = Bird::new(2, Real2D { x: 0.0, y: 0.0 }, last_d);
 
-    GLOBAL_STATE_2
-        .lock()
-        .unwrap()
-        .field1
-        .set_object_location(bird1, bird1.pos);
-    GLOBAL_STATE_2
-        .lock()
-        .unwrap()
-        .field1
-        .set_object_location(bird2, bird2.pos);
+    state.field1.set_object_location(bird1, bird1.pos);
+    state.field1.set_object_location(bird2, bird2.pos);
 
-    assert_eq!(2, GLOBAL_STATE_2.lock().unwrap().field1.num_objects());
+    state.update();
+
+    assert_eq!(2, state.field1.num_objects());
 
     for i in 0..10 {
         println!("step {}", i);
@@ -196,33 +148,19 @@ fn field_2d_test_vicinato() {
             y: bird2.pos.y + 1.0,
         };
 
-        GLOBAL_STATE_2
-            .lock()
-            .unwrap()
-            .field1
-            .set_object_location(bird1, bird1.pos);
-        GLOBAL_STATE_2
-            .lock()
-            .unwrap()
-            .field1
-            .set_object_location(bird2, bird2.pos);
+        state.field1.set_object_location(bird1, bird1.pos);
+        state.field1.set_object_location(bird2, bird2.pos);
 
-        let vec = GLOBAL_STATE_2
-            .lock()
-            .unwrap()
-            .field1
-            .get_neighbors_within_distance(bird1.pos, 10.0);
+        state.update();
+
+        let vec = state.field1.get_neighbors_within_distance(bird1.pos, 10.0);
         assert_eq!(2, vec.len());
-        assert!(vec.contains(&bird1));
-        assert!(vec.contains(&bird2));
-        let vec = GLOBAL_STATE_2
-            .lock()
-            .unwrap()
-            .field1
-            .get_neighbors_within_distance(bird2.pos, 10.0);
+        assert!(vec.contains(&&bird1));
+        assert!(vec.contains(&&bird2));
+        let vec = state.field1.get_neighbors_within_distance(bird2.pos, 10.0);
         assert_eq!(2, vec.len());
-        assert!(vec.contains(&bird1));
-        assert!(vec.contains(&bird2));
+        assert!(vec.contains(&&bird1));
+        assert!(vec.contains(&&bird2));
     }
 }
 //
@@ -339,15 +277,21 @@ fn field_2d_test_vicinato() {
 //     }
 // }
 
-pub struct State {
+pub struct BoidsState {
     pub field1: Field2D<Bird>,
 }
 
-impl State {
-    pub fn new(w: f64, h: f64, d: f64, t: bool) -> State {
-        State {
+impl BoidsState {
+    pub fn new(w: f64, h: f64, d: f64, t: bool) -> BoidsState {
+        BoidsState {
             field1: Field2D::new(w, h, d, t),
         }
+    }
+}
+
+impl State for BoidsState {
+    fn update(&mut self) {
+        self.field1.update();
     }
 }
 
@@ -363,7 +307,7 @@ impl Bird {
         Bird { id, pos, last_d }
     }
 
-    pub fn avoidance(self, vec: &Vec<Bird>) -> Real2D {
+    pub fn avoidance(self, vec: &Vec<&Bird>) -> Real2D {
         if vec.is_empty() {
             let real = Real2D { x: 0.0, y: 0.0 };
             return real;
@@ -375,7 +319,7 @@ impl Bird {
         let mut count = 0;
 
         for i in 0..vec.len() {
-            if self != vec[i] {
+            if self != *vec[i] {
                 let dx = toroidal_distance(self.pos.x, vec[i].pos.x, WIDTH);
                 let dy = toroidal_distance(self.pos.y, vec[i].pos.y, HEIGTH);
                 let square = (dx * dx + dy * dy).sqrt();
@@ -401,7 +345,7 @@ impl Bird {
         }
     }
 
-    pub fn cohesion(self, vec: &Vec<Bird>) -> Real2D {
+    pub fn cohesion(self, vec: &Vec<&Bird>) -> Real2D {
         if vec.is_empty() {
             let real = Real2D { x: 0.0, y: 0.0 };
             return real;
@@ -414,7 +358,7 @@ impl Bird {
 
         for i in 0..vec.len() {
             //CONDIZIONE?
-            if self != vec[i] {
+            if self != *vec[i] {
                 let dx = toroidal_distance(self.pos.x, vec[i].pos.x, WIDTH);
                 let dy = toroidal_distance(self.pos.y, vec[i].pos.y, HEIGTH);
                 count += 1;
@@ -454,7 +398,7 @@ impl Bird {
         return real;
     }
 
-    pub fn consistency(self, vec: &Vec<Bird>) -> Real2D {
+    pub fn consistency(self, vec: &Vec<&Bird>) -> Real2D {
         if vec.is_empty() {
             let real = Real2D { x: 0.0, y: 0.0 };
             return real;
@@ -467,7 +411,7 @@ impl Bird {
 
         for i in 0..vec.len() {
             //CONDIZIONE?
-            if self != vec[i] {
+            if self != *vec[i] {
                 let _dx = toroidal_distance(self.pos.x, vec[i].pos.x, WIDTH);
                 let _dy = toroidal_distance(self.pos.y, vec[i].pos.y, HEIGTH);
                 count += 1;
@@ -485,19 +429,17 @@ impl Bird {
             };
             return real;
         } else {
-            let real = Real2D { x: x, y: y };
+            let real = Real2D { x, y };
             return real;
         }
     }
 }
 
 impl Agent for Bird {
-    fn step(&mut self) {
-        let vec = GLOBAL_STATE
-            .lock()
-            .unwrap()
-            .field1
-            .get_neighbors_within_distance(self.pos, 10.0);
+    type SimState = BoidsState;
+
+    fn step(&mut self, state: &BoidsState) {
+        let vec = state.field1.get_neighbors_within_distance(self.pos, 10.0);
         // {
         //     let fpos = GLOBAL_STATE.lock().unwrap();
         //     let fpos = fpos.field1.get_object_location(*self);
@@ -535,9 +477,7 @@ impl Agent for Bird {
 
         self.pos = Real2D { x: loc_x, y: loc_y };
 
-        GLOBAL_STATE
-            .lock()
-            .unwrap()
+        state
             .field1
             .set_object_location(*self, Real2D { x: loc_x, y: loc_y });
     }

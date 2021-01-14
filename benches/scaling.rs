@@ -1,18 +1,19 @@
-extern crate abm;
-
-use abm::agent::Agent;
-use abm::field_2d::toroidal_transform;
-use abm::field_2d::toroidal_distance;
-use abm::field_2d::Field2D;
-use abm::location::Location2D;
-use abm::location::Real2D;
-use abm::Schedule;
-use abm::state::State;
+extern crate rust_ab;
+use rust_ab::engine::agent::Agent;
+use rust_ab::engine::field::field_2d::toroidal_transform;
+use rust_ab::engine::field::field_2d::toroidal_distance;
+use rust_ab::engine::field::field_2d::Field2D;
+use rust_ab::engine::location::Location2D;
+use rust_ab::engine::location::Real2D;
+use rust_ab::Schedule;
+use rust_ab::engine::state::State;
 use rand::Rng;
 use std::fmt;
 use std::hash::Hash;
 use std::hash::Hasher;
-use abm::field::DoubleBufferedField;
+use rust_ab::engine::field::field::Field;
+
+
 use cfg_if::cfg_if;
 static mut _COUNT: u128 = 0;
 static STEP: usize = 50;
@@ -101,7 +102,7 @@ fn main(){
     super_strong_scaling();
 }
 
-fn setup(n_agent:usize, n_thread:usize) ->(BoidsState,abm::Schedule<Bird>) {
+fn setup(n_agent:usize, n_thread:usize) ->(BoidsState,rust_ab::Schedule<Bird>) {
     let mut rng = rand::thread_rng();
     
     cfg_if!{
@@ -138,7 +139,7 @@ fn setup(n_agent:usize, n_thread:usize) ->(BoidsState,abm::Schedule<Bird>) {
     (state,schedule)
 }
 
-fn simulate(step:usize,schedule:&mut abm::Schedule<Bird>, state: &mut BoidsState){
+fn simulate(step:usize,schedule:&mut rust_ab::Schedule<Bird>, state: &mut BoidsState){
     for _ in 0..step {
         schedule.step(state);
     }

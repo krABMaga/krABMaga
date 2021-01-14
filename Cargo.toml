@@ -1,14 +1,14 @@
 [package]
-name = "abm"
-version = "0.0.1"
-authors = ["Alessia Antelmi <aantelmi@unisa.it>", "Matteo D'Auria <matdauria@unisa.it>", "Daniele De Vinco <danieledevinco1996@gmail.com", "Carmine Spagnuolo <spagnuolocarmine@gmail.com>"]
+name = "rust-ab"
+version = "0.5.0"
+authors = ["Carmine Spagnuolo <spagnuolocarmine@gmail.com>", "Alessia Antelmi <aantelmi@unisa.it>", "Matteo D'Auria <matdauria@unisa.it>", "Daniele De Vinco <danieledevinco1996@gmail.com", "Francesco Foglia <frafonia@gmail.com>", "Pasquale Caramante <pasqcaramante@gmail.com>"]
 edition = "2018"
 license = "MIT"
 keywords = ["discrete", "simulation", "agent based model", "agent based simulation"]
 categories = ["science", "simulation", "agent based model"]
 readme = "README.md"
-homepage = "https://github.com/spagnuolocarmine/abm"
-repository = "https://github.com/spagnuolocarmine/abm"
+homepage = "https://github.com/spagnuolocarmine/rust-ab"
+repository = "https://github.com/spagnuolocarmine/rust-ab"
 
 [profile.dev]
 opt-level = 3
@@ -28,10 +28,10 @@ piston2d-graphics = "0.35.0"
 pistoncore-glutin_window = "0.63.0"
 piston2d-opengl_graphics = "0.70.0"
 cfg-if = "1.0.0"
-DBdashmap = { path = "DBdashmap"}
 num_cpus = "1.13.0"
 rayon="1.5.0"
 clap="2.33.3"
+ahash="0.6.2"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 metal = "0.17.0"

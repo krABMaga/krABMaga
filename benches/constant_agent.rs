@@ -1,24 +1,18 @@
-extern crate abm;
-extern crate piston_window;
-extern crate priority_queue;
-
-#[macro_use]
-extern crate lazy_static;
-use abm::bag_ref::Ref;
-use abm::agent::Agent;
-use abm::toroidal_transform;
-use abm::toroidal_distance;
-use abm::Field2D;
-use abm::location::Location2D;
-use abm::location::Real2D;
-use abm::Schedule;
-use abm::state::State;
+extern crate rust_ab;
+use rust_ab::engine::agent::Agent;
+use rust_ab::engine::field::field_2d::toroidal_transform;
+use rust_ab::engine::field::field_2d::toroidal_distance;
+use rust_ab::engine::field::field_2d::Field2D;
+use rust_ab::engine::location::Location2D;
+use rust_ab::engine::location::Real2D;
+use rust_ab::Schedule;
+use rust_ab::engine::state::State;
 use rand::Rng;
 use std::fmt;
 use std::hash::Hash;
 use std::hash::Hasher;
 use std::time::Instant;
-use crate::abm::field::DoubleBufferedField;
+use rust_ab::engine::field::field::Field;
 use std::sync::atomic::{Ordering::Relaxed,AtomicUsize};
 
 static mut _COUNT: u128 = 0;
@@ -34,54 +28,58 @@ static CONSISTENCY: f64 = 1.0;
 static MOMENTUM: f64 = 1.0;
 static JUMP: f64 = 0.7;
 static INDEX: AtomicUsize = AtomicUsize::new(0);
+static thread_cfg: [usize;6] = [2,4,8,16,32,36];
 
 fn main() {
-    println!("num_agent;total_step;steps_for_second");
-    for i in 0..15{
-        INDEX.store(i,Relaxed);
+    println!("num_thread;field_size;total_step;steps_for_second");
+    for n_thread in thread_cfg.iter(){
+        for i in 0..15{
+            INDEX.store(i,Relaxed);
 
-        let mut rng = rand::thread_rng();
-        let mut schedule: Schedule<Bird> = Schedule::new();
-        // assert!(schedule.events.is_empty());
+            let mut rng = rand::thread_rng();
+            let mut schedule: Schedule<Bird> = Schedule::with_threads(*n_thread);
+            // assert!(schedule.events.is_empty());
 
-        let mut state = BoidsState::new(SIZE[INDEX.load(Relaxed)], SIZE[INDEX.load(Relaxed)], DISCRETIZATION, TOROIDAL);
-        for bird_id in 0..NUM_AGENT {
+            let mut state = BoidsState::new(SIZE[INDEX.load(Relaxed)], SIZE[INDEX.load(Relaxed)], DISCRETIZATION, TOROIDAL);
+            for bird_id in 0..NUM_AGENT {
+                
+                let r1: f64 = rng.gen();
+                let r2: f64 = rng.gen();
+                let last_d = Real2D { x: 0.0, y: 0.0 };
+                let bird = Bird::new(
+                    bird_id,
+                    Real2D {
+                        x: SIZE[INDEX.load(Relaxed)] * r1,
+                        y: SIZE[INDEX.load(Relaxed)] * r2,
+                    },
+                    last_d,
+                );
+                state
+                    .field1
+                    .set_object_location(bird, bird.pos);
             
-            let r1: f64 = rng.gen();
-            let r2: f64 = rng.gen();
-            let last_d = Real2D { x: 0.0, y: 0.0 };
-            let bird = Bird::new(
-                bird_id,
-                Real2D {
-                    x: SIZE[INDEX.load(Relaxed)] * r1,
-                    y: SIZE[INDEX.load(Relaxed)] * r2,
-                },
-                last_d,
+                schedule.schedule_repeating(bird, 0.0, 0);
+            }
+
+            // assert!(!schedule.events.is_empty());
+            let dur = std::time::Duration::from_secs(1);
+            
+            let start = Instant::now();
+            
+            while start.elapsed() <= dur{
+                schedule.step(&mut state);
+            }
+
+            
+
+            
+            println!("{};{};{};{:?}",
+                schedule.pool.current_num_threads(),
+                SIZE[INDEX.load(Relaxed)],
+                schedule.step,
+                schedule.step as f64 /( dur.as_nanos() as f64 * 1e-9)
             );
-            state
-                .field1
-                .set_object_location(bird, bird.pos);
-        
-            schedule.schedule_repeating(bird, 0.0, 0);
         }
-
-        // assert!(!schedule.events.is_empty());
-        let dur = std::time::Duration::from_secs(600);
-        
-        let start = Instant::now();
-        
-        while start.elapsed() <= dur{
-            schedule.step(&mut state);
-        }
-
-        
-
-        
-        println!("{};{};{:?}",
-            SIZE[INDEX.load(Relaxed)],
-            schedule.step,
-            schedule.step as f64 /( dur.as_nanos() as f64 * 1e-9)
-        );
     }
 }
 
@@ -116,7 +114,7 @@ impl Bird {
         Bird { id, pos, last_d }
     }
 
-    pub fn avoidance(self, vec: &Vec<Ref<Bird>>) -> Real2D {
+    pub fn avoidance(self, vec: &Vec<&Bird>) -> Real2D {
         if vec.is_empty() {
             let real = Real2D { x: 0.0, y: 0.0 };
             return real;
@@ -154,7 +152,7 @@ impl Bird {
         }
     }
 
-    pub fn cohesion(self, vec: &Vec<Ref<Bird>>) -> Real2D {
+    pub fn cohesion(self, vec: &Vec<&Bird>) -> Real2D {
         if vec.is_empty() {
             let real = Real2D { x: 0.0, y: 0.0 };
             return real;
@@ -206,7 +204,7 @@ impl Bird {
         return real;
     }
 
-    pub fn consistency(self, vec: &Vec<Ref<Bird>>) -> Real2D {
+    pub fn consistency(self, vec: &Vec<&Bird>) -> Real2D {
         if vec.is_empty() {
             let real = Real2D { x: 0.0, y: 0.0 };
             return real;
