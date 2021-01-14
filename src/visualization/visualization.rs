@@ -1,4 +1,4 @@
-use crate::agent::Agent;
+use crate::engine::agent::Agent;
 use crate::visualization::main_system_bundle::MainSystemBundle;
 use crate::visualization::renderable::Render;
 use crate::visualization::visualization_state::VisualizationState;

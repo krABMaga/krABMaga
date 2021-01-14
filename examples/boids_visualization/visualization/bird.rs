@@ -1,9 +1,9 @@
 use crate::model::bird::Bird;
 use crate::model::boids_state::BoidsState;
-use abm::location::Real2D;
-use abm::visualization::renderable::{Render, SpriteType};
 use amethyst::core::ecs::{Component, DenseVecStorage};
 use amethyst::core::Transform;
+use rust_ab::engine::location::Real2D;
+use rust_ab::visualization::renderable::{Render, SpriteType};
 use std::f64::consts::PI;
 
 impl Render for Bird {

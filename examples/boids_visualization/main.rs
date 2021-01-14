@@ -4,10 +4,10 @@ mod visualization;
 use crate::model::bird::Bird;
 use crate::model::boids_state::{HEIGHT, WIDTH};
 use crate::visualization::vis_state::VisState;
-use abm::visualization::visualization::Visualization;
-use abm::visualization::visualization_state::VisualizationState;
 use amethyst::renderer::palette::Srgba;
 use amethyst::utils::application_root_dir;
+use rust_ab::visualization::visualization::Visualization;
+use rust_ab::visualization::visualization_state::VisualizationState;
 
 static NUM_AGENT: u128 = 500;
 

@@ -1,4 +1,4 @@
-use crate::agent::Agent;
+use crate::engine::agent::Agent;
 use crate::visualization::renderable::Render;
 use amethyst::core::ecs::{Join, WriteStorage};
 use amethyst::core::Transform;

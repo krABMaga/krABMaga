@@ -1,11 +1,11 @@
 use crate::model::boids_state::{
     BoidsState, AVOIDANCE, COHESION, CONSISTENCY, HEIGHT, JUMP, MOMENTUM, RANDOMNESS, WIDTH,
 };
-use abm::agent::Agent;
-use abm::field_2d::{toroidal_distance, toroidal_transform};
-use abm::location::{Location2D, Real2D};
 use core::fmt;
 use rand::Rng;
+use rust_ab::engine::agent::Agent;
+use rust_ab::engine::field::field_2d::{toroidal_distance, toroidal_transform};
+use rust_ab::engine::location::{Location2D, Real2D};
 use std::hash::{Hash, Hasher};
 
 #[derive(Clone, Copy)]

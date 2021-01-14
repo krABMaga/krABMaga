@@ -1,4 +1,4 @@
-use crate::agent::Agent;
+use crate::engine::agent::Agent;
 use crate::visualization::renderable::Render;
 use crate::Schedule;
 use amethyst::shred::{System, WriteExpect};

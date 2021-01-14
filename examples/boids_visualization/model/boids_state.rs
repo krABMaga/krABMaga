@@ -1,7 +1,7 @@
 use crate::model::bird::Bird;
-use abm::field::DoubleBufferedField;
-use abm::field_2d::Field2D;
-use abm::state::State;
+use rust_ab::engine::field::field::Field;
+use rust_ab::engine::field::field_2d::Field2D;
+use rust_ab::engine::state::State;
 
 pub static WIDTH: f64 = 400.;
 pub static HEIGHT: f64 = 400.;

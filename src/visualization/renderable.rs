@@ -1,4 +1,4 @@
-use crate::agent::Agent;
+use crate::engine::agent::Agent;
 use amethyst::core::ecs::Component;
 use amethyst::core::math::Vector3;
 use amethyst::core::Transform;

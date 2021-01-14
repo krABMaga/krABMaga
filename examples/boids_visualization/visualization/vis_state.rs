@@ -1,20 +1,20 @@
 use crate::model::bird::Bird;
 use crate::model::boids_state::{BoidsState, DISCRETIZATION, HEIGHT, TOROIDAL, WIDTH};
 use crate::NUM_AGENT;
-use abm::location::Real2D;
-use abm::visualization::on_state_init::OnStateInit;
-use abm::visualization::renderable::{Render, SpriteType};
-use abm::visualization::sprite_render_factory::SpriteRenderFactory;
-use abm::Schedule;
 use amethyst::prelude::{World, WorldExt};
 use rand::Rng;
+use rust_ab::engine::location::Real2D;
+use rust_ab::visualization::on_state_init::OnStateInit;
+use rust_ab::visualization::renderable::{Render, SpriteType};
+use rust_ab::visualization::sprite_render_factory::SpriteRenderFactory;
+use rust_ab::Schedule;
 
 pub struct VisState;
 
 impl OnStateInit for VisState {
     fn on_init(&self, world: &mut World, sprite_render_factory: &mut SpriteRenderFactory) {
         let state = BoidsState::new(WIDTH, HEIGHT, DISCRETIZATION, TOROIDAL);
-        let schedule: Schedule<Bird> = Schedule::new();
+        let mut schedule: Schedule<Bird> = Schedule::new();
         let mut rng = rand::thread_rng();
         world.register::<Bird>();
         for bird_id in 0..NUM_AGENT {

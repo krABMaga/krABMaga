@@ -1,4 +1,4 @@
-use crate::agent::Agent;
+use crate::engine::agent::Agent;
 use crate::visualization::renderable::Render;
 use crate::visualization::systems::renderer_system::RendererSystem;
 use crate::visualization::systems::simulation_system::SimulationSystem;
