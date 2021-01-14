@@ -9,11 +9,13 @@ fn main() {
     let node2 = String::from("node2");
     let node3 = String::from("node3");
     let node4 = String::from("node4");
+    let node5 = String::from("node5");
 
     network.addNode(&node1);
     network.addNode(&node2);
     network.addNode(&node3);
     network.addNode(&node4);
+    network.addNode(&node5);
 
     network.update();
 
@@ -32,5 +34,15 @@ fn main() {
     match network.getEdge(&node1, &node4) {
         Some(edge) => edge,
         None => panic!("edge node4-node1 not found"),
+    };
+
+    match network.getEdge(&node2, &node4) {
+        Some(edge) => panic!("edge node2-node4 found"),
+        None => {},
+    };
+
+    match network.getEdge(&node1, &node5) {
+        Some(edge) => panic!("edge node1-node5 found"),
+        None => {},
     };
 }

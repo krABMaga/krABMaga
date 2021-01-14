@@ -54,19 +54,13 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display > Network<O,L>  {
         let e = Edge::new(u.clone(), v.clone(), edgeOptions);
         match self.edges.get_mut(u){
             Some(mut uedges) => { 
-             //   println!("Second add to {} len {}", u, uedges.len());
-                //let mut vec = uedges.to_vec();
                 uedges.push(e.clone());
-                //self.edges.insert(u.clone(), vec);
                 if self.direct {
                     Some(e)
                 }else{
                     match self.edges.get_mut(v){
                         Some(mut vedges) => { 
-                         
-                            //let mut vec = vedges.to_vec();
                             vedges.push(e.clone());
-                            //self.edges.insert(v.clone(), vec);
                             Some(e)
                         }
                         None => {
@@ -87,10 +81,7 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display > Network<O,L>  {
                 }else{
                     match self.edges.get_mut(v){
                         Some(mut vedges) => { 
-                         
-                            //let mut vec = vedges.to_vec();
                             vedges.push(e.clone());
-                            //self.edges.insert(v.clone(), vec);
                             Some(e)
                         }
                         None => {
@@ -129,12 +120,9 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display > Network<O,L>  {
     }
     
     pub fn getEdge(&self, u: &O, v: &O) ->  Option<Edge<O,L>>{
-        //println!("getEdge");
         match self.edges.get(u){
             Some(uedges) => { 
-              //  println!("Inside {}", uedges.len());
                 for e in uedges {
-                  //  println!("{} {}", e.u, e.v);
                     if (self.direct && e.u == *u && e.v == *v){
                         return Some(e.clone())
                     }else if (!self.direct && ( (e.u == *u && e.v == *v) || (e.v == *u && e.u == *v) ) ){
