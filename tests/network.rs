@@ -17,14 +17,14 @@ fn network_test_undirect() {
     network.addNode(&node4);
     network.addNode(&node5);
 
-    network.update();
+    network.lazy_update();
 
     network.addEdge(&node1, &node2, WeightedLabeled(String::from("friend"), 2.0));
     network.addEdge(&node1, &node3, WeightedLabeled(String::from("friend"), 2.0));
     network.addEdge(&node3, &node4, WeightedLabeled(String::from("friend"), 2.0));
     network.addEdge(&node4, &node1, WeightedLabeled(String::from("friend"), 2.0));
 
-    network.update();
+    network.lazy_update();
 
     match network.getEdge(&node2, &node1) {
         Some(edge) => assert!(true),
@@ -63,14 +63,14 @@ fn network_test_direct() {
     network.addNode(&node4);
     network.addNode(&node5);
 
-    network.update();
+    network.lazy_update();
 
     network.addEdge(&node1, &node2, WeightedLabeled(String::from("friend"), 2.0));
     network.addEdge(&node1, &node3, WeightedLabeled(String::from("friend"), 2.0));
     network.addEdge(&node3, &node4, WeightedLabeled(String::from("friend"), 2.0));
     network.addEdge(&node4, &node1, WeightedLabeled(String::from("friend"), 2.0));
 
-    network.update();
+    network.lazy_update();
 
     match network.getEdge(&node1, &node2) {
         Some(edge) => assert!(true),

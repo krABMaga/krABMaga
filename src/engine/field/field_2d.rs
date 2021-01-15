@@ -33,9 +33,30 @@ impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> Field2D<A>  {
     }
 
     pub fn set_object_location(&self, object: A, pos: Real2D) {
+
+        if  self.fbag.len() != 0 {
+            let old_pos =  self.fpos.get(&object);
+            match old_pos {
+                Some(pos) => {
+                    let old_bag = self.discretize(pos);
+                    match self.fbag.get_mut(&old_bag){
+                        Some(v) => {
+                                let mut v = v;
+                                v.retain( |entry| *entry != object);
+                        }
+                        None => {
+                            panic!("Error the agent is not in the corresponding bag.")
+                        }
+                    };
+                },
+                None => {}
+            };
+            
+        }
+
         let bag = self.discretize(&pos);
-        self.fpos.insert(object,pos);
-        self.findex.insert(object,bag);
+        self.fpos.insert(object, pos);
+        self.findex.insert(object, bag);
         match self.fbag.get_mut(&bag){
             Some(v) => {
                     let mut v = v;
@@ -253,6 +274,11 @@ pub fn toroidal_transform(val: f64, dim: f64) -> f64 {
 
 impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> Field for Field2D<A>{
     fn update(&mut self){
+        self.fpos.update();
+        self.fbag.update();
+        self.findex.update();
+    }
+    fn lazy_update(&mut self){
         self.fpos.lazy_update();
         self.fbag.lazy_update();
         self.findex.lazy_update();
