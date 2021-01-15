@@ -1,9 +1,8 @@
-use rust_ab::engine::field::network::{Network, EdgeOptions::*};
 use rust_ab::engine::field::field::Field;
+use rust_ab::engine::field::network::{EdgeOptions::*, Network};
 
 #[test]
 fn network_test_undirect() {
-    
     let mut network: Network<String, String> = Network::new(false);
 
     let node1 = String::from("node1");
@@ -23,7 +22,7 @@ fn network_test_undirect() {
     network.addEdge(&node1, &node2, WeightedLabeled(String::from("friend"), 2.0));
     network.addEdge(&node1, &node3, WeightedLabeled(String::from("friend"), 2.0));
     network.addEdge(&node3, &node4, WeightedLabeled(String::from("friend"), 2.0));
-    network.addEdge(&node4, &node1, WeightedLabeled(String::from("friend"), 2.0)); 
+    network.addEdge(&node4, &node1, WeightedLabeled(String::from("friend"), 2.0));
 
     network.update();
 
@@ -31,7 +30,7 @@ fn network_test_undirect() {
         Some(edge) => assert!(true),
         None => assert!(false),
     };
-    
+
     match network.getEdge(&node1, &node4) {
         Some(edge) => assert!(true),
         None => assert!(false),
@@ -50,7 +49,6 @@ fn network_test_undirect() {
 
 #[test]
 fn network_test_direct() {
-    
     let mut network: Network<String, String> = Network::new(true);
 
     let node1 = String::from("node1");
@@ -70,7 +68,7 @@ fn network_test_direct() {
     network.addEdge(&node1, &node2, WeightedLabeled(String::from("friend"), 2.0));
     network.addEdge(&node1, &node3, WeightedLabeled(String::from("friend"), 2.0));
     network.addEdge(&node3, &node4, WeightedLabeled(String::from("friend"), 2.0));
-    network.addEdge(&node4, &node1, WeightedLabeled(String::from("friend"), 2.0)); 
+    network.addEdge(&node4, &node1, WeightedLabeled(String::from("friend"), 2.0));
 
     network.update();
 
@@ -78,7 +76,7 @@ fn network_test_direct() {
         Some(edge) => assert!(true),
         None => assert!(false),
     };
-    
+
     match network.getEdge(&node3, &node4) {
         Some(edge) => assert!(true),
         None => assert!(false),
