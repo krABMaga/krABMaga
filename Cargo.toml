@@ -59,7 +59,6 @@ harness = false
 [features]
 amethyst_metal = ["amethyst", "amethyst/metal"]
 amethyst_vulkan = ["amethyst", "amethyst/vulkan"]
-sequential = []
 parallel = []
 
 [dependencies.amethyst]

@@ -17,12 +17,17 @@ fn ncb(shard_amount: usize) -> usize {
     shard_amount.trailing_zeros() as usize
 }
 
+pub enum UpdateType{
+    LAZY,
+    COPY
+}
 
 pub struct DBDashMap<K,V,S = RandomState>{
     shift:usize,
     pub shards: Box<[Mutex<HashMap<K,V,S>>]>,
     pub r_shards: Box<[HashMap<K,V,S>]>,
     hasher: S,
+    pub update_type: UpdateType,
 }
 
 impl<K, V, S> Default for DBDashMap<K,V,S>
@@ -74,6 +79,7 @@ impl<'a,K: 'a + Eq+Hash, V: 'a, S: BuildHasher + Clone + Default> DBDashMap<K,V,
             shards,
             r_shards,
             hasher,
+            update_type: UpdateType::LAZY,
         }
     }
 
@@ -151,6 +157,7 @@ impl<'a,K: 'a + Eq+Hash, V: 'a, S: BuildHasher + Clone + Default> DBDashMap<K,V,
             unsafe{ std::ptr::swap( self.shards[i].get_mut().unwrap() as *mut HashMap<K,V,S>, &mut self.r_shards[i] as *mut HashMap<K,V,S> ) }
             self.shards[i].get_mut().unwrap().clear();
         }
+        self.update_type = UpdateType::LAZY;
     }
 
     pub fn merge_r_shards(&mut self) -> HashMap<K,V,S>{
@@ -189,6 +196,7 @@ impl<'a, K: 'a + Eq + Hash + Clone, V: Clone + 'a> DBDashMap<K, V, RandomState> 
                 self.r_shards[i].insert(key.clone(), value.clone());
             }
         }
+        self.update_type = UpdateType::COPY;
        
     }
 }
