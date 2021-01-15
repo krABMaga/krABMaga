@@ -28,23 +28,23 @@ fn network_test_undirect() {
     network.update();
 
     match network.getEdge(&node2, &node1) {
-        Some(edge) => edge,
-        None => panic!("edge node2-node1 not found"),
+        Some(edge) => assert!(true),
+        None => assert!(false),
     };
     
     match network.getEdge(&node1, &node4) {
-        Some(edge) => edge,
-        None => panic!("edge node4-node1 not found"),
+        Some(edge) => assert!(true),
+        None => assert!(false),
     };
 
     match network.getEdge(&node2, &node4) {
-        Some(edge) => panic!("edge node2-node4 found"),
-        None => {},
+        Some(edge) => assert!(false),
+        None => assert!(true),
     };
 
     match network.getEdge(&node1, &node5) {
-        Some(edge) => panic!("edge node1-node5 found"),
-        None => {},
+        Some(edge) => assert!(false),
+        None => assert!(true),
     };
 }
 
@@ -75,22 +75,22 @@ fn network_test_direct() {
     network.update();
 
     match network.getEdge(&node1, &node2) {
-        Some(edge) => edge,
-        None => panic!("edge node2-node1 not found"),
+        Some(edge) => assert!(true),
+        None => assert!(false),
     };
     
     match network.getEdge(&node3, &node4) {
-        Some(edge) => edge,
-        None => panic!("edge node4-node1 not found"),
+        Some(edge) => assert!(true),
+        None => assert!(false),
     };
 
     match network.getEdge(&node2, &node1) {
-        Some(edge) => panic!("edge node2-node1 found"),
-        None => {},
+        Some(edge) => assert!(false),
+        None => assert!(true),
     };
 
     match network.getEdge(&node1, &node4) {
-        Some(edge) => panic!("edge node1-node4 found"),
-        None => {},
+        Some(edge) => assert!(false),
+        None => assert!(true),
     };
 }

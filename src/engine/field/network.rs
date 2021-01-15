@@ -98,9 +98,9 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display > Network<O,L>  {
     
     pub fn updateEdge(&self,  u: &O,  v: &O, edgeOptions:EdgeOptions<L>) -> Option<Edge<O,L>>{
         let e = Edge::new(u.clone(), v.clone(), edgeOptions);
-        match self.edges.get(&u){
+        match self.edges.get_mut(u){
             Some(uedges) => { 
-             
+                //TODO search the edge and change it
                 let mut vec = uedges.to_vec();
                 vec.push(e.clone());
                 self.edges.insert(u.clone(), vec);
