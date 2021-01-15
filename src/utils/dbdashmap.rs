@@ -145,7 +145,7 @@ impl<'a,K: 'a + Eq+Hash, V: 'a, S: BuildHasher + Clone + Default> DBDashMap<K,V,
 
     }
 
-    pub fn update(&mut self){
+    pub fn lazy_update(&mut self){
         let shard_amount = shard_amount();
         for i in 0..shard_amount{
             unsafe{ std::ptr::swap( self.shards[i].get_mut().unwrap() as *mut HashMap<K,V,S>, &mut self.r_shards[i] as *mut HashMap<K,V,S> ) }
@@ -177,6 +177,19 @@ impl<'a,K: 'a + Eq+Hash, V: 'a, S: BuildHasher + Clone + Default> DBDashMap<K,V,
             }
         }
         ris
+    }
+}
+
+impl<'a, K: 'a + Eq + Hash + Clone, V: Clone + 'a> DBDashMap<K, V, RandomState> {
+    pub fn update(&mut self)
+    {   
+        let n = shard_amount();
+        for i in 0..n {
+            for (key, value) in self.shards[i].lock().unwrap().iter() {
+                self.r_shards[i].insert(key.clone(), value.clone());
+            }
+        }
+       
     }
 }
 

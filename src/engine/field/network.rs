@@ -170,6 +170,6 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display > Network<O,L>  {
 
 impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display > Field for Network<O,L>{
     fn update(&mut self){
-        self.edges.update();
+        self.edges.lazy_update();
     }
 }

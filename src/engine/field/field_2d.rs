@@ -253,9 +253,9 @@ pub fn toroidal_transform(val: f64, dim: f64) -> f64 {
 
 impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> Field for Field2D<A>{
     fn update(&mut self){
-        self.fpos.update();
-        self.fbag.update();
-        self.findex.update();
+        self.fpos.lazy_update();
+        self.fbag.lazy_update();
+        self.findex.lazy_update();
     }
 }
 
