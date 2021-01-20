@@ -6,6 +6,7 @@ use crate::engine::location::Int2D;
 use crate::engine::location::Location2D;
 use std::cmp;
 use crate::utils::dbdashmap::DBDashMap;
+use crate::utils::dbdashmap::UpdateType;
 
 
 
@@ -33,9 +34,33 @@ impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> Field2D<A>  {
     }
 
     pub fn set_object_location(&self, object: A, pos: Real2D) {
+
+        match self.fbag.update_type{
+                UpdateType::COPY => {
+                    let old_pos =  self.fpos.get(&object);
+                    match old_pos {
+                        Some(pos) => {
+                            let old_bag = self.discretize(pos);
+                            match self.fbag.get_mut(&old_bag){
+                                Some(v) => {
+                                        let mut v = v;
+                                        v.retain( |entry| *entry != object);
+                                }
+                                None => {
+                                    panic!("Error the agent is not in the corresponding bag.")
+                                }
+                            };
+                        },
+                        None => {}
+                    };
+                },
+                _ => (),
+            }  
+           
+
         let bag = self.discretize(&pos);
-        self.fpos.insert(object,pos);
-        self.findex.insert(object,bag);
+        self.fpos.insert(object, pos);
+        self.findex.insert(object, bag);
         match self.fbag.get_mut(&bag){
             Some(v) => {
                     let mut v = v;
@@ -256,6 +281,11 @@ impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> Field for Field
         self.fpos.update();
         self.fbag.update();
         self.findex.update();
+    }
+    fn lazy_update(&mut self){
+        self.fpos.lazy_update();
+        self.fbag.lazy_update();
+        self.findex.lazy_update();
     }
 }
 
