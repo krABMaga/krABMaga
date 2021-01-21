@@ -32,13 +32,11 @@ impl<T: Copy + Clone> NumberGrid2D<T> {
     /// let value = 5;
     /// let loc = Int2D{x: 2, y: 2};
     /// simple_grid.set_value_at_pos(&loc, value);
+    /// simple_grid.update();
     /// let cell_value = simple_grid.get_value_at_pos(&loc);
-    /// assert_eq!(cell_value, Some(5));
+    /// assert_eq!(cell_value, Some(&5));
     /// ```
     pub fn get_value_at_pos(&self, pos: &Int2D) -> Option<&T> {
-        // return self.locs[pos.x as usize][pos.y as usize];
-        //let index = pos.x + pos.y * self.width;
-        //self.locs[index as usize]
         self.locs.get(pos)
     }
 
@@ -54,13 +52,11 @@ impl<T: Copy + Clone> NumberGrid2D<T> {
     /// let value = 5;
     /// let loc = Int2D{x: 2, y: 2};
     /// simple_grid.set_value_at_pos(&loc, value);
+    /// simple_grid.update();
     /// let cell_value = simple_grid.get_value_at_pos(&loc);
-    /// assert_eq!(cell_value, Some(5));
+    /// assert_eq!(cell_value, Some(&5));
     /// ```
     pub fn set_value_at_pos(&self, pos: &Int2D, value: T) {
-        //self.locs[pos.x as usize][pos.y as usize] = Some(value);
-        //let index = pos.x + pos.y * self.width;
-        //self.locs[index as usize] = Some(value);
         self.locs.insert(*pos, value);
     }
 

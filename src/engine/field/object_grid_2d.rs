@@ -47,17 +47,10 @@ impl<A: Eq + Hash + Clone + Copy> Grid2D<A> {
     /// let mut agent = A{};
     /// let loc = Int2D{x: 2, y: 2};
     /// grid.set_object_location(agent, &loc);
+    /// grid.update();
     /// assert!(grid.get_object_location(agent) == Some(&loc));
     /// ```
     pub fn set_object_location(&self, agent: A, new_pos: &Int2D) {
-        /*
-        let mut agent_loc = self.locs.entry(*agent).or_insert(*new_pos);
-        agent_loc.x = new_pos.x;
-        agent_loc.y = new_pos.y;*/
-        // 1: get old pos
-        // 2: update in locs
-        // 3: delete from locs_inverted
-        // 4: set in locs_inverted
         self.locs.insert(agent, *new_pos);
         self.locs_inversed.insert(*new_pos, agent);
     }
@@ -87,6 +80,7 @@ impl<A: Eq + Hash + Clone + Copy> Grid2D<A> {
     /// let mut agent = A{};
     /// let loc = Int2D{x: 2, y: 2};
     /// grid.set_object_location(agent, &loc);
+    /// grid.update();
     /// assert!(grid.get_object_location(agent) == Some(&loc));
     /// ```
     pub fn get_object_location(&self, agent: A) -> Option<&Int2D> {
