@@ -3,6 +3,9 @@ use amethyst::prelude::{World, WorldExt};
 use amethyst::renderer::{ImageFormat, SpriteRender, SpriteSheet, SpriteSheetFormat, Texture};
 use hashbrown::HashMap;
 
+/// A simple lazy loader of SpriteRenders, mainly for use with the Emoji sprite feature offered by the framework.
+/// This allows loading sprites only once, storing a handle pointing to the sprite resource itself and returning clones
+/// of the handle, for optimization purposes.
 pub struct SpriteRenderFactory {
     emoji_loaders: HashMap<String, Handle<SpriteSheet>>,
 }
@@ -14,6 +17,7 @@ impl SpriteRenderFactory {
         }
     }
 
+    /// Get the sprite_render associated to the emoji code lazily.
     pub fn get_emoji_loader(&mut self, emoji_code: String, world: &mut World) -> SpriteRender {
         let emoji_filename = format!("{}.png", emoji_code);
         let sprite_render = match self.emoji_loaders.get(&emoji_code) {
@@ -28,6 +32,7 @@ impl SpriteRenderFactory {
         sprite_render
     }
 
+    /// Actually fetch the sprite resource from the filesystem, from the framework asset folder.
     fn load_emoji_sprite_render(
         &mut self,
         world: &mut World,

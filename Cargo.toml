@@ -58,7 +58,7 @@ harness = false
 # https://github.com/rust-lang/cargo/issues/7914
 [features]
 amethyst_metal = ["amethyst", "amethyst/metal"]
-amethyst_vulkan = ["amethyst", "amethyst/vulkan"]
+amethyst_vulkan = ["amethyst", "amethyst/vulkan", "amethyst/profiler"]
 parallel = []
 
 [dependencies.amethyst]
@@ -67,5 +67,18 @@ optional = true
 default-features = false
 features = ["renderer"]
 
+[[example]]
+name = "antsforaging"
+path = "examples/antsforaging/antsforaging/main.rs"
 
+[[example]]
+name = "antsforaging_ui"
+path = "examples/antsforaging/antsforaging_ui/main.rs"
 
+[[example]]
+name = "boids"
+path = "examples/boids/boids.rs"
+
+[[example]]
+name = "boids_ui"
+path = "examples/boids/boids_ui/main.rs"

@@ -1,12 +1,12 @@
+use crate::utils::r#ref::RefMut;
+use ahash::{AHasher, RandomState};
+use core::hash::{BuildHasher, Hash, Hasher};
+use hashbrown::HashMap;
 use lazy_static::*;
 use std::sync::Mutex;
-use hashbrown::HashMap;
-use core::hash::{BuildHasher, Hash,Hasher};
-use ahash::{RandomState,AHasher};
-use crate::utils::r#ref::RefMut;
 
 #[allow(dead_code)]
-lazy_static!{
+lazy_static! {
     static ref B_HASHER: AHasher = RandomState::new().build_hasher();
 }
 fn shard_amount() -> usize {
@@ -17,41 +17,40 @@ fn ncb(shard_amount: usize) -> usize {
     shard_amount.trailing_zeros() as usize
 }
 
-pub enum UpdateType{
+pub enum UpdateType {
     LAZY,
-    COPY
+    COPY,
 }
 
-pub struct DBDashMap<K,V,S = RandomState>{
-    shift:usize,
-    pub shards: Box<[Mutex<HashMap<K,V,S>>]>,
-    pub r_shards: Box<[HashMap<K,V,S>]>,
+pub struct DBDashMap<K, V, S = RandomState> {
+    shift: usize,
+    pub shards: Box<[Mutex<HashMap<K, V, S>>]>,
+    pub r_shards: Box<[HashMap<K, V, S>]>,
     hasher: S,
     pub update_type: UpdateType,
 }
 
-impl<K, V, S> Default for DBDashMap<K,V,S>
+impl<K, V, S> Default for DBDashMap<K, V, S>
 where
-    K: Eq+ Hash,
-    S: Default+BuildHasher + Clone,
+    K: Eq + Hash,
+    S: Default + BuildHasher + Clone,
 {
-    fn default() -> Self{
+    fn default() -> Self {
         Self::with_hasher(Default::default())
     }
 }
 
-impl<'a,K:'a+ Eq+ Hash, V:'a> DBDashMap<K,V,RandomState>{
-    pub fn new() -> Self{
+impl<'a, K: 'a + Eq + Hash, V: 'a> DBDashMap<K, V, RandomState> {
+    pub fn new() -> Self {
         DBDashMap::with_hasher(RandomState::default())
     }
 
     pub fn with_capacity(capacity: usize) -> Self {
-        DBDashMap::with_capacity_and_hasher(capacity,RandomState::default())
+        DBDashMap::with_capacity_and_hasher(capacity, RandomState::default())
     }
 }
 
-impl<'a,K: 'a + Eq+Hash, V: 'a, S: BuildHasher + Clone + Default> DBDashMap<K,V,S>{
-
+impl<'a, K: 'a + Eq + Hash, V: 'a, S: BuildHasher + Clone + Default> DBDashMap<K, V, S> {
     pub fn with_hasher(hasher: S) -> Self {
         Self::with_capacity_and_hasher(0, hasher)
     }
@@ -71,8 +70,8 @@ impl<'a,K: 'a + Eq+Hash, V: 'a, S: BuildHasher + Clone + Default> DBDashMap<K,V,
             .collect();
 
         let r_shards = (0..shard_amount)
-        .map(|_| HashMap::with_capacity_and_hasher(cps, hasher.clone()))
-        .collect();
+            .map(|_| HashMap::with_capacity_and_hasher(cps, hasher.clone()))
+            .collect();
 
         Self {
             shift,
@@ -84,7 +83,7 @@ impl<'a,K: 'a + Eq+Hash, V: 'a, S: BuildHasher + Clone + Default> DBDashMap<K,V,
     }
 
     pub fn hash_usize<T: Hash>(&self, item: &T) -> usize {
-       // let mut hasher = self.hasher.build_hasher();
+        // let mut hasher = self.hasher.build_hasher();
         let mut hasher = B_HASHER.clone();
 
         item.hash(&mut hasher);
@@ -96,90 +95,89 @@ impl<'a,K: 'a + Eq+Hash, V: 'a, S: BuildHasher + Clone + Default> DBDashMap<K,V,
         (hash << 7) >> self.shift
     }
 
-    pub fn insert(&self,key: K, value: V)-> Option<V>{
+    pub fn insert(&self, key: K, value: V) -> Option<V> {
         let hash = self.hash_usize(&key);
 
         let idx = self.determine_shard(hash);
 
         let mut shard = self.shards[idx].lock().unwrap();
 
-        shard.insert(key,value)
+        shard.insert(key, value)
     }
 
-    pub fn remove(&self,key: &K) -> Option<(K,V)>
-    {
+    pub fn remove(&self, key: &K) -> Option<(K, V)> {
         let hash = self.hash_usize(&key);
-        
+
         let idx = self.determine_shard(hash);
 
         let mut shard = self.shards[idx].lock().unwrap();
 
         shard.remove_entry(key)
-
     }
 
-
-
-    pub fn get(&'a self,key: &K) -> Option<&'a V>{
+    pub fn get(&'a self, key: &K) -> Option<&'a V> {
         let hash = self.hash_usize(&key);
-        
+
         let idx = self.determine_shard(hash);
-        
+
         let shard = &self.r_shards[idx];
 
         shard.get(key)
     }
 
-    pub fn get_mut(&'a self,key: &K)-> Option<RefMut<K,V,S>>{
+    pub fn get_mut(&'a self, key: &K) -> Option<RefMut<K, V, S>> {
         let hash = self.hash_usize(&key);
-        
+
         let idx = self.determine_shard(hash);
-        
+
         let mut shard = self.shards[idx].lock().unwrap();
 
-    
-        match shard.get_mut(key){
-            Some(r) => 
-                        {
-                            unsafe{
-                                let re = &mut *(r as *mut V);
-                                Some(RefMut::new(shard,re))
-                            }
-                        }
-            None => None
+        match shard.get_mut(key) {
+            Some(r) => unsafe {
+                let re = &mut *(r as *mut V);
+                Some(RefMut::new(shard, re))
+            },
+            None => None,
         }
-
     }
 
-    pub fn lazy_update(&mut self){
+    pub fn lazy_update(&mut self) {
         let shard_amount = shard_amount();
-        for i in 0..shard_amount{
-            unsafe{ std::ptr::swap( self.shards[i].get_mut().unwrap() as *mut HashMap<K,V,S>, &mut self.r_shards[i] as *mut HashMap<K,V,S> ) }
+        for i in 0..shard_amount {
+            unsafe {
+                std::ptr::swap(
+                    self.shards[i].get_mut().unwrap() as *mut HashMap<K, V, S>,
+                    &mut self.r_shards[i] as *mut HashMap<K, V, S>,
+                )
+            }
             self.shards[i].get_mut().unwrap().clear();
         }
         self.update_type = UpdateType::LAZY;
     }
 
-    pub fn merge_r_shards(&mut self) -> HashMap<K,V,S>{
+    pub fn merge_r_shards(&mut self) -> HashMap<K, V, S> {
         let mut ris = HashMap::with_hasher(self.hasher.clone());
-        for i in 0..shard_amount(){
+        for i in 0..shard_amount() {
             ris.extend(self.shards[i].get_mut().unwrap().drain());
         }
         ris
     }
 
-    pub fn len(&self) -> usize{
-        self.shards.iter().map( |shard| shard.lock().unwrap().len() ).sum()
+    pub fn len(&self) -> usize {
+        self.shards
+            .iter()
+            .map(|shard| shard.lock().unwrap().len())
+            .sum()
     }
 
-    pub fn r_len(&self) -> usize{
-        self.r_shards.iter().map( |shard| shard.len() ).sum()
+    pub fn r_len(&self) -> usize {
+        self.r_shards.iter().map(|shard| shard.len()).sum()
     }
-    
-    pub fn keys(&self) -> Vec<&K>{   
+
+    pub fn keys(&self) -> Vec<&K> {
         let mut ris = vec![];
-        for shard in self.r_shards.iter(){
-            for key in shard.keys(){
+        for shard in self.r_shards.iter() {
+            for key in shard.keys() {
                 ris.push(key);
             }
         }
@@ -188,8 +186,7 @@ impl<'a,K: 'a + Eq+Hash, V: 'a, S: BuildHasher + Clone + Default> DBDashMap<K,V,
 }
 
 impl<'a, K: 'a + Eq + Hash + Clone, V: Clone + 'a> DBDashMap<K, V, RandomState> {
-    pub fn update(&mut self)
-    {   
+    pub fn update(&mut self) {
         let n = shard_amount();
         for i in 0..n {
             for (key, value) in self.shards[i].lock().unwrap().iter() {
@@ -197,7 +194,17 @@ impl<'a, K: 'a + Eq + Hash + Clone, V: Clone + 'a> DBDashMap<K, V, RandomState> 
             }
         }
         self.update_type = UpdateType::COPY;
-       
+    }
+
+    pub fn apply_to_all_values<F>(&self, closure: F)
+    where
+        F: Fn(&V) -> V,
+    {
+        for shard in self.r_shards.iter() {
+            for (key, value) in shard.iter() {
+                self.insert(key.clone(), closure(value));
+            }
+        }
     }
 }
 

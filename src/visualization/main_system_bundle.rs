@@ -2,17 +2,26 @@ use crate::engine::agent::Agent;
 use crate::visualization::renderable::Render;
 use crate::visualization::systems::renderer_system::RendererSystem;
 use crate::visualization::systems::simulation_system::SimulationSystem;
+use amethyst::core::ecs::storage::DistinctStorage;
+use amethyst::core::ecs::Component;
 use amethyst::core::SystemBundle;
 use amethyst::shred::{DispatcherBuilder, World};
 use amethyst::Error;
 use std::marker::PhantomData;
 
-pub struct MainSystemBundle<T: 'static + Agent + Render + Clone + Send + Sync> {
+/// The main bundle inserted in the Amethyst App, composed of the Simulation and Renderer Systems.
+pub struct MainSystemBundle<T>
+where
+    T: 'static + Agent + Render + Clone + Send + Sync,
+    <T as Component>::Storage: DistinctStorage,
+{
     pub marker: PhantomData<T>,
 }
 
-impl<'a, 'b, T: 'static + Agent + Render + Clone + Send + Sync> SystemBundle<'a, 'b>
-    for MainSystemBundle<T>
+impl<'a, 'b, T> SystemBundle<'a, 'b> for MainSystemBundle<T>
+where
+    T: 'static + Agent + Render + Clone + Send + Sync,
+    <T as Component>::Storage: DistinctStorage,
 {
     fn build(
         self,
