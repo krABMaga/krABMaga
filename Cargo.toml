@@ -58,7 +58,7 @@ harness = false
 # https://github.com/rust-lang/cargo/issues/7914
 [features]
 amethyst_metal = ["amethyst", "amethyst/metal"]
-amethyst_vulkan = ["amethyst", "amethyst/vulkan", "amethyst/profiler"]
+amethyst_vulkan = ["amethyst", "amethyst/vulkan"]
 parallel = []
 
 [dependencies.amethyst]
