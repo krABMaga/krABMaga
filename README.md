@@ -124,8 +124,7 @@ fn main() {
 -->
 ## Support conference paper
 
-- __On Evaluating Rust as a Programming Language for the Future of Massive Agent-based Simulations__. Alessia Antelmi, Gennaro Cordasco, Matteo D’Auria, Daniele De Vinco, Alberto Negro, and Carmine Spagnuolo. 19th Asia Simulation Conference. 2019.
- - Best Paper Nominees
+- __On Evaluating Rust as a Programming Language for the Future of Massive Agent-based Simulations__. Alessia Antelmi, Gennaro Cordasco, Matteo D’Auria, Daniele De Vinco, Alberto Negro, and Carmine Spagnuolo. 19th Asia Simulation Conference. 2019. [:trophy: Best Paper Nominee]
 ## License
 
 The MIT License
