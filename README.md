@@ -11,7 +11,7 @@
 
 The Boids model by C. Raynolds, 1986, is a steering behavior ABM for autonomous agents, which simulates the flocking behavior of birds. The agent behavior is derived by a linear combination of three independent rules: _Separation_: steer in order to avoid crowding local flockmates; _Alignment_: steer towards the average heading of local flockmates; _Cohesion_: steer to move towards the average position (center of mass) of local flockmates.
 
-- Single core execution: ```cargo run --release --example boids --features sequential```
+- Single core execution: ```cargo run --release --example boids```
 - Multiple core execution: ```cargo run --release --example boids --features parallel -- --nt 4```
 <!--
 ## Boids Simulation Example
