@@ -27,7 +27,7 @@ Rust-AB exploits the [Amethyst Game Engine](https://amethyst.rs) to support mode
  - :apple: MacOS: ```cargo run --release --example [example-name]_ui --features "amethyst_metal"```  
  - :penguin: Linux: ```cargo run --release --example [example-name]_ui --features "amethyst_vulkan"```
 
-Please refer to this FAQ for any issue with Amethyst.
+Please refer to this [FAQ]() for any issue with Amethyst.
  
  
 <!--
