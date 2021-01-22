@@ -7,7 +7,7 @@
 
 # Examples
 - [Boids simulation](https://github.com/spagnuolocarmine/rust-ab/tree/master/examples/boids) :bird: ```[example-name]= boids | boid_ui```
-- [Ants  Foraging](https://github.com/spagnuolocarmine/rust-ab/tree/master/examples/antsforaging) :ant: ```[example-name]= antsforaging | antsforaging```
+- [Ants  Foraging](https://github.com/spagnuolocarmine/rust-ab/tree/master/examples/antsforaging) :ant: ```[example-name]= antsforaging | antsforaging_ui```
 
 ### Execution with Cargo
 
