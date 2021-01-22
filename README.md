@@ -5,6 +5,8 @@
 
 **Rust-AB** is a discrete events simulation engine for developing ABM simulation that is written in a novel programming language named Rust. Rust-AB is designed to be a _ready-to-use_ tool for the ABM community and for this reason the architectural concepts of the well-adopted MASON library were re-engineered to exploit the Rust peculiarities.
 
+:zap: The actual community effort on Rust-AB is mainly devoted to supporting **Parallel** execution and model **Visualization** using the [Amethyst Game Engine](https://amethyst.rs).
+
 # Examples
 - [Boids simulation](https://github.com/spagnuolocarmine/rust-ab/tree/master/examples/boids) :bird: ```[example-name]= boids```
 - [Ants  Foraging](https://github.com/spagnuolocarmine/rust-ab/tree/master/examples/antsforaging) :ant: ```[example-name]= antsforaging```
