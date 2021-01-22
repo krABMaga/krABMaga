@@ -20,7 +20,9 @@
 ```cargo run --release --example [example-name] --features parallel -- -nt 4```
 - ```-- -nt X``` where ```X``` is the number of thread to use.
 
-### Model Visualization
+### Model Visualization with Amethyst Game Engine
+
+Rust-AB exploits the [Amethyst Game Engine](https://amethyst.rs) to support model visualization.
 
  - :apple: MacOS: ```cargo run --release --example [example-name] --features "amethyst_metal"```  
  - :penguin: Linux: ```cargo run --release --example [example-name] --features "amethyst_vulkan"```
