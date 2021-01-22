@@ -6,15 +6,16 @@
 **Rust-AB** is a discrete events simulation engine for developing ABM simulation that is written in a novel programming language named Rust. Rust-AB is designed to be a _ready-to-use_ tool for the ABM community and for this reason the architectural concepts of the well-adopted MASON library were re-engineered to exploit the Rust peculiarities.
 
 # Examples
-- [Boids simulation](https://github.com/spagnuolocarmine/rust-ab/tree/master/examples/boids) :bird: ```[example-name]= boids_ui ```
-- [Ants  Foraging](https://github.com/spagnuolocarmine/rust-ab/tree/master/examples/antsforaging) :ant: ```[example-name]= antsforaging_ui ```
+- [Boids simulation](https://github.com/spagnuolocarmine/rust-ab/tree/master/examples/boids) :bird: ```[example-name]= boids ```
+- [Ants  Foraging](https://github.com/spagnuolocarmine/rust-ab/tree/master/examples/antsforaging) :ant: ```[example-name]= antsforaging ```
 
 ### Execution commands
 - Sequential: ```cargo run --release --example [example-name] ``` 
-- Parallel: ```cargo run --release --example [example-name] --features parallel -- -nt 4``` _[example-name]_= boids_ui | antsforaging_ui
-- :apple: MacOS: ```cargo run --release --example [example-name] --features "amethyst_metal"```  
-- :penguin: Linux: ```cargo run --release --example [example-name] --features "amethyst_vulkan"```
-
+- Parallel: ```cargo run --release --example [example-name] --features parallel -- -nt 4```
+- Visualization:
+ - :apple: MacOS: ```cargo run --release --example [example-name] --features "amethyst_metal"```  
+ - :penguin: Linux: ```cargo run --release --example [example-name] --features "amethyst_vulkan"```
+ - ```[example-name]= boids_ui | antsforaging_ui ```
 <!--
 ## Boids Simulation Example
 
