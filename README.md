@@ -9,7 +9,7 @@
 - [Boids simulation](https://github.com/spagnuolocarmine/rust-ab/tree/master/examples/boids) :bird: 
 - [Ants  Foraging](https://github.com/spagnuolocarmine/rust-ab/tree/master/examples/antsforaging) :ant:
 
-### Executions
+### Execution commands
 - Sequential: ```cargo run --release --example [example-name] ``` _[example-name]_= boids_ui | antsforaging_ui
 - Parallel: ```cargo run --release --example [example-name] --features parallel -- -nt 4``` _[example-name]_= boids_ui | antsforaging_ui
 - :apple: MacOS: ```cargo run --release --example [example-name] --features "amethyst_metal"```  
