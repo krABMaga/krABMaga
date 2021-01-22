@@ -18,7 +18,7 @@
 **Parallel execution**
 
 ```cargo run --release --example [example-name] --features parallel -- -nt 4```
-- ```-- -nt X``` where ```X``` is the number of thread to use.
+- ```-- -nt X``` where ```X``` is the number of threads used by the parallel execution.
 
 **Model Visualization with Amethyst Game Engine**
 
