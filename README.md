@@ -27,8 +27,16 @@ Rust-AB exploits the [Amethyst Game Engine](https://amethyst.rs) to support mode
  - :apple: MacOS: ```cargo run --release --example [example-name]_ui --features "amethyst_metal"```  
  - :penguin: Linux: ```cargo run --release --example [example-name]_ui --features "amethyst_vulkan"```
 
-Please refer to this [FAQ]() for any issue with Amethyst.
- 
+Please refer to this [FAQ](FAQ.md) for any issue with Amethyst.
+
+
+### Dependencies
+The visualization framework requires certain dependencies to run the simulation properly.
+- :window: Windows: No dependencies are required currently.
+- :apple: MacOS: Updating Xcode to the latest version might be required, to allow for gfx-backend-metal to compile the required shaders.
+- :penguin: Linux: A few dependencies are needed. Check [here](https://github.com/amethyst/amethyst#dependencies) for a list based on your distribution.
+
+### [Troubleshooting FAQ](FAQ.md) 
  
 <!--
 ## Boids Simulation Example

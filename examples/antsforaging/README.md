@@ -13,8 +13,9 @@ paths taken by the ants while they look for food and avoid obstacles, and the ph
 
 # How to run
 Simply run `cargo run --example antsforaging` for the simple version,
-or `cargo run --example antsforaging_ui --features "amethyst_vulkan"` for the UI version.
-If the visualization is being executed in a macOS environment, switch the `amethyst_vulkan` feature with the `amethyst_metal` one. 
+or `cargo run --example antsforaging_ui --features "amethyst_vulkan"` for the UI version on Windows or Linux, or
+`cargo run --example antsforaging_ui --features "amethyst_metal"` on MacOS.
+If you encounter any issue, refer to the [FAQ](../../FAQ.md)
 You can also add the `--release` flag for a slower to compile, faster to execute option.
 
 # References:

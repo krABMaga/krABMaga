@@ -8,4 +8,8 @@ avoiding other flockers. The simulation never stops.
 ![](6IBb1CCxZj.gif)
 
 # How to run
-Simply run `cargo run`, or `cargo run --release` for a slower to compile, faster to execute option.
+Simply run `cargo run --example boids_ui` for the simple version,
+or `cargo run --example boids_ui --features "amethyst_vulkan"` for the UI version on Windows or Linux, or
+`cargo run --example boids_ui --features "amethyst_metal"` on MacOS.
+If you encounter any issue, refer to the [FAQ](../../FAQ.md).
+You can also add the `--release` flag for a slower to compile, faster to execute option.
