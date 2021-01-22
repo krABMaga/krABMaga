@@ -9,13 +9,15 @@
 - [Boids simulation](https://github.com/spagnuolocarmine/rust-ab/tree/master/examples/boids) :bird: ```[example-name]= boids ```
 - [Ants  Foraging](https://github.com/spagnuolocarmine/rust-ab/tree/master/examples/antsforaging) :ant: ```[example-name]= antsforaging ```
 
-### Execution commands
+### Execution with Cargo
 - Sequential: ```cargo run --release --example [example-name] ``` 
 - Parallel: ```cargo run --release --example [example-name] --features parallel -- -nt 4```
 - Visualization:
  - :apple: MacOS: ```cargo run --release --example [example-name] --features "amethyst_metal"```  
  - :penguin: Linux: ```cargo run --release --example [example-name] --features "amethyst_vulkan"```
  - ```[example-name]= boids_ui | antsforaging_ui ```
+ 
+ 
 <!--
 ## Boids Simulation Example
 
