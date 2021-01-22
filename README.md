@@ -6,8 +6,8 @@
 **Rust-AB** is a discrete events simulation engine for developing ABM simulation that is written in a novel programming language named Rust. Rust-AB is designed to be a _ready-to-use_ tool for the ABM community and for this reason the architectural concepts of the well-adopted MASON library were re-engineered to exploit the Rust peculiarities.
 
 # Examples
-- [Boids simulation](https://github.com/spagnuolocarmine/rust-ab/tree/master/examples/boids) :bird: ```[example-name]= boids | boid_ui```
-- [Ants  Foraging](https://github.com/spagnuolocarmine/rust-ab/tree/master/examples/antsforaging) :ant: ```[example-name]= antsforaging | antsforaging_ui```
+- [Boids simulation](https://github.com/spagnuolocarmine/rust-ab/tree/master/examples/boids) :bird: ```[example-name]= boids```
+- [Ants  Foraging](https://github.com/spagnuolocarmine/rust-ab/tree/master/examples/antsforaging) :ant: ```[example-name]= antsforaging```
 
 ### Execution with Cargo
 
@@ -24,9 +24,10 @@
 
 Rust-AB exploits the [Amethyst Game Engine](https://amethyst.rs) to support model visualization.
 
- - :apple: MacOS: ```cargo run --release --example [example-name] --features "amethyst_metal"```  
- - :penguin: Linux: ```cargo run --release --example [example-name] --features "amethyst_vulkan"```
+ - :apple: MacOS: ```cargo run --release --example [example-name]_ui --features "amethyst_metal"```  
+ - :penguin: Linux: ```cargo run --release --example [example-name]_ui --features "amethyst_vulkan"```
 
+Please refer to this FAQ for any issue with Amethyst.
  
  
 <!--
