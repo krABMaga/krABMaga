@@ -11,16 +11,16 @@
 
 ### Execution with Cargo
 
-### An example
+**An example**
 
 ```cargo run --release --example [example-name] ``` 
 
-### Parallel execution
+**Parallel execution**
 
 ```cargo run --release --example [example-name] --features parallel -- -nt 4```
 - ```-- -nt X``` where ```X``` is the number of thread to use.
 
-### Model Visualization with Amethyst Game Engine
+**Model Visualization with Amethyst Game Engine**
 
 Rust-AB exploits the [Amethyst Game Engine](https://amethyst.rs) to support model visualization.
 
