@@ -165,7 +165,10 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> Network<O, L> {
         None
     }
 
-    pub fn removeAllEdges(&self, u: &O) -> bool {
+    pub fn removeAllEdges(&self) -> bool {
+        false
+    }
+    pub fn removeNode(&self, u: &O) -> bool {
         false
     }
 }
