@@ -29,18 +29,18 @@ Rust-AB is designed to be a _ready-to-use_ tool for the ABM community and for th
 Rust-AB exploits the [Amethyst Game Engine](https://amethyst.rs) to support model visualization.
 
  - :apple: MacOS: ```cargo run --release --example [example-name]_ui --features "amethyst_metal"```  
- - :penguin: Linux: ```cargo run --release --example [example-name]_ui --features "amethyst_vulkan"```
+ - :desktop_computer:/:penguin: Windows/Linux: ```cargo run --release --example [example-name]_ui --features "amethyst_vulkan"```
 
 Please refer to this [FAQ](FAQ.md) for any issue with Amethyst.
 
 
 ### Dependencies
 The visualization framework requires certain dependencies to run the simulation properly.
-- :window: Windows: No dependencies are required currently.
+- :desktop_computer: Windows: No dependencies are required currently.
 - :apple: MacOS: Updating Xcode to the latest version might be required, to allow for gfx-backend-metal to compile the required shaders.
 - :penguin: Linux: A few dependencies are needed. Check [here](https://github.com/amethyst/amethyst#dependencies) for a list based on your distribution.
 
-### [Troubleshooting FAQ](FAQ.md) 
+### [Contributing FAQ](CONTRIBUTING.md)
  
 <!--
 ## Boids Simulation Example
