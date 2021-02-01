@@ -100,11 +100,10 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> Network<O, L> {
     pub fn updateEdge(&self, u: &O, v: &O, edgeOptions: EdgeOptions<L>) -> Option<Edge<O, L>> {
         let e = Edge::new(u.clone(), v.clone(), edgeOptions);
         let ris = match self.edges.get_mut(u) {
-            Some(uedges) => {
+            Some(mut uedges) => {
                 //TODO search the edge and change it
-                let mut vec = uedges.to_vec();
-                vec.retain( |entry| (entry.u != e.u && entry.v != e.v) || (entry.v != e.u && entry.u != e.v) );
-                vec.push(e.clone());
+                uedges.retain( |entry| !((entry.u == e.u && entry.v == e.v) || (entry.v == e.u && entry.u == e.v)) );
+                uedges.push(e.clone());
                 Some(e.clone())
             }
             None => None,
@@ -112,11 +111,10 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> Network<O, L> {
 
         if !self.direct{
             match self.edges.get_mut(v) {
-                Some(uedges) => {
+                Some(mut uedges) => {
                     //TODO search the edge and change it
-                    let mut vec = uedges.to_vec();
-                    vec.retain( |entry| (entry.u != e.u && entry.v != e.v) || (entry.v != e.u && entry.u != e.v) );
-                    vec.push(e.clone());
+                    uedges.retain( |entry| !((entry.u == e.u && entry.v == e.v) || (entry.v == e.u && entry.u == e.v)) );
+                    uedges.push(e.clone());
                     //TODO
                 }
                 None => panic!("Error! undirected edge not found"),
@@ -204,7 +202,7 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> Network<O, L> {
 
 impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display > Field for Network<O,L>{
     fn lazy_update(&mut self){
-        self.edges.lazy_update();
+        self.edges.update();
     }
     fn update(&mut self){
         self.edges.update();
