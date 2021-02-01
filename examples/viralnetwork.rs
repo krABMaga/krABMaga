@@ -32,16 +32,16 @@ static JUMP: f64 = 0.7;
 
 fn main() {
     let mut rng = rand::thread_rng();
-    let mut schedule: Schedule<User> = Schedule::new();
+    let mut schedule: Schedule<SusceptibleIndividual> = Schedule::new();
     // assert!(schedule.events.is_empty());
 
-    let mut state = UsersState::new(WIDTH, HEIGTH, DISCRETIZATION, TOROIDAL);
+    let mut state = EpidemicNetworkState::new(WIDTH, HEIGTH, DISCRETIZATION, TOROIDAL);
     for User_id in 0..NUM_AGENT {
         
         let r1: f64 = rng.gen();
         let r2: f64 = rng.gen();
         let last_d = Real2D { x: 0.0, y: 0.0 };
-        let user = User::new(
+        let user = SusceptibleIndividual::new(
             User_id,
             Real2D {
                 x: WIDTH * r1,
@@ -73,21 +73,21 @@ fn main() {
     );
 }
 
-pub struct UsersState {
-    pub field1: Field2D<User>,
-    pub network: Network<User, String>,
+pub struct EpidemicNetworkState {
+    pub field1: Field2D<SusceptibleIndividual>,
+    pub network: Network<SusceptibleIndividual, String>,
 }
 
-impl UsersState {
-    pub fn new(w: f64, h: f64, d: f64, t: bool) -> UsersState {
-        UsersState {
+impl EpidemicNetworkState {
+    pub fn new(w: f64, h: f64, d: f64, t: bool) -> EpidemicNetworkState {
+        EpidemicNetworkState {
             field1: Field2D::new(w, h, d, t),
             network: Network::new(false),
         }
     }
 }
 
-impl State for UsersState{
+impl State for EpidemicNetworkState{
     fn update(&mut self){
         self.field1.lazy_update();
     }
@@ -95,18 +95,18 @@ impl State for UsersState{
 
 
 #[derive(Clone, Copy)]
-pub struct User {
+pub struct SusceptibleIndividual {
     pub id: u128,
     pub pos: Real2D,
     pub last_d: Real2D,
 }
 
-impl User {
+impl SusceptibleIndividual {
     pub fn new(id: u128, pos: Real2D, last_d: Real2D) -> Self {
-        User { id, pos, last_d }
+        SusceptibleIndividual { id, pos, last_d }
     }
 
-    pub fn avoidance(self, vec: &Vec<&User>) -> Real2D {
+    pub fn avoidance(self, vec: &Vec<&SusceptibleIndividual>) -> Real2D {
         if vec.is_empty() {
             let real = Real2D { x: 0.0, y: 0.0 };
             return real;
@@ -144,7 +144,7 @@ impl User {
         }
     }
 
-    pub fn cohesion(self, vec: &Vec<&User>) -> Real2D {
+    pub fn cohesion(self, vec: &Vec<&SusceptibleIndividual>) -> Real2D {
         if vec.is_empty() {
             let real = Real2D { x: 0.0, y: 0.0 };
             return real;
@@ -196,7 +196,7 @@ impl User {
         return real;
     }
 
-    pub fn consistency(self, vec: &Vec<&User>) -> Real2D {
+    pub fn consistency(self, vec: &Vec<&SusceptibleIndividual>) -> Real2D {
         if vec.is_empty() {
             let real = Real2D { x: 0.0, y: 0.0 };
             return real;
@@ -231,10 +231,10 @@ impl User {
     }
 }
 
-impl Agent for User {
-    type SimState = UsersState;
+impl Agent for SusceptibleIndividual {
+    type SimState = EpidemicNetworkState;
 
-    fn step(&mut self, state:&UsersState) {
+    fn step(&mut self, state:&EpidemicNetworkState) {
         let vec = state
             .field1
             .get_neighbors_within_distance(self.pos, 10.0);
@@ -274,7 +274,7 @@ impl Agent for User {
     }
 }
 
-impl Hash for User {
+impl Hash for SusceptibleIndividual {
     fn hash<H>(&self, state: &mut H)
     where
         H: Hasher,
@@ -285,15 +285,15 @@ impl Hash for User {
     }
 }
 
-impl Eq for User {}
+impl Eq for SusceptibleIndividual {}
 
-impl PartialEq for User {
-    fn eq(&self, other: &User) -> bool {
+impl PartialEq for SusceptibleIndividual {
+    fn eq(&self, other: &SusceptibleIndividual) -> bool {
         self.id == other.id
     }
 }
 
-impl Location2D<Real2D> for User {
+impl Location2D<Real2D> for SusceptibleIndividual {
     fn get_location(self) -> Real2D {
         self.pos
     }
@@ -303,7 +303,7 @@ impl Location2D<Real2D> for User {
     }
 }
 
-impl fmt::Display for User {
+impl fmt::Display for SusceptibleIndividual {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.id)
     }
