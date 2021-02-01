@@ -19,6 +19,7 @@ pub struct Edge<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> {
     pub weight: Option<f64>,
 }
 
+
 impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> Edge<O, L> {
     pub fn new(u_node: O, v_node: O, edgeOptions: EdgeOptions<L>) -> Edge<O, L> {
         match edgeOptions {
@@ -98,17 +99,30 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> Network<O, L> {
 
     pub fn updateEdge(&self, u: &O, v: &O, edgeOptions: EdgeOptions<L>) -> Option<Edge<O, L>> {
         let e = Edge::new(u.clone(), v.clone(), edgeOptions);
-        match self.edges.get_mut(u) {
+        let ris = match self.edges.get_mut(u) {
             Some(uedges) => {
                 //TODO search the edge and change it
                 let mut vec = uedges.to_vec();
+                vec.retain( |entry| (entry.u != e.u && entry.v != e.v) || (entry.v != e.u && entry.u != e.v) );
                 vec.push(e.clone());
-                self.edges.insert(u.clone(), vec);
-                Some(e)
-                //TODO
+                Some(e.clone())
             }
             None => None,
+        };
+
+        if !self.direct{
+            match self.edges.get_mut(v) {
+                Some(uedges) => {
+                    //TODO search the edge and change it
+                    let mut vec = uedges.to_vec();
+                    vec.retain( |entry| (entry.u != e.u && entry.v != e.v) || (entry.v != e.u && entry.u != e.v) );
+                    vec.push(e.clone());
+                    //TODO
+                }
+                None => panic!("Error! undirected edge not found"),
+            }
         }
+        ris
     }
 
     pub fn getNodes(&self) -> Vec<&O> {
@@ -137,39 +151,54 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> Network<O, L> {
         }
     }
 
+ 
+
     pub fn removeEdge(&self, u: &O, v: &O) -> Option<Edge<O, L>> {
         //TODO
-        /*  let u_edge = self.getEdge(u.clone(),v.clone()).unwrap();
-        let u_edges = self.getEdges(u.clone()).unwrap();
-        let index = u_edges.iter().position(|x| (x.u == u_edge.u && x.v == u_edge.v)).unwrap();
-        let mut vec_u = u_edges.to_vec();
-        vec_u.remove(index);
-        self.edges.insert(u, vec_u);
+        let mut u_edges = self.edges.get_mut(u).unwrap();
+        let index =  match u_edges.iter().position( |entry|  ((entry.u == *u && entry.v == *v) || (entry.u == *v && entry.v == *u)) ){
+            Some(i) => i,
+            None => return None,
+        };
+
+        let u_edge = u_edges.remove(index);
+        std::mem::drop(u_edges);
 
         if self.direct {
             return  Some(u_edge.clone());
         }else{
-
-            let v_edges = self.getEdges(v.clone()).unwrap();
-            let index = v_edges.iter().position(|x| (x.u == u_edge.u && x.v == u_edge.v)).unwrap();
-            let mut vec_v = v_edges.to_vec();
-            vec_v.remove(index);
-            self.edges.insert(v, vec_v);
+            let mut v_edges = self.edges.get_mut(v).unwrap();
+            v_edges.retain( |entry|  !((entry.u == *u && entry.v == *v) || (entry.u == *v && entry.v == *u)));
             return  Some(u_edge.clone());
-        } */
-        None
+        }
     }
 
     pub fn removeEdges(&self, u: &O) -> Option<Vec<Edge<O, L>>> {
         //TODO remove vector for u and all edges for v nodes
-        None
+        let nodes = self.edges.w_keys();
+        let mut ris = vec![];
+
+        for v in nodes.iter(){
+            if v != u{
+                match self.removeEdge(v,u){
+                    Some(e) => ris.push(e),
+                    None => (),
+                }
+            }
+        }
+
+        Some(ris)
     }
 
-    pub fn removeAllEdges(&self) -> bool {
-        false
+    pub fn removeAllEdges(&self){
+        self.edges.clear();
     }
     pub fn removeNode(&self, u: &O) -> bool {
-        false
+        match self.removeEdges(u){
+            Some(_) => {self.edges.remove(u); true},
+            None => false,
+        }
+        
     }
 }
 

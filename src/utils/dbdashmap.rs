@@ -183,12 +183,29 @@ impl<'a, K: 'a + Eq + Hash, V: 'a, S: BuildHasher + Clone + Default> DBDashMap<K
         }
         ris
     }
+
+    
+
+    pub fn clear(&self){
+        for shard in self.shards.iter(){
+            shard.lock().unwrap().clear();
+        }
+    }
+
+    pub fn is_empty(&self) -> bool{
+        self.len() == 0
+    }
+
+    pub fn is_empty_r(&self) -> bool{
+        self.r_len() == 0
+    }
 }
 
 impl<'a, K: 'a + Eq + Hash + Clone, V: Clone + 'a> DBDashMap<K, V, RandomState> {
     pub fn update(&mut self) {
         let n = shard_amount();
         for i in 0..n {
+            self.r_shards[i].clear();
             for (key, value) in self.shards[i].lock().unwrap().iter() {
                 self.r_shards[i].insert(key.clone(), value.clone());
             }
@@ -205,6 +222,17 @@ impl<'a, K: 'a + Eq + Hash + Clone, V: Clone + 'a> DBDashMap<K, V, RandomState> 
                 self.insert(key.clone(), closure(value));
             }
         }
+    }
+
+    pub fn w_keys(&self) -> Vec<K> {
+        let mut ris: Vec<K> = Vec::with_capacity(self.len());
+        for shard in self.shards.iter() {
+            for key in shard.lock().unwrap().keys() {
+                let k = key.to_owned();
+                ris.push(k);
+            }
+        }
+        ris
     }
 }
 
