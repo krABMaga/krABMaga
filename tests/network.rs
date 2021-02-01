@@ -45,6 +45,16 @@ fn network_test_undirect() {
         Some(edge) => assert!(false),
         None => assert!(true),
     };
+    network.updateEdge(&node1, &node2, WeightedLabeled(String::from("friend2"), 4.0));
+
+    network.update();
+
+    match network.getEdge(&node1, &node2) {
+        Some(edge) => {
+            assert_eq!(edge.label.unwrap(), "friend2");
+        },
+        None => assert!(false),
+    };
 }
 
 #[test]
