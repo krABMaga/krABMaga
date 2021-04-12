@@ -1,25 +1,14 @@
-use crate::engine::agent::Agent;
-use amethyst::core::ecs::storage::DistinctStorage;
-use amethyst::core::ecs::{Component, EntityBuilder};
-use amethyst::core::math::Vector3;
-use amethyst::core::Transform;
-use amethyst::prelude::{Builder, World, WorldExt};
-use amethyst::renderer::SpriteRender;
+use bevy::prelude::{Commands, Quat, SpriteBundle, Transform, Vec3};
 
-/// A trait that specifies a struct can be rendered somehow.
-/// It requires a Storage associated type, one can just use DenseVecStorage<Self> unless futher optimization is required.
-///
-/// SAFETY:
-/// Currently only Storages which implement DistinctStorage are allowed, to allow for the parallelization
-/// of the renderer system in future, when a solution will be found for the current problems regarding par_iter() and Transforms.
-pub trait Render: Agent + Component + Send + Sync
-where
-    <Self as Component>::Storage: DistinctStorage,
-{
-    /// Specifies the asset to use when drawing the struct in an Amethyst window.
+use crate::engine::agent::Agent;
+
+pub trait Render: Agent + Send + Sync + Sized + 'static {
+    /// Specifies the asset to use when visualizing the agent.
     /// This should be overwritten to return a string which can point to two things:
     /// 1) An emoji code, a list of compatible ones can be found here: https://www.webfx.com/tools/emoji-cheat-sheet/
     /// 2) (NOT YET SUPPORTED) A filename pointing to a file within the project's asset folder, which should be located in the project root.
+    /// As for now, the emoji asset must be present in your project in an "assets" folder located in the root of the project itself.
+    /// This requirement will be likely removed in future updates by bundling the emoji asset in the executable.
     fn sprite(&self) -> SpriteType;
 
     /// Specifies the position of the sprite in the window.
@@ -38,41 +27,29 @@ where
     /// Rotation of the sprite in radians.
     fn rotation(&self) -> f32;
 
-    /// Generate an Amethyst entity and automatically insert it into the world, with a Transform with
+    /// Generate an entity and automatically insert it into the world, with a Transform with
     /// the given position, scale and rotation defined by the three previous methods.
     fn setup_graphics(
         self,
-        sprite_render: SpriteRender,
-        world: &mut World,
+        mut sprite_bundle: SpriteBundle,
+        commands: &mut Commands,
         state: &Self::SimState,
     ) {
-        self.prepare_graphics_builder(sprite_render, world, state)
-            .build();
-    }
-
-    /// Prepare an initial EntityBuilder for the entity, made of the absolutely necessary components:
-    /// 1) The SpriteRender;
-    /// 2) The Transform;
-    /// 3) self;
-    /// Returns the EntityBuilder for futher component insertions. Call build() on it to finalize the entity.
-    fn prepare_graphics_builder<'a>(
-        self,
-        sprite_render: SpriteRender,
-        world: &'a mut World,
-        state: &Self::SimState,
-    ) -> EntityBuilder<'a> {
-        let mut transform = Transform::default();
         let (x, y, z) = self.position(state);
         let (scale_x, scale_y) = self.scale();
         let rotation = self.rotation();
-        transform.set_translation_xyz(x, y, z);
-        transform.set_scale(Vector3::new(scale_x, scale_y, 1.));
-        transform.set_rotation_2d(rotation);
-        world
-            .create_entity()
-            .with(sprite_render)
-            .with(transform)
-            .with(self)
+
+        let mut transform = Transform::from_translation(Vec3::new(x, y, z));
+        transform.scale.x = scale_x;
+        transform.scale.y = scale_y;
+        transform.rotation = Quat::from_rotation_z(rotation);
+
+        sprite_bundle.transform = transform;
+        commands
+            .spawn()
+            .insert(self)
+            .insert(transform)
+            .insert_bundle(sprite_bundle);
     }
 
     /// Update the graphical variables based on the information coming from the model through the state.

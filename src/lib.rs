@@ -1,6 +1,9 @@
 pub mod engine;
 pub mod utils;
-#[cfg(any(feature = "amethyst_vulkan", feature = "amethyst_metal"))]
+pub use rand; // Re-export rand to let users use the correct version, compatible with wasm
+
+#[cfg(any(feature = "visualization", feature = "visualization_wasm", doc))]
 pub mod visualization;
 
-pub use engine::schedule::Schedule;
+#[cfg(any(feature = "visualization", feature = "visualization_wasm", doc))]
+pub use bevy;

@@ -5,10 +5,10 @@ use rust_ab::engine::field::field::Field;
 use rust_ab::engine::field::field_2d::Field2D;
 use rust_ab::engine::location::{Location2D, Real2D};
 use rust_ab::engine::state::State;
-use rust_ab::Schedule;
 use std::fmt;
 use std::hash::Hash;
 use std::hash::Hasher;
+use rust_ab::engine::schedule::Schedule;
 
 static STEP: u128 = 10;
 // static NUM_AGENT: u128 = 2;

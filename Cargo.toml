@@ -14,13 +14,25 @@ repository = "https://github.com/spagnuolocarmine/rust-ab"
 hashbrown = "0.3"
 priority-queue = "0.5.4"
 criterion =  "0.3.3"
-rand = "0.6.5"
+rand = "0.7"
 lazy_static = "1.3.0"
 cfg-if = "1.0.0"
 num_cpus = "1.13.0"
 rayon="1.5.0"
 clap="2.33.3"
 ahash="0.6.2"
+
+# Visualization features
+image = {version="0.23.14",optional=true}
+[dependencies.bevy]
+version= "0.5.0"
+default-features = false
+optional=true
+
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+bevy_webgl2 = "0.5.0"
+getrandom = {version="0.1", features=["wasm-bindgen"]}
 
 [[bench]]
 name = "scaling"
@@ -41,28 +53,21 @@ harness = false
 # Must be kept separate and asked to the user due to missing support for conditional compilation of features
 # https://github.com/rust-lang/cargo/issues/7914
 [features]
-amethyst_metal = ["amethyst", "amethyst/metal"]
-amethyst_vulkan = ["amethyst", "amethyst/vulkan"]
 parallel = []
-
-[dependencies.amethyst]
-version = "0.15.3"
-optional = true
-default-features = false
-features = ["renderer"]
-
-[[example]]
-name = "antsforaging"
-path = "examples/antsforaging/antsforaging/main.rs"
-
-[[example]]
-name = "antsforaging_ui"
-path = "examples/antsforaging/antsforaging_ui/main.rs"
-
-[[example]]
-name = "boids"
-path = "examples/boids/boids.rs"
-
-[[example]]
-name = "boids_ui"
-path = "examples/boids/boids_ui/main.rs"
+visualization = [
+    "bevy",
+    "bevy/bevy_winit",
+    "bevy/render",
+    "bevy/bevy_gltf",
+    "bevy/png",
+    "bevy/bevy_wgpu",
+    "image"
+]
+visualization_wasm = [
+    "bevy",
+    "bevy/bevy_winit",
+    "bevy/render",
+    "bevy/bevy_gltf",
+    "bevy/png",
+    "image"
+]
