@@ -20,19 +20,13 @@ jobs:
           - stable
           - nightly
           - beta
-        include:
-          - os: ubuntu-latest
-            cargo-arg: amethyst_vulkan
-
-          - os: macos-latest
-            cargo-arg: amethyst_metal
 
     steps:
       - name: Ubuntu Required Deps
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt update
-          sudo apt install gcc pkg-config openssl libasound2-dev cmake build-essential python3 libfreetype6-dev libexpat1-dev libxcb-composite0-dev libssl-dev libx11-dev pulseaudio
+          sudo apt install pkg-config libx11-dev libasound2-dev libudev-dev
 
       - uses: actions/checkout@v2
 
@@ -48,10 +42,10 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --all --examples --features ${{ matrix.cargo-arg }}
+          args: --all --examples --features visualization
 
       - name: Test
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --features ${{ matrix.cargo-arg }}
+          args: --features visualization

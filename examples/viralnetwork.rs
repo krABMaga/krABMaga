@@ -6,7 +6,6 @@ use rust_ab::engine::field::field_2d::Field2D;
 use rust_ab::engine::field::network::Network;
 use rust_ab::engine::location::Location2D;
 use rust_ab::engine::location::Real2D;
-use rust_ab::Schedule;
 use rust_ab::engine::state::State;
 use rand::Rng;
 use std::fmt;
@@ -14,6 +13,7 @@ use std::hash::Hash;
 use std::hash::Hasher;
 use std::time::Instant;
 use rust_ab::engine::field::field::Field;
+use rust_ab::engine::schedule::Schedule;
 
 static mut _COUNT: u128 = 0;
 static STEP: u128 = 50;
