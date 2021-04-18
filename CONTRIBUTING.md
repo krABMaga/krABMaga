@@ -7,8 +7,8 @@ The structure of the project is:
 
 - engine: The Rust-AB framework files are stored here, as well as data structures that can be used in simulation
   development.
-- utils: Contains utilities used by the framework such as the dbdashmap data structure.
-- visualization: Contains the (optional) visualization framework files that interacts with Rust-AB.
+- utils: Contains utilities used by the framework such as the DBDashMap data structure.
+- visualization: Contains the (optional) visualization framework files that interact with Rust-AB.
 
 # How to: Test
 
@@ -20,10 +20,10 @@ To run the integration tests located within the `tests` folder, `cargo test --te
 
 Finally, to run tests for a particular example, `cargo test --example exampleName`.
 
-**WARNING:** By default, `cargo test` with no flags will try building all examples, including the ones with
-visualization. This will lead to errors if the correct amethyst feature isn't passed, since it's required for those
-examples to build successfully. If you want to test everything, simply add the correct amethyst featured based on your
-OS:
+**WARNING:** By default, `cargo test` with no flags will try running all the tests and examples, including the ones related to the
+visualization framework. This will lead to errors if the correct feature isn't passed, since it's required for those
+examples to build successfully. If you want to test everything, simply add the visualization feature flag:
 
-- Windows/Linux: `cargo test --features amethyst_vulkan`
-- MacOS: `cargo test --features amethyst_metal`comp
+```sh
+cargo test --features visualization
+```
