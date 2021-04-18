@@ -7,38 +7,46 @@
 
 Rust-AB is designed to be a _ready-to-use_ tool for the ABM community and for this reason the architectural concepts of the well-adopted MASON library were re-engineered to exploit the Rust peculiarities and programming model.
 
-:zap:  The actual community effort on Rust-AB is mainly devoted to supporting **Parallel** execution and model **Visualization** using the [Amethyst Game Engine](https://amethyst.rs).
+:zap:  The actual community effort on Rust-AB is mainly devoted to supporting **Parallel** execution and model **Visualization** using the [Bevy game engine](https://bevyengine.org/).
 
 # Examples
-- [Boids simulation](https://github.com/spagnuolocarmine/rust-ab/tree/master/examples/boids) :bird: ```[example-name]= boids```
-- [Ants  Foraging](https://github.com/spagnuolocarmine/rust-ab/tree/master/examples/antsforaging) :ant: ```[example-name]= antsforaging```
 
-### Execution with Cargo
+All the examples are hosted in a separate repository [here](https://github.com/rust-ab/rust-ab-examples).
+- [Boids simulation](https://github.com/rust-ab/rust-ab-examples/tree/master/boids) :bird:
+- [Ants foraging](https://github.com/rust-ab/rust-ab-examples/tree/master/antsforaging) :ant:
 
-**An example**
+### Usage
 
-```cargo run --release --example [example-name] ``` 
+Add this to your `Cargo.toml`:
+
+```toml
+[dependencies]
+rust-ab = { git="https://github.com/rust-ab/rust-ab.git" }
+```
+
+To get started using Rust-AB, see [the examples](https://github.com/rust-ab/rust-ab-examples).
+There's also a template to set up the correct project structure and the required files [here](https://github.com/rust-ab/rust-ab-examples/tree/master/template).
 
 **Parallel execution**
 
-```cargo run --release --example [example-name] --features parallel -- -nt 4```
-- ```-- -nt X``` where ```X``` is the number of threads used by the parallel execution.
+Parallel execution can be achieved by passing the `parallel` feature when running a simulation and specifying the number of threads to use:
 
-**Model Visualization with Amethyst Game Engine**
+```cargo run --release --features parallel -- --nt 4```
+- ```-- --nt X``` where ```X``` is the number of threads used by the parallel execution.
 
-Rust-AB exploits the [Amethyst Game Engine](https://amethyst.rs) to support model visualization.
+**Model Visualization with Bevy Game Engine**
 
- - :apple: MacOS: ```cargo run --release --example [example-name]_ui --features "amethyst_metal"```  
- - :desktop_computer:/:penguin: Windows/Linux: ```cargo run --release --example [example-name]_ui --features "amethyst_vulkan"```
+Rust-AB exploits the [Bevy Game Engine](https://bevyengine.org/) to support model visualization.
 
-Please refer to this [FAQ](FAQ.md) for any issue with Amethyst.
-
+```sh
+cargo run --release --example --features="visualization"
+```
 
 ### Dependencies
 The visualization framework requires certain dependencies to run the simulation properly.
-- :desktop_computer: Windows: No dependencies are required currently.
-- :apple: MacOS: Updating Xcode to the latest version might be required, to allow for gfx-backend-metal to compile the required shaders.
-- :penguin: Linux: A few dependencies are needed. Check [here](https://github.com/amethyst/amethyst#dependencies) for a list based on your distribution.
+- :desktop_computer: Windows: [VS2019 build tools](https://visualstudio.microsoft.com/thank-you-downloading-visual-studio/?sku=BuildTools&rel=16)
+- :apple: MacOS: No dependencies needed.
+- :penguin: Linux: A few dependencies are needed. Check [here](https://github.com/bevyengine/bevy/blob/main/docs/linux_dependencies.md) for a list based on your distribution.
 
 ### [Contributing FAQ](CONTRIBUTING.md)
  
