@@ -202,7 +202,7 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> Network<O, L> {
 
 impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display > Field for Network<O,L>{
     fn lazy_update(&self){
-        //self.edges.update();
+        self.edges.update();
     }
     fn update(&self){
         self.edges.update();
