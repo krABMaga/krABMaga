@@ -156,6 +156,10 @@ impl<A: 'static +  Agent + Clone + Send + Sync > Schedule<A> {
         }
     }
 
+    pub fn step_count(&self) -> usize{
+        *self.step.lock().unwrap()
+    }
+
 
     ///Executes num_step simulation steps.
     pub fn simulate<S: State>(&mut self, state: &mut <A as Agent>::SimState, num_step:u128){
