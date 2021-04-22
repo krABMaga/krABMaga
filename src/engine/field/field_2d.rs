@@ -9,7 +9,7 @@ use crate::utils::dbdashmap::DBDashMap;
 use crate::utils::dbdashmap::UpdateType;
 
 
-
+/// An implementation of a sparse matrix structure modelling agent interactions on a 2D space.
 pub struct Field2D<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> {
     pub findex: DBDashMap<A, Int2D>,
     pub fbag: DBDashMap<Int2D, Vec<A>>,
@@ -21,6 +21,7 @@ pub struct Field2D<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> {
 }
 
 impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> Field2D<A>  {
+    /// Initializes a w*h sized Field2D, with discretization value d. The boolean value t determines if the newly instantiated field is a toroidal field or not.
     pub fn new(w: f64, h: f64, d: f64, t: bool) -> Field2D<A> {
         Field2D {
             findex: DBDashMap::new(),
@@ -33,9 +34,42 @@ impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> Field2D<A>  {
         }
     }
 
+    ///Sets the position of an A object at the specified position in the field.
+    /// 
+    /// # Example
+    /// ```rust
+    /// use rust_ab::engine::agent::Agent;
+    /// use rust_ab::engine::field::field_2d::Field2D;
+    /// use rust_ab::engine::field::field::Field;
+    /// use rust_ab::engine::location::{Location2D, Real2D};
+    /// use rust_ab::engine::state::State;
+    /// 
+    /// struct S {};
+    /// impl State for S{}
+    ///
+    /// #[derive(Copy, Clone, Eq, PartialEq, Hash)]
+    /// struct A {};
+    /// 
+    /// impl Agent for A {
+    ///     type SimState = S;
+    ///
+    ///     fn step(&mut self, state: &S) {
+    ///         println!("Stepping!");
+    ///     }
+    /// }
+    /// 
+    /// impl fmt::Display for A{}
+    /// 
+    /// impl Location2D<Real2D> for A{}
+    /// 
+    /// let mut field = new Field(200.0, 200.0, 0.5, true);
+    /// let object = A{};
+    /// let pos = Real2D { x: 5.0, y: 5.0 };
+    /// field.set_object_location(object,pos);
+    /// field.update();
+    /// assert_eq!(1,field.num_objects());
     pub fn set_object_location(&self, object: A, pos: Real2D) {
-
-        match self.fbag.update_type{
+        match *self.fbag.update_type.lock().unwrap(){
                 UpdateType::COPY => {
                     let old_pos =  self.fpos.get(&object);
                     match old_pos {
@@ -76,11 +110,53 @@ impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> Field2D<A>  {
 
     }
 
+    ///Fetches all the objects located within a certain distance dist from a specificed position pos.
+    /// 
+    /// # Example
+    /// ```rust
+    /// use rust_ab::engine::agent::Agent;
+    /// use rust_ab::engine::field::field_2d::Field2D;
+    /// use rust_ab::engine::field::field::Field;
+    /// use rust_ab::engine::location::{Location2D, Real2D};
+    /// use rust_ab::engine::state::State;
+    /// 
+    /// struct S {};
+    /// impl State for S{}
+    ///
+    /// #[derive(Copy, Clone, Eq, PartialEq, Hash)]
+    /// struct A {};
+    /// 
+    /// impl Agent for A {
+    ///     type SimState = S;
+    ///
+    ///     fn step(&mut self, state: &S) {
+    ///         println!("Stepping!");
+    ///     }
+    /// }
+    /// 
+    /// impl fmt::Display for A{}
+    /// 
+    /// impl Location2D<Real2D> for A{}
+    /// 
+    /// let mut field = new Field(200.0, 200.0, 0.5, true);
+    /// let object1 = A{};
+    /// let object2 = A{};
+    /// let object3 = A{};
+    /// let pos1 = Real2D { x: 5.0, y: 5.0 };
+    /// let pos2 = Real2D { x: 5.0, y: 6.0 };
+    /// let pos3 = Real2D { x: 5.0, y: 7.0 };
+    /// field.set_object_location(object1,pos1);
+    /// field.set_object_location(object2,pos2);
+    /// field.set_object_location(object3,pos3);
+    /// field.update();
+    /// let vec = field1.get_neighbors_within_distance( Real2D {x: 5.0, y:5.0 }, 5.0);
+    /// assert_eq!(3,len());
     pub fn get_neighbors_within_distance(&self, pos: Real2D, dist: f64) -> Vec<&A> {
         
         let density = (self.width * self.heigth)/f64::from(self.findex.r_len() as i32);
         let sdist = (dist * dist) as usize;
         let mut tor: Vec<&A> = Vec::with_capacity(density as usize * sdist);
+        
         // let mut tor: Vec<&A> = Vec::new();
         
         if dist <= 0.0 {
@@ -120,7 +196,7 @@ impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> Field2D<A>  {
                     Some(i) => i,
                     None => continue,
                 };
-
+               
                 if check == 1 {
                     for elem in vector {
                         tor.push(elem);
@@ -139,7 +215,47 @@ impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> Field2D<A>  {
 
     }
 
-
+    ///Fetches all the objects located at the discretized Real2D position pos.
+    /// 
+    /// # Example
+    /// ```rust
+    /// use rust_ab::engine::agent::Agent;
+    /// use rust_ab::engine::field::field_2d::Field2D;
+    /// use rust_ab::engine::field::field::Field;
+    /// use rust_ab::engine::location::{Location2D, Real2D};
+    /// use rust_ab::engine::state::State;
+    /// 
+    /// struct S {};
+    /// impl State for S{}
+    ///
+    /// #[derive(Copy, Clone, Eq, PartialEq, Hash)]
+    /// struct A {};
+    /// 
+    /// impl Agent for A {
+    ///     type SimState = S;
+    ///
+    ///     fn step(&mut self, state: &S) {
+    ///         println!("Stepping!");
+    ///     }
+    /// }
+    /// 
+    /// impl fmt::Display for A{}
+    /// 
+    /// impl Location2D<Real2D> for A{}
+    /// 
+    /// let mut field = new Field(200.0, 200.0, 0.5, true);
+    /// let object1 = A{};
+    /// let object2 = A{};
+    /// let object3 = A{};
+    /// let pos1 = Real2D { x: 5.0, y: 5.0 };
+    /// let pos2 = Real2D { x: 5.0, y: 6.0 };
+    /// let pos3 = Real2D { x: 5.0, y: 7.0 };
+    /// field.set_object_location(object1,pos1);
+    /// field.set_object_location(object2,pos2);
+    /// field.set_object_location(object3,pos3);
+    /// field.update();
+    /// let vec = field1.get_objects_at_location( Real2D {x: 5.0, y:5.0 });
+    /// assert_eq!(3,len());
     pub fn get_objects_at_location(&self, pos: Real2D) -> Vec<&A>{
         let bag = self.discretize(&pos);
         let mut result = Vec::new();
@@ -156,10 +272,45 @@ impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> Field2D<A>  {
         result
     }
 
+    ///Returns the number of objects in the field.
+    /// 
+    /// # Example
+    /// ```rust
+    /// use rust_ab::engine::agent::Agent;
+    /// use rust_ab::engine::field::field_2d::Field2D;
+    /// use rust_ab::engine::field::field::Field;
+    /// use rust_ab::engine::location::{Location2D, Real2D};
+    /// use rust_ab::engine::state::State;
+    /// 
+    /// struct S {};
+    /// impl State for S{}
+    ///
+    /// #[derive(Copy, Clone, Eq, PartialEq, Hash)]
+    /// struct A {};
+    /// 
+    /// impl Agent for A {
+    ///     type SimState = S;
+    ///
+    ///     fn step(&mut self, state: &S) {
+    ///         println!("Stepping!");
+    ///     }
+    /// }
+    /// 
+    /// impl fmt::Display for A{}
+    /// 
+    /// impl Location2D<Real2D> for A{}
+    /// 
+    /// let mut field = new Field(200.0, 200.0, 0.5, true);
+    /// let object = A{};
+    /// let pos = Real2D { x: 5.0, y: 5.0 };
+    /// field.set_object_location(object,pos);
+    /// field.update();
+    /// assert_eq!(1,field.num_objects());
     pub fn num_objects(&self) -> usize {
         self.findex.r_len()
     }
 
+     ///Returns the number of objects located at the discretized Real2D position pos.
     pub fn num_objects_at_location(&self, pos: Real2D) -> usize {
         let bag = self.discretize(&pos);
         match self.fbag.get(&bag){
@@ -170,6 +321,9 @@ impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> Field2D<A>  {
         }
     }
 
+    ///Fetches the position of the A object obj in the field.
+    ///
+    /// None if the object is not in the field, Some(&Real2D) otherwise.
     pub fn get_object_location(&self, obj: A) -> Option<&Real2D> {
         self.fpos.get(&obj)
     }
@@ -277,12 +431,12 @@ pub fn toroidal_transform(val: f64, dim: f64) -> f64 {
 
 
 impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> Field for Field2D<A>{
-    fn update(&mut self){
+    fn update(&self){
         self.fpos.update();
         self.fbag.update();
         self.findex.update();
     }
-    fn lazy_update(&mut self){
+    fn lazy_update(&self){
         self.fpos.lazy_update();
         self.fbag.lazy_update();
         self.findex.lazy_update();

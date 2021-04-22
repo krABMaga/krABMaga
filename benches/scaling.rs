@@ -5,7 +5,7 @@ use rust_ab::engine::field::field_2d::toroidal_distance;
 use rust_ab::engine::field::field_2d::Field2D;
 use rust_ab::engine::location::Location2D;
 use rust_ab::engine::location::Real2D;
-use rust_ab::Schedule;
+use rust_ab::engine::schedule::Schedule;
 use rust_ab::engine::state::State;
 use rand::Rng;
 use std::fmt;
@@ -102,7 +102,7 @@ fn main(){
     super_strong_scaling();
 }
 
-fn setup(n_agent:usize, n_thread:usize) ->(BoidsState,rust_ab::Schedule<Bird>) {
+fn setup(n_agent:usize, n_thread:usize) ->(BoidsState,Schedule<Bird>) {
     let mut rng = rand::thread_rng();
     
     cfg_if!{
@@ -139,7 +139,7 @@ fn setup(n_agent:usize, n_thread:usize) ->(BoidsState,rust_ab::Schedule<Bird>) {
     (state,schedule)
 }
 
-fn simulate(step:usize,schedule:&mut rust_ab::Schedule<Bird>, state: &mut BoidsState){
+fn simulate(step:usize,schedule:&mut Schedule<Bird>, state: &mut BoidsState){
     for _ in 0..step {
         schedule.step(state);
     }
@@ -157,7 +157,7 @@ impl BoidsState {
 }
 
 impl State for BoidsState{
-    fn update(&mut self){
+    fn update(&self){
         self.field1.update();
     }
 }
@@ -340,6 +340,10 @@ impl Agent for Bird {
         state
             .field1
             .set_object_location(*self, Real2D { x: loc_x, y: loc_y });
+    }
+
+    fn id(&self) -> u128{
+        self.id
     }
 }
 

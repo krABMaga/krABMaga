@@ -2,6 +2,7 @@ use std::cmp::Eq;
 use std::cmp::Ordering;
 use std::fmt;
 
+///Implementation of a priority event, providing ordering based on time and a integer value.
 #[derive(Clone, Debug)]
 pub struct Priority {
     pub time: f64,
@@ -9,6 +10,7 @@ pub struct Priority {
 }
 
 impl Priority {
+    ///Instantiates a new priority event, with priority the_ordering and time the_time.
     pub fn new(the_time: f64, the_ordering: i64) -> Priority {
         Priority {
             time: the_time,

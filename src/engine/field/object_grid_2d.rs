@@ -87,11 +87,15 @@ impl<A: Eq + Hash + Clone + Copy> Grid2D<A> {
         self.locs.get(&agent)
     }
 
+    /// Fetches the agent at the specified position in the grid.
+    /// 
+    /// None if the position is empty, Some(&A) otherwise.
     pub fn get_object_at_location(&self, pos: &Int2D) -> Option<&A> {
         self.locs_inversed.get(pos)
     }
 
-    pub fn update(&mut self) {
+    ///Updates the double buffered grid state.
+    pub fn update(&self) {
         self.locs.update();
         self.locs_inversed.update();
     }

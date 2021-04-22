@@ -68,8 +68,8 @@ fn main() {
 
     println!("Time elapsed in testing schedule is: {:?}", run_duration);
     println!("(boids)Total Step:{}\nStep for seconds: {:?}",
-        schedule.step,
-        schedule.step as f64 /(run_duration.as_nanos() as f64 * 1e-9)
+        schedule.step_count(),
+        schedule.step_count() as f64 /(run_duration.as_nanos() as f64 * 1e-9)
     );
 }
 
@@ -88,7 +88,7 @@ impl EpidemicNetworkState {
 }
 
 impl State for EpidemicNetworkState{
-    fn update(&mut self){
+    fn update(&self){
         self.field1.lazy_update();
     }
 }
@@ -271,6 +271,10 @@ impl Agent for SusceptibleIndividual {
         state
             .field1
             .set_object_location(*self, Real2D { x: loc_x, y: loc_y });
+    }
+
+    fn id(&self)->u128{
+        self.id
     }
 }
 

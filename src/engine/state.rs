@@ -1,3 +1,5 @@
+///Types which may be used to hold simulation state data.
 pub trait State{
-    fn update(&mut self){}
+    ///Updates the simulation state double buffer.
+    fn update(&self){}
 }

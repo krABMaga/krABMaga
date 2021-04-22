@@ -5,6 +5,7 @@ use hashbrown::HashMap;
 use lazy_static::*;
 use std::sync::Mutex;
 
+
 #[allow(dead_code)]
 lazy_static! {
     static ref B_HASHER: AHasher = RandomState::new().build_hasher();
@@ -17,6 +18,7 @@ fn ncb(shard_amount: usize) -> usize {
     shard_amount.trailing_zeros() as usize
 }
 
+#[derive(Clone,Copy)]
 pub enum UpdateType {
     LAZY,
     COPY,
@@ -27,7 +29,7 @@ pub struct DBDashMap<K, V, S = RandomState> {
     pub shards: Box<[Mutex<HashMap<K, V, S>>]>,
     pub r_shards: Box<[HashMap<K, V, S>]>,
     hasher: S,
-    pub update_type: UpdateType,
+    pub update_type: Mutex<UpdateType>,
 }
 
 impl<K, V, S> Default for DBDashMap<K, V, S>
@@ -78,7 +80,7 @@ impl<'a, K: 'a + Eq + Hash, V: 'a, S: BuildHasher + Clone + Default> DBDashMap<K
             shards,
             r_shards,
             hasher,
-            update_type: UpdateType::LAZY,
+            update_type: Mutex::new(UpdateType::LAZY),
         }
     }
 
@@ -141,18 +143,18 @@ impl<'a, K: 'a + Eq + Hash, V: 'a, S: BuildHasher + Clone + Default> DBDashMap<K
         }
     }
 
-    pub fn lazy_update(&mut self) {
+    pub fn lazy_update(&self) {
         let shard_amount = shard_amount();
         for i in 0..shard_amount {
             unsafe {
                 std::ptr::swap(
-                    self.shards[i].get_mut().unwrap() as *mut HashMap<K, V, S>,
-                    &mut self.r_shards[i] as *mut HashMap<K, V, S>,
+                    &*self.shards[i].lock().unwrap() as *const HashMap<K,V,S> as *mut HashMap<K, V, S>,
+                    &self.r_shards[i] as *const HashMap<K, V, S> as *mut HashMap<K,V,S>,
                 )
             }
-            self.shards[i].get_mut().unwrap().clear();
+            self.shards[i].lock().unwrap().clear();
         }
-        self.update_type = UpdateType::LAZY;
+        *self.update_type.lock().unwrap() = UpdateType::LAZY;
     }
 
     pub fn merge_r_shards(&mut self) -> HashMap<K, V, S> {
@@ -202,15 +204,18 @@ impl<'a, K: 'a + Eq + Hash, V: 'a, S: BuildHasher + Clone + Default> DBDashMap<K
 }
 
 impl<'a, K: 'a + Eq + Hash + Clone, V: Clone + 'a> DBDashMap<K, V, RandomState> {
-    pub fn update(&mut self) {
+    pub fn update(&self) {
         let n = shard_amount();
+        unsafe{
         for i in 0..n {
-            self.r_shards[i].clear();
+            let r_shard = &self.r_shards[i] as *const HashMap<K,V,RandomState> as *mut HashMap<K,V,RandomState>;
+            r_shard.as_mut().unwrap().clear();
             for (key, value) in self.shards[i].lock().unwrap().iter() {
-                self.r_shards[i].insert(key.clone(), value.clone());
+                r_shard.as_mut().unwrap().insert(key.clone(), value.clone());
             }
         }
-        self.update_type = UpdateType::COPY;
+        *self.update_type.lock().unwrap() = UpdateType::COPY;
+        }
     }
 
     pub fn apply_to_all_values<F>(&self, closure: F)

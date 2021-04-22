@@ -255,7 +255,7 @@ impl BoidsState {
 }
 
 impl rust_ab::engine::state::State for BoidsState {
-    fn update(&mut self) {
+    fn update(&self) {
         self.field1.update();
     }
 }
@@ -296,6 +296,10 @@ impl Agent for Bird {
     fn step(&mut self, state: &BoidsState) {
         let pos = Real2D { x: 1.0, y: 2.0 };
         state.field1.set_object_location(*self, pos);
+    }
+
+    fn id(&self) -> u128{
+        self.id
     }
 }
 

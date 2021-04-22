@@ -5,7 +5,7 @@ use rust_ab::engine::field::field_2d::toroidal_distance;
 use rust_ab::engine::field::field_2d::Field2D;
 use rust_ab::engine::location::Location2D;
 use rust_ab::engine::location::Real2D;
-use rust_ab::Schedule;
+use rust_ab::engine::schedule::Schedule;
 use rust_ab::engine::state::State;
 use rand::Rng;
 use std::fmt;
@@ -73,11 +73,11 @@ fn main() {
             
 
             
-            println!("{};{};{};{:?}",
-                schedule.pool.current_num_threads(),
+            println!("{};{};{:?}",
+                //schedule.pool.current_num_threads(),
                 SIZE[INDEX.load(Relaxed)],
-                schedule.step,
-                schedule.step as f64 /( dur.as_nanos() as f64 * 1e-9)
+                schedule.step_count(),
+                schedule.step_count() as f64 /( dur.as_nanos() as f64 * 1e-9)
             );
         }
     }
@@ -96,7 +96,7 @@ impl BoidsState {
 }
 
 impl State for BoidsState{
-    fn update(&mut self){
+    fn update(&self){
         self.field1.update();
     }
 }
@@ -279,6 +279,10 @@ impl Agent for Bird {
         state
             .field1
             .set_object_location(*self, Real2D { x: loc_x, y: loc_y });
+    }
+
+    fn id(&self) -> u128{
+        self.id
     }
 }
 

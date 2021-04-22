@@ -60,7 +60,8 @@ impl<T: Copy + Clone> NumberGrid2D<T> {
         self.locs.insert(*pos, value);
     }
 
-    pub fn update(&mut self) {
+    ///Updates the double buffered grid state.
+    pub fn update(&self) {
         self.locs.update();
     }
 }
