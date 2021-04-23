@@ -6,10 +6,11 @@ use crate::visualization::on_state_init::OnStateInit;
 use crate::visualization::renderable::Render;
 use crate::visualization::simulation_descriptor::SimulationDescriptor;
 use crate::visualization::sprite_render_factory::SpriteFactoryResource;
+use std::hash::Hash;
 
 /// The main startup system which boostraps a simple orthographic camera, centers it to aim at the simulation,
 /// then calls the user provided init callback.
-pub fn init_system<A: 'static + Agent + Render + Clone + Send, I: OnStateInit<A> + 'static>(
+pub fn init_system<A: 'static + Agent + Render + Clone + Send + Hash + Eq, I: OnStateInit<A> + 'static>(
     on_init: Res<I>,
     sprite_factory: SpriteFactoryResource,
     mut commands: Commands,

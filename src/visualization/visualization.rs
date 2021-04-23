@@ -10,6 +10,7 @@ use crate::visualization::sprite_render_factory::SpriteRenderFactory;
 use crate::visualization::systems::init_system::init_system;
 use crate::visualization::systems::renderer_system::renderer_system;
 use crate::visualization::systems::simulation_system::simulation_system;
+use std::hash::Hash;
 
 /// The application main struct, used to build and start the event loop. Offers several methods in a builder-pattern style
 /// to allow for basic customization, such as background color, asset path and custom systems. Right now the framework
@@ -57,7 +58,7 @@ impl Visualization {
 
     /// Create the application and start it immediately. Requires a startup callback defined as a struct
     /// that implements [OnStateInit], along with the state and the schedule, which you manually create.
-    pub fn start<A: 'static + Agent + Render + Clone + Send, I: OnStateInit<A> + 'static>(
+    pub fn start<A: 'static + Agent + Render + Clone + Send + Hash + Eq, I: OnStateInit<A> + 'static>(
         self,
         init_call: I,
         state: A::SimState,
@@ -69,7 +70,7 @@ impl Visualization {
 
     /// Sets up the application, exposing the [AppBuilder]. Useful if you want to directly interface Bevy
     /// and add plugins, resources or systems yourself.
-    pub fn setup<A: 'static + Agent + Render + Clone + Send, I: OnStateInit<A> + 'static>(
+    pub fn setup<A: 'static + Agent + Render + Clone + Send + Hash + Eq, I: OnStateInit<A> + 'static>(
         &self,
         init_call: I,
         state: A::SimState,

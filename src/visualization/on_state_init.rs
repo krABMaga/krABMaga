@@ -5,10 +5,11 @@ use crate::engine::schedule::Schedule;
 use crate::visualization::renderable::Render;
 use crate::visualization::simulation_descriptor::SimulationDescriptor;
 use crate::visualization::sprite_render_factory::SpriteFactoryResource;
+use std::hash::Hash;
 
 /// A simple trait which lets the developer set up the visualization components of his simulation.
 /// This method will be called in a Bevy startup system.
-pub trait OnStateInit<A: 'static + Agent + Render + Clone + Send>: Send + Sync {
+pub trait OnStateInit<A: 'static + Agent + Render + Clone + Send + Hash + Eq>: Send + Sync {
     /// The method that will be called during the visualization inizialization.
     ///
     /// # Arguments
