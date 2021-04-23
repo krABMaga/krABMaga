@@ -119,12 +119,15 @@ impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> Field2D<A>  {
     /// use rust_ab::engine::field::field::Field;
     /// use rust_ab::engine::location::{Location2D, Real2D};
     /// use rust_ab::engine::state::State;
+    /// use std::fmt;
     /// 
     /// struct S {};
     /// impl State for S{}
     ///
     /// #[derive(Copy, Clone, Eq, PartialEq, Hash)]
-    /// struct A {};
+    /// struct A {
+    ///     id:u128,
+    /// };
     /// 
     /// impl Agent for A {
     ///     type SimState = S;
@@ -132,13 +135,17 @@ impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> Field2D<A>  {
     ///     fn step(&mut self, state: &S) {
     ///         println!("Stepping!");
     ///     }
+    /// 
+    ///     fn id(&self)->u128{
+    ///         self.id
+    ///     }
     /// }
     /// 
     /// impl fmt::Display for A{}
     /// 
     /// impl Location2D<Real2D> for A{}
     /// 
-    /// let mut field = new Field(200.0, 200.0, 0.5, true);
+    /// let mut field = new Field2D(200.0, 200.0, 0.5, true);
     /// let object1 = A{};
     /// let object2 = A{};
     /// let object3 = A{};

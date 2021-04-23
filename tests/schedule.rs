@@ -298,9 +298,7 @@ impl Agent for Bird {
         state.field1.set_object_location(*self, pos);
     }
 
-    fn id(&self) -> u128{
-        self.id
-    }
+   
 }
 
 impl Location2D<Real2D> for Bird {

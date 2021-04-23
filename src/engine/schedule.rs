@@ -12,6 +12,7 @@ use lazy_static::*;
 use clap::{App, Arg};
 use cfg_if::cfg_if;
 use crossbeam::queue::SegQueue;
+use std::hash::Hash;
 
 lazy_static!{
     pub static ref THREAD_NUM: usize = 
@@ -45,7 +46,7 @@ lazy_static!{
 
 ///A scheduler providing functionalities to manage the simulation according to event-based scheduling.
 ///Schedule works with a FIFO priority queue that sorts agents based on scheduling time and an integer priority value.
-pub struct Schedule<A:'static + Agent + Clone + Send>{
+pub struct Schedule<A:'static + Agent + Clone + Send + Hash + Eq>{
     pub step: Mutex<usize>,
     pub time: Mutex<f64>,
     pub events: Mutex<PriorityQueue<AgentImpl<A>,Priority>>,
@@ -56,12 +57,12 @@ pub struct Schedule<A:'static + Agent + Clone + Send>{
 }
 
 #[derive(Clone)]
-pub struct Pair<A: 'static + Agent + Clone > {
+pub struct Pair<A: 'static + Agent + Clone + Hash + Eq > {
     agentimpl: AgentImpl<A>,
     priority: Priority,
 }
 
-impl<A: 'static + Agent + Clone  > Pair<A> {
+impl<A: 'static + Agent + Clone + Hash + Eq > Pair<A> {
     fn new(agent: AgentImpl<A>, the_priority: Priority) -> Pair<A> {
         Pair {
             agentimpl: agent,
@@ -70,7 +71,7 @@ impl<A: 'static + Agent + Clone  > Pair<A> {
     }
 }
 
-impl<A: 'static +  Agent + Clone + Send + Sync > Schedule<A> {
+impl<A: 'static +  Agent + Clone + Send + Sync + Hash + Eq > Schedule<A> {
     ///Instantiates a new scheduler.
     ///When the "parallel" feature is specified, the new Schedule object will hold a ThreadPool for use in parallel executions.
     pub fn new() -> Schedule<A> {

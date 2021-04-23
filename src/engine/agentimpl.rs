@@ -8,12 +8,12 @@ use std::hash::Hasher;
 
 ///Wrapper for the Agent struct, providing an integer id and a boolean field for repeated scheduling.
 #[derive(Clone, Debug)]
-pub struct AgentImpl<A: Agent + Clone> {
+pub struct AgentImpl<A: Agent + Clone + Hash + Eq> {
     pub agent: A,
     pub repeating: bool,
 }
 
-impl<A: Agent + Clone> AgentImpl<A> {
+impl<A: Agent + Clone + Hash + Eq> AgentImpl<A> {
     ///Instantiates a new AgentImpl object, wrapping the_agent.
     pub fn new(the_agent: A) -> AgentImpl<A> {
     
@@ -31,22 +31,22 @@ impl<A: Agent + Clone> AgentImpl<A> {
  
 }
 
-impl<A: Agent + Clone> fmt::Display for AgentImpl<A> {
+impl<A: Agent + Clone + Hash + Eq + fmt::Display> fmt::Display for AgentImpl<A> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} {}", self.agent.id(), self.repeating)
+        write!(f, "{} {}", self.agent, self.repeating)
     }
 }
 
-impl<A: Agent + Clone> PartialEq for AgentImpl<A> {
+impl<A: Agent + Clone + Hash + Eq> PartialEq for AgentImpl<A> {
     fn eq(&self, other: &AgentImpl<A>) -> bool {
-        self.agent.id() == other.agent.id()
+        self.agent == other.agent
     }
 }
 
-impl<A: Agent + Clone> Hash for AgentImpl<A> {
+impl<A: Agent + Clone + Hash + Eq> Hash for AgentImpl<A> {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.agent.id().hash(state);
+        self.agent.hash(state);
     }
 }
 
-impl<A: Agent + Clone> Eq for AgentImpl<A> {}
+impl<A: Agent + Clone + Hash + Eq> Eq for AgentImpl<A> {}

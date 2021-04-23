@@ -273,9 +273,6 @@ impl Agent for SusceptibleIndividual {
             .set_object_location(*self, Real2D { x: loc_x, y: loc_y });
     }
 
-    fn id(&self)->u128{
-        self.id
-    }
 }
 
 impl Hash for SusceptibleIndividual {

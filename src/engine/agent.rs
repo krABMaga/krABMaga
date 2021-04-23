@@ -10,6 +10,5 @@ pub trait Agent {
     ///Executes the agent's behavioural logic. In order to allow agents to read and write in the global simulation state, this method takes a reference to the state as argument.
     fn step(&mut self,state: &Self::SimState);
 
-    fn id(&self) -> u128;
    
 }
