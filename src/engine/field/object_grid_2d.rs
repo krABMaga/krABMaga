@@ -83,14 +83,14 @@ impl<A: Eq + Hash + Clone + Copy> Grid2D<A> {
     /// let loc = Int2D{x: 2, y: 2};
     /// grid.set_object_location(agent, &loc);
     /// grid.update();
-    /// grid.remove(agent);
+    /// grid.remove(&agent);
     /// grid.update();
     /// println!("{:?}", grid.get_object_at_location(&loc));
     /// assert!(grid.get_object_at_location(&loc) == None);
     /// ```
-    pub fn remove(&self, agent: A)
+    pub fn remove(&self, agent: &A)
     {
-        if let Some(result) = self.locs.remove(&agent){
+        if let Some(result) = self.locs.remove(agent){
             let pos = result.1;
             self.locs_inversed.remove(&pos);
         }
