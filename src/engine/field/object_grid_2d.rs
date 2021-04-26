@@ -87,12 +87,17 @@ impl<A: Eq + Hash + Clone + Copy> Grid2D<A> {
     /// grid.update();
     /// println!("{:?}", grid.get_object_at_location(&loc));
     /// assert!(grid.get_object_at_location(&loc) == None);
+    /// assert!(grid.get_object_location(agent) == None);
     /// ```
     pub fn remove(&self, agent: &A)
     {
         if let Some(result) = self.locs.remove(agent){
             let pos = result.1;
-            self.locs_inversed.remove(&pos);
+            println!("{}{}", pos.x, pos.y);
+            if let Some(a) = self.locs_inversed.remove(&pos){
+                println!("Something goes wrong with removing")
+            }
+
         }
 
     }
