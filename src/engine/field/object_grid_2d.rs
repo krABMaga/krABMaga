@@ -82,19 +82,31 @@ impl<A: Eq + Hash + Clone + Copy> Grid2D<A> {
     /// let mut agent = A{};
     /// let loc = Int2D{x: 2, y: 2};
     /// grid.set_object_location(agent, &loc);
+    /// let a2 = agent.clone();
+    /// let loc2 = loc.clone();
+    /// assert!(loc == loc2);
     /// grid.update();
-    /// grid.remove(&agent);
+    /// grid.remove(&a2);
     /// grid.update();
-    /// println!("{:?}", grid.get_object_at_location(&loc));
-    /// assert!(grid.get_object_at_location(&loc) == None);
+    /// println!("{:?}", grid.get_object_at_location(&loc2));
+    /// assert!(grid.get_object_at_location(&loc2) == None);
     /// assert!(grid.get_object_location(agent) == None);
     /// ```
     pub fn remove(&self, agent: &A)
     {
         if let Some(result) = self.locs.remove(agent){
             let pos = result.1;
-            println!("{}{}", pos.x, pos.y);
-            self.locs_inversed.remove(&pos);
+            println!("removed in pos {} {}", pos.x, pos.y);
+            if let Some(result) = self.locs_inversed.remove(&pos){
+                println!("removed from pos {} {}", result.0.x, result.0.y);
+
+                if *agent == result.1 {
+                    println!("Correct removed");
+                }
+                else{
+                    println!("removed different agents");
+                }
+            }
              
         }
         else {
