@@ -59,6 +59,9 @@ jobs:
           profile: minimal
           toolchain: nightly-2021-03-25
           override: true
+
+      - uses: Swatinem/rust-cache@v1
+
       - uses: actions-rs/cargo@v1
         with:
           command: test
