@@ -92,7 +92,7 @@ impl<A: Eq + Hash + Clone + Copy> Grid2D<A> {
     /// assert!(grid.get_object_at_location(&loc2) == None);
     /// assert!(grid.get_object_location(agent) == None);
     /// ```
-    pub fn remove(&self, agent: &A)
+    pub fn remove_object(&self, agent: &A)
     {
         if let Some(result) = self.locs.remove(agent){
             let pos = result.1;
