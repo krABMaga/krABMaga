@@ -96,21 +96,7 @@ impl<A: Eq + Hash + Clone + Copy> Grid2D<A> {
     {
         if let Some(result) = self.locs.remove(agent){
             let pos = result.1;
-            println!("removed in pos {} {}", pos.x, pos.y);
-            if let Some(result) = self.locs_inversed.remove(&pos){
-                println!("removed from pos {} {}", result.0.x, result.0.y);
-
-                if *agent == result.1 {
-                    println!("Correct removed");
-                }
-                else{
-                    println!("removed different agents");
-                }
-            }
-             
-        }
-        else {
-            println!("Can't remove the agent");
+            self.locs_inversed.remove(&pos);
         }
 
     }
