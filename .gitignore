@@ -3,3 +3,4 @@
 .criterion
 .idea
 *.profraw
+Cargo.lock

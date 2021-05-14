@@ -142,7 +142,6 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> Network<O, L> {
 
         let net_nodes = self.edges.w_keys();
         let mut dist:Vec<(&O, i32)> = Vec::new();
-        println!("net nodes {} ", net_nodes.len());
 
         for i in 0..net_nodes.len(){
             let n = &net_nodes[i];
@@ -163,7 +162,6 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> Network<O, L> {
 
         for choice in choices_list{
             self.addEdge(u, choice.0, EdgeOptions::Simple);
-            println!("node chosen {}", choice.0);
         }
 
     }
