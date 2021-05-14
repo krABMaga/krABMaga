@@ -1,7 +1,10 @@
+use rand::prelude::SliceRandom;
+
 use crate::engine::field::field::Field;
 use crate::utils::dbdashmap::DBDashMap;
 use std::fmt::Display;
 use std::hash::Hash;
+use crate::rand::Rng;
 
 pub enum EdgeOptions<L: Clone + Hash + Display> {
     Simple,
@@ -56,12 +59,113 @@ pub struct Network<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> {
     pub direct: bool,
 }
 
+/**
+Generate an undirected network based on
+Barabási-Albert’s preferential attachment model
+*/
+#[macro_export]
+macro_rules! preferential_attachment_BA {
+    (  $nodes:expr, $network:expr, $node_type:ty, $edge_opt:ty) => {
+        { 
+            let n_nodes = $nodes.len();
+            let mut net:Network<$node_type, $edge_opt> = $network;
+            net.removeAllEdges();
+
+            if n_nodes == 0 { return; }
+            net.addNode(&$nodes[0]);
+            net.edges.update();
+            if n_nodes == 1 { return; }
+            net.addNode(&$nodes[1]);
+
+            net.addEdge(&$nodes[0], &$nodes[1], Simple);
+            net.edges.update();
+
+            let init_edge:usize = 1;
+
+            for i in 2..n_nodes 
+            {
+                let node = $nodes[i] as $node_type;
+                
+                net.add_prob_edge(&node, &init_edge);
+                net.edges.update();
+
+            }
+            
+            $network = net;
+        }
+    };
+
+    (  $nodes:expr, $network:expr, $node_type:ty, $edge_opt:ty, $init_edges:expr) => {
+        { 
+            let n_nodes = $nodes.len();
+            let edge_to_gen = $init_edges as usize;
+            let mut net:Network<$node_type, $edge_opt> = $network;
+            net.removeAllEdges();
+
+            if n_nodes == 0 { return; }
+            net.addNode(&$nodes[0]);
+            net.edges.update();
+            if n_nodes == 1 { return; }
+            net.addNode(&$nodes[1]);
+
+            net.addEdge(&$nodes[0], &$nodes[1], Simple);
+            net.edges.update();
+            for i in 2..n_nodes 
+            {
+                let node = $nodes[i] as $node_type;
+                
+                net.add_prob_edge(&node, &edge_to_gen);
+                net.edges.update();
+
+            }
+            
+            $network = net;
+        }
+    };
+
+}
+
+
+
+
 impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> Network<O, L> {
     pub fn new(d: bool) -> Network<O, L> {
         Network {
             edges: DBDashMap::new(),
             direct: d,
         }
+    }
+ 
+    ///part of "preferential attachment" process
+    ///in which new network members prefer to make a connection to the more popular existing members.
+    pub fn add_prob_edge(&self, u:&O, n_sample: &usize){
+
+        let net_nodes = self.edges.w_keys();
+        let mut dist:Vec<(&O, i32)> = Vec::new();
+        println!("net nodes {} ", net_nodes.len());
+
+        for i in 0..net_nodes.len(){
+            let n = &net_nodes[i];
+            let n_edges = self.getEdges(n).unwrap().len();
+            dist.push((n, n_edges as i32));
+        }
+        
+        let mut rng = rand::thread_rng();
+        //let chosen = dist.choose_weighted(&mut rng, |dist| dist.1).unwrap().0;
+        //self.addEdge(u, chosen, EdgeOptions::Simple);
+
+        let amount:usize = if net_nodes.len() < *n_sample { net_nodes.len() } else { *n_sample};
+
+        let choices_list = dist.choose_multiple_weighted(&mut rng,
+                            amount,
+                            |dist| dist.1)
+                                   .unwrap().collect::<Vec<_>>();
+
+        for choice in choices_list{
+            self.addEdge(u, choice.0, EdgeOptions::Simple);
+            println!("node chosen {}", choice.0);
+        }
+
     }
 
     pub fn addNode(&self, u: &O) {
