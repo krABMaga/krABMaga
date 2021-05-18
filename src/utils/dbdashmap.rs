@@ -1,9 +1,11 @@
-use crate::utils::r#ref::RefMut;
-use ahash::{AHasher, RandomState};
 use core::hash::{BuildHasher, Hash, Hasher};
+use std::sync::Mutex;
+
+use ahash::{AHasher, RandomState};
 use hashbrown::HashMap;
 use lazy_static::*;
-use std::sync::Mutex;
+
+use crate::utils::r#ref::RefMut;
 
 #[allow(dead_code)]
 lazy_static! {
@@ -125,6 +127,16 @@ impl<'a, K: 'a + Eq + Hash, V: 'a, S: BuildHasher + Clone + Default> DBDashMap<K
         shard.get(key)
     }
 
+    pub fn get_key_value(&'a self, key: &K) -> Option<(&K, &V)> {
+        let hash = self.hash_usize(&key);
+
+        let idx = self.determine_shard(hash);
+
+        let shard = &self.r_shards[idx];
+
+        shard.get_key_value(key)
+    }
+
     pub fn get_mut(&'a self, key: &K) -> Option<RefMut<K, V, S>> {
         let hash = self.hash_usize(&key);
 
@@ -184,19 +196,17 @@ impl<'a, K: 'a + Eq + Hash, V: 'a, S: BuildHasher + Clone + Default> DBDashMap<K
         ris
     }
 
-    
-
-    pub fn clear(&self){
-        for shard in self.shards.iter(){
+    pub fn clear(&self) {
+        for shard in self.shards.iter() {
             shard.lock().unwrap().clear();
         }
     }
 
-    pub fn is_empty(&self) -> bool{
+    pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
-    pub fn is_empty_r(&self) -> bool{
+    pub fn is_empty_r(&self) -> bool {
         self.r_len() == 0
     }
 }
