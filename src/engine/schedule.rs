@@ -1,19 +1,20 @@
 extern crate priority_queue;
 
+use std::sync::Mutex;
 
+use cfg_if::cfg_if;
+use clap::{App, Arg};
+use lazy_static::*;
 use priority_queue::PriorityQueue;
-use crate::engine::priority::Priority;
+use rayon::{ThreadPool, ThreadPoolBuilder};
+
 use crate::engine::agent::Agent;
 use crate::engine::agentimpl::AgentImpl;
+use crate::engine::priority::Priority;
 use crate::engine::state::State;
-use std::sync::Mutex;
-use rayon::{ThreadPoolBuilder,ThreadPool};
-use lazy_static::*;
-use clap::{App, Arg};
-use cfg_if::cfg_if;
 
-lazy_static!{
-    pub static ref THREAD_NUM: usize = 
+lazy_static! {
+    pub static ref THREAD_NUM: usize =
                                 {
                                 let matches = App::new("Rust-AB").
                                 arg(
@@ -41,33 +42,32 @@ lazy_static!{
                                 n
                                 };
 }
-pub struct Schedule<A:'static + Agent + Clone + Send>{
+pub struct Schedule<A: 'static + Agent + Clone + Send> {
     pub step: usize,
     pub time: f64,
-    pub events: Mutex<PriorityQueue<AgentImpl<A>,Priority>>,
-    pub pool: Option<ThreadPool>
+    pub events: Mutex<PriorityQueue<AgentImpl<A>, Priority>>,
+    pub pool: Option<ThreadPool>,
 }
 
 #[derive(Clone)]
-pub struct Pair<A: 'static + Agent + Clone > {
+pub struct Pair<A: 'static + Agent + Clone> {
     agentimpl: AgentImpl<A>,
     priority: Priority,
 }
 
-impl<A: 'static + Agent + Clone  > Pair<A> {
+impl<A: 'static + Agent + Clone> Pair<A> {
     fn new(agent: AgentImpl<A>, the_priority: Priority) -> Pair<A> {
         Pair {
             agentimpl: agent,
-            priority: the_priority
+            priority: the_priority,
         }
     }
 }
 
-impl<A: 'static +  Agent + Clone + Send + Sync > Schedule<A> {
-
+impl<A: 'static + Agent + Clone + Send + Sync> Schedule<A> {
     pub fn new() -> Schedule<A> {
         //println!("Using {} thread",*THREAD_NUM);
-        cfg_if!{
+        cfg_if! {
             if #[cfg(feature ="parallel")]{
                 return Schedule {
                     step: 0,
@@ -86,9 +86,9 @@ impl<A: 'static +  Agent + Clone + Send + Sync > Schedule<A> {
         }
     }
 
-    pub fn with_threads(thread_num:usize) -> Schedule<A> {
+    pub fn with_threads(thread_num: usize) -> Schedule<A> {
         //println!("Using {} thread",thread_num);
-        cfg_if!{
+        cfg_if! {
             if #[cfg(feature ="parallel")]{
                 return Schedule {
                     step: 0,
@@ -107,25 +107,30 @@ impl<A: 'static +  Agent + Clone + Send + Sync > Schedule<A> {
         }
     }
 
-    pub fn schedule_once(&mut self, agent: AgentImpl<A>,the_time:f64, the_ordering:i64) {
-        self.events.lock().unwrap().push(agent, Priority{time: the_time, ordering: the_ordering});
+    pub fn schedule_once(&mut self, agent: AgentImpl<A>, the_time: f64, the_ordering: i64) {
+        self.events.lock().unwrap().push(
+            agent,
+            Priority {
+                time: the_time,
+                ordering: the_ordering,
+            },
+        );
     }
 
-    pub fn schedule_repeating(&mut self, agent: A, the_time:f64, the_ordering:i64) {
+    pub fn schedule_repeating(&mut self, agent: A, the_time: f64, the_ordering: i64) {
         let mut a = AgentImpl::new(agent);
         a.repeating = true;
         let pr = Priority::new(the_time, the_ordering);
         self.events.lock().unwrap().push(a, pr);
     }
 
-    pub fn simulate<S: State>(&mut self, state: &mut <A as Agent>::SimState, num_step:u128){
-        for _ in 0..num_step{
+    pub fn simulate<S: State>(&mut self, state: &mut <A as Agent>::SimState, num_step: u128) {
+        for _ in 0..num_step {
             self.step(state);
         }
     }
 
-
-    cfg_if!{
+    cfg_if! {
         if #[cfg(feature ="parallel")]{
 
 
@@ -133,21 +138,21 @@ impl<A: 'static +  Agent + Clone + Send + Sync > Schedule<A> {
             let thread_num = self.pool.as_ref().unwrap().current_num_threads();
 
             if self.step == 0{
-                state.update();      
+                state.update();
             }
-            
+
             self.step += 1;
-        
+
             // let start: std::time::Instant = std::time::Instant::now();
             let events = &mut self.events;
             if events.lock().unwrap().is_empty() {
                 println!("coda eventi vuota");
                 return
             }
-            
+
             let thread_division = (events.lock().unwrap().len() as f64 / thread_num as f64).ceil() as usize ;
             let mut cevents: Vec<Vec<Pair<A>>> = vec![Vec::with_capacity(thread_division); thread_num];
-            
+
             let mut i = 0;
 
             match events.lock().unwrap().peek() {
@@ -195,10 +200,22 @@ impl<A: 'static +  Agent + Clone + Send + Sync > Schedule<A> {
                     let batch = cevents.pop().unwrap();
                     scope.spawn(|_| {
                         let mut reschedule = Vec::with_capacity(batch.len());
-                        for mut item in batch{
+                        for mut item in batch {
                             item.agentimpl.agent.step(&state);
-                            if item.agentimpl.repeating{
+                            let should_remove = item.agentimpl.agent.should_remove(&state);
+                            let should_reproduce = item.agentimpl.agent.should_reproduce(&state);
+
+                            if item.agentimpl.repeating && !should_remove {
                                 reschedule.push( ( item.agentimpl, Priority{ time: item.priority.time+1.0, ordering: item.priority.ordering}) );
+                            }
+
+                            if let Some(new_agents) = should_reproduce {
+                                for (new_agent, schedule_options) in new_agents {
+                                    let ScheduleOptions{ordering, repeating} = schedule_options;
+                                    let mut new_agent_impl = AgentImpl::new(*new_agent);
+                                    new_agent_impl.repeating = repeating;
+                                    reschedule.push((new_agent_impl, Priority{time: item.priority.time + 1., ordering}));
+                                }
                             }
                         }
                         let mut events = self.events.lock().unwrap();
@@ -206,11 +223,11 @@ impl<A: 'static +  Agent + Clone + Send + Sync > Schedule<A> {
                             events.push(entry.0,entry.1);
                         }
                     });
-                    
+
                 }
             });
-                
-        
+
+
         state.update();
         }
     }
@@ -265,18 +282,32 @@ impl<A: 'static +  Agent + Clone + Send + Sync > Schedule<A> {
                     None => panic!("no item"),
                 }
             }
-        
+
             for mut item in cevents.into_iter() {
+
                 item.agentimpl.agent.step(state);
-                if item.agentimpl.repeating {
+
+                let should_remove = item.agentimpl.agent.should_remove(&state);
+                let should_reproduce = item.agentimpl.agent.should_reproduce(&state);
+
+                if item.agentimpl.repeating && !should_remove {
                     self.schedule_once(
                         item.agentimpl,
                         item.priority.time + 1.0,
                         item.priority.ordering,
                     );
                 }
+
+                if let Some(new_agents) = should_reproduce {
+                    for (new_agent, schedule_options) in new_agents {
+                        let ScheduleOptions{ordering, repeating} = schedule_options;
+                        let mut new_agent_impl = AgentImpl::new(*new_agent);
+                        new_agent_impl.repeating = repeating;
+                        self.schedule_once(new_agent_impl, item.priority.time + 1., ordering);
+                    }
+                }
             }
-            
+
             state.update();
             // println!("Time spent calling step method, step {} : {:?}",self.step,start.elapsed());
 
@@ -284,8 +315,10 @@ impl<A: 'static +  Agent + Clone + Send + Sync > Schedule<A> {
 
         }
     }
-
 }
 
-
-
+/// A struct used to specify schedule options to pass to an agent's clone when an agent reproduces.
+pub struct ScheduleOptions {
+    pub ordering: i64,
+    pub repeating: bool,
+}
