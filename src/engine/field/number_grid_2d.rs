@@ -150,6 +150,7 @@ impl NumberGrid2D<f64> {
         }
     }
 }
+*/
 
 #[cfg(test)]
 mod tests {
@@ -158,15 +159,20 @@ mod tests {
 
     #[test]
     fn simple_grid_2d() {
-        let mut grid = NumberGrid2D::<i64>::new(10, 10);
+        let mut grid = NumberGrid2D::<i32>::new(10, 10);
         let pos = Int2D { x: 2, y: 3 };
         let pos2 = Int2D { x: 4, y: 5 };
+        let pos3 = Int2D { x: 5, y: 5 };
         grid.set_value_at_pos(&pos, 5);
         grid.set_value_at_pos(&pos2, 10);
+        grid.update();
         let val = grid.get_value_at_pos(&pos);
-        assert_eq!(val, Some(5));
-        //assert_eq!(grid.min(), Some(5));
-        //assert_eq!(grid.max(), Some(10));
+        assert_eq!(val, Some(&5));
+
+        let val = grid.get_value_at_pos(&pos2);
+        assert_eq!(val, Some(&10));
+
+        let val = grid.get_value_at_pos(&pos3);
+        assert_eq!(val, None);
     }
 }
-*/
