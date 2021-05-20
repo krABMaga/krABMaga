@@ -47,6 +47,9 @@ pub struct Schedule<A: 'static + Agent + Clone + Send> {
     pub time: f64,
     pub events: Mutex<PriorityQueue<AgentImpl<A>, Priority>>,
     pub pool: Option<ThreadPool>,
+    // Mainly used in the visualization to render newly scheduled agents.
+    // This is cleared at the start of each step.
+    pub newly_scheduled: Vec<A>,
 }
 
 #[derive(Clone)]
@@ -74,6 +77,7 @@ impl<A: 'static + Agent + Clone + Send + Sync> Schedule<A> {
                     time: 0.0,
                     events: Mutex::new(PriorityQueue::new()),
                     pool: Some(ThreadPoolBuilder::new().num_threads(*THREAD_NUM).build().unwrap()),
+                    newly_scheduled: Vec::new()
                 }
             }else{
                 return Schedule {
@@ -81,6 +85,7 @@ impl<A: 'static + Agent + Clone + Send + Sync> Schedule<A> {
                     time: 0.0,
                     events: Mutex::new(PriorityQueue::new()),
                     pool: None,
+                    newly_scheduled: Vec::new()
                 }
             }
         }
@@ -95,6 +100,7 @@ impl<A: 'static + Agent + Clone + Send + Sync> Schedule<A> {
                     time: 0.0,
                     events: Mutex::new(PriorityQueue::new()),
                     pool: Some(ThreadPoolBuilder::new().num_threads(thread_num).build().unwrap()),
+                    newly_scheduled: Vec::new()
                 }
             }else{
                 return Schedule {
@@ -102,6 +108,7 @@ impl<A: 'static + Agent + Clone + Send + Sync> Schedule<A> {
                     time: 0.0,
                     events: Mutex::new(PriorityQueue::new()),
                     pool: None,
+                    newly_scheduled: Vec::new()
                 }
             }
         }
@@ -135,10 +142,11 @@ impl<A: 'static + Agent + Clone + Send + Sync> Schedule<A> {
 
 
         pub fn step(&mut self, state: &mut <A as Agent>::SimState){
+            self.newly_scheduled.clear();
             let thread_num = self.pool.as_ref().unwrap().current_num_threads();
 
             if self.step == 0{
-                state.update();
+                state.update(self.step);
             }
 
             self.step += 1;
@@ -146,7 +154,7 @@ impl<A: 'static + Agent + Clone + Send + Sync> Schedule<A> {
             // let start: std::time::Instant = std::time::Instant::now();
             let events = &mut self.events;
             if events.lock().unwrap().is_empty() {
-                println!("coda eventi vuota");
+                //println!("coda eventi vuota");
                 return
             }
 
@@ -212,9 +220,11 @@ impl<A: 'static + Agent + Clone + Send + Sync> Schedule<A> {
                             if let Some(new_agents) = should_reproduce {
                                 for (new_agent, schedule_options) in new_agents {
                                     let ScheduleOptions{ordering, repeating} = schedule_options;
-                                    let mut new_agent_impl = AgentImpl::new(*new_agent);
+                                    let agent = *new_agent;
+                                    let mut new_agent_impl = AgentImpl::new(agent.clone());
                                     new_agent_impl.repeating = repeating;
                                     reschedule.push((new_agent_impl, Priority{time: item.priority.time + 1., ordering}));
+                                    self.newly_scheduled.push(agent);
                                 }
                             }
                         }
@@ -228,13 +238,14 @@ impl<A: 'static + Agent + Clone + Send + Sync> Schedule<A> {
             });
 
 
-        state.update();
+        state.update(self.step);
         }
     }
     else{
         pub fn step(&mut self,state: &mut <A as Agent>::SimState){
+            self.newly_scheduled.clear();
             if self.step == 0{
-                state.update();
+                state.update(self.step);
             }
             self.step += 1;
 
@@ -242,7 +253,7 @@ impl<A: 'static + Agent + Clone + Send + Sync> Schedule<A> {
             // let start: std::time::Instant = std::time::Instant::now();
             let events = &mut self.events;
             if events.lock().unwrap().is_empty() {
-                println!("coda eventi vuota");
+                //println!("coda eventi vuota");
                 return;
             }
 
@@ -301,14 +312,16 @@ impl<A: 'static + Agent + Clone + Send + Sync> Schedule<A> {
                 if let Some(new_agents) = should_reproduce {
                     for (new_agent, schedule_options) in new_agents {
                         let ScheduleOptions{ordering, repeating} = schedule_options;
-                        let mut new_agent_impl = AgentImpl::new(*new_agent);
+                        let agent = *new_agent;
+                        let mut new_agent_impl = AgentImpl::new(agent.clone());
                         new_agent_impl.repeating = repeating;
                         self.schedule_once(new_agent_impl, item.priority.time + 1., ordering);
+                        self.newly_scheduled.push(agent);
                     }
                 }
             }
 
-            state.update();
+            state.update(self.step);
             // println!("Time spent calling step method, step {} : {:?}",self.step,start.elapsed());
 
             }

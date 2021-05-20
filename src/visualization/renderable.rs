@@ -1,4 +1,4 @@
-use bevy::prelude::{Commands, Quat, SpriteBundle, Transform, Vec3};
+use bevy::prelude::{Commands, Quat, SpriteBundle, Transform, Vec3, Visible};
 
 use crate::engine::agent::Agent;
 
@@ -53,7 +53,7 @@ pub trait Render: Agent + Send + Sync + Sized + 'static {
     }
 
     /// Update the graphical variables based on the information coming from the model through the state.
-    fn update(&mut self, transform: &mut Transform, state: &Self::SimState);
+    fn update(&mut self, transform: &mut Transform, state: &Self::SimState, visible: &mut Visible);
 }
 
 pub enum SpriteType {

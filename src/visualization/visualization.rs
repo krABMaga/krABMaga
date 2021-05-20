@@ -1,4 +1,4 @@
-use bevy::prelude::{App, AppBuilder, ClearColor, Color, IntoSystem, WindowDescriptor};
+use bevy::prelude::*;
 use bevy::DefaultPlugins;
 
 use crate::engine::agent::Agent;
@@ -96,8 +96,8 @@ impl Visualization {
         .insert_resource(schedule)
         .add_startup_system(init_system::<A, I>.system())
         .add_plugins(DefaultPlugins)
-        .add_system(renderer_system::<A>.system())
-        .add_system(simulation_system::<A>.system());
+        .add_system(renderer_system::<A>.system().label("render"))
+        .add_system(simulation_system::<A>.system().before("render"));
         #[cfg(target_arch = "wasm32")]
         app.add_plugin(bevy_webgl2::WebGL2Plugin);
 
