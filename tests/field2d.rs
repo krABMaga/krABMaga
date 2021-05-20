@@ -1,19 +1,20 @@
-extern crate priority_queue;
-
 #[macro_use]
 extern crate lazy_static;
+extern crate priority_queue;
+
+use std::fmt;
+use std::hash::Hash;
+use std::hash::Hasher;
+use std::sync::Mutex;
 
 use rand::Rng;
+
 use rust_ab::engine::agent::Agent;
 use rust_ab::engine::field::field::Field;
 use rust_ab::engine::field::field_2d::{toroidal_distance, toroidal_transform, Field2D};
 use rust_ab::engine::location::{Location2D, Real2D};
 use rust_ab::engine::schedule::Schedule;
 use rust_ab::engine::state::State;
-use std::fmt;
-use std::hash::Hash;
-use std::hash::Hasher;
-use std::sync::Mutex;
 
 static mut _COUNT: u128 = 0;
 static _STEP: u128 = 10;
@@ -133,7 +134,7 @@ fn field_2d_test_vicinato() {
     state.field1.set_object_location(bird1, bird1.pos);
     state.field1.set_object_location(bird2, bird2.pos);
 
-    state.update();
+    state.update(0);
 
     assert_eq!(2, state.field1.num_objects());
 
@@ -151,7 +152,7 @@ fn field_2d_test_vicinato() {
         state.field1.set_object_location(bird1, bird1.pos);
         state.field1.set_object_location(bird2, bird2.pos);
 
-        state.update();
+        state.update(0);
 
         let vec = state.field1.get_neighbors_within_distance(bird1.pos, 10.0);
         assert_eq!(2, vec.len());
@@ -290,7 +291,7 @@ impl BoidsState {
 }
 
 impl State for BoidsState {
-    fn update(&mut self) {
+    fn update(&mut self, _step: usize) {
         self.field1.update();
     }
 }
