@@ -23,7 +23,7 @@ pub trait OnStateInit<A: 'static + Agent + Render + Clone + Send>: Send + Sync {
     ///
     /// ```
     /// use rust_ab::visualization::on_state_init::OnStateInit;
-    /// use bevy::prelude::{Commands, ResMut};
+    /// use bevy::prelude::{Commands, ResMut, Visible};
     /// use rust_ab::visualization::sprite_render_factory::SpriteFactoryResource;
     /// use rust_ab::visualization::simulation_descriptor::SimulationDescriptor;
     /// use rust_ab::visualization::renderable::{SpriteType, Render};
@@ -55,7 +55,7 @@ pub trait OnStateInit<A: 'static + Agent + Render + Clone + Send>: Send + Sync {
     /// #   fn rotation(&self) -> f32 {
     /// #       0.
     /// #   }
-    /// #   fn update(&mut self,transform: &mut Transform,state: &Self::SimState) {
+    /// #   fn update(&mut self,transform: &mut Transform,state: &Self::SimState, visible: &mut Visible) {
     /// #       
     /// #   }
     /// # }

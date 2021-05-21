@@ -1,14 +1,15 @@
 extern crate priority_queue;
 
+use std::fmt;
+use std::hash::Hash;
+use std::hash::Hasher;
+
 use rust_ab::engine::agent::Agent;
 use rust_ab::engine::field::field::Field;
 use rust_ab::engine::field::field_2d::Field2D;
 use rust_ab::engine::location::{Location2D, Real2D};
-use rust_ab::engine::state::State;
-use std::fmt;
-use std::hash::Hash;
-use std::hash::Hasher;
 use rust_ab::engine::schedule::Schedule;
+use rust_ab::engine::state::State;
 
 static STEP: u128 = 10;
 // static NUM_AGENT: u128 = 2;
@@ -36,7 +37,7 @@ fn field_2d_test_1() {
     // Let's try to write only bird1 into the field
     data.field1.set_object_location(bird1, bird1.pos);
 
-    data.update();
+    data.update(schedule.step);
 
     let pos = match data.field1.get_object_location(bird1) {
         Some(i) => i,
@@ -51,7 +52,7 @@ fn field_2d_test_1() {
     data.field1
         .set_object_location(bird1, Real2D { x: 10.0, y: 10.0 });
 
-    data.update();
+    data.update(schedule.step);
 
     let pos = match data.field1.get_object_location(bird1) {
         Some(i) => i,
@@ -66,7 +67,7 @@ fn field_2d_test_1() {
     data.field1.set_object_location(bird1, real_pos);
     data.field1.set_object_location(bird2, real_pos);
 
-    data.update();
+    data.update(schedule.step);
 
     // Is the field correctly telling us there are two objects at the position used previously?
     let num = data.field1.num_objects_at_location(real_pos);
@@ -112,7 +113,7 @@ fn field_2d_test_2() {
     data.field1
         .set_object_location(bird5.clone(), bird5.pos.clone());
 
-    data.update();
+    data.update(0);
 
     let vec = data
         .field1
@@ -139,7 +140,7 @@ fn field_2d_test_2() {
     data.field1
         .set_object_location(bird6.clone(), bird6.pos.clone());
 
-    data.update();
+    data.update(0);
 
     let vec = data
         .field1
@@ -181,7 +182,7 @@ fn field_2d_test_3() {
     data.field1
         .set_object_location(bird2.clone(), bird2.pos.clone());
 
-    data.update();
+    data.update(schedule.step);
 
     let pos_b1 = match data.field1.get_object_location(bird1.clone()) {
         Some(i) => i,
@@ -193,7 +194,7 @@ fn field_2d_test_3() {
     bird1.pos = new_pos.clone();
     data.field1.set_object_location(bird1.clone(), new_pos);
 
-    data.update();
+    data.update(schedule.step);
 
     let pos_b1 = match data.field1.get_object_location(bird1.clone()) {
         Some(i) => i,
@@ -255,7 +256,7 @@ impl BoidsState {
 }
 
 impl rust_ab::engine::state::State for BoidsState {
-    fn update(&mut self) {
+    fn update(&mut self, _step: usize) {
         self.field1.update();
     }
 }

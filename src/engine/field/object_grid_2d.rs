@@ -52,7 +52,7 @@ impl<A: Eq + Hash + Clone + Copy> Grid2D<A> {
     /// assert_eq!(grid.get_object_location(obj), Some(&loc));
     /// ```
     pub fn set_object_location(&self, agent: A, new_pos: &Int2D) {
-        self.remove_object(agent);
+        self.remove_object(&agent);
 
         let existing_elements_vec = self.locs_inversed.get_mut(new_pos);
 
@@ -98,20 +98,20 @@ impl<A: Eq + Hash + Clone + Copy> Grid2D<A> {
     /// grid.set_object_location(obj, &loc);
     /// grid.update();
     /// assert_eq!(grid.get_object_location(obj), Some(&loc));
-    /// grid.remove_object(obj);
+    /// grid.remove_object(&obj);
     /// grid.update();
     /// assert_eq!(grid.get_object_location(obj), None);
     /// ```
-    pub fn remove_object(&self, agent: A) {
-        if let Some(old_loc) = self.locs.get(&agent) {
+    pub fn remove_object(&self, agent: &A) {
+        if let Some(old_loc) = self.locs.get(agent) {
             self.locs_inversed
                 .get_mut(old_loc)
                 .unwrap()
                 .value_mut()
-                .retain(|&x| x != agent);
+                .retain(|&x| x != *agent);
         }
 
-        self.locs.remove(&agent);
+        self.locs.remove(agent);
     }
 
     /// Fetches the copy of MyObject stored within the grid. This is necessary due to the grid being
@@ -145,10 +145,10 @@ impl<A: Eq + Hash + Clone + Copy> Grid2D<A> {
     /// grid.update();
     /// let mut obj_clone = obj.clone();
     /// // You should be able to fetch the original copy of the agent stored in the state through a local clone
-    /// assert_eq!(grid.get_object(obj_clone), Some(&obj));
+    /// assert_eq!(grid.get_object(&obj_clone), Some(&obj));
     /// ```    
-    pub fn get_object(&self, agent: A) -> Option<&A> {
-        match self.locs.get_key_value(&agent) {
+    pub fn get_object(&self, agent: &A) -> Option<&A> {
+        match self.locs.get_key_value(agent) {
             Some((updated_agent, _pos)) => Some(updated_agent),
             None => None,
         }
@@ -249,11 +249,11 @@ mod tests {
         let grid_agents = &*grid.get_object_at_location(&pos).unwrap();
         assert_eq!(agent, *grid_agents.first().unwrap());
 
-        let grid_agent = grid.get_object(agent);
+        let grid_agent = grid.get_object(&agent);
         let agent_clone = agent.clone();
         assert_eq!(grid_agent, Some(&agent_clone));
 
-        grid.remove_object(agent);
+        grid.remove_object(&agent);
         // This should still be set because we haven't updated the grid yet
         let agent_loc = *grid.get_object_location(agent).unwrap();
         assert_eq!(agent_loc, pos);
@@ -261,7 +261,7 @@ mod tests {
         grid.update();
 
         // Even though the agent has already been removed, this method shouldn't panic: nothing should be done
-        grid.remove_object(agent);
+        grid.remove_object(&agent);
 
         let agent_loc = grid.get_object_location(agent);
         assert_eq!(agent_loc, None);

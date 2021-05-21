@@ -1,10 +1,13 @@
 use bevy::prelude::ResMut;
 
+use crate::bevy::prelude::Commands;
 use crate::engine::agent::Agent;
 use crate::engine::schedule::Schedule;
+use crate::visualization::renderable::{Render, SpriteType};
+use crate::visualization::sprite_render_factory::{SpriteFactoryResource, SpriteRenderFactory};
 
 /// The simulation system steps the schedule once per frame, effectively synchronizing frames and schedule steps.
-pub fn simulation_system<A: 'static + Agent + Clone + Send + Sync>(
+pub fn simulation_system<A: Render + Clone>(
     mut schedule: ResMut<Schedule<A>>,
     mut state: ResMut<A::SimState>,
 ) {
@@ -19,6 +22,7 @@ mod tests {
     use bevy::prelude::{Stage, Transform};
     use bevy::prelude::{SystemStage, World};
 
+    use crate::bevy::prelude::Visible;
     use crate::engine::agent::Agent;
     use crate::engine::schedule::Schedule;
     use crate::engine::state::State;
@@ -59,7 +63,13 @@ mod tests {
             0.
         }
 
-        fn update(&mut self, _transform: &mut Transform, _state: &BasicState) {}
+        fn update(
+            &mut self,
+            _transform: &mut Transform,
+            _state: &BasicState,
+            visible: &mut Visible,
+        ) {
+        }
     }
 
     /// A simple test that sets up a basic state, agent and schedule, then schedules the single agent.
