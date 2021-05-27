@@ -44,7 +44,9 @@ pub struct EdgeRenderInfo {
     pub line_type: LineType,
 }
 
-/// Allows rendering the edges of a graph as customizable lines through the Bevy Canvas plugin
+/// Allows rendering the edges of a graph as customizable lines through the Bevy Canvas plugin.
+/// As for now (27/05/2021), this does NOT work in a WebGL context due to the bevy_canvas plugin not
+/// being compatible with WebGL.
 pub trait NetworkRender<
     O: Hash + Eq + Clone + Display,
     L: Clone + Hash + Display,
@@ -58,6 +60,10 @@ pub trait NetworkRender<
     fn get_edge_info(edge: &Edge<O, L>) -> EdgeRenderInfo;
 
     fn render(state: Res<A::SimState>, mut canvas: ResMut<Canvas>) {
+        if cfg!(target_arch = "wasm32") {
+            panic!("Currently network visualization does not support WebGL shaders. https://github.com/Nilirad/bevy_canvas/blob/main/src/render/mod.rs#L257");
+        }
+
         let network = Self::get_network(&*state);
         for node_edges in network.edges.values() {
             for edge in node_edges {
