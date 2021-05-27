@@ -1,7 +1,7 @@
-use crate::engine::priority::Priority;
+use std::collections::HashMap;
+
 use crate::engine::schedule::ScheduleOptions;
 use crate::engine::state::State;
-use std::collections::HashMap;
 
 pub trait Agent {
     type SimState: State + Sync + Send;

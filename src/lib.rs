@@ -7,3 +7,5 @@ pub mod visualization;
 
 #[cfg(any(feature = "visualization", feature = "visualization_wasm", doc))]
 pub use bevy;
+#[cfg(any(feature = "visualization", feature = "visualization_wasm", doc))]
+pub use bevy_canvas;

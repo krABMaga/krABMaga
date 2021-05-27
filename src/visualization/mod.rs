@@ -4,4 +4,5 @@ pub mod renderable;
 pub mod simulation_descriptor;
 pub mod sprite_render_factory;
 mod systems;
+pub mod utils;
 pub mod visualization;

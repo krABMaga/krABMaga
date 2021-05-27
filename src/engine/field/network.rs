@@ -1,10 +1,10 @@
+use std::fmt::Display;
+use std::hash::Hash;
+
 use rand::prelude::SliceRandom;
 
 use crate::engine::field::field::Field;
 use crate::utils::dbdashmap::DBDashMap;
-use std::fmt::Display;
-use std::hash::Hash;
-use crate::rand::Rng;
 
 pub enum EdgeOptions<L: Clone + Hash + Display> {
     Simple,
@@ -22,10 +22,9 @@ pub struct Edge<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> {
     pub weight: Option<f64>,
 }
 
-
 impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> Edge<O, L> {
-    pub fn new(u_node: O, v_node: O, edgeOptions: EdgeOptions<L>) -> Edge<O, L> {
-        match edgeOptions {
+    pub fn new(u_node: O, v_node: O, edge_options: EdgeOptions<L>) -> Edge<O, L> {
+        match edge_options {
             EdgeOptions::Simple => Edge {
                 u: u_node,
                 v: v_node,
@@ -65,68 +64,64 @@ Barabási-Albert’s preferential attachment model
 */
 #[macro_export]
 macro_rules! preferential_attachment_BA {
-    (  $nodes:expr, $network:expr, $node_type:ty, $edge_opt:ty) => {
-        { 
-            let n_nodes = $nodes.len();
-            let mut net:Network<$node_type, $edge_opt> = $network;
-            net.removeAllEdges();
+    (  $nodes:expr, $network:expr, $node_type:ty, $edge_opt:ty) => {{
+        let n_nodes = $nodes.len();
+        let mut net: Network<$node_type, $edge_opt> = $network;
+        net.removeAllEdges();
 
-            if n_nodes == 0 { return; }
-            net.addNode(&$nodes[0]);
-            net.edges.update();
-            if n_nodes == 1 { return; }
-            net.addNode(&$nodes[1]);
-
-            net.addEdge(&$nodes[0], &$nodes[1], Simple);
-            net.edges.update();
-
-            let init_edge:usize = 1;
-
-            for i in 2..n_nodes 
-            {
-                let node = $nodes[i] as $node_type;
-                
-                net.add_prob_edge(&node, &init_edge);
-                net.edges.update();
-
-            }
-            
-            $network = net;
+        if n_nodes == 0 {
+            return;
         }
-    };
-
-    (  $nodes:expr, $network:expr, $node_type:ty, $edge_opt:ty, $init_edges:expr) => {
-        { 
-            let n_nodes = $nodes.len();
-            let edge_to_gen = $init_edges as usize;
-            let mut net:Network<$node_type, $edge_opt> = $network;
-            net.removeAllEdges();
-
-            if n_nodes == 0 { return; }
-            net.addNode(&$nodes[0]);
-            net.edges.update();
-            if n_nodes == 1 { return; }
-            net.addNode(&$nodes[1]);
-
-            net.addEdge(&$nodes[0], &$nodes[1], Simple);
-            net.edges.update();
-            for i in 2..n_nodes 
-            {
-                let node = $nodes[i] as $node_type;
-                
-                net.add_prob_edge(&node, &edge_to_gen);
-                net.edges.update();
-
-            }
-            
-            $network = net;
+        net.addNode(&$nodes[0]);
+        net.edges.update();
+        if n_nodes == 1 {
+            return;
         }
-    };
+        net.addNode(&$nodes[1]);
 
+        net.addEdge(&$nodes[0], &$nodes[1], Simple);
+        net.edges.update();
+
+        let init_edge: usize = 1;
+
+        for i in 2..n_nodes {
+            let node = $nodes[i] as $node_type;
+
+            net.add_prob_edge(&node, &init_edge);
+            net.edges.update();
+        }
+
+        $network = net;
+    }};
+
+    (  $nodes:expr, $network:expr, $node_type:ty, $edge_opt:ty, $init_edges:expr) => {{
+        let n_nodes = $nodes.len();
+        let edge_to_gen = $init_edges as usize;
+        let mut net: Network<$node_type, $edge_opt> = $network;
+        net.removeAllEdges();
+
+        if n_nodes == 0 {
+            return;
+        }
+        net.addNode(&$nodes[0]);
+        net.edges.update();
+        if n_nodes == 1 {
+            return;
+        }
+        net.addNode(&$nodes[1]);
+
+        net.addEdge(&$nodes[0], &$nodes[1], Simple);
+        net.edges.update();
+        for i in 2..n_nodes {
+            let node = $nodes[i] as $node_type;
+
+            net.add_prob_edge(&node, &edge_to_gen);
+            net.edges.update();
+        }
+
+        $network = net;
+    }};
 }
-
-
-
 
 impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> Network<O, L> {
     pub fn new(d: bool) -> Network<O, L> {
@@ -135,45 +130,47 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> Network<O, L> {
             direct: d,
         }
     }
- 
+
     ///part of "preferential attachment" process
     ///in which new network members prefer to make a connection to the more popular existing members.
-    pub fn add_prob_edge(&self, u:&O, n_sample: &usize){
-
+    pub fn add_prob_edge(&self, u: &O, n_sample: &usize) {
         let net_nodes = self.edges.w_keys();
-        let mut dist:Vec<(&O, i32)> = Vec::new();
+        let mut dist: Vec<(&O, i32)> = Vec::new();
 
-        for i in 0..net_nodes.len(){
+        for i in 0..net_nodes.len() {
             let n = &net_nodes[i];
-            let n_edges = self.getEdges(n).unwrap().len();
+            let n_edges = self.get_edges(n).unwrap().len();
             dist.push((n, n_edges as i32));
         }
-        
+
         let mut rng = rand::thread_rng();
         //let chosen = dist.choose_weighted(&mut rng, |dist| dist.1).unwrap().0;
-        //self.addEdge(u, chosen, EdgeOptions::Simple);
+        //self.add_edge(u, chosen, EdgeOptions::Simple);
 
-        let amount:usize = if net_nodes.len() < *n_sample { net_nodes.len() } else { *n_sample};
+        let amount: usize = if net_nodes.len() < *n_sample {
+            net_nodes.len()
+        } else {
+            *n_sample
+        };
 
-        let choices_list = dist.choose_multiple_weighted(&mut rng,
-                            amount,
-                            |dist| dist.1)
-                                   .unwrap().collect::<Vec<_>>();
+        let choices_list = dist
+            .choose_multiple_weighted(&mut rng, amount, |dist| dist.1)
+            .unwrap()
+            .collect::<Vec<_>>();
 
-        for choice in choices_list{
-            self.addEdge(u, choice.0, EdgeOptions::Simple);
+        for choice in choices_list {
+            self.add_edge(u, choice.0, EdgeOptions::Simple);
         }
-
     }
 
-    pub fn addNode(&self, u: &O) {
-        let mut vec: Vec<Edge<O, L>> = Vec::new();
+    pub fn add_node(&self, u: &O) {
+        let vec: Vec<Edge<O, L>> = Vec::new();
         self.edges.insert(u.clone(), vec);
     }
 
-    pub fn addEdge(&self, u: &O, v: &O, edgeOptions: EdgeOptions<L>) -> Option<Edge<O, L>> {
-        //println!("addEdge");
-        let e = Edge::new(u.clone(), v.clone(), edgeOptions);
+    pub fn add_edge(&self, u: &O, v: &O, edge_options: EdgeOptions<L>) -> Option<Edge<O, L>> {
+        //println!("add_edge");
+        let e = Edge::new(u.clone(), v.clone(), edge_options);
         match self.edges.get_mut(u) {
             Some(mut uedges) => {
                 uedges.push(e.clone());
@@ -199,23 +196,27 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> Network<O, L> {
         Some(e)
     }
 
-    pub fn updateEdge(&self, u: &O, v: &O, edgeOptions: EdgeOptions<L>) -> Option<Edge<O, L>> {
-        let e = Edge::new(u.clone(), v.clone(), edgeOptions);
+    pub fn update_edge(&self, u: &O, v: &O, edge_options: EdgeOptions<L>) -> Option<Edge<O, L>> {
+        let e = Edge::new(u.clone(), v.clone(), edge_options);
         let ris = match self.edges.get_mut(u) {
             Some(mut uedges) => {
                 //TODO search the edge and change it
-                uedges.retain( |entry| !((entry.u == e.u && entry.v == e.v) || (entry.v == e.u && entry.u == e.v)) );
+                uedges.retain(|entry| {
+                    !((entry.u == e.u && entry.v == e.v) || (entry.v == e.u && entry.u == e.v))
+                });
                 uedges.push(e.clone());
                 Some(e.clone())
             }
             None => None,
         };
 
-        if !self.direct{
+        if !self.direct {
             match self.edges.get_mut(v) {
                 Some(mut uedges) => {
                     //TODO search the edge and change it
-                    uedges.retain( |entry| !((entry.u == e.u && entry.v == e.v) || (entry.v == e.u && entry.u == e.v)) );
+                    uedges.retain(|entry| {
+                        !((entry.u == e.u && entry.v == e.v) || (entry.v == e.u && entry.u == e.v))
+                    });
                     uedges.push(e.clone());
                     //TODO
                 }
@@ -225,22 +226,21 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> Network<O, L> {
         ris
     }
 
-    pub fn getNodes(&self) -> Vec<&O> {
+    pub fn get_nodes(&self) -> Vec<&O> {
         self.edges.keys()
     }
 
-    pub fn getEdges(&self, u: &O) -> Option<&Vec<Edge<O, L>>> {
+    pub fn get_edges(&self, u: &O) -> Option<&Vec<Edge<O, L>>> {
         self.edges.get(&u)
     }
 
-    pub fn getEdge(&self, u: &O, v: &O) -> Option<Edge<O, L>> {
+    pub fn get_edge(&self, u: &O, v: &O) -> Option<Edge<O, L>> {
         match self.edges.get(u) {
             Some(uedges) => {
                 for e in uedges {
-                    if (self.direct && e.u == *u && e.v == *v) {
+                    if self.direct && e.u == *u && e.v == *v {
                         return Some(e.clone());
-                    } else if (!self.direct
-                        && ((e.u == *u && e.v == *v) || (e.v == *u && e.u == *v)))
+                    } else if !self.direct && ((e.u == *u && e.v == *v) || (e.v == *u && e.u == *v))
                     {
                         return Some(e.clone());
                     }
@@ -251,12 +251,13 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> Network<O, L> {
         }
     }
 
- 
-
-    pub fn removeEdge(&self, u: &O, v: &O) -> Option<Edge<O, L>> {
+    pub fn remove_edge(&self, u: &O, v: &O) -> Option<Edge<O, L>> {
         //TODO
         let mut u_edges = self.edges.get_mut(u).unwrap();
-        let index =  match u_edges.iter().position( |entry|  ((entry.u == *u && entry.v == *v) || (entry.u == *v && entry.v == *u)) ){
+        let index = match u_edges
+            .iter()
+            .position(|entry| (entry.u == *u && entry.v == *v) || (entry.u == *v && entry.v == *u))
+        {
             Some(i) => i,
             None => return None,
         };
@@ -265,22 +266,24 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> Network<O, L> {
         std::mem::drop(u_edges);
 
         if self.direct {
-            return  Some(u_edge.clone());
-        }else{
+            return Some(u_edge.clone());
+        } else {
             let mut v_edges = self.edges.get_mut(v).unwrap();
-            v_edges.retain( |entry|  !((entry.u == *u && entry.v == *v) || (entry.u == *v && entry.v == *u)));
-            return  Some(u_edge.clone());
+            v_edges.retain(|entry| {
+                !((entry.u == *u && entry.v == *v) || (entry.u == *v && entry.v == *u))
+            });
+            return Some(u_edge.clone());
         }
     }
 
-    pub fn removeEdges(&self, u: &O) -> Option<Vec<Edge<O, L>>> {
+    pub fn remove_edges(&self, u: &O) -> Option<Vec<Edge<O, L>>> {
         //TODO remove vector for u and all edges for v nodes
         let nodes = self.edges.w_keys();
         let mut ris = vec![];
 
-        for v in nodes.iter(){
-            if v != u{
-                match self.removeEdge(v,u){
+        for v in nodes.iter() {
+            if v != u {
+                match self.remove_edge(v, u) {
                     Some(e) => ris.push(e),
                     None => (),
                 }
@@ -290,23 +293,25 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> Network<O, L> {
         Some(ris)
     }
 
-    pub fn removeAllEdges(&self){
+    pub fn remove_all_edges(&self) {
         self.edges.clear();
     }
-    pub fn removeNode(&self, u: &O) -> bool {
-        match self.removeEdges(u){
-            Some(_) => {self.edges.remove(u); true},
+    pub fn remove_node(&self, u: &O) -> bool {
+        match self.remove_edges(u) {
+            Some(_) => {
+                self.edges.remove(u);
+                true
+            }
             None => false,
         }
-        
     }
 }
 
-impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display > Field for Network<O,L>{
-    fn lazy_update(&mut self){
+impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> Field for Network<O, L> {
+    fn update(&mut self) {
         self.edges.update();
     }
-    fn update(&mut self){
+    fn lazy_update(&mut self) {
         self.edges.update();
     }
 }

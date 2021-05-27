@@ -1,3 +1,3 @@
 pub trait State {
-    fn update(&mut self, step: usize) {}
+    fn update(&mut self, _step: usize) {}
 }

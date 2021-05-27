@@ -196,6 +196,16 @@ impl<'a, K: 'a + Eq + Hash, V: 'a, S: BuildHasher + Clone + Default> DBDashMap<K
         ris
     }
 
+    pub fn values(&self) -> Vec<&V> {
+        let mut ris = vec![];
+        for shard in self.r_shards.iter() {
+            for value in shard.values() {
+                ris.push(value);
+            }
+        }
+        ris
+    }
+
     pub fn clear(&self) {
         for shard in self.shards.iter() {
             shard.lock().unwrap().clear();

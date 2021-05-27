@@ -1,6 +1,6 @@
 use std::hash::Hash;
 
-use crate::engine::location::{Int2D, Location2D};
+use crate::engine::location::Int2D;
 use crate::utils::dbdashmap::DBDashMap;
 
 /// A crude implementation of a sparse double buffered grid.
@@ -213,7 +213,7 @@ impl<A: Eq + Hash + Clone + Copy> Grid2D<A> {
 #[cfg(test)]
 mod tests {
     use crate::engine::field::object_grid_2d::Grid2D;
-    use crate::engine::location::{Int2D, Location2D};
+    use crate::engine::location::Int2D;
 
     #[derive(Copy, Clone, Eq, Hash, Debug)]
     struct MyObject {
