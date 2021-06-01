@@ -170,7 +170,7 @@ fn field_2d_test_3() {
     let toroidal = false;
 
     let mut data = BoidsState::new(width, heigth, discretization, toroidal);
-    let mut schedule: Schedule<Bird> = Schedule::new();
+    let schedule: Schedule<Bird> = Schedule::new();
     //assert!(schedule.events.is_empty());
     let mut bird1;
     let bird2;

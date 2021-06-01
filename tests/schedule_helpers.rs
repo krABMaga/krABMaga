@@ -1,10 +1,8 @@
 use rust_ab::engine::agent::Agent;
-use rust_ab::engine::priority::Priority;
 use rust_ab::engine::schedule::{Schedule, ScheduleOptions};
 use rust_ab::engine::state::State;
 use std::collections::HashMap;
 use std::hash::Hash;
-use std::hash::Hasher;
 
 #[test]
 fn schedule_helpers() {

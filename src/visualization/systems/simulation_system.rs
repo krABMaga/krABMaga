@@ -1,10 +1,7 @@
 use bevy::prelude::ResMut;
 
-use crate::bevy::prelude::Commands;
-use crate::engine::agent::Agent;
 use crate::engine::schedule::Schedule;
-use crate::visualization::renderable::{Render, SpriteType};
-use crate::visualization::sprite_render_factory::{SpriteFactoryResource, SpriteRenderFactory};
+use crate::visualization::renderable::Render;
 
 /// The simulation system steps the schedule once per frame, effectively synchronizing frames and schedule steps.
 pub fn simulation_system<A: Render + Clone>(
@@ -26,7 +23,6 @@ mod tests {
     use crate::engine::agent::Agent;
     use crate::engine::schedule::Schedule;
     use crate::engine::state::State;
-    use crate::visualization::on_state_init::OnStateInit;
     use crate::visualization::renderable::{Render, SpriteType};
     use crate::visualization::systems::simulation_system::simulation_system;
 
@@ -67,7 +63,7 @@ mod tests {
             &mut self,
             _transform: &mut Transform,
             _state: &BasicState,
-            visible: &mut Visible,
+            _visible: &mut Visible,
         ) {
         }
     }

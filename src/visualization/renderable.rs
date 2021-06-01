@@ -56,6 +56,7 @@ pub trait Render: Agent + Send + Sync + Sized + 'static {
     fn update(&mut self, transform: &mut Transform, state: &Self::SimState, visible: &mut Visible);
 }
 
+#[derive(Clone)]
 pub enum SpriteType {
     Emoji(String),
     // File(String), TODO

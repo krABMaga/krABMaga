@@ -7,9 +7,8 @@ pub mod visualization;
 
 #[cfg(any(feature = "visualization", feature = "visualization_wasm", doc))]
 pub use bevy;
-
-
-
+#[cfg(any(feature = "visualization", feature = "visualization_wasm", doc))]
+pub use bevy_canvas;
 
 ///To do "Space exploration" each sim parameters need a triple: start, end and step
 pub enum Parameters {
@@ -17,14 +16,13 @@ pub enum Parameters {
     FloatParam(f32, f32, f32),
 }
 
-
 #[macro_export]
-    ///step = simulation step number
-    ///schedule
-    ///agents
-    ///states
-    ///other parametes
-macro_rules!  simulate{ 
+///step = simulation step number
+///schedule
+///agents
+///states
+///other parametes
+macro_rules!  simulate{
     ($step:expr, $sch:expr, $ty:ty, $s:expr $(,$opt:expr)*) => {
 
     let n_step:u128 = $step;
@@ -54,26 +52,29 @@ macro_rules!  simulate{
     };
 }
 
-
-
 ///WORK IN PROGRESS, DONT USE IT
 #[macro_export]
-    ///step = simulation step number
-    ///schedule
-    ///agents
-    ///states
-    ///sim param
+///step = simulation step number
+///schedule
+///agents
+///states
+///sim param
 macro_rules! explore {
     ($step:expr, $sch:expr, $ty:ty, $s:expr, $sim_param:expr) => {
-        let n_step:u128 = $step;
-        let mut schedule:Schedule<$ty> = $sch;
-            
-        let (start, end, range) = match $sim_param{
-            Parameters::FloatParam(a, b, c) => {(a, b, c)},
-            Parameters::IntParam(a, b, c) => { (a as f32, b as f32, c as f32) }
-           
+        let n_step: u128 = $step;
+        let mut schedule: Schedule<$ty> = $sch;
+
+        let (start, end, range) = match $sim_param {
+            Parameters::FloatParam(a, b, c) => (a, b, c),
+            Parameters::IntParam(a, b, c) => (a as f32, b as f32, c as f32),
         };
 
-        println!("received param {}: {} {} {}", stringify!($sim_param), start, end, range);
+        println!(
+            "received param {}: {} {} {}",
+            stringify!($sim_param),
+            start,
+            end,
+            range
+        );
     };
 }

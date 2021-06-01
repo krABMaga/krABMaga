@@ -1,11 +1,8 @@
-#[macro_use]
-extern crate lazy_static;
 extern crate priority_queue;
 
 use std::fmt;
 use std::hash::Hash;
 use std::hash::Hasher;
-use std::sync::Mutex;
 
 use rand::Rng;
 

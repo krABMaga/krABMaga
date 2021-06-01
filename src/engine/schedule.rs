@@ -6,7 +6,9 @@ use cfg_if::cfg_if;
 use clap::{App, Arg};
 use lazy_static::*;
 use priority_queue::PriorityQueue;
-use rayon::{ThreadPool, ThreadPoolBuilder};
+use rayon::ThreadPool;
+#[cfg(feature = "parallel")]
+use rayon::ThreadPoolBuilder;
 
 use crate::engine::agent::Agent;
 use crate::engine::agentimpl::AgentImpl;
