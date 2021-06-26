@@ -14,14 +14,14 @@ pub struct Field2D<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> {
     pub findex: DBDashMap<A, Int2D>,
     pub fbag: DBDashMap<Int2D, Vec<A>>,
     pub fpos: DBDashMap<A, Real2D>,
-    pub width: f64,
-    pub heigth: f64,
-    pub discretization: f64,
+    pub width: f32,
+    pub heigth: f32,
+    pub discretization: f32,
     pub toroidal: bool,
 }
 
 impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> Field2D<A>  {
-    pub fn new(w: f64, h: f64, d: f64, t: bool) -> Field2D<A> {
+    pub fn new(w: f32, h: f32, d: f32, t: bool) -> Field2D<A> {
         Field2D {
             findex: DBDashMap::new(),
             fbag: DBDashMap::new(),
@@ -76,9 +76,9 @@ impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> Field2D<A>  {
 
     }
 
-    pub fn get_neighbors_within_distance(&self, pos: Real2D, dist: f64) -> Vec<&A> {
+    pub fn get_neighbors_within_distance(&self, pos: Real2D, dist: f32) -> Vec<&A> {
         
-        let density = (self.width * self.heigth)/f64::from(self.findex.r_len() as i32);
+        let density = (self.width * self.heigth)/(self.findex.r_len() as f32);
         let sdist = (dist * dist) as usize;
         let mut tor: Vec<&A> = Vec::with_capacity(density as usize * sdist);
         // let mut tor: Vec<&A> = Vec::new();
@@ -197,10 +197,10 @@ fn t_transform(n: i64, size: i64) -> i64 {
     }
 }
 
-fn check_circle(bag: &Int2D, discretization: f64,width: f64, heigth: f64, pos: &Real2D, dis: f64, tor: bool) -> i8{
+fn check_circle(bag: &Int2D, discretization: f32,width: f32, heigth: f32, pos: &Real2D, dis: f32, tor: bool) -> i8{
     let nw = Real2D {
-        x: (bag.x as f64)*discretization,
-        y: (bag.y as f64)*discretization,
+        x: (bag.x as f32)*discretization,
+        y: (bag.y as f32)*discretization,
     };
     let ne = Real2D {
         x: nw.x,
@@ -230,7 +230,7 @@ fn check_circle(bag: &Int2D, discretization: f64,width: f64, heigth: f64, pos: &
     }
 }
 
-fn distance(pos1: &Real2D, pos2: &Real2D, dim1: f64, dim2: f64, tor: bool) -> f64{
+fn distance(pos1: &Real2D, pos2: &Real2D, dim1: f32, dim2: f32, tor: bool) -> f32{
 
     let dx;
     let dy;
@@ -245,7 +245,7 @@ fn distance(pos1: &Real2D, pos2: &Real2D, dim1: f64, dim2: f64, tor: bool) -> f6
     (dx*dx + dy*dy).sqrt()
 }
 
-pub fn toroidal_distance(val1: f64, val2: f64, dim: f64) -> f64{
+pub fn toroidal_distance(val1: f32, val2: f32, dim: f32) -> f32{
 
     if (val1 - val2).abs() <= dim/2.0 {
         return val1 - val2;
@@ -262,7 +262,7 @@ pub fn toroidal_distance(val1: f64, val2: f64, dim: f64) -> f64{
     }
 }
 
-pub fn toroidal_transform(val: f64, dim: f64) -> f64 {
+pub fn toroidal_transform(val: f32, dim: f32) -> f32 {
 
     if val >= 0.0 && val < dim {
         val

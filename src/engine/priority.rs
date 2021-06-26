@@ -4,12 +4,12 @@ use std::fmt;
 
 #[derive(Clone, Debug)]
 pub struct Priority {
-    pub time: f64,
+    pub time: f32,
     pub ordering: i64,
 }
 
 impl Priority {
-    pub fn new(the_time: f64, the_ordering: i64) -> Priority {
+    pub fn new(the_time: f32, the_ordering: i64) -> Priority {
         Priority {
             time: the_time,
             ordering: the_ordering,

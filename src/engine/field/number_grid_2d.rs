@@ -136,10 +136,10 @@ impl<T: Copy + Clone + PartialOrd> NumberGrid2D<T> {
     }
 }
 
-impl NumberGrid2D<f64> {
+impl NumberGrid2D<f32> {
     /// Multiply all the grid cells by a specific value. If the value becomes smaller than
     /// round_if_lower, round it to round_to.
-    pub fn multiply_with_rounding(&mut self, value: f64, round_if_lower: f64, round_to: f64) {
+    pub fn multiply_with_rounding(&mut self, value: f32, round_if_lower: f32, round_to: f32) {
         for i in self.locs.iter_mut() {
             if let Some(val) = i {
                 *val *= value;

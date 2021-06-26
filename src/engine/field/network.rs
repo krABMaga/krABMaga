@@ -9,8 +9,8 @@ use crate::utils::dbdashmap::DBDashMap;
 pub enum EdgeOptions<L: Clone + Hash + Display> {
     Simple,
     Labeled(L),
-    Weighted(f64),
-    WeightedLabeled(L, f64),
+    Weighted(f32),
+    WeightedLabeled(L, f32),
 }
 //use EdgeOptions::{Simple, Labeled, Weighted, WeightedLabeled};
 
@@ -19,7 +19,7 @@ pub struct Edge<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> {
     pub u: O,
     pub v: O,
     pub label: Option<L>,
-    pub weight: Option<f64>,
+    pub weight: Option<f32>,
 }
 
 impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> Edge<O, L> {

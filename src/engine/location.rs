@@ -11,11 +11,11 @@ pub trait Location2D<T: fmt::Display + Eq + PartialEq + Copy> {
     fn set_location(&mut self, loc: T);
 }
 
-/// A structure describing a two-dimensional, f64 position, for use in continuous fields.
+/// A structure describing a two-dimensional, f32 position, for use in continuous fields.
 #[derive(Clone, Default, Debug, Copy)]
 pub struct Real2D {
-    pub x: f64,
-    pub y: f64,
+    pub x: f32,
+    pub y: f32,
 }
 
 impl fmt::Display for Real2D {

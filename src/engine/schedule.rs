@@ -46,7 +46,7 @@ lazy_static! {
 }
 pub struct Schedule<A: 'static + Agent + Clone + Send> {
     pub step: usize,
-    pub time: f64,
+    pub time: f32,
     pub events: Mutex<PriorityQueue<AgentImpl<A>, Priority>>,
     pub pool: Option<ThreadPool>,
     // Mainly used in the visualization to render newly scheduled agents.
@@ -116,7 +116,7 @@ impl<A: 'static + Agent + Clone + Send + Sync> Schedule<A> {
         }
     }
 
-    pub fn schedule_once(&mut self, agent: AgentImpl<A>, the_time: f64, the_ordering: i64) {
+    pub fn schedule_once(&mut self, agent: AgentImpl<A>, the_time: f32, the_ordering: i64) {
         self.events.lock().unwrap().push(
             agent,
             Priority {
@@ -126,7 +126,7 @@ impl<A: 'static + Agent + Clone + Send + Sync> Schedule<A> {
         );
     }
 
-    pub fn schedule_repeating(&mut self, agent: A, the_time: f64, the_ordering: i64) {
+    pub fn schedule_repeating(&mut self, agent: A, the_time: f32, the_ordering: i64) {
         let mut a = AgentImpl::new(agent);
         a.repeating = true;
         let pr = Priority::new(the_time, the_ordering);
@@ -160,7 +160,7 @@ impl<A: 'static + Agent + Clone + Send + Sync> Schedule<A> {
                 return
             }
 
-            let thread_division = (events.lock().unwrap().len() as f64 / thread_num as f64).ceil() as usize ;
+            let thread_division = (events.lock().unwrap().len() as f32 / thread_num as f32).ceil() as usize ;
             let mut cevents: Vec<Vec<Pair<A>>> = vec![Vec::with_capacity(thread_division); thread_num];
 
             let mut i = 0;
