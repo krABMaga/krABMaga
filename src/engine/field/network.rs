@@ -6,6 +6,7 @@ use rand::prelude::SliceRandom;
 use crate::engine::field::field::Field;
 use crate::utils::dbdashmap::DBDashMap;
 
+#[derive(Clone)]
 pub enum EdgeOptions<L: Clone + Hash + Display> {
     Simple,
     Labeled(L),
@@ -186,8 +187,7 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> Network<O, L> {
     }
 
     pub fn add_edge(&self, u: &O, v: &O, edge_options: EdgeOptions<L>) -> Option<Edge<O, L>> {
-        //println!("add_edge");
-        let e = Edge::new(u.clone(), v.clone(), edge_options);
+        let e = Edge::new(u.clone(), v.clone(), edge_options.clone());
         match self.edges.get_mut(u) {
             Some(mut uedges) => {
                 uedges.push(e.clone());
@@ -201,10 +201,12 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> Network<O, L> {
         if !self.direct {
             match self.edges.get_mut(v) {
                 Some(mut vedges) => {
+                    let e = Edge::new(v.clone(), u.clone(), edge_options.clone());
                     vedges.push(e.clone());
                 }
                 None => {
                     let mut vec = Vec::new();
+                    let e = Edge::new(v.clone(), u.clone(), edge_options.clone());
                     vec.push(e.clone());
                     self.edges.insert(v.clone(), vec);
                 }
