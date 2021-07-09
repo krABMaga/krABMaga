@@ -51,7 +51,7 @@ pub struct Schedule<A: 'static + Agent + Clone + Send> {
     pub pool: Option<ThreadPool>,
     // Mainly used in the visualization to render newly scheduled agents.
     // This is cleared at the start of each step.
-    pub newly_scheduled: Vec<A>,
+    pub newly_scheduled: Mutex<Vec<A>>,
 }
 
 #[derive(Clone)]
@@ -79,7 +79,7 @@ impl<A: 'static + Agent + Clone + Send + Sync> Schedule<A> {
                     time: 0.0,
                     events: Mutex::new(PriorityQueue::new()),
                     pool: Some(ThreadPoolBuilder::new().num_threads(*THREAD_NUM).build().unwrap()),
-                    newly_scheduled: Vec::new()
+                    newly_scheduled: Mutex::new(Vec::new())
                 }
             }else{
                 return Schedule {
@@ -87,7 +87,7 @@ impl<A: 'static + Agent + Clone + Send + Sync> Schedule<A> {
                     time: 0.0,
                     events: Mutex::new(PriorityQueue::new()),
                     pool: None,
-                    newly_scheduled: Vec::new()
+                    newly_scheduled: Mutex::new(Vec::new())
                 }
             }
         }
@@ -102,7 +102,7 @@ impl<A: 'static + Agent + Clone + Send + Sync> Schedule<A> {
                     time: 0.0,
                     events: Mutex::new(PriorityQueue::new()),
                     pool: Some(ThreadPoolBuilder::new().num_threads(thread_num).build().unwrap()),
-                    newly_scheduled: Vec::new()
+                    newly_scheduled: Mutex::new(Vec::new())
                 }
             }else{
                 return Schedule {
@@ -110,7 +110,7 @@ impl<A: 'static + Agent + Clone + Send + Sync> Schedule<A> {
                     time: 0.0,
                     events: Mutex::new(PriorityQueue::new()),
                     pool: None,
-                    newly_scheduled: Vec::new()
+                    newly_scheduled: Mutex::new(Vec::new())
                 }
             }
         }
@@ -226,7 +226,7 @@ impl<A: 'static + Agent + Clone + Send + Sync> Schedule<A> {
                                     let mut new_agent_impl = AgentImpl::new(agent.clone());
                                     new_agent_impl.repeating = repeating;
                                     reschedule.push((new_agent_impl, Priority{time: item.priority.time + 1., ordering}));
-                                    self.newly_scheduled.push(agent);
+                                    self.newly_scheduled.lock().unwrap().push(agent);
                                 }
                             }
                         }
@@ -318,7 +318,7 @@ impl<A: 'static + Agent + Clone + Send + Sync> Schedule<A> {
                         let mut new_agent_impl = AgentImpl::new(agent.clone());
                         new_agent_impl.repeating = repeating;
                         self.schedule_once(new_agent_impl, item.priority.time + 1., ordering);
-                        self.newly_scheduled.push(agent);
+                        self.newly_scheduled.lock().unwrap().push(agent);
                     }
                 }
             }
