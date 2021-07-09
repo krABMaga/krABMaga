@@ -144,12 +144,13 @@ impl<A: 'static + Agent + Clone + Send + Sync> Schedule<A> {
             self.step(state);
         }
     }
+    use std::time::Duration;
 
     cfg_if! {
         if #[cfg(feature ="parallel")]{
 
 
-        pub fn step(&mut self, state: &mut <A as Agent>::SimState){
+        pub fn step(&mut self, state: &mut <A as Agent>::SimState) -> (Duration, Duration, Duration){
             self.newly_scheduled.lock().unwrap().clear();
             let thread_num = self.thread_num;
 
@@ -178,7 +179,8 @@ impl<A: 'static + Agent + Clone + Send + Sync> Schedule<A> {
                 },
                 None => panic!("agente non trovato"),
             }
-
+            
+            let fetch_time = std::time::Instant::now();
             loop {
                 if events.lock().unwrap().is_empty() {
                     break;
@@ -209,6 +211,10 @@ impl<A: 'static + Agent + Clone + Send + Sync> Schedule<A> {
                 }
             }
 
+            let fetch_time = fetch_time.elapsed();
+
+
+            let step_time = std::time::Instant::now();
             thread::scope( |scope| {
                 //N-1 WORKER THREAD
                 for _ in 0..thread_num-1{
@@ -285,13 +291,17 @@ impl<A: 'static + Agent + Clone + Send + Sync> Schedule<A> {
                     }
 
             });
-
-
+            let step_time = step_time.elapsed();
+        
+            let update_time = std::time::Instant::now();
         state.update(self.step);
+        let update_time = update_time.elapsed();
+
+        (fetch_time,step_time,update_time)
         }
     }
     else{
-        pub fn step(&mut self,state: &mut <A as Agent>::SimState){
+        pub fn step(&mut self,state: &mut <A as Agent>::SimState) -> (Duration,Duration,Duration){
             self.newly_scheduled.lock().unwrap().clear();
             if self.step == 0{
                 state.update(self.step);
@@ -315,7 +325,8 @@ impl<A: 'static + Agent + Clone + Send + Sync> Schedule<A> {
                 }
                 None => panic!("agente non trovato"),
             }
-
+            
+            let fetch_time = std::time::Instant::now();
             loop {
                 if events.lock().unwrap().is_empty() {
                     break;
@@ -342,7 +353,10 @@ impl<A: 'static + Agent + Clone + Send + Sync> Schedule<A> {
                     None => panic!("no item"),
                 }
             }
+            let fetch_time = fetch_time.elapsed();
 
+
+            let step_time = std::time::Instant::now();
             for mut item in cevents.into_iter() {
 
                 item.agentimpl.agent.step(state);
@@ -369,8 +383,13 @@ impl<A: 'static + Agent + Clone + Send + Sync> Schedule<A> {
                     }
                 }
             }
+            let step_time = step_time.elapsed();
 
+            let update_time = std::time::Instant::now();
             state.update(self.step);
+            let update_time = update_time.elapsed();
+
+            (fetch_time,step_time,update_time)
             // println!("Time spent calling step method, step {} : {:?}",self.step,start.elapsed());
 
             }

@@ -33,18 +33,26 @@ macro_rules!  simulate{
         println!("Option received. {}", $opt);
     )*
 
-
+    let mut fetch_time = std::time::Duration::from_secs_u64(0);
+    let mut step_time = std::time::Duration::from_secs_u64(0);
+    let mut update_time = std::time::Duration::from_secs_u64(0);
     let start = std::time::Instant::now();
     for _ in 0..n_step{
-        schedule.step(&mut $s);
+        let (p_fetch,p_step,p_update) = schedule.step(&mut $s);
+        fetch_time += p_fetch;
+        step_time += p_step;
+        update_time += p_update;
         $s.step +=1;
     }
 
     let run_duration = start.elapsed();
 
-    println!("{};{:?};{};{};",
+    println!("{};{:?};{:?};{:?};{:?};{};{};",
     schedule.thread_num,
     run_duration,
+    fetch_time/schedule.step,
+    step_time/schedule.step,
+    update_time/schedule.step,
     schedule.step,
     schedule.step as f64 /(run_duration.as_secs_f64())
 
