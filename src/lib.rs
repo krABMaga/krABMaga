@@ -33,9 +33,9 @@ macro_rules!  simulate{
         println!("Option received. {}", $opt);
     )*
 
-    let mut fetch_time = std::time::Duration::from_secs_u64(0);
-    let mut step_time = std::time::Duration::from_secs_u64(0);
-    let mut update_time = std::time::Duration::from_secs_u64(0);
+    let mut fetch_time = std::time::Duration::from_secs_f64(0.);
+    let mut step_time = std::time::Duration::from_secs_f64(0.);
+    let mut update_time = std::time::Duration::from_secs_f64(0.);
     let start = std::time::Instant::now();
     for _ in 0..n_step{
         let (p_fetch,p_step,p_update) = schedule.step(&mut $s);
@@ -47,12 +47,13 @@ macro_rules!  simulate{
 
     let run_duration = start.elapsed();
 
+    println!("Thread_Num;Total_Time;Fetch_Time;Step_Time;Update_Time;Step_Number;Step/Seconds");
     println!("{};{:?};{:?};{:?};{:?};{};{};",
     schedule.thread_num,
     run_duration,
-    fetch_time/schedule.step,
-    step_time/schedule.step,
-    update_time/schedule.step,
+    fetch_time/schedule.step as u32,
+    step_time/schedule.step as u32,
+    update_time/schedule.step as u32,
     schedule.step,
     schedule.step as f64 /(run_duration.as_secs_f64())
 

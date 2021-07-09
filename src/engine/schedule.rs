@@ -10,6 +10,7 @@ use priority_queue::PriorityQueue;
 use crossbeam::thread;
 #[cfg(feature = "parallel")]
 use rayon::ThreadPoolBuilder;
+use std::time::Duration;
 
 use crate::engine::agent::Agent;
 use crate::engine::agentimpl::AgentImpl;
@@ -144,7 +145,7 @@ impl<A: 'static + Agent + Clone + Send + Sync> Schedule<A> {
             self.step(state);
         }
     }
-    use std::time::Duration;
+    
 
     cfg_if! {
         if #[cfg(feature ="parallel")]{
@@ -164,7 +165,7 @@ impl<A: 'static + Agent + Clone + Send + Sync> Schedule<A> {
             let events = &mut self.events;
             if events.lock().unwrap().is_empty() {
                 //println!("coda eventi vuota");
-                return
+                ()
             }
 
             let thread_division = (events.lock().unwrap().len() as f32 / thread_num as f32).ceil() as usize ;
@@ -313,7 +314,7 @@ impl<A: 'static + Agent + Clone + Send + Sync> Schedule<A> {
             let events = &mut self.events;
             if events.lock().unwrap().is_empty() {
                 //println!("coda eventi vuota");
-                return;
+                ()
             }
 
             let mut cevents: Vec<Pair<A>> = Vec::new();
