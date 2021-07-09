@@ -249,7 +249,9 @@ impl<A: 'static + Agent + Clone + Send + Sync> Schedule<A> {
 
                 }
                 //MAIN THREAD
-                let mut reschedule = Vec::with_capacity(batch.len());
+                if cevents.len() > 0{
+                        let batch = cevents.pop().unwrap();
+                        let mut reschedule = Vec::with_capacity(batch.len());
                         let mut newly_scheduled = Vec::with_capacity(batch.len());
                         for mut item in batch {
                             item.agentimpl.agent.step(&state);
@@ -280,7 +282,7 @@ impl<A: 'static + Agent + Clone + Send + Sync> Schedule<A> {
                         for entry in newly_scheduled{
                             g_newly_scheduled.push(entry);
                         }
-
+                    }
 
             });
 
