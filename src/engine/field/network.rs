@@ -71,21 +71,19 @@ macro_rules! preferential_attachment_BA {
         let _init_edges = $init_edges as usize;
         let _net: &mut Network<$node_type, $edge_opt> = $network;
 
-        $network.removeAllEdges();
+        $network.remove_all_edges();
 
         if n_nodes == 0 {
             return;
         }
-        $network.addNode(&$nodes[0]);
+        $network.add_node(&$nodes[0]);
         $network.edges.update();
         if n_nodes == 1 {
             return;
         }
-        $network.addNode(&$nodes[1]);
+        $network.add_node(&$nodes[1]);
 
-        $network.addEdge(&$nodes[0], &$nodes[1], Simple);
-        println!("{}", $network.direct);
-        println!("{} and {}", $nodes[0], $nodes[1]);
+        $network.add_edge(&$nodes[0], &$nodes[1], Simple);
         $network.edges.update();
 
         let mut rng = rand::thread_rng();
@@ -123,8 +121,7 @@ macro_rules! preferential_attachment_BA {
                 .collect::<Vec<_>>();
 
             for choice in choices_list {
-                println!(" {} edge to {}", node.id, choice.0.id);
-                $network.addEdge(&node, &choice.0, EdgeOptions::Simple);
+                $network.add_edge(&node, choice.0, EdgeOptions::Simple);
                 choice_pos.push(choice.2);
             }
 
