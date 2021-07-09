@@ -50,9 +50,9 @@ macro_rules!  simulate{
     println!("{};{:?};{:?};{:?};{:?};{};{};",
     schedule.thread_num,
     run_duration,
-    fetch_time/schedule.step,
-    step_time/schedule.step,
-    update_time/schedule.step,
+    fetch_time/schedule.step as u32,
+    step_time/schedule.step as u32,
+    update_time/schedule.step as u32,
     schedule.step,
     schedule.step as f64 /(run_duration.as_secs_f64())
 
