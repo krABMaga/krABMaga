@@ -12,7 +12,8 @@ lazy_static! {
     static ref B_HASHER: AHasher = RandomState::new().build_hasher();
 }
 fn shard_amount() -> usize {
-    32
+    (num_cpus::get() * 4).next_power_of_two() 
+
 }
 
 fn ncb(shard_amount: usize) -> usize {
