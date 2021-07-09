@@ -27,7 +27,7 @@ macro_rules!  simulate{
 
     let n_step:u128 = $step;
     let mut schedule:Schedule<$ty> = $sch;
-    println!("Num of steps {}", n_step);
+    
 
     $(
         println!("Option received. {}", $opt);
@@ -42,11 +42,11 @@ macro_rules!  simulate{
 
     let run_duration = start.elapsed();
 
-    println!("Time elapsed in testing schedule is: {:?}", run_duration);
-    println!("({:?}) Total Step:{}\nStep for seconds: {:?}",
-    stringify!($ty),
+    println!("{};{:?};{};{};",
+    schedule.thread_num,
+    run_duration,
     schedule.step,
-    schedule.step as f64 /(run_duration.as_nanos() as f64 * 1e-9)
+    schedule.step as f64 /(run_duration.as_secs_f64())
 
         );
     };
