@@ -48,7 +48,7 @@ macro_rules!  simulate{
     let run_duration = start.elapsed();
 
     println!("Thread_Num\tTotal_Time\tFetch_Time\tStep_Time\tUpdate_Time\tStep_Number\tStep/Seconds");
-    println!("{}\t\t{:?}\t{:?}\t{:?}\t{:?}\t{}\t{}",
+    println!("{}\t\t{:?}\t{:?}\t{:?}\t{:?}\t{}\t\t{}",
     schedule.thread_num,
     run_duration,
     fetch_time/schedule.step as u32,
