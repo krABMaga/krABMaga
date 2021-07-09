@@ -144,7 +144,7 @@ impl<A: 'static + Agent + Clone + Send + Sync> Schedule<A> {
 
 
         pub fn step(&mut self, state: &mut <A as Agent>::SimState){
-            self.newly_scheduled.clear();
+            self.newly_scheduled.lock().unwrap().clear();
             let thread_num = self.pool.as_ref().unwrap().current_num_threads();
 
             if self.step == 0{
@@ -245,7 +245,7 @@ impl<A: 'static + Agent + Clone + Send + Sync> Schedule<A> {
     }
     else{
         pub fn step(&mut self,state: &mut <A as Agent>::SimState){
-            self.newly_scheduled.clear();
+            self.newly_scheduled.lock().unwrap().clear();
             if self.step == 0{
                 state.update(self.step);
             }
