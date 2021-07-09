@@ -47,6 +47,7 @@ macro_rules!  simulate{
 
     let run_duration = start.elapsed();
 
+    println!("Thread_Num;Total_Time;Fetch_Time;Step_Time;Update_Time;Step_Number;Step/Seconds")
     println!("{};{:?};{:?};{:?};{:?};{};{};",
     schedule.thread_num,
     run_duration,
