@@ -80,7 +80,7 @@ impl<A: 'static + Agent + Clone + Send + Sync> Schedule<A> {
                     step: 0,
                     time: 0.0,
                     events: Mutex::new(PriorityQueue::new()),
-                    thread_num: THREAD_NUM,
+                    thread_num: *THREAD_NUM,
                     //pool: Some(ThreadPoolBuilder::new().num_threads(*THREAD_NUM).build().unwrap()),
                     newly_scheduled: Mutex::new(Vec::new())
                 }
@@ -105,7 +105,7 @@ impl<A: 'static + Agent + Clone + Send + Sync> Schedule<A> {
                     step: 0,
                     time: 0.0,
                     events: Mutex::new(PriorityQueue::new()),
-                    thread_num: thread_num,
+                    thread_num,
                     //pool: Some(ThreadPoolBuilder::new().num_threads(thread_num).build().unwrap()),
                     newly_scheduled: Mutex::new(Vec::new())
                 }
