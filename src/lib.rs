@@ -33,9 +33,9 @@ macro_rules!  simulate{
         println!("Option received. {}", $opt);
     )*
 
-    let mut fetch_time = std::time::Duration::from_secs_u64(0);
-    let mut step_time = std::time::Duration::from_secs_u64(0);
-    let mut update_time = std::time::Duration::from_secs_u64(0);
+    let mut fetch_time = std::time::Duration::from_secs_f64(0.);
+    let mut step_time = std::time::Duration::from_secs_f64(0.);
+    let mut update_time = std::time::Duration::from_secs_f64(0.);
     let start = std::time::Instant::now();
     for _ in 0..n_step{
         let (p_fetch,p_step,p_update) = schedule.step(&mut $s);
