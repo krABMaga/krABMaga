@@ -6,7 +6,8 @@ use cfg_if::cfg_if;
 use clap::{App, Arg};
 use lazy_static::*;
 use priority_queue::PriorityQueue;
-use rayon::ThreadPool;
+//use rayon::ThreadPool;
+use crossbeam::thread;
 #[cfg(feature = "parallel")]
 use rayon::ThreadPoolBuilder;
 
@@ -48,7 +49,7 @@ pub struct Schedule<A: 'static + Agent + Clone + Send> {
     pub step: usize,
     pub time: f32,
     pub events: Mutex<PriorityQueue<AgentImpl<A>, Priority>>,
-    pub pool: Option<ThreadPool>,
+    //pub pool: Option<ThreadPool>,
     // Mainly used in the visualization to render newly scheduled agents.
     // This is cleared at the start of each step.
     pub newly_scheduled: Mutex<Vec<A>>,
@@ -78,7 +79,7 @@ impl<A: 'static + Agent + Clone + Send + Sync> Schedule<A> {
                     step: 0,
                     time: 0.0,
                     events: Mutex::new(PriorityQueue::new()),
-                    pool: Some(ThreadPoolBuilder::new().num_threads(*THREAD_NUM).build().unwrap()),
+                    //pool: Some(ThreadPoolBuilder::new().num_threads(*THREAD_NUM).build().unwrap()),
                     newly_scheduled: Mutex::new(Vec::new())
                 }
             }else{
@@ -86,7 +87,7 @@ impl<A: 'static + Agent + Clone + Send + Sync> Schedule<A> {
                     step: 0,
                     time: 0.0,
                     events: Mutex::new(PriorityQueue::new()),
-                    pool: None,
+                    //pool: None,
                     newly_scheduled: Mutex::new(Vec::new())
                 }
             }
@@ -101,7 +102,7 @@ impl<A: 'static + Agent + Clone + Send + Sync> Schedule<A> {
                     step: 0,
                     time: 0.0,
                     events: Mutex::new(PriorityQueue::new()),
-                    pool: Some(ThreadPoolBuilder::new().num_threads(thread_num).build().unwrap()),
+                    //pool: Some(ThreadPoolBuilder::new().num_threads(thread_num).build().unwrap()),
                     newly_scheduled: Mutex::new(Vec::new())
                 }
             }else{
@@ -109,7 +110,7 @@ impl<A: 'static + Agent + Clone + Send + Sync> Schedule<A> {
                     step: 0,
                     time: 0.0,
                     events: Mutex::new(PriorityQueue::new()),
-                    pool: None,
+                    //pool: None,
                     newly_scheduled: Mutex::new(Vec::new())
                 }
             }
@@ -205,7 +206,7 @@ impl<A: 'static + Agent + Clone + Send + Sync> Schedule<A> {
                 }
             }
 
-            self.pool.as_ref().unwrap().scope( |scope| {
+            thread::scope( |scope| {
                 for _ in 0..thread_num{
                     let batch = cevents.pop().unwrap();
                     scope.spawn(|_| {
