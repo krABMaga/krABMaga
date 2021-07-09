@@ -79,6 +79,8 @@ impl Visualization {
         app.add_plugins(DefaultPlugins);
         #[cfg(target_arch = "wasm32")]
         app.add_plugin(bevy_webgl2::WebGL2Plugin);
+        #[cfg(feature = "canvas")]
+        app.add_plugin(bevy_canvas::CanvasPlugin);
 
         app.insert_resource(WindowDescriptor {
             title: self.window_name.parse().unwrap(),
@@ -99,7 +101,6 @@ impl Visualization {
         .insert_resource(state)
         .insert_resource(schedule)
         .add_startup_system(init_system::<A, I>.system())
-        .add_plugin(bevy_canvas::CanvasPlugin)
         .add_system(renderer_system::<A>.system().label("render"))
         .add_system(simulation_system::<A>.system().before("render"));
 

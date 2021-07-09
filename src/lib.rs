@@ -7,7 +7,7 @@ pub mod visualization;
 
 #[cfg(any(feature = "visualization", feature = "visualization_wasm", doc))]
 pub use bevy;
-#[cfg(any(feature = "visualization", feature = "visualization_wasm", doc))]
+#[cfg(feature = "canvas")]
 pub use bevy_canvas;
 
 ///To do "Space exploration" each sim parameters need a triple: start, end and step

@@ -63,7 +63,6 @@ visualization = [
     "bevy/png",
     "bevy/bevy_wgpu",
     "image",
-    "bevy_canvas"
 ]
 visualization_wasm = [
     "bevy",
@@ -72,5 +71,7 @@ visualization_wasm = [
     "bevy/bevy_gltf",
     "bevy/png",
     "image",
+]
+canvas = [
     "bevy_canvas"
 ]
