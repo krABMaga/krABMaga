@@ -63,6 +63,11 @@ impl<T: Copy + Clone> NumberGrid2D<T> {
     pub fn update(&mut self) {
         self.locs.update();
     }
+
+    pub fn lazy_update(&mut self) {
+        self.locs.lazy_update();
+    }
+
 }
 
 /*

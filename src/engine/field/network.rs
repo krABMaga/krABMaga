@@ -140,6 +140,52 @@ macro_rules! preferential_attachment_BA {
     };
 }
 
+#[macro_export]
+macro_rules! random_attachment {
+    ($nodes:expr, $network:expr, $node_type:ty, $edge_opt:ty, $init_edges:expr) => {
+        let n_nodes = $nodes.len();
+
+        let _init_edges = $init_edges as usize;
+        let _net: &mut Network<$node_type, $edge_opt> = $network;
+
+        $network.remove_all_edges();
+
+        if n_nodes == 0 {
+            return;
+        }
+        $network.add_node(&$nodes[0]);
+        $network.edges.update();
+        if n_nodes == 1 {
+            return;
+        }
+        $network.add_node(&$nodes[1]);
+
+        $network.add_edge(&$nodes[0], &$nodes[1], Simple);
+        $network.edges.update();
+
+        let mut rng = rand::thread_rng();
+        for i in 0..n_nodes {
+            let node = $nodes[i] as $node_type;
+
+            let mut choices_list = $nodes
+                .choose_multiple(&mut rng, $init_edges)
+                .collect::<Vec<_>>();
+
+            for choice in choices_list {
+                $network.add_edge(&node, choice, EdgeOptions::Simple);
+            }
+
+        }
+
+        $network.edges.update();
+
+    };
+
+    ( $nodes:expr, $network:expr, $node_type:ty, $edge_opt:ty) => {
+        random_attachment($nodes, $network, $node_type, $edge_opt, 1);
+    };
+}
+
 impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> Network<O, L> {
     pub fn new(d: bool) -> Network<O, L> {
         Network {

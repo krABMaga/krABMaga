@@ -208,6 +208,11 @@ impl<A: Eq + Hash + Clone + Copy> Grid2D<A> {
         self.locs.update();
         self.locs_inversed.update();
     }
+
+    pub fn lazy_update(&mut self){
+        self.locs.lazy_update();
+        self.locs_inversed.lazy_update();
+    }
 }
 
 #[cfg(test)]
