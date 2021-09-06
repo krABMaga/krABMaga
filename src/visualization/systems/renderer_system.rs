@@ -26,7 +26,7 @@ pub fn renderer_system<A: Render + Clone>(
             *material = new_material;
         }
     }
-    for new_agent in &schedule.newly_scheduled {
+    for new_agent in schedule.newly_scheduled.lock().unwrap().clone() {
         let SpriteType::Emoji(emoji_code) = new_agent.sprite();
         let sprite_render = sprite_factory.get_emoji_loader(emoji_code);
         new_agent
