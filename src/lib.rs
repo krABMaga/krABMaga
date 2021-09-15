@@ -49,7 +49,7 @@ macro_rules!  simulate{
 
     println!("Thread_Num\tTotal_Time\tFetch_Time\tStep_Time\tUpdate_Time\tStep_Number\tStep/Seconds");
     println!("{}\t\t{:?}\t{:?}\t{:?}\t{:?}\t{}\t\t{}",
-    4,
+    schedule.thread_num,
     run_duration,
     fetch_time/schedule.step as u32,
     step_time/schedule.step as u32,
