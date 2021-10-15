@@ -14,7 +14,7 @@ use crate::visualization::simulation_descriptor::SimulationDescriptor;
 use crate::visualization::sprite_render_factory::SpriteFactoryResource;
 
 /// Allows rendering field structs as a single texture, to improve performance by sending the whole struct to the GPU in a single batch.
-/// Use the trait by declaring a wrapper struct over a field, for example over a NumberGrid2D<f64>, and implementing this trait on said wrapper.
+/// Use the trait by declaring a wrapper struct over a field, for example over a NumberGrid2D<f32>, and implementing this trait on said wrapper.
 pub trait BatchRender<A: 'static + Agent + Render + Clone + Send> {
     /// Specifies the conversion from a 2d point in space in a pixel is done. The format of the return value
     /// is [Rgba8UnormSrgb]
@@ -31,8 +31,8 @@ pub trait BatchRender<A: 'static + Agent + Render + Clone + Send> {
         let (width, height) = self.get_dimensions();
         let image_buffer = ImageBuffer::from_fn(width, height, |x, y| {
             let pos = Int2D {
-                x: x as i64,
-                y: y as i64,
+                x: x as i32,
+                y: y as i32,
             };
             let pixel = self.get_pixel(&pos);
             image::Rgba(pixel)

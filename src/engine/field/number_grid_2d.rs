@@ -4,13 +4,13 @@ use crate::utils::dbdashmap::DBDashMap;
 /// A crude implementation of a matrix based grid, for quick access of specific positions.
 pub struct NumberGrid2D<T: Copy + Clone> {
     pub locs: DBDashMap<Int2D, T>,
-    pub width: i64,
-    pub height: i64,
+    pub width: i32,
+    pub height: i32,
 }
 
 impl<T: Copy + Clone> NumberGrid2D<T> {
     /// Initializes a NumberGrid2D that wraps a width * height matrix, with values of type Option<T>.
-    pub fn new(width: i64, height: i64) -> NumberGrid2D<T> {
+    pub fn new(width: i32, height: i32) -> NumberGrid2D<T> {
         NumberGrid2D {
             locs: DBDashMap::new(),
             width,

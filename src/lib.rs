@@ -2,6 +2,7 @@ pub mod engine;
 pub mod utils;
 pub use rand; // Re-export rand to let users use the correct version, compatible with wasm
 
+
 #[cfg(any(feature = "visualization", feature = "visualization_wasm", doc))]
 pub mod visualization;
 
@@ -23,42 +24,39 @@ pub enum Parameters {
 ///states
 ///other parametes
 macro_rules!  simulate{
-    ($step:expr, $sch:expr, $ty:ty, $s:expr $(,$opt:expr)*) => {
+            ($step:expr, $sch:expr, $ty:ty, $s:expr $(,$opt:expr)*) => {
 
-    let n_step:u128 = $step;
-    let mut schedule:Schedule<$ty> = $sch;
-    
+            let n_step:u128 = $step;
+            let mut schedule:Schedule<$ty> = $sch;
+            
 
-    $(
-        println!("Option received. {}", $opt);
-    )*
+            $(
+                println!("Option received. {}", $opt);
+            )*
 
-    let mut fetch_time = std::time::Duration::from_secs_f64(0.);
-    let mut step_time = std::time::Duration::from_secs_f64(0.);
-    let mut update_time = std::time::Duration::from_secs_f64(0.);
-    let start = std::time::Instant::now();
-    for _ in 0..n_step{
-        let (p_fetch,p_step,p_update) = schedule.step(&mut $s);
-        fetch_time += p_fetch;
-        step_time += p_step;
-        update_time += p_update;
-        $s.step +=1;
-    }
+            let mut fetch_time = std::time::Duration::from_secs_f64(0.);
+            let mut step_time = std::time::Duration::from_secs_f64(0.);
+            let mut update_time = std::time::Duration::from_secs_f64(0.);
+            let start = std::time::Instant::now();
+            for _ in 0..n_step{
+                let (p_fetch,p_step,p_update) = schedule.step(&mut $s);
+                fetch_time += p_fetch;
+                step_time += p_step;
+                update_time += p_update;
+                $s.step +=1;
+            }
 
-    let run_duration = start.elapsed();
-
-    println!("Thread_Num\tTotal_Time\tFetch_Time\tStep_Time\tUpdate_Time\tStep_Number\tStep/Seconds");
-    println!("{}\t\t{:?}\t{:?}\t{:?}\t{:?}\t{}\t\t{}",
-    schedule.thread_num,
-    run_duration,
-    fetch_time/schedule.step as u32,
-    step_time/schedule.step as u32,
-    update_time/schedule.step as u32,
-    schedule.step,
-    schedule.step as f64 /(run_duration.as_secs_f64())
-
-        );
-    };
+            let run_duration = start.elapsed();
+            
+            println!("Total_Time\tFetch_Time\tStep_Time\tUpdate_Time\tStep_Number\tStep/Seconds");
+            println!("{:?}\t{:?}\t{:?}\t{:?}\t{}\t\t{}",
+            run_duration,
+            fetch_time/schedule.step as u32,
+            step_time/schedule.step as u32,
+            update_time/schedule.step as u32,
+            schedule.step,
+            schedule.step as f64 /(run_duration.as_secs_f64()));
+        }
 }
 
 ///WORK IN PROGRESS, DONT USE IT

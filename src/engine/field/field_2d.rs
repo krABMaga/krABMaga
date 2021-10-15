@@ -87,10 +87,10 @@ impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> Field2D<A>  {
             return tor;
         }
 
-        let disc_dist = (dist/self.discretization).floor() as i64;
+        let disc_dist = (dist/self.discretization).floor() as i32;
         let disc_pos = self.discretize(&pos);
-        let max_x = (self.width/self.discretization).ceil() as i64;
-        let max_y =  (self.heigth/self.discretization).ceil() as i64;
+        let max_x = (self.width/self.discretization).ceil() as i32;
+        let max_y =  (self.heigth/self.discretization).ceil() as i32;
         
         let mut min_i = disc_pos.x - disc_dist;
         let mut max_i = disc_pos.x + disc_dist;
@@ -176,10 +176,10 @@ impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> Field2D<A>  {
 
     fn discretize(&self, pos: &Real2D) -> Int2D {
         let x_floor = (pos.x/self.discretization).floor();
-        let x_floor = x_floor as i64;
+        let x_floor = x_floor as i32;
 
         let y_floor = (pos.y/self.discretization).floor();
-        let y_floor = y_floor as i64;
+        let y_floor = y_floor as i32;
 
         Int2D {
             x: x_floor,
@@ -189,7 +189,7 @@ impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> Field2D<A>  {
 
 }
 
-fn t_transform(n: i64, size: i64) -> i64 {
+fn t_transform(n: i32, size: i32) -> i32 {
     if n >= 0 {
         n%size
     } else {

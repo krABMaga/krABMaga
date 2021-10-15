@@ -1,22 +1,26 @@
 extern crate priority_queue;
 
-use std::sync::Mutex;
+use std::time::Duration;
 
 use cfg_if::cfg_if;
 use clap::{App, Arg};
 use lazy_static::*;
 use priority_queue::PriorityQueue;
-//use rayon::ThreadPool;
-use crossbeam::thread;
-#[cfg(feature = "parallel")]
-use rayon::ThreadPoolBuilder;
-use std::time::Duration;
+
+cfg_if! {
+    if #[cfg(feature ="parallel")]{
+        use crossbeam::thread;
+        use std::sync::{Arc,Mutex};
+    }
+}
 
 use crate::engine::agent::Agent;
 use crate::engine::agentimpl::AgentImpl;
 use crate::engine::priority::Priority;
 use crate::engine::state::State;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
+pub static THREAD_COUNT: AtomicUsize = AtomicUsize::new(0);
 lazy_static! {
     pub static ref THREAD_NUM: usize =
                                 {
@@ -40,367 +44,277 @@ lazy_static! {
                                                     num_cpus::get()
                                                 }
                                     },
-                                    _ => num_cpus::get()
+                                    _ => 1
                                 };
-                                //println!("Using {} threads",n);
+                                // println!("Using {} threads",n);
                                 n
                                 };
-}
-pub struct Schedule<A: 'static + Agent + Clone + Send> {
-    pub step: usize,
-    pub time: f32,
-    pub events: Mutex<PriorityQueue<AgentImpl<A>, Priority>>,
-    pub thread_num:usize,
-    //pub pool: Option<ThreadPool>,
-    // Mainly used in the visualization to render newly scheduled agents.
-    // This is cleared at the start of each step.
-    pub newly_scheduled: Mutex<Vec<A>>,
-}
-
-#[derive(Clone)]
-pub struct Pair<A: 'static + Agent + Clone> {
-    agentimpl: AgentImpl<A>,
-    priority: Priority,
-}
-
-impl<A: 'static + Agent + Clone> Pair<A> {
-    fn new(agent: AgentImpl<A>, the_priority: Priority) -> Pair<A> {
-        Pair {
-            agentimpl: agent,
-            priority: the_priority,
-        }
-    }
-}
-
-impl<A: 'static + Agent + Clone + Send + Sync> Schedule<A> {
-    pub fn new() -> Schedule<A> {
-        //println!("Using {} thread",*THREAD_NUM);
-        cfg_if! {
-            if #[cfg(feature ="parallel")]{
-                return Schedule {
-                    step: 0,
-                    time: 0.0,
-                    events: Mutex::new(PriorityQueue::new()),
-                    thread_num: *THREAD_NUM,
-                    //pool: Some(ThreadPoolBuilder::new().num_threads(*THREAD_NUM).build().unwrap()),
-                    newly_scheduled: Mutex::new(Vec::new())
-                }
-            }else{
-                return Schedule {
-                    step: 0,
-                    time: 0.0,
-                    events: Mutex::new(PriorityQueue::new()),
-                    thread_num:1,
-                    //pool: None,
-                    newly_scheduled: Mutex::new(Vec::new())
-                }
-            }
-        }
-    }
-
-    pub fn with_threads(thread_num: usize) -> Schedule<A> {
-        //println!("Using {} thread",thread_num);
-        cfg_if! {
-            if #[cfg(feature ="parallel")]{
-                return Schedule {
-                    step: 0,
-                    time: 0.0,
-                    events: Mutex::new(PriorityQueue::new()),
-                    thread_num,
-                    //pool: Some(ThreadPoolBuilder::new().num_threads(thread_num).build().unwrap()),
-                    newly_scheduled: Mutex::new(Vec::new())
-                }
-            }else{
-                return Schedule {
-                    step: 0,
-                    time: 0.0,
-                    events: Mutex::new(PriorityQueue::new()),
-                    thread_num: 1,
-                    //pool: None,
-                    newly_scheduled: Mutex::new(Vec::new())
-                }
-            }
-        }
-    }
-
-    pub fn schedule_once(&mut self, agent: AgentImpl<A>, the_time: f32, the_ordering: i64) {
-        self.events.lock().unwrap().push(
-            agent,
-            Priority {
-                time: the_time,
-                ordering: the_ordering,
-            },
-        );
-    }
-
-    pub fn schedule_repeating(&mut self, agent: A, the_time: f32, the_ordering: i64) {
-        let mut a = AgentImpl::new(agent);
-        a.repeating = true;
-        let pr = Priority::new(the_time, the_ordering);
-        self.events.lock().unwrap().push(a, pr);
-    }
-
-    pub fn simulate<S: State>(&mut self, state: &mut <A as Agent>::SimState, num_step: u128) {
-        for _ in 0..num_step {
-            self.step(state);
-        }
-    }
     
-
-    cfg_if! {
-        if #[cfg(feature ="parallel")]{
-
-
-        pub fn step(&mut self, state: &mut <A as Agent>::SimState) -> (Duration, Duration, Duration){
-            self.newly_scheduled.lock().unwrap().clear();
-            let thread_num = self.thread_num;
-
-            if self.step == 0{
-                state.update(self.step);
-            }
-
-            self.step += 1;
-
-            // let start: std::time::Instant = std::time::Instant::now();
-            let events = &mut self.events;
-            if events.lock().unwrap().is_empty() {
-                //println!("coda eventi vuota");
-                ()
-            }
-
-            let thread_division = (events.lock().unwrap().len() as f32 / thread_num as f32).ceil() as usize ;
-            let mut cevents: Vec<Vec<Pair<A>>> = vec![Vec::with_capacity(thread_division); thread_num];
-
-           
-            let mut index = 0;
-            match events.lock().unwrap().peek() {
-                Some(item) => {
-                    let (_agent, priority) = item;
-                    self.time = priority.time;
-                },
-                None => panic!("agente non trovato"),
-            }
-            
-            let fetch_time = std::time::Instant::now();
-            loop {
-                if events.lock().unwrap().is_empty() {
-                    break;
+}
+cfg_if! {
+    if #[cfg(feature ="parallel")]{
+        pub struct Schedule<A: 'static + Agent + Clone + Send> {
+            pub step: usize,
+            pub time: f32,
+            pub events: Arc<Mutex<PriorityQueue<AgentImpl<A>, Priority>>>,
+            pub thread_num:usize
+        }
+        
+        #[derive(Clone)]
+        pub struct Pair<A: 'static + Agent + Clone> {
+            agentimpl: AgentImpl<A>,
+            priority: Priority,
+        }
+        
+        impl<A: 'static + Agent + Clone> Pair<A> {
+            fn new(agent: AgentImpl<A>, the_priority: Priority) -> Pair<A> {
+                Pair {
+                    agentimpl: agent,
+                    priority: the_priority
                 }
+            }
+        }
+        
+        impl<A: 'static +  Agent + Clone + Send> Schedule<A> {
+            pub fn new() -> Schedule<A> {
+                Schedule {
+                    step: 0,
+                    time: 0.0,
+                    events: Arc::new(Mutex::new(PriorityQueue::new())),
+                    thread_num: *THREAD_NUM
+                }
+            }
 
-                match events.lock().unwrap().peek() {
+            pub fn with_threads(thread_num: usize) -> Schedule<A> {
+                Schedule {
+                    step: 0,
+                    time: 0.0,
+                    events: Arc::new(Mutex::new(PriorityQueue::new())),
+                    thread_num,
+                }
+            }
+        
+            pub fn schedule_once(&mut self, agent: AgentImpl<A>,the_time:f32, the_ordering:i32) {
+                let old_thread_count = THREAD_COUNT.fetch_add(1, Ordering::SeqCst);
+              
+                self.events.lock().unwrap().push(
+                    agent,
+                    Priority {
+                        time: the_time,
+                        ordering: the_ordering,
+                    },
+                );
+            }
+        
+            pub fn schedule_repeating(&mut self, agent: A, the_time:f32, the_ordering:i32) {
+                let mut a = AgentImpl::new(agent);
+                a.repeating = true;
+                let pr = Priority::new(the_time, the_ordering);
+
+                let old_thread_count = THREAD_COUNT.fetch_add(1, Ordering::SeqCst);
+                self.events.lock().unwrap().push(a, pr);
+            }
+        
+            pub fn step(&mut self, state: &mut <A as Agent>::SimState) -> (Duration, Duration, Duration){
+                let thread_num = self.thread_num;
+                let mut state = Arc::new(state);
+                
+                if self.step == 0{
+                    Arc::get_mut(&mut state).unwrap().update(self.step.clone());
+                }
+                let fetch_time = std::time::Instant::now();
+                self.step += 1;
+                
+                let fetch_time = fetch_time.elapsed();
+               
+                let step_time = std::time::Instant::now();
+
+                // println!("Size BEFORE {:?} {:?} {:?}", self.events[0].lock().unwrap().len(), self.events[1].lock().unwrap().len(), self.events[2].lock().unwrap().len());
+
+                match self.events.lock().unwrap().peek() {
                     Some(item) => {
                         let (_agent, priority) = item;
-                        if priority.time > self.time {
-                            break;
-                        }
+                        self.time = priority.time;
                     },
-                    None => panic!("agente non trovato"),
+                    None => panic!("Agent not found - out loop")
                 }
 
-                let item = events.lock().unwrap().pop();
-                match item {
-                    Some(item) => {
-                        let (agent, priority) = item;
-                        // let x = agent.id.clone();
-                        // println!("{}", x);
-                        if cevents[index].len() == thread_division{
-                            index+=1;
-                        }
-                        cevents[index].push(Pair::new(agent, priority));
-                    },
-                    None => panic!("no item"),
-                }
-            }
-
-            let fetch_time = fetch_time.elapsed();
-
-
-            let step_time = std::time::Instant::now();
-            thread::scope( |scope| {
-                //N-1 WORKER THREAD
-                for _ in 0..thread_num-1{
-                    let batch = cevents.pop().unwrap();
-                    scope.spawn(|_| {
-                        let mut reschedule = Vec::with_capacity(batch.len());
-                        let mut newly_scheduled = Vec::with_capacity(batch.len());
-                        for mut item in batch {
-                            item.agentimpl.agent.step(&state);
-                            let should_remove = item.agentimpl.agent.should_remove(&state);
-                            let should_reproduce = item.agentimpl.agent.should_reproduce(&state);
-
-                            if item.agentimpl.repeating && !should_remove {
-                                reschedule.push( ( item.agentimpl, Priority{ time: item.priority.time+1.0, ordering: item.priority.ordering}) );
-                            }
-
-                            if let Some(new_agents) = should_reproduce {
-                                for (new_agent, schedule_options) in new_agents {
-                                    let ScheduleOptions{ordering, repeating} = schedule_options;
-                                    let agent = *new_agent;
-                                    let mut new_agent_impl = AgentImpl::new(agent.clone());
-                                    new_agent_impl.repeating = repeating;
-                                    reschedule.push((new_agent_impl, Priority{time: item.priority.time + 1., ordering}));
-                                    newly_scheduled.push(agent);
+                let _result = thread::scope( |scope| {
+                    
+                    for tid in 0..thread_num{
+                        let events = Arc::clone(&self.events);
+                        let state = Arc::clone(&state); 
+                        let schedule_time = self.time.clone();
+                        
+                        scope.spawn(move |_| {
+                            let mut q = events.lock().unwrap();
+                            loop {
+                                if q.is_empty() {
+                                    break;
+                                }
+                
+                                match q.pop() {
+                                    Some(item) => {
+                                        let (mut agent, priority) = item;
+                                        if priority.time > schedule_time {
+                                            q.push(agent, Priority{ time: priority.time, ordering: priority.ordering} );
+                                            break;
+                                        }
+                                       
+                                        agent.agent.step(&state);
+                                        if agent.repeating {
+                                            q.push(agent, Priority{ time: priority.time+1.0, ordering: priority.ordering} );
+                                        }
+                                    },
+                                    None => panic!("Agent not found - inside loop"),
                                 }
                             }
-                        }
-                        let mut events = self.events.lock().unwrap();
-                        for entry in reschedule{
-                            events.push(entry.0,entry.1);
-                        }
-                        drop(events);
-                        let mut g_newly_scheduled = self.newly_scheduled.lock().unwrap();
-                        for entry in newly_scheduled{
-                            g_newly_scheduled.push(entry);
-                        }
-                    });
-
-                }
-                //MAIN THREAD
-                if cevents.len() > 0{
-                        let batch = cevents.pop().unwrap();
-                        let mut reschedule = Vec::with_capacity(batch.len());
-                        let mut newly_scheduled = Vec::with_capacity(batch.len());
-                        for mut item in batch {
-                            item.agentimpl.agent.step(&state);
-                            let should_remove = item.agentimpl.agent.should_remove(&state);
-                            let should_reproduce = item.agentimpl.agent.should_reproduce(&state);
-
-                            if item.agentimpl.repeating && !should_remove {
-                                reschedule.push( ( item.agentimpl, Priority{ time: item.priority.time+1.0, ordering: item.priority.ordering}) );
-                            }
-
-                            if let Some(new_agents) = should_reproduce {
-                                for (new_agent, schedule_options) in new_agents {
-                                    let ScheduleOptions{ordering, repeating} = schedule_options;
-                                    let agent = *new_agent;
-                                    let mut new_agent_impl = AgentImpl::new(agent.clone());
-                                    new_agent_impl.repeating = repeating;
-                                    reschedule.push((new_agent_impl, Priority{time: item.priority.time + 1., ordering}));
-                                    newly_scheduled.push(agent);
-                                }
-                            }
-                        }
-                        let mut events = self.events.lock().unwrap();
-                        for entry in reschedule{
-                            events.push(entry.0,entry.1);
-                        }
-                        drop(events);
-                        let mut g_newly_scheduled = self.newly_scheduled.lock().unwrap();
-                        for entry in newly_scheduled{
-                            g_newly_scheduled.push(entry);
-                        }
+                         });
                     }
+                });
+                // println!("Size AFTER {:?} {:?} {:?}", self.events[0].lock().unwrap().len(), self.events[1].lock().unwrap().len(), self.events[2].lock().unwrap().len());
 
-            });
-            let step_time = step_time.elapsed();
-        
-            let update_time = std::time::Instant::now();
-        state.update(self.step);
-        let update_time = update_time.elapsed();
+                let step_time = step_time.elapsed();
+                let update_time = std::time::Instant::now();
 
-        (fetch_time,step_time,update_time)
+                Arc::get_mut(&mut state).unwrap().update(self.step.clone());
+
+                let update_time = update_time.elapsed();
+
+                (fetch_time,step_time,update_time)
+            }
         }
     }
-    else{
-        pub fn step(&mut self,state: &mut <A as Agent>::SimState) -> (Duration,Duration,Duration){
-            self.newly_scheduled.lock().unwrap().clear();
-            if self.step == 0{
-                state.update(self.step);
-            }
-            self.step += 1;
-
-
-            // let start: std::time::Instant = std::time::Instant::now();
-            let events = &mut self.events;
-            if events.lock().unwrap().is_empty() {
-                //println!("coda eventi vuota");
-                ()
-            }
-
-            let mut cevents: Vec<Pair<A>> = Vec::new();
-
-            match events.lock().unwrap().peek() {
-                Some(item) => {
-                    let (_agent, priority) = item;
-                    self.time = priority.time;
-                }
-                None => panic!("agente non trovato"),
-            }
+    else{ // if sequential
+        pub struct Schedule<A:'static + Agent + Clone + Send>{
+        pub step: usize,
+        pub time: f32,
+        pub events: PriorityQueue<AgentImpl<A>,Priority>,
+        pub newly_scheduled: Vec<A>
+        }
             
-            let fetch_time = std::time::Instant::now();
-            loop {
-                if events.lock().unwrap().is_empty() {
-                    break;
+        #[derive(Clone)]
+        pub struct Pair<A: 'static + Agent + Clone> {
+            agentimpl: AgentImpl<A>,
+            priority: Priority,
+        }
+        
+        impl<A: 'static + Agent + Clone> Pair<A> {
+            fn new(agent: AgentImpl<A>, the_priority: Priority) -> Pair<A> {
+                Pair {
+                    agentimpl: agent,
+                    priority: the_priority
                 }
-
-                match events.lock().unwrap().peek() {
+            }
+        }
+        
+        impl<A: 'static +  Agent + Clone + Send> Schedule<A> {
+        
+            pub fn new() -> Schedule<A> {
+                Schedule {
+                    step: 0,
+                    time: 0.0,
+                    events: PriorityQueue::new(),
+                    newly_scheduled: Vec::new()
+                }
+            }
+        
+            pub fn schedule_once(&mut self, agent: AgentImpl<A>,the_time:f32, the_ordering:i32) {
+                self.events.push(agent, Priority{time: the_time, ordering: the_ordering});
+            }
+        
+            pub fn schedule_repeating(&mut self, agent: A, the_time:f32, the_ordering:i32) {
+                let mut a = AgentImpl::new(agent);
+                a.repeating = true;
+                let pr = Priority::new(the_time, the_ordering);
+                self.events.push(a, pr);
+            }
+        
+            pub fn step(&mut self, state: &mut <A as Agent>::SimState) -> (Duration, Duration, Duration){
+                self.newly_scheduled.clear();
+                if self.step == 0{
+                    state.update(self.step);
+                }
+        
+                self.step += 1;
+                
+                let events = &mut self.events;
+                if events.is_empty() {
+                    println!("Empty Queue");
+                    ()
+                }
+        
+                let mut cevents: Vec<Pair<A>> = Vec::new();
+        
+                match events.peek() {
                     Some(item) => {
                         let (_agent, priority) = item;
-                        if priority.time > self.time {
-                            break;
+                        self.time = priority.time;
+                    },
+                    None => panic!("Agent not found - out loop"),
+                }
+        
+                let fetch_time = std::time::Instant::now();
+                loop {
+                    if events.is_empty() {
+                        break;
+                    }
+        
+                    match events.pop() {
+                        Some(item) => {
+                            let (_agent, priority) = item;
+                            if priority.time > self.time {
+                                break;
+                            }
+                            cevents.push(Pair::new(_agent, priority));
+                        },
+                        None => panic!("Agent not found - inside loop"),
+                    }
+                }
+                let fetch_time = fetch_time.elapsed();
+                
+                let step_time = std::time::Instant::now();
+                for mut item in cevents.into_iter() {
+        
+                        item.agentimpl.agent.step(state);
+        
+                        let should_remove = item.agentimpl.agent.should_remove(&state);
+                        let should_reproduce = item.agentimpl.agent.should_reproduce(&state);
+        
+                        if item.agentimpl.repeating && !should_remove {
+                            self.schedule_once(
+                                item.agentimpl,
+                                item.priority.time + 1.0,
+                                item.priority.ordering,
+                            );
                         }
+        
+                        if let Some(new_agents) = should_reproduce {
+                            for (new_agent, schedule_options) in new_agents {
+                                let ScheduleOptions{ordering, repeating} = schedule_options;
+                                let agent = *new_agent;
+                                let mut new_agent_impl = AgentImpl::new(agent.clone());
+                                new_agent_impl.repeating = repeating;
+                                self.schedule_once(new_agent_impl, item.priority.time + 1., ordering);
+                                self.newly_scheduled.push(agent);
+                            }
+                        }    
                     }
-                    None => panic!("agente non trovato"),
-                }
+                let step_time = step_time.elapsed();
 
-                let item = events.lock().unwrap().pop();
-                match item {
-                    Some(item) => {
-                        let (agent, priority) = item;
-                        // let x = agent.id.clone();
-                        // println!("{}", x);
-                        cevents.push(Pair::new(agent, priority));
-                    }
-                    None => panic!("no item"),
-                }
+                let update_time = std::time::Instant::now();
+                state.update(self.step);
+                let update_time = update_time.elapsed();
+
+                (fetch_time,step_time,update_time)
+        
             }
-            let fetch_time = fetch_time.elapsed();
-
-
-            let step_time = std::time::Instant::now();
-            for mut item in cevents.into_iter() {
-
-                item.agentimpl.agent.step(state);
-
-                let should_remove = item.agentimpl.agent.should_remove(&state);
-                let should_reproduce = item.agentimpl.agent.should_reproduce(&state);
-
-                if item.agentimpl.repeating && !should_remove {
-                    self.schedule_once(
-                        item.agentimpl,
-                        item.priority.time + 1.0,
-                        item.priority.ordering,
-                    );
-                }
-
-                if let Some(new_agents) = should_reproduce {
-                    for (new_agent, schedule_options) in new_agents {
-                        let ScheduleOptions{ordering, repeating} = schedule_options;
-                        let agent = *new_agent;
-                        let mut new_agent_impl = AgentImpl::new(agent.clone());
-                        new_agent_impl.repeating = repeating;
-                        self.schedule_once(new_agent_impl, item.priority.time + 1., ordering);
-                        self.newly_scheduled.lock().unwrap().push(agent);
-                    }
-                }
-            }
-            let step_time = step_time.elapsed();
-
-            let update_time = std::time::Instant::now();
-            state.update(self.step);
-            let update_time = update_time.elapsed();
-
-            (fetch_time,step_time,update_time)
-            // println!("Time spent calling step method, step {} : {:?}",self.step,start.elapsed());
-
-            }
-
         }
     }
 }
 
 /// A struct used to specify schedule options to pass to an agent's clone when an agent reproduces.
 pub struct ScheduleOptions {
-    pub ordering: i64,
+    pub ordering: i32,
     pub repeating: bool,
 }

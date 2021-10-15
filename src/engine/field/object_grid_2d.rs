@@ -7,13 +7,13 @@ use crate::utils::dbdashmap::DBDashMap;
 pub struct Grid2D<A: Eq + Hash + Clone + Copy> {
     pub locs: DBDashMap<A, Int2D>,
     pub locs_inversed: DBDashMap<Int2D, Vec<A>>, // TODO consider using a linked list instead of a vec?
-    pub width: i64,
-    pub height: i64,
+    pub width: i32,
+    pub height: i32,
 }
 
 impl<A: Eq + Hash + Clone + Copy> Grid2D<A> {
     /// Initializes a Grid2D with a specific capacity of width * height.
-    pub fn new(width: i64, height: i64) -> Grid2D<A> {
+    pub fn new(width: i32, height: i32) -> Grid2D<A> {
         Grid2D {
             locs: DBDashMap::with_capacity((width * height) as usize),
             locs_inversed: DBDashMap::with_capacity((width * height) as usize),
