@@ -6,14 +6,9 @@ use crate::engine::location::Int2D;
 use crate::engine::location::Location2D;
 use std::cmp;
 use crate::utils::dbdashmap::DBDashMap;
-use crate::utils::dbdashmap::UpdateType;
-
-
 
 pub struct Field2D<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> {
-    pub findex: DBDashMap<A, Int2D>,
     pub fbag: DBDashMap<Int2D, Vec<A>>,
-    pub fpos: DBDashMap<A, Real2D>,
     pub width: f32,
     pub heigth: f32,
     pub discretization: f32,
@@ -23,9 +18,7 @@ pub struct Field2D<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> {
 impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> Field2D<A>  {
     pub fn new(w: f32, h: f32, d: f32, t: bool) -> Field2D<A> {
         Field2D {
-            findex: DBDashMap::new(),
             fbag: DBDashMap::new(),
-            fpos: DBDashMap::new(),
             width: w,
             heigth: h,
             discretization: d,
@@ -35,32 +28,7 @@ impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> Field2D<A>  {
 
     pub fn set_object_location(&self, object: A, pos: Real2D) {
 
-        match self.fbag.update_type{
-                UpdateType::COPY => {
-                    let old_pos =  self.fpos.get(&object);
-                    match old_pos {
-                        Some(pos) => {
-                            let old_bag = self.discretize(pos);
-                            match self.fbag.get_mut(&old_bag){
-                                Some(v) => {
-                                        let mut v = v;
-                                        v.retain( |entry| *entry != object);
-                                }
-                                None => {
-                                    panic!("Error the agent is not in the corresponding bag.")
-                                }
-                            };
-                        },
-                        None => {}
-                    };
-                },
-                _ => (),
-            }  
-           
-
         let bag = self.discretize(&pos);
-        self.fpos.insert(object, pos);
-        self.findex.insert(object, bag);
         match self.fbag.get_mut(&bag){
             Some(v) => {
                     let mut v = v;
@@ -78,7 +46,7 @@ impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> Field2D<A>  {
 
     pub fn get_neighbors_within_distance(&self, pos: Real2D, dist: f32) -> Vec<&A> {
         
-        let density = (self.width * self.heigth)/(self.findex.r_len() as f32);
+        let density = (self.width * self.heigth)/(self.fbag.r_len() as f32);
         let sdist = (dist * dist) as usize;
         let mut tor: Vec<&A> = Vec::with_capacity(density as usize * sdist);
         // let mut tor: Vec<&A> = Vec::new();
@@ -157,7 +125,7 @@ impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> Field2D<A>  {
     }
 
     pub fn num_objects(&self) -> usize {
-        self.findex.r_len()
+        self.fbag.r_len()
     }
 
     pub fn num_objects_at_location(&self, pos: Real2D) -> usize {
@@ -169,9 +137,9 @@ impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> Field2D<A>  {
             None => 0
         }
     }
-
-    pub fn get_object_location(&self, obj: A) -> Option<&Real2D> {
-        self.fpos.get(&obj)
+    //TOCHECK iterate over the bags to find the object A
+    pub fn get_object_location(&self, obj: A) -> Real2D {
+        obj.get_location() 
     }
 
     fn discretize(&self, pos: &Real2D) -> Int2D {
@@ -278,14 +246,10 @@ pub fn toroidal_transform(val: f32, dim: f32) -> f32 {
 
 impl<A: Location2D<Real2D> + Clone + Hash + Eq + Display + Copy> Field for Field2D<A>{
     fn update(&mut self){
-        self.fpos.update();
         self.fbag.update();
-        self.findex.update();
     }
     fn lazy_update(&mut self){
-        self.fpos.lazy_update();
         self.fbag.lazy_update();
-        self.findex.lazy_update();
     }
 }
 

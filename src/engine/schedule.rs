@@ -18,9 +18,7 @@ use crate::engine::agent::Agent;
 use crate::engine::agentimpl::AgentImpl;
 use crate::engine::priority::Priority;
 use crate::engine::state::State;
-use std::sync::atomic::{AtomicUsize, Ordering};
 
-pub static THREAD_COUNT: AtomicUsize = AtomicUsize::new(0);
 lazy_static! {
     pub static ref THREAD_NUM: usize =
                                 {
@@ -33,14 +31,14 @@ lazy_static! {
                                         Arg::with_name("num_thread").
                                         help("sets the number of threads to use")
                                         .takes_value(true).
-                                        long("nt")
+                                        long("n")
                                     ).
                                     get_matches();
                                 let n = match matches.value_of("num_thread"){
                                     Some(nt) => match nt.parse::<usize>(){
                                                 Ok(ris) => ris,
                                                 Err(_) => {
-                                                    eprintln!("error: --nt value is not an integer");
+                                                    eprintln!("error: --n value is not an integer");
                                                     num_cpus::get()
                                                 }
                                     },
@@ -66,15 +64,6 @@ cfg_if! {
             priority: Priority,
         }
         
-        impl<A: 'static + Agent + Clone> Pair<A> {
-            fn new(agent: AgentImpl<A>, the_priority: Priority) -> Pair<A> {
-                Pair {
-                    agentimpl: agent,
-                    priority: the_priority
-                }
-            }
-        }
-        
         impl<A: 'static +  Agent + Clone + Send> Schedule<A> {
             pub fn new() -> Schedule<A> {
                 Schedule {
@@ -95,7 +84,6 @@ cfg_if! {
             }
         
             pub fn schedule_once(&mut self, agent: AgentImpl<A>,the_time:f32, the_ordering:i32) {
-                let old_thread_count = THREAD_COUNT.fetch_add(1, Ordering::SeqCst);
               
                 self.events.lock().unwrap().push(
                     agent,
@@ -110,8 +98,6 @@ cfg_if! {
                 let mut a = AgentImpl::new(agent);
                 a.repeating = true;
                 let pr = Priority::new(the_time, the_ordering);
-
-                let old_thread_count = THREAD_COUNT.fetch_add(1, Ordering::SeqCst);
                 self.events.lock().unwrap().push(a, pr);
             }
         
@@ -141,7 +127,7 @@ cfg_if! {
 
                 let _result = thread::scope( |scope| {
                     
-                    for tid in 0..thread_num{
+                    for _ in 0..thread_num{
                         let events = Arc::clone(&self.events);
                         let state = Arc::clone(&state); 
                         let schedule_time = self.time.clone();

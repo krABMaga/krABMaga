@@ -13,12 +13,10 @@ repository = "https://github.com/spagnuolocarmine/rust-ab"
 [dependencies]
 hashbrown = "0.3"
 priority-queue = "0.5.4"
-#criterion =  "0.3.3"
 rand = "0.8.3"
 lazy_static = "1.3.0"
 cfg-if = "1.0.0"
 num_cpus = "1.13.0"
-rayon="1.5.0"
 clap="2.33.3"
 ahash="0.6.2"
 crossbeam="0.8.0"
@@ -33,27 +31,10 @@ optional=true
 
 [profile.release]
 opt-level=3
-debug = true
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 bevy_webgl2 = "0.5.0"
 getrandom = {version="0.1", features=["wasm-bindgen"]}
-
-[[bench]]
-name = "scaling"
-harness = false
-
-[[bench]]
-name = "constant_field"
-harness = false
-
-[[bench]]
-name = "constant_density"
-harness = false
-
-[[bench]]
-name = "constant_agent"
-harness = false
 
 # Must be kept separate and asked to the user due to missing support for conditional compilation of features
 # https://github.com/rust-lang/cargo/issues/7914
