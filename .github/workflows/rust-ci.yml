@@ -26,7 +26,8 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt update
-          sudo apt install pkg-config libx11-dev libasound2-dev libudev-dev libxcb-shape0-dev
+          sudo apt install pkg-config libx11-dev libasound2-dev libudev-dev
+          sudo apt install libxcb-randr0-dev libxcb-xtest0-dev libxcb-xinerama0-dev libxcb-shape0-dev libxcb-xkb-dev
 
       - uses: actions/checkout@v2
 
@@ -64,13 +65,13 @@ jobs:
         with:
           key: coverage
 
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --features visualization
-        env:
-          RUSTFLAGS: '-Zinstrument-coverage'
-          LLVM_PROFILE_FILE: '%m.profraw'
+      #- uses: actions-rs/cargo@v1
+       # with:
+        #  command: test
+         # args: --features visualization
+        #env:
+         # RUSTFLAGS: '-Zinstrument-coverage'
+          #LLVM_PROFILE_FILE: '%m.profraw'
       - name: Install grcov
         run: |
           rustup component add llvm-tools-preview
