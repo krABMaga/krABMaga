@@ -1,24 +1,35 @@
-use std::collections::HashMap;
+use crate::engine::{
+    schedule::{Schedule, ScheduleOptions},
+    state::State,
+};
 
-use crate::engine::schedule::ScheduleOptions;
-use crate::engine::state::State;
+use downcast_rs::{impl_downcast, Downcast};
+use dyn_clone::DynClone;
 
-pub trait Agent {
-    type SimState: State + Sync + Send;
+pub trait Agent: Downcast + DynClone + Send + Sync {
+    fn step(&mut self, state: &mut dyn State, schedule: &mut Schedule, schedule_id: u32);
 
-    fn step(&mut self, state: &Self::SimState);
+    fn get_id(&self) -> u32;
 
-    /// Specifies whether this agent should be removed from the schedule after the current step.
-    fn should_remove(&mut self, _state: &Self::SimState) -> bool {
+    // Specifies whether this agent should be removed from the schedule after the current step.
+    fn is_stopped(&mut self, _state: &mut dyn State) -> bool {
         false
     }
 
-    /// Allows the agent to schedule new agents without having direct access to the Schedule.
-    /// This should NOT return an agent that is already scheduled.
-    fn should_reproduce(
+    fn before_step(
         &mut self,
-        _state: &Self::SimState,
-    ) -> Option<HashMap<Box<Self>, ScheduleOptions>> {
+        _state: &mut dyn State,
+    ) -> Option<Vec<(Box<dyn Agent>, ScheduleOptions)>> {
+        None
+    }
+
+    fn after_step(
+        &mut self,
+        _state: &mut dyn State,
+    ) -> Option<Vec<(Box<dyn Agent>, ScheduleOptions)>> {
         None
     }
 }
+
+dyn_clone::clone_trait_object!(Agent);
+impl_downcast!(Agent);

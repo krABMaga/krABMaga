@@ -1,36 +1,62 @@
 use bevy::prelude::{ColorMaterial, Handle, Query, Res, Transform, Visible};
 
-use crate::bevy::prelude::Commands;
-use crate::engine::schedule::Schedule;
-use crate::visualization::renderable::{Render, SpriteType};
-use crate::visualization::sprite_render_factory::SpriteFactoryResource;
+use crate::bevy::prelude::{Commands, ResMut};
 
-/// The system that updates the visual representation of each agent of our simulation.
-pub fn renderer_system<A: Render + Clone>(
+use crate::engine::state::State;
+
+use crate::visualization::{
+    agent_render::{AgentRender, SpriteType},
+    asset_handle_factory::AssetHandleFactoryResource,
+    simulation_descriptor::SimulationDescriptor,
+    visualization_state::VisualizationState,
+    wrappers::{ActiveSchedule, ActiveState},
+};
+
+// The system that updates the visual representation of each agent of our simulation.
+pub fn renderer_system<I: VisualizationState<S> + Clone + 'static, S: State>(
     mut query: Query<(
-        &mut A,
+        &mut Box<dyn AgentRender>,
         &mut Transform,
         &mut Visible,
         &mut Handle<ColorMaterial>,
     )>,
-    state: Res<A::SimState>,
-    schedule: Res<Schedule<A>>,
-    mut sprite_factory: SpriteFactoryResource,
+    state_wrapper: ResMut<ActiveState<S>>,
+    schedule_wrapper: Res<ActiveSchedule>,
+    mut sprite_factory: AssetHandleFactoryResource,
     mut commands: Commands,
+    mut vis_state: ResMut<I>,
+    sim_data: Res<SimulationDescriptor>,
 ) {
-    for (mut render, mut transform, mut visible, mut material) in query.iter_mut() {
-        render.update(&mut *transform, &state, &mut *visible);
-        let SpriteType::Emoji(emoji_code) = render.sprite();
-        let new_material = sprite_factory.get_material_handle(emoji_code);
-        if *material != new_material {
-            *material = new_material;
+    if !sim_data.paused {
+        vis_state.before_render(
+            &mut state_wrapper.0.lock().unwrap(),
+            &schedule_wrapper.0.lock().unwrap(),
+            &mut commands,
+            &mut sprite_factory,
+        );
+
+        for (mut agent_render, mut transform, mut visible, mut material) in query.iter_mut() {
+            let state = state_wrapper.0.lock().unwrap();
+            if let Some(agent) = vis_state.get_agent(&agent_render, &Box::new(state.as_state())) {
+                agent_render.update(
+                    &agent,
+                    &mut *transform,
+                    &Box::new(state.as_state()),
+                    &mut *visible,
+                );
+                let SpriteType::Emoji(emoji_code) =
+                    agent_render.sprite(&agent, &Box::new(state.as_state()));
+                let new_material = sprite_factory.get_material_handle(emoji_code);
+                if *material != new_material {
+                    *material = new_material;
+                }
+            } else {
+                let schedule = schedule_wrapper.0.lock().unwrap();
+                let step = schedule.step;
+                if step != 0 {
+                    visible.is_visible = false;
+                }
+            }
         }
-    }
-    for new_agent in schedule.newly_scheduled.lock().unwrap().clone() {
-        let SpriteType::Emoji(emoji_code) = new_agent.sprite();
-        let sprite_render = sprite_factory.get_emoji_loader(emoji_code);
-        new_agent
-            .clone()
-            .setup_graphics(sprite_render, &mut commands, &state);
     }
 }

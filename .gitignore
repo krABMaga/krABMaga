@@ -4,3 +4,4 @@
 .idea
 *.profraw
 Cargo.lock
+.vscode

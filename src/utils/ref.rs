@@ -1,13 +1,9 @@
-//use crate::lock::{RwLockReadGuard, MutexGuard};
-use hashbrown::HashMap;
 use ahash::RandomState;
 use core::hash::{BuildHasher, Hash};
 use core::ops::{Deref, DerefMut};
+use hashbrown::HashMap;
 use std::sync::MutexGuard;
 
-
-// --
-// -- Unique
 #[allow(dead_code)]
 pub struct RefMut<'a, K, V, S = RandomState> {
     guard: MutexGuard<'a, HashMap<K, V, S>>,
@@ -22,14 +18,9 @@ unsafe impl<'a, K: Eq + Hash + Send + Sync, V: Send + Sync, S: BuildHasher> Sync
 }
 
 impl<'a, K: Eq + Hash, V, S: BuildHasher> RefMut<'a, K, V, S> {
-    pub(crate) fn new(
-        guard: MutexGuard<'a, HashMap<K, V, S>>,
-        v: &'a mut V,
-    ) -> Self {
+    pub(crate) fn new(guard: MutexGuard<'a, HashMap<K, V, S>>, v: &'a mut V) -> Self {
         Self { guard, v }
     }
-
-
 
     pub fn value(&self) -> &V {
         self.v
@@ -38,7 +29,6 @@ impl<'a, K: Eq + Hash, V, S: BuildHasher> RefMut<'a, K, V, S> {
     pub fn value_mut(&mut self) -> &mut V {
         self.v
     }
-
 }
 
 impl<'a, K: Eq + Hash, V, S: BuildHasher> Deref for RefMut<'a, K, V, S> {
@@ -54,5 +44,3 @@ impl<'a, K: Eq + Hash, V, S: BuildHasher> DerefMut for RefMut<'a, K, V, S> {
         self.value_mut()
     }
 }
-
-// --

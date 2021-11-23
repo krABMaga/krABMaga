@@ -1,8 +1,7 @@
 use crate::bevy::prelude::Vec2;
-use crate::bevy_canvas::Geometry;
-use bevy_canvas::{Path, PathBuilder};
+pub use bevy_canvas::{Geometry, Path, PathBuilder};
 
-/// An arrow segment consisting of a main line, along with two small lines starting at the end point.
+// An arrow segment consisting of a main line, along with two small lines starting at the end point.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Arrow(pub Vec2, pub Vec2, pub f32, pub f32);
 

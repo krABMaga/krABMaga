@@ -1,8 +1,9 @@
-pub mod field;
-pub mod on_state_init;
-pub mod renderable;
+pub mod agent_render;
+pub mod asset_handle_factory;
+pub mod fields;
 pub mod simulation_descriptor;
-pub mod sprite_render_factory;
 mod systems;
 pub mod utils;
 pub mod visualization;
+pub mod visualization_state;
+pub mod wrappers;

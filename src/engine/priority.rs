@@ -1,15 +1,14 @@
-use std::cmp::Eq;
-use std::cmp::Ordering;
+use std::cmp::{Eq, Ordering};
 use std::fmt;
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Priority {
-    pub time: f64,
-    pub ordering: i64,
+    pub time: f32,
+    pub ordering: i32,
 }
 
 impl Priority {
-    pub fn new(the_time: f64, the_ordering: i64) -> Priority {
+    pub fn new(the_time: f32, the_ordering: i32) -> Priority {
         Priority {
             time: the_time,
             ordering: the_ordering,
@@ -25,15 +24,12 @@ impl Ord for Priority {
         if self.time > other.time {
             return Ordering::Less;
         }
-
         if self.ordering < other.ordering {
             return Ordering::Greater;
         }
         if self.ordering > other.ordering {
             return Ordering::Less;
         }
-        //return self.time.cmp(&other.time)
-
         Ordering::Equal
     }
 }

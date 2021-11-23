@@ -1,20 +1,18 @@
 use crate::engine::agent::Agent;
-use std::clone::Clone;
 use std::fmt;
 use std::hash::Hash;
 use std::hash::Hasher;
 
-static mut COUNTER: u32 = 0;
-
-#[derive(Clone, Debug)]
-pub struct AgentImpl<A: Agent + Clone> {
+static mut COUNTER: u32 = 1;
+#[derive(Clone)]
+pub struct AgentImpl {
     pub id: u32,
-    pub agent: A,
+    pub agent: Box<dyn Agent>,
     pub repeating: bool,
 }
 
-impl<A: Agent + Clone> AgentImpl<A> {
-    pub fn new(the_agent: A) -> AgentImpl<A> {
+impl AgentImpl {
+    pub fn new(the_agent: Box<dyn Agent>) -> AgentImpl {
         unsafe {
             COUNTER += 1;
 
@@ -26,31 +24,27 @@ impl<A: Agent + Clone> AgentImpl<A> {
         }
     }
 
-    // pub fn step(&mut self) {
-    //     self.agent.step();
-    // }
-
     pub fn id(self) -> u32 {
         self.id
     }
 }
 
-impl<A: Agent + Clone> fmt::Display for AgentImpl<A> {
+impl fmt::Display for AgentImpl {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{} {}", self.id, self.repeating)
     }
 }
 
-impl<A: Agent + Clone> PartialEq for AgentImpl<A> {
-    fn eq(&self, other: &AgentImpl<A>) -> bool {
+impl PartialEq for AgentImpl {
+    fn eq(&self, other: &AgentImpl) -> bool {
         self.id == other.id
     }
 }
 
-impl<A: Agent + Clone> Hash for AgentImpl<A> {
+impl Hash for AgentImpl {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.id.hash(state);
     }
 }
 
-impl<A: Agent + Clone> Eq for AgentImpl<A> {}
+impl Eq for AgentImpl {}
