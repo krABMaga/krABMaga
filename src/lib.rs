@@ -23,7 +23,6 @@ pub enum Info {
     NORMAL,
 }
 
-
 #[macro_export]
 //step = simulation step number
 //schedule
@@ -134,11 +133,9 @@ macro_rules! simulate {
                 }
             }
         }
-        // $s = s; // needed for model_exploration, requires also the state to be mut
         results
     }};
 }
-
 
 #[macro_use]
 mod no_exported {
@@ -149,6 +146,7 @@ mod no_exported {
         };
     }
 
+    //Used to count tokens of an expansion
     #[macro_export]
     macro_rules! count_tts {
         ($($tts:tt)*) => {<[()]>::len(&[$(replace_expr!($tts ())),*])};
@@ -181,15 +179,53 @@ mod no_exported {
         }};
 
     }
+
+    #[macro_export]
+    //step = simulation step number
+    //schedule
+    //agents
+    //states
+    //other parametes
+    macro_rules! simulate_explore {
+        ($step:expr, $s:expr) => {{
+            let mut s = $s;
+            let mut state = s.as_state_mut();
+            let n_step: u64 = $step;
+
+            let mut results: Vec<(Duration, f32)> = Vec::new();
+
+
+            let mut schedule: Schedule = Schedule::new();
+            state.init(&mut schedule);
+            let start = std::time::Instant::now();
+
+            for i in 0..n_step {
+                schedule.step(state);
+                if state.end_condition(&mut schedule) {
+                    break;
+                }
+            }
+
+            let run_duration = start.elapsed();
+
+        
+
+            results.push((
+                run_duration,
+                schedule.step as f32 / (run_duration.as_nanos() as f32 * 1e-9),
+            ));
+            
+            $s = s; // needed for model_exploration, requires also the state to be mut
+            results
+        }};
+    }
+
 }
 
 ///Create a csv file with the experiment results
 ///"DataFrame" trait allow the function to know field names and
 ///params list + output list for each configuration runned
-pub fn export_dataframe<A: DataFrame>(
-    name: &str,
-    dataframe: &Vec<A>,
-) -> Result<(), Box<dyn Error>> {
+pub fn export_dataframe<A: DataFrame>(name: &str, dataframe: &[A]) -> Result<(), Box<dyn Error>> {
     let csv_name = format!("{}.csv", name);
     let mut wtr = Writer::from_path(csv_name).unwrap();
     //define column name
@@ -274,10 +310,10 @@ macro_rules! build_dataframe {
                 v.push(self.conf_num.to_string());
                 v.push(self.conf_rep.to_string());
                 $(
-                    v.push(self.$input.to_string());
+                    v.push(format!("{:?}", self.$input));
                 )*
                 $(
-                    v.push(self.$output.to_string());
+                    v.push(format!("{:?}", self.$output));
                 )*
                 v.push(format!("{:?}", self.run_duration));
                 v.push(self.step_per_sec.to_string());
@@ -315,8 +351,8 @@ macro_rules! build_dataframe {
 ///step = simulation step number,
 ///schedule,
 ///states,
-///input{input: tipo},
-///output[output: tipo]
+///input{input:tipo},
+///output[output:tipo]
 macro_rules! explore {
     //exploration with explicit output parameters
     ($nstep: expr, $s:expr, $rep_conf:expr,
@@ -341,23 +377,23 @@ macro_rules! explore {
         let mut dataframe: Vec<FrameRow>  = Vec::new();
         for i in 0..n_conf{
             let mut state = $s; //state = State:new()
-            
+
             let mut row_count = 0;
             $(
                 state.$input = $input[config_table_index[row_count][i]];
                 row_count+=1;
             )*
-            
+
             println!("-----\nCONF {}", i);
             $(
-                println!("{}: {}", stringify!(state.$input), state.$input);
+                println!("{}: {:?}", stringify!(state.$input), state.$input);
             )*
 
             for j in 0..$rep_conf{
                 println!("------\nRun {}", j+1);
-                let result = simulate!($nstep, state, 1, Info::VERBOSE);
+                let result = simulate_explore!($nstep, state);
                 dataframe.push( FrameRow::new(i as u128, j + 1 as u128, $(state.$input,)* $(state.$output,)* result[0].0, result[0].1));
-            } 
+            }
         }
         dataframe
     }};
@@ -398,7 +434,7 @@ macro_rules! explore_parallel {
                 row_count+=1;
             )*
 
-            let result = simulate!($nstep, state, 1, Info::NORMAL);
+            let result = simulate_explore!($nstep, state);
             println!("conf {}, rep {}, run {}", i, run / n_conf, run);
             FrameRow::new(i as u128, (run % $rep_conf) as u128, $(state.$input,)* $(state.$output,)* result[0].0, result[0].1)
         })
