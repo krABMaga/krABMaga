@@ -28,7 +28,7 @@ jobs:
           sudo apt update
           sudo apt install pkg-config libx11-dev libasound2-dev libudev-dev
           sudo apt install libxcb-randr0-dev libxcb-xtest0-dev libxcb-xinerama0-dev libxcb-shape0-dev libxcb-xkb-dev
-
+          sudo apt install libxcb-render0-dev libxcb-xfixes0-dev libxcb1-dev
       - uses: actions/checkout@v2
 
       - uses: actions-rs/toolchain@v1
@@ -51,19 +51,19 @@ jobs:
           command: test
           args: --features visualization
 
-  coverage:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: nightly-2021-03-25
-          override: true
+  #coverage:
+    #runs-on: ubuntu-latest
+    #steps:
+     # - uses: actions/checkout@v2
+      #- uses: actions-rs/toolchain@v1
+       # with:
+        #  profile: minimal
+         # toolchain: nightly-2021-03-25
+          #override: true
 
-      - uses: Swatinem/rust-cache@v1
-        with:
-          key: coverage
+      #- uses: Swatinem/rust-cache@v1
+      #  with:
+       #   key: coverage
 
       #- uses: actions-rs/cargo@v1
        # with:
@@ -72,13 +72,13 @@ jobs:
         #env:
          # RUSTFLAGS: '-Zinstrument-coverage'
           #LLVM_PROFILE_FILE: '%m.profraw'
-      - name: Install grcov
-        run: |
-          rustup component add llvm-tools-preview
-          curl -L https://github.com/mozilla/grcov/releases/download/v0.6.1/grcov-linux-x86_64.tar.bz2 | tar jxf -
-      - name: Run grcov
-        run: |
-          ./grcov . --source-dir . --binary-path ./target/debug/ --output-type lcov --output-path ./lcov.info --branch --ignore-not-existing
-      - name: Upload to Codecov
-        run: |
-          bash <(curl -s https://codecov.io/bash) -f ./lcov.info
+      #- name: Install grcov
+       # run: |
+        #  rustup component add llvm-tools-preview
+         # curl -L https://github.com/mozilla/grcov/releases/download/v0.6.1/grcov-linux-x86_64.tar.bz2 | tar jxf -
+      #- name: Run grcov
+       # run: |
+        #  ./grcov . --source-dir . --binary-path ./target/debug/ --output-type lcov --output-path ./lcov.info --branch --ignore-not-existing
+      #- name: Upload to Codecov
+       # run: |
+        #  bash <(curl -s https://codecov.io/bash) -f ./lcov.info
