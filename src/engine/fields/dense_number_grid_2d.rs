@@ -26,8 +26,8 @@ cfg_if! {
             pub fn new(width: i32, height: i32) -> DenseNumberGrid2D<T> {
                 DenseNumberGrid2D {
                     locs: DBDashMap::new(),
-                    width,
-                    height,
+                    width: width.abs(),
+                    height: height.abs(),
                 }
             }
 
@@ -92,8 +92,8 @@ cfg_if! {
                 DenseNumberGrid2D {
                     locs: RefCell::new(std::iter::repeat_with(Vec::new).take((width * height) as usize).collect()),
                     rlocs: RefCell::new(std::iter::repeat_with(Vec::new).take((width * height)as usize).collect()),
-                    width,
-                    height,
+                    width: width.abs(),
+                    height: height.abs(),
                 }
             }
 
