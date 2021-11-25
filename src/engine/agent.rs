@@ -7,7 +7,7 @@ use downcast_rs::{impl_downcast, Downcast};
 use dyn_clone::DynClone;
 
 pub trait Agent: Downcast + DynClone + Send + Sync {
-    fn step(&mut self, state: &mut dyn State, schedule: &mut Schedule, schedule_id: u32);
+    fn step(&mut self, state: &mut dyn State);
 
     fn get_id(&self) -> u32;
 
