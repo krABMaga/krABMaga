@@ -13,8 +13,12 @@ Rust-AB is designed to be a _ready-to-use_ tool for the ABM community and for th
 # Examples
 
 All the examples are hosted in a separate repository [here](https://github.com/rust-ab/rust-ab-examples).
-- [Boids simulation](https://github.com/rust-ab/rust-ab-examples/tree/master/boids) :bird:
-- [Ants foraging](https://github.com/rust-ab/rust-ab-examples/tree/master/antsforaging) :ant:
+- [Ants Foraging](https://github.com/rust-ab/rust-ab-examples/tree/main/antsforaging)
+- [Flockers](https://github.com/rust-ab/rust-ab-examples/tree/main/flockers)
+- [Forest Fire](https://github.com/rust-ab/rust-ab-examples/tree/main/forestfire)
+- [Schelling Model](https://github.com/rust-ab/rust-ab-examples/tree/main/schelling)
+- [Virus on Network](https://github.com/rust-ab/rust-ab-examples/tree/main/virusnetwork)
+- [Wolf Sheep Grass](https://github.com/rust-ab/rust-ab-examples/tree/main/wolfsheepgrass)
 
 ### Usage
 
@@ -26,7 +30,7 @@ rust-ab = { git="https://github.com/rust-ab/rust-ab.git" }
 ```
 
 To get started using Rust-AB, see [the examples](https://github.com/rust-ab/rust-ab-examples).
-There's also a template to set up the correct project structure and the required files [here](https://github.com/rust-ab/rust-ab-examples/tree/master/template).
+There's also a template to set up the correct project structure and the required files [here](https://github.com/rust-ab/rust-ab-examples/tree/main/template).
 
 **Parallel execution**
 

@@ -29,8 +29,8 @@ cfg_if! {
             DenseGrid2D {
                 obj2loc: DBDashMap::with_capacity((width * height) as usize),
                 loc2objs: DBDashMap::with_capacity((width * height) as usize),
-                width,
-                height,
+                width: width.abs(),
+                height: height.abs(),
             }
         }
 
@@ -174,8 +174,8 @@ cfg_if! {
                     DenseGrid2D {
                         locs: RefCell::new(std::iter::repeat_with(Vec::new).take((width * height) as usize).collect()),
                         rlocs: RefCell::new(std::iter::repeat_with(Vec::new).take((width * height)as usize).collect()),
-                        width,
-                        height,
+                        width: width.abs(),
+                        height: width.abs(),
                     }
                 }
 
