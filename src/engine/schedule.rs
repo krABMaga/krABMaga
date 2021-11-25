@@ -81,7 +81,7 @@ cfg_if! {
                 }
             }
 
-            pub fn schedule_once(&mut self, agent: AgentImpl,the_time:f32, the_ordering:i32) {
+            pub fn schedule_once(&mut self, agent: AgentImpl, the_time:f32, the_ordering:i32) {
                 self.events.lock().unwrap().push(
                     agent,
                     Priority {
@@ -106,20 +106,20 @@ cfg_if! {
                 tor
             }
 
-            pub fn step(&mut self, state: &mut Box<&mut dyn State>) {
+            pub fn step(&mut self, state: &mut dyn State) {
 
                 let thread_num = self.thread_num;
                 let mut state = Arc::new(state);
 
-                state.before_step(self);
+                Arc::get_mut(&mut state).unwrap().before_step(self);
 
                 if self.step == 0{
-                    Arc::get_mut(&mut state).unwrap().update(self.step.clone());
+                    Arc::get_mut(&mut state).unwrap().update(self.step.clone() as u64);
                 }
 
                 self.step += 1;
 
-                if events.lock().unwrap().is_empty() {
+                if self.events.lock().unwrap().is_empty() {
                     println!("No agent in the queue to schedule. Terminating.");
                     std::process::exit(0);
                 }
@@ -140,28 +140,68 @@ cfg_if! {
                         let schedule_time = self.time.clone();
 
                         scope.spawn(move |_| {
-                            let mut q = events.lock().unwrap();
+
                             loop {
+
+                                let mut q = events.lock().unwrap();
+
                                 if q.is_empty() {
                                     break;
                                 }
 
+                                let mut item = q.pop();
+
+                                std::mem::drop(q);
+
+                                if item.is_some(){
+                                    let mut item = item.unwrap();
+                                    let state = Arc::get_mut(&mut state).unwrap().as_state_mut();
+                                    item.0.agent.before_step(state);
+
+                                    item.0.agent.step(state, self, item.0.id);
+
+                                    item.0.agent.after_step(state);
+
+                                    if item.0.repeating && !item.0.agent.is_stopped(state) {
+                                        self.schedule_once(
+                                            item.0,
+                                            item.1.time + 1.0,
+                                            item.1.ordering,
+                                        );
+                                    }
+
+                                    // let (mut agent, priority) = item;
+                                    if item.1.time > schedule_time {
+                                        let mut q = events.lock().unwrap();
+                                        q.push(item.0, Priority{ time: item.1.time, ordering: item.1.ordering} );
+                                        break;
+                                    }
+
+                                    item.0.agent.step(state, self, item.0.id);
+                                    if item.0.repeating {
+                                        let mut q = events.lock().unwrap();
+                                        q.push(item.0, Priority{ time: item.1.time+1.0, ordering: item.1.ordering} );
+                                    }
+                                } else {
+                                    panic!("Agent not found - inside loop")
+                                }
+
+                                /*
                                 match q.pop() {
-                                    Some(item) => {
+                                    Some(mut item) => {
 
-                                        let state = Arc::get_mut(&mut state).unwrap();
+                                        let state = Arc::get_mut(&mut state).unwrap().as_state_mut();
+                                        item.0.agent.before_step(state);
 
-                                        item.agentimpl.agent.before_step(state);
+                                        item.0.agent.step(state, self, item.0.id);
 
-                                        item.agentimpl.agent.step(state, self);
+                                        item.0.agent.after_step(state);
 
-                                        item.agentimpl.agent.after_step(state);
-
-                                        if item.agentimpl.repeating && !item.agentimpl.agent.is_stopped(state) {
+                                        if item.0.repeating && !item.0.agent.is_stopped(state) {
                                             self.schedule_once(
-                                                item.agentimpl,
-                                                item.priority.time + 1.0,
-                                                item.priority.ordering,
+                                                item.0,
+                                                item.1.time + 1.0,
+                                                item.1.ordering,
                                             );
                                         }
 
@@ -171,20 +211,21 @@ cfg_if! {
                                             break;
                                         }
 
-                                        agent.agent.step(state);
+                                        agent.agent.step(state, self, item.0.id);
                                         if agent.repeating {
                                             q.push(agent, Priority{ time: priority.time+1.0, ordering: priority.ordering} );
                                         }
                                     },
                                     None => panic!("Agent not found - inside loop"),
                                 }
+                                */
                             }
                          });
                     }
                 });
 
 
-                Arc::get_mut(&mut state).unwrap().update(self.step.clone());
+                Arc::get_mut(&mut state).unwrap().update(self.step.clone() as u64);
 
             }
         }

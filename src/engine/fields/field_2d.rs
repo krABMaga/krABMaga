@@ -9,7 +9,7 @@ use std::cmp;
 use std::hash::Hash;
 
 cfg_if! {
-    if #[cfg(any(feature = "visualization", feature = "visualization_wasm"))]{
+    if #[cfg(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel"))] {
         use crate::utils::dbdashmap::DBDashMap;
     } else {
         use std::cell::RefCell;
