@@ -6,6 +6,7 @@ use cfg_if::cfg_if;
 use clap::{App, Arg};
 use lazy_static::*;
 use priority_queue::PriorityQueue;
+use std::fmt;
 
 cfg_if! {
     if #[cfg(feature ="parallel")]{
@@ -47,7 +48,7 @@ cfg_if! {
             pub thread_num:usize
         }
 
-        #[derive(Clone)] 
+        #[derive(Clone)]
         pub struct Pair {
             agentimpl: AgentImpl,
             priority: Priority,
@@ -60,6 +61,12 @@ cfg_if! {
                     agentimpl: agent,
                     priority: the_priority
                 }
+            }
+        }
+
+        impl fmt::Display for Pair {
+            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                write!(f, "agent: {} priority: {}", self.agentimpl, self.priority)
             }
         }
 
@@ -118,12 +125,12 @@ cfg_if! {
                 }
 
                 Arc::get_mut(&mut state).unwrap().lock().unwrap().before_step(self);
-                
+
                 if self.events.lock().unwrap().is_empty() {
                     println!("No agent in the queue to schedule. Terminating.");
                     std::process::exit(0);
                 }
-                
+
                 let mut cevents: Vec<Vec<Pair>> = vec![Vec::with_capacity(thread_division); thread_num];
 
                 match self.events.lock().unwrap().peek() {
@@ -139,7 +146,7 @@ cfg_if! {
                     if self.events.lock().unwrap().is_empty() {
                         break;
                     }
-        
+
                     let item = self.events.lock().unwrap().pop();
                     match item {
                         Some(item) => {
@@ -154,8 +161,8 @@ cfg_if! {
                         None => panic!("no item"),
                     }
                 }
-                      
-                let _result = thread::scope( |scope| {                        
+
+                let _result = thread::scope( |scope| {
                     for _tid in 0..thread_num {
                         let events = Arc::clone(&self.events);
                         let state = Arc::clone(&state);
@@ -168,7 +175,7 @@ cfg_if! {
                                 // take the lock from the state
                                 let mut state = state.lock().unwrap();
                                 let state = state.as_state_mut();
-                                       
+
                                 // compute the agent
                                 item.agentimpl.agent.before_step(state);
                                 item.agentimpl.agent.step(state);
@@ -186,7 +193,7 @@ cfg_if! {
                                             ordering: item.priority.ordering,
                                         },
                                     );
- 
+
                                     // continue on the next item
                                     continue;
                                 }
@@ -221,6 +228,12 @@ cfg_if! {
                     agentimpl: agent,
                     priority: the_priority
                 }
+            }
+        }
+
+        impl fmt::Display for Pair {
+            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                write!(f, "agent: {} priority: {}", self.agentimpl, self.priority)
             }
         }
 
