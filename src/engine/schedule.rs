@@ -47,13 +47,14 @@ cfg_if! {
             pub thread_num:usize
         }
 
-        #[derive(Clone)]
+        #[derive(Clone)] 
         pub struct Pair {
             agentimpl: AgentImpl,
             priority: Priority,
         }
 
         impl Pair {
+            #[allow(dead_code)]
             fn new(agent: AgentImpl, the_priority: Priority) -> Pair {
                 Pair {
                     agentimpl: agent,
@@ -109,18 +110,21 @@ cfg_if! {
             pub fn step(&mut self, state: &mut dyn State) {
 
                 let thread_num = self.thread_num;
-                
-                let mut state = Arc::new(state);
-                
+                let thread_division = (self.events.lock().unwrap().len() as f64 / thread_num as f64).ceil() as usize;
+                let mut state = Arc::new(Mutex::new(state));
+
                 if self.step == 0{
-                    Arc::get_mut(&mut state).unwrap().update(self.step.clone() as u64);
+                    Arc::get_mut(&mut state).unwrap().lock().unwrap().update(self.step.clone() as u64);
                 }
 
-                Arc::get_mut(&mut state).unwrap().before_step(self);
+                Arc::get_mut(&mut state).unwrap().lock().unwrap().before_step(self);
+                
                 if self.events.lock().unwrap().is_empty() {
                     println!("No agent in the queue to schedule. Terminating.");
                     std::process::exit(0);
                 }
+                
+                let mut cevents: Vec<Vec<Pair>> = vec![Vec::with_capacity(thread_division); thread_num];
 
                 match self.events.lock().unwrap().peek() {
                     Some(item) => {
@@ -130,72 +134,70 @@ cfg_if! {
                     None => panic!("Agent not found - out loop")
                 }
 
-                println!("Parallel step: {}", self.step);
-                let _result = thread::scope( |scope| {
-                    for tid in 0..thread_num{
+                let mut i = 0;
+                loop {
+                    if self.events.lock().unwrap().is_empty() {
+                        break;
+                    }
+        
+                    let item = self.events.lock().unwrap().pop();
+                    match item {
+                        Some(item) => {
+                            let (agent, priority) = item;
+                            let index = match thread_num{
+                                0 => 0,
+                                _ => i%thread_num
+                            };
+                            cevents[index].push(Pair::new(agent, priority));
+                            i+=1;
+                        },
+                        None => panic!("no item"),
+                    }
+                }
+                      
+                let _result = thread::scope( |scope| {                        
+                    for _tid in 0..thread_num {
                         let events = Arc::clone(&self.events);
-                        let mut state = Arc::clone(&state);
-                        let schedule_time = self.time.clone();
+                        let state = Arc::clone(&state);
+
+                        let mut batch = cevents.pop().unwrap();
 
                         scope.spawn(move |_| {
 
-                            loop {
-                            
-                                match Arc::get_mut(&mut state) {
+                            for item in batch.iter_mut(){
+                                // take the lock from the state
+                                let mut state = state.lock().unwrap();
+                                let state = state.as_state_mut();
+                                       
+                                // compute the agent
+                                item.agentimpl.agent.before_step(state);
+                                item.agentimpl.agent.step(state);
+                                item.agentimpl.agent.after_step(state);
 
-                                    Some(state) => {
-                                        println!("Thread diocane {}", tid);
-
-                                        let mut q = events.lock().unwrap();
-
-                                        if q.is_empty() {
-                                            break;
-                                        }
-
-                                        let mut item = q.pop();
-
-                                        std::mem::drop(q);
-
-                                        if item.is_some(){
-                                    
-                                            let mut item = item.unwrap();
-                                            let state = state.as_state_mut();
-                                            // let mut state = Arc::get_mut(&mut state).unwrap().as_state_mut();
-        
-                                            item.0.agent.before_step(state);
-        
-                                            item.0.agent.step(state, item.0.id);
-        
-                                            item.0.agent.after_step(state);
-        
-                                            if item.0.repeating && !item.0.agent.is_stopped(state) {
-                                                let mut q = events.lock().unwrap();
-                                                q.push(
-                                                    item.0,
-                                                    Priority {
-                                                        time: item.1.time + 1.0,
-                                                        ordering: item.1.ordering,
-                                                    },
-                                                );
-                                            }
-        
-                                        } else {
-                                            panic!("Agent not found - inside loop")
-                                        }
-                                    },
-                                    None => {
-                                        continue;
-                                    }
+                                // after computation check if repeating and not stopped
+                                if item.agentimpl.repeating && !item.agentimpl.agent.is_stopped(state) {
+                                    // take the lock from the queue
+                                    let mut q = events.lock().unwrap();
+                                    // schedule_once transposition
+                                    q.push(
+                                        item.agentimpl.clone(),
+                                        Priority {
+                                            time: item.priority.time + 1.0,
+                                            ordering: item.priority.ordering,
+                                        },
+                                    );
+ 
+                                    // continue on the next item
+                                    continue;
                                 }
-                                
-                                
                             }
-                         });
+                        });
                     }
                 });
-                Arc::get_mut(&mut state).unwrap().after_step(self);
+
+                Arc::get_mut(&mut state).unwrap().lock().unwrap().after_step(self);
                 self.step += 1;
-                Arc::get_mut(&mut state).unwrap().update(self.step.clone() as u64);
+                Arc::get_mut(&mut state).unwrap().lock().unwrap().update(self.step.clone() as u64);
             }
         }
     }
@@ -243,7 +245,6 @@ cfg_if! {
 
             pub fn schedule_repeating(&mut self, agent: Box<dyn Agent>, the_time:f32, the_ordering:i32) {
                 let mut a = AgentImpl::new(agent);
-                //let id = a.id.clone();
                 a.repeating = true;
                 let pr = Priority::new(the_time, the_ordering);
                 self.events.push(a, pr);
@@ -256,18 +257,6 @@ cfg_if! {
                 }
                 tor
             }
-
-            // pub fn update_event(&mut self, id: u32, agent: Box<dyn Agent>, repeating: bool ) {
-
-            //     let agent = AgentImpl{id, agent: agent.clone(), repeating};
-
-            //     let event = self.events.get_mut(&agent);
-
-            //     if let Some(mut e) = event {
-            //         e.0.agent = agent.agent;
-            //     }
-
-            // }
 
             pub fn step(&mut self, state: &mut dyn State){
 

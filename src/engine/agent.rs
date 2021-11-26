@@ -1,7 +1,4 @@
-use crate::engine::{
-    schedule::{Schedule, ScheduleOptions},
-    state::State,
-};
+use crate::engine::{schedule::ScheduleOptions, state::State};
 
 use downcast_rs::{impl_downcast, Downcast};
 use dyn_clone::DynClone;

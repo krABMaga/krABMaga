@@ -1,8 +1,8 @@
 use crate::engine::schedule::Schedule;
-use std::any::Any;
 use cfg_if::cfg_if;
+use std::any::Any;
 
-cfg_if!{
+cfg_if! {
     if #[cfg(feature ="parallel")] {
         //we need a specific type for the state
         pub trait State: Sync + Send + 'static {
