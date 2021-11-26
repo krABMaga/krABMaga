@@ -28,6 +28,7 @@ cfg_if! {
             pub toroidal: bool,
         }
 
+        //field 2d
         impl<O: Location2D<Real2D> + Clone + Hash + Eq + Copy + Display> Field2D<O> {
             pub fn new(w: f32, h: f32, d: f32, t: bool) -> Field2D<O> {
                 Field2D {
