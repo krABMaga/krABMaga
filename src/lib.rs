@@ -33,7 +33,7 @@ pub enum Info {
 pub enum ExploreMode {
     Exaustive,
     Matched,
-    Distributed,
+    //Distributed,
 }
 
 /**
@@ -44,7 +44,7 @@ pub enum ExploreMode {
  */
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum ComputationMode {
-    Local,
+    Sequential,
     Parallel,
     Distributed,
 }
@@ -243,7 +243,7 @@ mod no_exported {
     ///states,
     ///input{input:type},
     ///output[output:type]
-    macro_rules! explore_local {
+    macro_rules! explore_sequential {
 
         //exploration with explicit output parameters
         ($nstep: expr, $rep_conf:expr, $s:ty,
@@ -271,7 +271,7 @@ mod no_exported {
                 ExploreMode::Matched =>{
                     $( n_conf = $input.len(); )*
                 },
-                ExploreMode::Distributed => panic!("you are not running in distributed mode"),
+                //ExploreMode::Distributed => panic!("you are not running in distributed mode"),
             }
             println!("n_conf {}", n_conf);
 
@@ -298,7 +298,7 @@ mod no_exported {
                             )*
                         );
                     },
-                    ExploreMode::Distributed => panic!("you are not running in distributed mode"),
+                    //ExploreMode::Distributed => panic!("you are not running in distributed mode"),
                 }
 
                 println!("-----\nCONF {}", i);
@@ -317,7 +317,7 @@ mod no_exported {
 
         //exploration taking default output: total time and step per second
         ($nstep: expr, $rep_conf:expr, $s:expr, input {$($input:ident: $input_ty: ty )*}, $mode:expr) => {
-            explore_local!($nstep, $s, $rep_conf, input {$($input: $input_ty)*}, output [], $mode)
+            explore_sequential!($nstep, $s, $rep_conf, input {$($input: $input_ty)*}, output [], $mode)
         }
 
     }
@@ -348,7 +348,7 @@ mod no_exported {
                 ExploreMode::Matched =>{
                     $( n_conf = $input.len(); )*
                 },
-                ExploreMode::Distributed => panic!("you are not running in distributed mode"),
+                //ExploreMode::Distributed => panic!("you are not running in distributed mode"),
             }
             println!("n_conf {}", n_conf);
 
@@ -381,7 +381,7 @@ mod no_exported {
                             )*
                         );
                     },
-                    ExploreMode::Distributed => panic!("you are not running in distributed mode"),
+                    //ExploreMode::Distributed => panic!("you are not running in distributed mode"),
                 }
 
                 let result = simulate_explore!($nstep, state);
@@ -408,7 +408,13 @@ mod no_exported {
             output [$($output:ident: $output_ty: ty )*],
             $mode: expr,
             $( $x:expr ),* ) => {{
-            
+
+            let universe = mpi::initialize().unwrap();
+            let world = universe.world();
+            let root_rank = 0;
+            let root_process = world.process_at_rank(root_rank);
+            let my_rank = world.rank();
+            let num_procs = world.size() as usize;
                 
             //typecheck
             let _rep_conf = $rep_conf as usize;
@@ -416,7 +422,7 @@ mod no_exported {
 
             let mut n_conf:usize = 1;
             let mut config_table_index: Vec<Vec<usize>> = Vec::new();
-            let mut tup: (i32, u32) = (1, 1);
+            //let mut tup: (i32, u32) = (1, 1);
 
             match $mode {
                 ExploreMode::Exaustive =>{
@@ -428,62 +434,62 @@ mod no_exported {
                 ExploreMode::Matched =>{
                     $( n_conf = $input.len(); )*
                 },
-                ExploreMode::Distributed => {
+                /*ExploreMode::Distributed => {
                     $( n_conf = $input.len(); )*
-                    //tup = ( $($x,)* );
-                    let mut i = 0;
-                    // TODO: fix this
-                    // if there are optional parameters of different types
-                    // we build the tuple with them
-                    // we manually access to the tuple index because we know what we are passsing
-                    $(
-                        if(i==0){
-                            tup.0 = $x as i32;
-                        }
-                        else{
-                            tup.1 = $x as u32;
-                        }
-                        i+= 1;
-                    )*
-                    n_conf /= (tup.1 as usize);
-                },
+                    // //tup = ( $($x,)* );
+                    // let mut i = 0;
+                    // // TODO: fix this
+                    // // if there are optional parameters of different types
+                    // // we build the tuple with them
+                    // // we manually access to the tuple index because we know what we are passsing
+                    // $(
+                    //     if(i==0){
+                    //         tup.0 = $x as i32;
+                    //     }
+                    //     else{
+                    //         tup.1 = $x as u32;
+                    //     }
+                    //     i+= 1;
+                    // )*
+                    // n_conf /= (tup.1 as usize);
+                },*/
             }
-            println!("n_conf {}", n_conf);
+            println!("n_conf {}", n_conf/num_procs);
 
             //build_dataframe!(FrameRow, input {$( $input:$input_ty)*, }, output[ $( $output:$output_ty )*]);
 
             let mut dataframe: Vec<FrameRow>  = Vec::new();
 
 
-            for i in 0..n_conf{
+            for i in 0..n_conf/num_procs {
                 let mut state;
                 match $mode { // check which mode to use to generate the configurations
                     ExploreMode::Exaustive =>{ // use all the possible combination
                         let mut row_count = -1.;
                         state = <$s>::new(
                             $(
-                            $input[config_table_index[{row_count+=1.; row_count as usize}][i]],
+                            $input[config_table_index[{row_count+=1.; row_count as usize}][i*num_procs + (my_rank as usize)]],
                             )*
                         );
                     },
                     ExploreMode::Matched =>{ // create a configuration using the combination of input with the same index
                         state = <$s>::new(
                             $(
-                                $input[i],
+                                $input[i*num_procs + (my_rank as usize)],
                             )*
                         );
                     },
-                    ExploreMode::Distributed => {
-                        //TODO se ci stanno altri param si sfonda sicuro
-                        let mut my_r = tup.0;
-                        let mut num_processors = tup.1;
-                        // we distribute the configurations among the processes
-                        state = <$s>::new(
-                            $(
-                                $input[(i*(num_processors as usize) + (my_r as usize)) as usize],
-                            )*
-                        );
-                    },
+                    // ExploreMode::Distributed => {
+                    //     //TODO se ci stanno altri param si sfonda sicuro
+                    //     let mut my_r = tup.0;
+                    //     let mut num_processors = tup.1;
+                    //     // we distribute the configurations among the processes
+                    //     state = <$s>::new(
+                    //         $(
+                    //             $input[(i*(num_processors as usize) + (my_r as usize)) as usize],
+                    //         )*
+                    //     );
+                    // },
                 }
 
                 // println!("-----\nCONF {}", i);
@@ -492,11 +498,29 @@ mod no_exported {
                 // )*
 
                 for j in 0..$rep_conf{
-                    println!("conf {}, rep {}, pid: {}", i, j, tup.0);
+                    println!("conf {}, rep {}, pid: {}", i*num_procs + (my_rank as usize), j, my_rank);
                     let result = simulate_explore!($nstep, state);
                     dataframe.push( FrameRow::new(i as u32, j + 1 as u32, $(state.$input,)* $(state.$output,)* result[0].0, result[0].1, $($x,)*));
                 }
             }
+
+            // i have to return a dummy dataframe but i dont use it
+            // only the master write the complete dataframe of all procs on csv
+            if world.rank() == root_rank {
+                //let size = width.len() * (world.size() as usize);
+                let mut t = vec![dataframe[0]; n_conf];
+        
+                root_process.gather_into_root(&dataframe[..], &mut t[..]);
+        
+                //build csv from all processes
+                let name = format!("{}", "result");
+                let _res = export_dataframe(&name, &t);
+                
+            } else {
+                //every proc send to root every row
+                root_process.gather_into(&dataframe[..]);
+            }
+
             dataframe
         }};
 
@@ -534,7 +558,7 @@ macro_rules! explore {
         
         build_dataframe!(FrameRow, input {$( $input:$input_ty)* }, output[ $( $output:$output_ty )*], $( $x:$x_ty ),* );
         match $cmode {
-            ComputationMode::Local => explore_local!($nstep, $rep_conf, $s, input {$($input: $input_ty)*}, output [$($output: $output_ty)*], $mode, $( $x ),*),
+            ComputationMode::Sequential => explore_sequential!($nstep, $rep_conf, $s, input {$($input: $input_ty)*}, output [$($output: $output_ty)*], $mode, $( $x ),*),
             ComputationMode::Parallel => explore_parallel!($nstep, $rep_conf, $s, input {$($input: $input_ty)*}, output [$($output: $output_ty)*], $mode, $( $x ),*),
             ComputationMode::Distributed => explore_distributed!($nstep, $rep_conf, $s, input {$($input: $input_ty)*}, output [$($output: $output_ty)*], $mode, $( $x ),*),
         }
