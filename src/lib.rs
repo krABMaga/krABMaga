@@ -11,7 +11,7 @@ pub use bevy;
 
 pub use rand::distributions::{Distribution, Uniform};
 
-pub use csv::Writer;
+pub use csv::{Writer, Reader};
 pub use rayon::prelude::*;
 pub use std::time::Duration;
 
@@ -27,13 +27,13 @@ pub enum Info {
  * 3 mode to generate the data
  * Exaustive: Brute force parameter exploration
  * Matched: explore every input with the same indexes
- * Distributed: explore every input with the same indexes and distribute them to the different nodes
+ * File: Read from file
  */
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum ExploreMode {
     Exaustive,
     Matched,
-    //Distributed,
+    //File,
 }
 
 /**
@@ -46,7 +46,7 @@ pub enum ExploreMode {
 pub enum ComputationMode {
     Sequential,
     Parallel,
-    Distributed,
+    DistributedMPI,
 }
 
 #[macro_export]
@@ -271,7 +271,7 @@ mod no_exported {
                 ExploreMode::Matched =>{
                     $( n_conf = $input.len(); )*
                 },
-                //ExploreMode::Distributed => panic!("you are not running in distributed mode"),
+                // ExploreMode::File => panic!("you are not running in file mode"),
             }
             println!("n_conf {}", n_conf);
 
@@ -298,7 +298,7 @@ mod no_exported {
                             )*
                         );
                     },
-                    //ExploreMode::Distributed => panic!("you are not running in distributed mode"),
+                    //ExploreMode::File => panic!("you are not running in file mode"),
                 }
 
                 println!("-----\nCONF {}", i);
@@ -348,7 +348,7 @@ mod no_exported {
                 ExploreMode::Matched =>{
                     $( n_conf = $input.len(); )*
                 },
-                //ExploreMode::Distributed => panic!("you are not running in distributed mode"),
+                //ExploreMode::File => panic!("you are not running in file mode"),
             }
             println!("n_conf {}", n_conf);
 
@@ -381,7 +381,7 @@ mod no_exported {
                             )*
                         );
                     },
-                    //ExploreMode::Distributed => panic!("you are not running in distributed mode"),
+                    //ExploreMode::File => panic!("you are not running in file mode"),
                 }
 
                 let result = simulate_explore!($nstep, state);
@@ -402,7 +402,7 @@ mod no_exported {
     }
 
     #[macro_export]
-    macro_rules! explore_distributed {
+    macro_rules! explore_distributed_mpi {
         ($nstep: expr, $rep_conf:expr, $s:ty,
             input {$($input:ident: $input_ty: ty )*},
             output [$($output:ident: $output_ty: ty )*],
@@ -434,6 +434,7 @@ mod no_exported {
                 ExploreMode::Matched =>{
                     $( n_conf = $input.len(); )*
                 },
+                //ExploreMode::File => panic!("you are not running in file mode"),
                 /*ExploreMode::Distributed => {
                     $( n_conf = $input.len(); )*
                     // //tup = ( $($x,)* );
@@ -479,6 +480,8 @@ mod no_exported {
                             )*
                         );
                     },
+                    //ExploreMode::File => panic!("you are not running in file mode"),
+
                     // ExploreMode::Distributed => {
                     //     //TODO se ci stanno altri param si sfonda sicuro
                     //     let mut my_r = tup.0;
@@ -508,20 +511,21 @@ mod no_exported {
             // only the master write the complete dataframe of all procs on csv
             if world.rank() == root_rank {
                 //let size = width.len() * (world.size() as usize);
-                let mut t = vec![dataframe[0]; n_conf];
+                let mut all_dataframe = vec![dataframe[0]; n_conf];
         
-                root_process.gather_into_root(&dataframe[..], &mut t[..]);
-        
-                //build csv from all processes
-                let name = format!("{}", "result");
-                let _res = export_dataframe(&name, &t);
+                root_process.gather_into_root(&dataframe[..], &mut all_dataframe[..]);
+    
+                all_dataframe
                 
             } else {
                 //every proc send to root every row
                 root_process.gather_into(&dataframe[..]);
+                //return dummy dataframe
+                dataframe = Vec::new();
+                dataframe
             }
 
-            dataframe
+            //dataframe
         }};
 
 
@@ -529,7 +533,7 @@ mod no_exported {
         ($nstep: expr, $rep_conf:expr, $state_name:ty, input {$($input:ident: $input_ty: ty )*,},
         $mode: expr, 
         $( $x:expr ),* ) => {
-                explore_distributed!($nstep, $rep_conf, $state_name, input { $($input: $input_ty)*}, output [],
+                explore_distributed_mpi!($nstep, $rep_conf, $state_name, input { $($input: $input_ty)*}, output [],
                 $mode, $( $x:expr ),*)
         };
     }
@@ -560,7 +564,7 @@ macro_rules! explore {
         match $cmode {
             ComputationMode::Sequential => explore_sequential!($nstep, $rep_conf, $s, input {$($input: $input_ty)*}, output [$($output: $output_ty)*], $mode, $( $x ),*),
             ComputationMode::Parallel => explore_parallel!($nstep, $rep_conf, $s, input {$($input: $input_ty)*}, output [$($output: $output_ty)*], $mode, $( $x ),*),
-            ComputationMode::Distributed => explore_distributed!($nstep, $rep_conf, $s, input {$($input: $input_ty)*}, output [$($output: $output_ty)*], $mode, $( $x ),*),
+            ComputationMode::DistributedMPI => explore_distributed_mpi!($nstep, $rep_conf, $s, input {$($input: $input_ty)*}, output [$($output: $output_ty)*], $mode, $( $x ),*),
         }
     }};
 
@@ -763,4 +767,29 @@ macro_rules! build_dataframe {
     ($name:ident, input {$($input: ident: $input_ty: ty)*}, $( $x:ident: $x_ty: ty ),*) => {
         build_dataframe!($name, input{$($element: $input_ty)*}, output[], $( $x:ident: $x_ty: ty ),*);
     };
+}
+
+#[macro_export]
+macro_rules! read_from_csv{
+
+    ($input_file: expr, $( $x:ident: $x_ty: ty ),*) =>{{
+        
+        let mut rdr = Reader::from_path($input_file).unwrap();
+        $(
+            let mut $x: Vec<$x_ty> = Vec::new();
+        )*
+        for result in rdr.records() {
+            let record = result.unwrap();
+            let mut i = 0;
+            $(
+                let x : $x_ty = record[i].parse().unwrap();
+                $x.push(x);
+                i += 1;
+            )*
+        }
+        $(
+            println!("{:?}", $x);
+        )*
+        
+    }};
 }
