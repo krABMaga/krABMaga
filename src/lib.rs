@@ -582,7 +582,7 @@ macro_rules! explore {
 ///Create a csv file with the experiment results
 ///"DataFrame" trait allow the function to know field names and
 ///params list + output list for each configuration runned
-pub fn export_dataframe<A: DataFrame>(name: &str, dataframe: &[A]) -> Result<(), Box<dyn Error>> {
+pub fn write_csv<A: DataFrame>(name: &str, dataframe: &[A]) -> Result<(), Box<dyn Error>> {
     let csv_name = format!("{}.csv", name);
     let mut wtr = Writer::from_path(csv_name).unwrap();
     //define column name
@@ -770,7 +770,7 @@ macro_rules! build_dataframe {
 }
 
 #[macro_export]
-macro_rules! read_from_csv{
+macro_rules! load_csv{
 
     ($input_file: expr, $( $x:ident: $x_ty: ty ),*) =>{{
         
@@ -787,9 +787,10 @@ macro_rules! read_from_csv{
                 i += 1;
             )*
         }
-        $(
-            println!("{:?}", $x);
-        )*
-        
+        // $(
+        //     println!("{:?}", $x);
+        // )*
+        let v = ($( $x, )*);
+        v
     }};
 }
