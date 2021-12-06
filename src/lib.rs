@@ -2,6 +2,7 @@ pub mod engine;
 pub mod utils;
 pub use indicatif::ProgressBar;
 pub use rand;
+pub use hashbrown;
 
 #[cfg(any(feature = "visualization", feature = "visualization_wasm", doc))]
 pub mod visualization;
@@ -16,6 +17,23 @@ pub use rayon::prelude::*;
 pub use std::time::Duration;
 
 use std::error::Error;
+
+// #[cfg(feature = "explore")]
+// #[macro_use]
+// extern crate memoffset;
+
+#[cfg(feature = "explore")] 
+pub use {
+    memoffset::{offset_of, span_of},
+    mpi::{
+        datatype::UserDatatype,
+        traits::*,
+        Address
+    },
+};
+
+#[cfg(feature = "explore")] 
+pub extern crate mpi;
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Info {
@@ -220,6 +238,7 @@ mod no_exported {
 
             for i in 0..n_step {
                 schedule.step(state);
+
                 if state.end_condition(&mut schedule) {
                     break;
                 }
@@ -385,7 +404,7 @@ mod no_exported {
                 }
 
                 let result = simulate_explore!($nstep, state);
-                println!("conf {}, rep {}, run {}", i, run / n_conf, run);
+                //println!("conf {}, rep {}, run {}", i, run / n_conf, run);
                 FrameRow::new(i as u32, (run % $rep_conf) as u32, $(state.$input,)* $(state.$output,)* result[0].0, result[0].1, $($x,)*)
             })
             .collect();
@@ -434,26 +453,6 @@ mod no_exported {
                 ExploreMode::Matched =>{
                     $( n_conf = $input.len(); )*
                 },
-                //ExploreMode::File => panic!("you are not running in file mode"),
-                /*ExploreMode::Distributed => {
-                    $( n_conf = $input.len(); )*
-                    // //tup = ( $($x,)* );
-                    // let mut i = 0;
-                    // // TODO: fix this
-                    // // if there are optional parameters of different types
-                    // // we build the tuple with them
-                    // // we manually access to the tuple index because we know what we are passsing
-                    // $(
-                    //     if(i==0){
-                    //         tup.0 = $x as i32;
-                    //     }
-                    //     else{
-                    //         tup.1 = $x as u32;
-                    //     }
-                    //     i+= 1;
-                    // )*
-                    // n_conf /= (tup.1 as usize);
-                },*/
             }
             println!("n_conf {}", n_conf/num_procs);
 
@@ -480,19 +479,6 @@ mod no_exported {
                             )*
                         );
                     },
-                    //ExploreMode::File => panic!("you are not running in file mode"),
-
-                    // ExploreMode::Distributed => {
-                    //     //TODO se ci stanno altri param si sfonda sicuro
-                    //     let mut my_r = tup.0;
-                    //     let mut num_processors = tup.1;
-                    //     // we distribute the configurations among the processes
-                    //     state = <$s>::new(
-                    //         $(
-                    //             $input[(i*(num_processors as usize) + (my_r as usize)) as usize],
-                    //         )*
-                    //     );
-                    // },
                 }
 
                 // println!("-----\nCONF {}", i);
@@ -510,7 +496,6 @@ mod no_exported {
             // i have to return a dummy dataframe but i dont use it
             // only the master write the complete dataframe of all procs on csv
             if world.rank() == root_rank {
-                //let size = width.len() * (world.size() as usize);
                 let mut all_dataframe = vec![dataframe[0]; n_conf];
         
                 root_process.gather_into_root(&dataframe[..], &mut all_dataframe[..]);
@@ -557,7 +542,6 @@ macro_rules! explore {
             // it makes a new variable for optional parameters ant then it's passed
             // as an optional expression 
             let $x = $x;
-            //println!("my rank ---- {}", $x);
         )*
         
         build_dataframe!(FrameRow, input {$( $input:$input_ty)* }, output[ $( $output:$output_ty )*], $( $x:$x_ty ),* );
@@ -726,7 +710,6 @@ macro_rules! build_dataframe {
                 $(
                     v.push(format!("{:?}", self.$output));
                 )*
-                //v.push(format!("{:?}", self.run_duration));
                 v.push(self.run_duration.to_string());
                 v.push(self.step_per_sec.to_string());
                 $(
@@ -770,7 +753,7 @@ macro_rules! build_dataframe {
 }
 
 #[macro_export]
-macro_rules! load_csv{
+macro_rules! load_csv {
 
     ($input_file: expr, $( $x:ident: $x_ty: ty ),*) =>{{
         
@@ -787,9 +770,6 @@ macro_rules! load_csv{
                 i += 1;
             )*
         }
-        // $(
-        //     println!("{:?}", $x);
-        // )*
         let v = ($( $x, )*);
         v
     }};
