@@ -4,15 +4,23 @@ pub use indicatif::ProgressBar;
 pub use rand;
 pub use hashbrown;
 
+
 #[cfg(any(feature = "visualization", feature = "visualization_wasm", doc))]
 pub mod visualization;
 
 #[cfg(any(feature = "visualization", feature = "visualization_wasm", doc))]
 pub use bevy;
 
-pub use rand::distributions::{Distribution, Uniform};
+pub use rand::{
+    thread_rng,
+    Rng,
+    distributions::{Distribution, Uniform}
+};
 
 pub use csv::{Writer, Reader};
+pub use std::fs::File;
+pub use std::io::Write;
+pub use std::fs::OpenOptions;
 pub use rayon::prelude::*;
 pub use std::time::Duration;
 
@@ -773,4 +781,101 @@ macro_rules! load_csv {
         let v = ($( $x, )*);
         v
     }};
+}
+        
+#[macro_export]
+macro_rules! ga{
+    (
+        $init_population:tt,
+        $fitness:tt,
+        $selection:tt,
+        $mutation:tt,
+        $crossover:tt,
+        $state: ty,
+        $desired_fitness: expr,
+        $generation_num: expr,
+        $step: expr
+    ) => {
+        
+        let mut population: Vec<$state> = $init_population();
+
+        // let mut index = 0;
+        
+        let mut generation = 0;
+        // calculate the fitness for the first population
+        loop {
+            // if generation_num is passed as 0, we have infinite generations
+            if $generation_num != 0 && generation == $generation_num {
+                println!("Reached the desired generations number, exiting...");
+                break;
+            }
+            
+            generation += 1;
+            // execute the simulation for each member of population
+            let mut fitness_values: Vec<f32> = Vec::new();
+
+            for individual in population.iter_mut() {
+                let mut schedule: Schedule = Schedule::new();
+                individual.init(&mut schedule);
+                
+                for _ in 0..($step as usize) {
+                    let individual = individual.as_state_mut();
+                    schedule.step(individual);
+                    if individual.end_condition(&mut schedule) {
+                        break;
+                    }
+                }
+                
+                fitness_values.push($fitness(individual, schedule));
+            }
+
+            let mut file = OpenOptions::new()
+                        .read(true)
+                        .write(true)
+                        .append(true)
+                        .create(true)
+                        .open("ga_result.txt").unwrap();
+
+            let _ = writeln!(&mut file, "Population at gen {}", generation).unwrap();
+            for i in 0..population.len(){
+                let _ = writeln!(&mut file, "- individual #{}: {} ", i, population[i]);
+            }
+            let _ = writeln!(&mut file, "------------------------------");
+
+            let mut flag = false;
+            for i in 0..fitness_values.len(){
+                if fitness_values[i] >= $desired_fitness{
+                    flag = true;
+                    // index = i;
+                    break;
+                }
+                
+            }
+
+            if flag {
+                break;
+            }
+
+            // compute selection
+            $selection(&mut population);
+            
+            if population.len() <= 1 {
+                println!("Population size <= 1, exiting...");
+                break;
+            }
+
+            // mutate the new population
+            for individual in population.iter_mut() {
+                $mutation(individual);
+            }
+            
+            // crossover the new population
+            $crossover(&mut population);
+        }
+
+        println!("Best population is found at generation {}:", generation);
+        for i in 0..population.len(){
+            println!("- individual #{}: {} ", i, population[i]);
+        }
+    };
 }
