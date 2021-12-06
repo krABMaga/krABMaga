@@ -2,6 +2,7 @@ pub mod engine;
 pub mod utils;
 pub use indicatif::ProgressBar;
 pub use rand;
+pub use hashbrown;
 
 #[cfg(any(feature = "visualization", feature = "visualization_wasm", doc))]
 pub mod visualization;
@@ -11,11 +12,28 @@ pub use bevy;
 
 pub use rand::distributions::{Distribution, Uniform};
 
-pub use csv::Writer;
+pub use csv::{Writer, Reader};
 pub use rayon::prelude::*;
 pub use std::time::Duration;
 
 use std::error::Error;
+
+// #[cfg(feature = "explore")]
+// #[macro_use]
+// extern crate memoffset;
+
+#[cfg(feature = "explore")] 
+pub use {
+    memoffset::{offset_of, span_of},
+    mpi::{
+        datatype::UserDatatype,
+        traits::*,
+        Address
+    },
+};
+
+#[cfg(feature = "explore")] 
+pub extern crate mpi;
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Info {
@@ -23,26 +41,37 @@ pub enum Info {
     Normal,
 }
 
+/**
+ * 3 mode to generate the data
+ * Exaustive: Brute force parameter exploration
+ * Matched: explore every input with the same indexes
+ * File: Read from file
+ */
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum ExploreMode {
     Exaustive,
     Matched,
-    //GeneticAlgorithm
+    //File,
 }
 
+/**
+ * 3 mode to do model exploration
+ * Local: local computation
+ * Parallel: parallel computation
+ * Distributed: distributed computation
+ */
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum ComputationMode {
-    Local,
+    Sequential,
     Parallel,
-    Distributed,
+    DistributedMPI,
 }
 
 #[macro_export]
 //step = simulation step number
-//schedule
-//agents
 //states
-//other parametes
+//# of repetitions
+//type of info
 macro_rules! simulate {
     ($step:expr, $s:expr, $reps:expr, $info:expr) => {{
         let mut s = $s;
@@ -201,7 +230,7 @@ mod no_exported {
             let mut state = s.as_state_mut();
             let n_step: u64 = $step;
 
-            let mut results: Vec<(Duration, f32)> = Vec::new();
+            let mut results: Vec<(f32, f32)> = Vec::new();
 
             let mut schedule: Schedule = Schedule::new();
             state.init(&mut schedule);
@@ -209,6 +238,7 @@ mod no_exported {
 
             for i in 0..n_step {
                 schedule.step(state);
+
                 if state.end_condition(&mut schedule) {
                     break;
                 }
@@ -217,7 +247,7 @@ mod no_exported {
             let run_duration = start.elapsed();
 
             results.push((
-                run_duration,
+                run_duration.as_secs_f32(),
                 schedule.step as f32 / (run_duration.as_nanos() as f32 * 1e-9),
             ));
 
@@ -226,27 +256,26 @@ mod no_exported {
         }};
     }
 
-    ///Brute force parameter exploration
     #[macro_export]
     ///step = simulation step number,
     ///schedule,
     ///states,
     ///input{input:type},
     ///output[output:type]
-    macro_rules! explore_local {
+    macro_rules! explore_sequential {
 
         //exploration with explicit output parameters
         ($nstep: expr, $rep_conf:expr, $s:ty,
         input {$($input:ident: $input_ty: ty )*},
         output [$($output:ident: $output_ty: ty )*],
-        $mode: expr
-        ) => {{
+        $mode: expr,
+        $( $x:expr ),* ) => {{
 
             //typecheck
             let _rep_conf = $rep_conf as usize;
-            let _nstep = $nstep as u128;
+            let _nstep = $nstep as u32;
 
-            println!("Calculate number of configuration");
+            //println!("Calculate number of configuration");
 
             let mut n_conf:usize = 1;
             let mut config_table_index: Vec<Vec<usize>> = Vec::new();
@@ -260,7 +289,8 @@ mod no_exported {
                 },
                 ExploreMode::Matched =>{
                     $( n_conf = $input.len(); )*
-                }
+                },
+                // ExploreMode::File => panic!("you are not running in file mode"),
             }
             println!("n_conf {}", n_conf);
 
@@ -286,7 +316,8 @@ mod no_exported {
                                 $input[i],
                             )*
                         );
-                    }
+                    },
+                    //ExploreMode::File => panic!("you are not running in file mode"),
                 }
 
                 println!("-----\nCONF {}", i);
@@ -297,7 +328,7 @@ mod no_exported {
                 for j in 0..$rep_conf{
                     println!("------\nRun {}", j+1);
                     let result = simulate_explore!($nstep, state);
-                    dataframe.push( FrameRow::new(i as u128, j + 1 as u128, $(state.$input,)* $(state.$output,)* result[0].0, result[0].1));
+                    dataframe.push( FrameRow::new(i as u32, j + 1 as u32, $(state.$input,)* $(state.$output,)* result[0].0, result[0].1, $($x,)*));
                 }
             }
             dataframe
@@ -305,7 +336,7 @@ mod no_exported {
 
         //exploration taking default output: total time and step per second
         ($nstep: expr, $rep_conf:expr, $s:expr, input {$($input:ident: $input_ty: ty )*}, $mode:expr) => {
-            explore_local!($nstep, $s, $rep_conf, input {$($input: $input_ty)*}, output [], $mode)
+            explore_sequential!($nstep, $s, $rep_conf, input {$($input: $input_ty)*}, output [], $mode)
         }
 
     }
@@ -315,13 +346,14 @@ mod no_exported {
         ($nstep: expr, $rep_conf:expr, $s:ty,
             input {$($input:ident: $input_ty: ty )*},
             output [$($output:ident: $output_ty: ty )*],
-            $mode: expr ) => {{
+            $mode: expr,
+            $( $x:expr ),* ) => {{
 
             //typecheck
             let _rep_conf = $rep_conf as usize;
-            let _nstep = $nstep as u128;
+            let _nstep = $nstep as u32;
 
-            println!("Calculate number of configuration");
+            //println!("Calculate number of configuration");
             let mut n_conf:usize = 1;
             let mut config_table_index: Vec<Vec<usize>> = Vec::new();
 
@@ -334,7 +366,8 @@ mod no_exported {
                 },
                 ExploreMode::Matched =>{
                     $( n_conf = $input.len(); )*
-                }
+                },
+                //ExploreMode::File => panic!("you are not running in file mode"),
             }
             println!("n_conf {}", n_conf);
 
@@ -366,12 +399,13 @@ mod no_exported {
                                 $input[i],
                             )*
                         );
-                    }
+                    },
+                    //ExploreMode::File => panic!("you are not running in file mode"),
                 }
 
                 let result = simulate_explore!($nstep, state);
-                println!("conf {}, rep {}, run {}", i, run / n_conf, run);
-                FrameRow::new(i as u128, (run % $rep_conf) as u128, $(state.$input,)* $(state.$output,)* result[0].0, result[0].1)
+                //println!("conf {}, rep {}, run {}", i, run / n_conf, run);
+                FrameRow::new(i as u32, (run % $rep_conf) as u32, $(state.$input,)* $(state.$output,)* result[0].0, result[0].1, $($x,)*)
             })
             .collect();
             dataframe
@@ -384,9 +418,110 @@ mod no_exported {
                 explore_parallel!($nstep, $rep_conf, $state_name, input { $($input: $input_ty)*}, output [],
                 $mode)
         };
+    }
+
+    #[macro_export]
+    macro_rules! explore_distributed_mpi {
+        ($nstep: expr, $rep_conf:expr, $s:ty,
+            input {$($input:ident: $input_ty: ty )*},
+            output [$($output:ident: $output_ty: ty )*],
+            $mode: expr,
+            $( $x:expr ),* ) => {{
+
+            let universe = mpi::initialize().unwrap();
+            let world = universe.world();
+            let root_rank = 0;
+            let root_process = world.process_at_rank(root_rank);
+            let my_rank = world.rank();
+            let num_procs = world.size() as usize;
+                
+            //typecheck
+            let _rep_conf = $rep_conf as usize;
+            let _nstep = $nstep as u32;
+
+            let mut n_conf:usize = 1;
+            let mut config_table_index: Vec<Vec<usize>> = Vec::new();
+            //let mut tup: (i32, u32) = (1, 1);
+
+            match $mode {
+                ExploreMode::Exaustive =>{
+                    $( n_conf *= $input.len(); )*
+                    //Cartesian product with variadics, to build a table with all parameter combinations
+                    //They are of different type, so i have to work with indexes
+                    config_table_index = build_configurations!(n_conf, $($input )*);
+                },
+                ExploreMode::Matched =>{
+                    $( n_conf = $input.len(); )*
+                },
+            }
+            println!("n_conf {}", n_conf/num_procs);
+
+            //build_dataframe!(FrameRow, input {$( $input:$input_ty)*, }, output[ $( $output:$output_ty )*]);
+
+            let mut dataframe: Vec<FrameRow>  = Vec::new();
 
 
-        }
+            for i in 0..n_conf/num_procs {
+                let mut state;
+                match $mode { // check which mode to use to generate the configurations
+                    ExploreMode::Exaustive =>{ // use all the possible combination
+                        let mut row_count = -1.;
+                        state = <$s>::new(
+                            $(
+                            $input[config_table_index[{row_count+=1.; row_count as usize}][i*num_procs + (my_rank as usize)]],
+                            )*
+                        );
+                    },
+                    ExploreMode::Matched =>{ // create a configuration using the combination of input with the same index
+                        state = <$s>::new(
+                            $(
+                                $input[i*num_procs + (my_rank as usize)],
+                            )*
+                        );
+                    },
+                }
+
+                // println!("-----\nCONF {}", i);
+                // $(
+                //     println!("{}: {:?}", stringify!(state.$input), state.$input);
+                // )*
+
+                for j in 0..$rep_conf{
+                    println!("conf {}, rep {}, pid: {}", i*num_procs + (my_rank as usize), j, my_rank);
+                    let result = simulate_explore!($nstep, state);
+                    dataframe.push( FrameRow::new(i as u32, j + 1 as u32, $(state.$input,)* $(state.$output,)* result[0].0, result[0].1, $($x,)*));
+                }
+            }
+
+            // i have to return a dummy dataframe but i dont use it
+            // only the master write the complete dataframe of all procs on csv
+            if world.rank() == root_rank {
+                let mut all_dataframe = vec![dataframe[0]; n_conf];
+        
+                root_process.gather_into_root(&dataframe[..], &mut all_dataframe[..]);
+    
+                all_dataframe
+                
+            } else {
+                //every proc send to root every row
+                root_process.gather_into(&dataframe[..]);
+                //return dummy dataframe
+                dataframe = Vec::new();
+                dataframe
+            }
+
+            //dataframe
+        }};
+
+
+        //exploration taking default output: total time and step per second
+        ($nstep: expr, $rep_conf:expr, $state_name:ty, input {$($input:ident: $input_ty: ty )*,},
+        $mode: expr, 
+        $( $x:expr ),* ) => {
+                explore_distributed_mpi!($nstep, $rep_conf, $state_name, input { $($input: $input_ty)*}, output [],
+                $mode, $( $x:expr ),*)
+        };
+    }
 }
 
 #[macro_export]
@@ -398,13 +533,22 @@ macro_rules! explore {
     input {$($input:ident: $input_ty: ty )*},
     output [$($output:ident: $output_ty: ty )*],
     $mode: expr,
-    $cmode: expr
+    $cmode: expr,
+    $( $x:ident: $x_ty: ty ),*
     ) => {{
-        build_dataframe!(FrameRow, input {$( $input:$input_ty)*, }, output[ $( $output:$output_ty )*]);
+
+        // optional parameters created for distributed mode
+        $(
+            // it makes a new variable for optional parameters ant then it's passed
+            // as an optional expression 
+            let $x = $x;
+        )*
+        
+        build_dataframe!(FrameRow, input {$( $input:$input_ty)* }, output[ $( $output:$output_ty )*], $( $x:$x_ty ),* );
         match $cmode {
-            ComputationMode::Local => explore_local!($nstep, $rep_conf, $s, input {$($input: $input_ty)*}, output [$($output: $output_ty)*], $mode),
-            ComputationMode::Parallel => explore_parallel!($nstep, $rep_conf, $s, input {$($input: $input_ty)*}, output [$($output: $output_ty)*], $mode),
-            _ => panic!("Distributed mode not implemented")
+            ComputationMode::Sequential => explore_sequential!($nstep, $rep_conf, $s, input {$($input: $input_ty)*}, output [$($output: $output_ty)*], $mode, $( $x ),*),
+            ComputationMode::Parallel => explore_parallel!($nstep, $rep_conf, $s, input {$($input: $input_ty)*}, output [$($output: $output_ty)*], $mode, $( $x ),*),
+            ComputationMode::DistributedMPI => explore_distributed_mpi!($nstep, $rep_conf, $s, input {$($input: $input_ty)*}, output [$($output: $output_ty)*], $mode, $( $x ),*),
         }
     }};
 
@@ -422,7 +566,7 @@ macro_rules! explore {
 ///Create a csv file with the experiment results
 ///"DataFrame" trait allow the function to know field names and
 ///params list + output list for each configuration runned
-pub fn export_dataframe<A: DataFrame>(name: &str, dataframe: &[A]) -> Result<(), Box<dyn Error>> {
+pub fn write_csv<A: DataFrame>(name: &str, dataframe: &[A]) -> Result<(), Box<dyn Error>> {
     let csv_name = format!("{}.csv", name);
     let mut wtr = Writer::from_path(csv_name).unwrap();
     //define column name
@@ -483,22 +627,76 @@ macro_rules! gen_param {
 #[macro_export]
 macro_rules! build_dataframe {
     //Dataframe with input and output parameters
-    ($name:ident, input {$($input: ident: $input_ty: ty)*,}, output [$($output: ident: $output_ty: ty)*]) => {
 
-        #[derive(Debug)]
+    //Dataframe with input and output parameters and optional parameters
+    ($name:ident, input {$($input: ident: $input_ty: ty)*}, output [$($output: ident: $output_ty: ty)*], $( $x:ident: $x_ty: ty ),*) => {
+
+        #[derive(Default, Clone, Copy, PartialEq, Debug)]
         struct $name {
-            pub conf_num: u128,
-            pub conf_rep: u128,
+            pub conf_num: u32,
+            pub conf_rep: u32,
             $(pub $input: $input_ty,)*
             $(pub $output: $output_ty,)*
-            pub run_duration: Duration,
-            pub step_per_sec: f32
+            pub run_duration: f32,
+            pub step_per_sec: f32,
+            $(pub $x: $x_ty,)*
+        }
 
+        unsafe impl Equivalence for $name {
+            type Out = UserDatatype;
+            
+            fn equivalent_datatype() -> Self::Out {
+
+                //count input and output parameters to create slice for blocklen
+                let v_in = count_tts!($($input)*);
+                let v_out = count_tts!($($output)*);
+                let v_x = count_tts!($($x)*);
+
+                let dim = v_in + v_out + v_x + 4;
+                let mut vec = Vec::with_capacity(dim);
+                for i in 0..dim {
+                    vec.push(1);
+                }
+                //UserDatatype::structured(blocklengths: &[Count], displacements: &[Address], types: &[D])
+                UserDatatype::structured(    
+                    vec.as_slice(), 
+                    &[
+                        offset_of!($name, conf_num) as Address,
+                        offset_of!($name, conf_rep) as Address,
+                        $(
+                            offset_of!($name, $input) as Address,
+                        )*
+                        $(
+                            offset_of!($name, $output) as Address,
+                        )*
+                        offset_of!($name, run_duration) as Address,
+                        offset_of!($name, step_per_sec) as Address,
+                        $(
+                            offset_of!($name, $x) as Address,
+                        )*
+                    ],
+                    &[
+                        u32::equivalent_datatype(),
+                        u32::equivalent_datatype(),
+                        $(
+                            <$input_ty>::equivalent_datatype(),
+                        )*
+                        $(
+                            <$output_ty>::equivalent_datatype(),
+                        )*
+                        f32::equivalent_datatype(),
+                        f32::equivalent_datatype(),
+                        $(
+                            <$x_ty>::equivalent_datatype(),
+                        )*
+                    ]
+                )
+            }
         }
 
         impl DataFrame for $name{
             fn field_names() -> &'static [&'static str] {
-                static NAMES: &'static [&'static str] = &["Simulation", "Run", $(stringify!($input),)* $(stringify!($output),)*  "Run Duration", "Step per sec"];
+                static NAMES: &'static [&'static str] = &["Simulation", "Run", $(stringify!($input),)* $(stringify!($output),)*  "Run Duration", "Step per sec", $(stringify!($x),)*];
                 NAMES
             }
 
@@ -512,15 +710,18 @@ macro_rules! build_dataframe {
                 $(
                     v.push(format!("{:?}", self.$output));
                 )*
-                v.push(format!("{:?}", self.run_duration));
+                v.push(self.run_duration.to_string());
                 v.push(self.step_per_sec.to_string());
+                $(
+                    v.push(format!("{:?}", self.$x));
+                )*
                 v
             }
 
         }
 
         impl $name {
-            pub fn new( conf_num: u128, conf_rep: u128 $(, $input: $input_ty)* $(, $output: $output_ty)*, run_duration: Duration, step_per_sec: f32) -> $name{
+            pub fn new( conf_num: u32, conf_rep: u32 $(, $input: $input_ty)* $(, $output: $output_ty)*, run_duration: f32, step_per_sec: f32 $(, $x: $x_ty)*,) -> $name{
                 $name {
                     conf_num,
                     conf_rep,
@@ -531,14 +732,45 @@ macro_rules! build_dataframe {
                         $output,
                     )*
                     run_duration,
-                    step_per_sec
+                    step_per_sec,
+                    $(
+                        $x,
+                    )*
                 }
             }
         }
     };
 
     //Dataframe with only input parameters
-    ($name:ident $(, $element: ident: $input_ty: ty)*) => {
-        build_dataframe!($name, input{$($element: $input_ty)*,}, output[]);
+    ($name:ident, input{$($element: ident: $input_ty: ty)* }) => {
+        build_dataframe!($name, input{$($element: $input_ty)*}, output[]);
     };
+
+    //Dataframe with only input parameters
+    ($name:ident, input {$($input: ident: $input_ty: ty)*}, $( $x:ident: $x_ty: ty ),*) => {
+        build_dataframe!($name, input{$($element: $input_ty)*}, output[], $( $x:ident: $x_ty: ty ),*);
+    };
+}
+
+#[macro_export]
+macro_rules! load_csv {
+
+    ($input_file: expr, $( $x:ident: $x_ty: ty ),*) =>{{
+        
+        let mut rdr = Reader::from_path($input_file).unwrap();
+        $(
+            let mut $x: Vec<$x_ty> = Vec::new();
+        )*
+        for result in rdr.records() {
+            let record = result.unwrap();
+            let mut i = 0;
+            $(
+                let x : $x_ty = record[i].parse().unwrap();
+                $x.push(x);
+                i += 1;
+            )*
+        }
+        let v = ($( $x, )*);
+        v
+    }};
 }

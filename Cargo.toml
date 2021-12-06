@@ -35,6 +35,11 @@ csv = "1.*"
 indicatif = "0.*"
 crossbeam = "0.*"
 
+# Model exploration features
+# rsmpi points to a specific commit
+mpi = { git = "https://github.com/bsteinb/rsmpi", rev = "f9aec8b8d82", optional = true }
+memoffset = { version = "0.6.4", optional = true}
+
 # Visualization features
 bevy_canvas = {version="0.1", optional=true}
 image = {version="0.*",optional=true}
@@ -51,6 +56,10 @@ getrandom = {version="0.*", features=["wasm-bindgen"]}
 # Must be kept separate and asked to the user due to missing support for conditional compilation of features
 # https://github.com/rust-lang/cargo/issues/7914
 [features]
+explore = [
+    "mpi",
+    "memoffset"
+]
 parallel = []
 visualization = [
     "bevy_canvas",

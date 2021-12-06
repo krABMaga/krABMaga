@@ -128,6 +128,7 @@ cfg_if! {
 
                 if self.events.lock().unwrap().is_empty() {
                     println!("No agent in the queue to schedule. Terminating.");
+                    //TODO check if we need to exit on 0 agents or we have to continue until new agents are spawned
                     std::process::exit(0);
                 }
 
@@ -283,6 +284,7 @@ cfg_if! {
 
                 if events.is_empty() {
                     println!("No agent in the queue to schedule. Terminating.");
+                    //TODO check if we need to exit on 0 agents or we have to continue until new agents are spawned
                     std::process::exit(0);
                 }
 
