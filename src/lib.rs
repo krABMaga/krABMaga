@@ -1,9 +1,8 @@
 pub mod engine;
 pub mod utils;
+pub use hashbrown;
 pub use indicatif::ProgressBar;
 pub use rand;
-pub use hashbrown;
-
 
 #[cfg(any(feature = "visualization", feature = "visualization_wasm", doc))]
 pub mod visualization;
@@ -12,35 +11,26 @@ pub mod visualization;
 pub use bevy;
 
 pub use rand::{
-    thread_rng,
-    Rng,
-    distributions::{Distribution, Uniform}
+    distributions::{Distribution, Uniform},
+    thread_rng, Rng,
 };
 
-pub use csv::{Writer, Reader};
-pub use std::fs::File;
-pub use std::io::Write;
-pub use std::fs::OpenOptions;
+pub use csv::{Reader, Writer};
 pub use rayon::prelude::*;
+pub use std::fs::File;
+pub use std::fs::OpenOptions;
+pub use std::io::Write;
 pub use std::time::Duration;
 
 use std::error::Error;
 
-// #[cfg(feature = "explore")]
-// #[macro_use]
-// extern crate memoffset;
-
-#[cfg(feature = "explore")] 
+#[cfg(feature = "explore")]
 pub use {
     memoffset::{offset_of, span_of},
-    mpi::{
-        datatype::UserDatatype,
-        traits::*,
-        Address
-    },
+    mpi::{datatype::UserDatatype, traits::*, Address},
 };
 
-#[cfg(feature = "explore")] 
+#[cfg(feature = "explore")]
 pub extern crate mpi;
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
@@ -59,7 +49,6 @@ pub enum Info {
 pub enum ExploreMode {
     Exaustive,
     Matched,
-    //File,
 }
 
 /**
@@ -114,7 +103,7 @@ macro_rules! simulate {
             n_step,
             width = 15 - n_step.to_string().len() - $reps.to_string().len()
         );
-        // println!("{esc}c", esc = 27 as char);
+        println!("{esc}c", esc = 27 as char);
 
         for r in 0..$reps {
             let mut schedule: Schedule = Schedule::new();
@@ -282,9 +271,7 @@ mod no_exported {
             //typecheck
             let _rep_conf = $rep_conf as usize;
             let _nstep = $nstep as u32;
-
-            //println!("Calculate number of configuration");
-
+            
             let mut n_conf:usize = 1;
             let mut config_table_index: Vec<Vec<usize>> = Vec::new();
 
@@ -297,20 +284,19 @@ mod no_exported {
                 },
                 ExploreMode::Matched =>{
                     $( n_conf = $input.len(); )*
-                },
-                // ExploreMode::File => panic!("you are not running in file mode"),
+                }
             }
             println!("n_conf {}", n_conf);
-
-            //build_dataframe!(FrameRow, input {$( $input:$input_ty)*, }, output[ $( $output:$output_ty )*]);
 
             let mut dataframe: Vec<FrameRow>  = Vec::new();
 
 
             for i in 0..n_conf{
                 let mut state;
-                match $mode { // check which mode to use to generate the configurations
-                    ExploreMode::Exaustive =>{ // use all the possible combination
+                // check which mode to use to generate the configurations
+                match $mode {
+                    // use all the possible combination
+                    ExploreMode::Exaustive =>{ 
                         let mut row_count = -1.;
                         state = <$s>::new(
                             $(
@@ -318,14 +304,14 @@ mod no_exported {
                             )*
                         );
                     },
-                    ExploreMode::Matched =>{ // create a configuration using the combination of input with the same index
+                    // create a configuration using the combination of input with the same index
+                    ExploreMode::Matched =>{ 
                         state = <$s>::new(
                             $(
                                 $input[i],
                             )*
                         );
-                    },
-                    //ExploreMode::File => panic!("you are not running in file mode"),
+                    }
                 }
 
                 println!("-----\nCONF {}", i);
@@ -336,7 +322,9 @@ mod no_exported {
                 for j in 0..$rep_conf{
                     println!("------\nRun {}", j+1);
                     let result = simulate_explore!($nstep, state);
-                    dataframe.push( FrameRow::new(i as u32, j + 1 as u32, $(state.$input,)* $(state.$output,)* result[0].0, result[0].1, $($x,)*));
+                    dataframe.push(
+                        FrameRow::new(i as u32, j + 1 as u32, $(state.$input,)* $(state.$output,)* result[0].0, result[0].1, $($x,)*)
+                    );
                 }
             }
             dataframe
@@ -361,7 +349,6 @@ mod no_exported {
             let _rep_conf = $rep_conf as usize;
             let _nstep = $nstep as u32;
 
-            //println!("Calculate number of configuration");
             let mut n_conf:usize = 1;
             let mut config_table_index: Vec<Vec<usize>> = Vec::new();
 
@@ -374,26 +361,18 @@ mod no_exported {
                 },
                 ExploreMode::Matched =>{
                     $( n_conf = $input.len(); )*
-                },
-                //ExploreMode::File => panic!("you are not running in file mode"),
+                }
             }
             println!("n_conf {}", n_conf);
 
-            //build_dataframe!(FrameRow, input {$( $input:$input_ty)*, }, output[ $( $output:$output_ty )*]);
-
             let dataframe: Vec<FrameRow> = (0..n_conf*$rep_conf).into_par_iter().map( |run| {
                 let i  = run / $rep_conf;
-                /* let mut state = <$state_name>::new( $( $parameter ),*);
-                let mut row_count = 0;
-
-                $(
-                    state.$input = $input[config_table_index[row_count][i]];
-                    row_count+=1;
-                )* */
 
                 let mut state;
-                match $mode { // check which mode to use to generate the configurations
-                    ExploreMode::Exaustive =>{ // use all the possible combination
+                // check which mode to use to generate the configurations
+                match $mode { 
+                    // use all the possible combination
+                    ExploreMode::Exaustive =>{ 
                         let mut row_count = -1.;
                         state = <$s>::new(
                             $(
@@ -401,18 +380,17 @@ mod no_exported {
                             )*
                         );
                     },
-                    ExploreMode::Matched =>{ // create a configuration using the combination of input with the same index
+                    // create a configuration using the combination of input with the same index
+                    ExploreMode::Matched =>{ 
                         state = <$s>::new(
                             $(
                                 $input[i],
                             )*
                         );
                     },
-                    //ExploreMode::File => panic!("you are not running in file mode"),
                 }
 
                 let result = simulate_explore!($nstep, state);
-                //println!("conf {}, rep {}, run {}", i, run / n_conf, run);
                 FrameRow::new(i as u32, (run % $rep_conf) as u32, $(state.$input,)* $(state.$output,)* result[0].0, result[0].1, $($x,)*)
             })
             .collect();
@@ -442,14 +420,12 @@ mod no_exported {
             let root_process = world.process_at_rank(root_rank);
             let my_rank = world.rank();
             let num_procs = world.size() as usize;
-                
             //typecheck
             let _rep_conf = $rep_conf as usize;
             let _nstep = $nstep as u32;
 
             let mut n_conf:usize = 1;
             let mut config_table_index: Vec<Vec<usize>> = Vec::new();
-            //let mut tup: (i32, u32) = (1, 1);
 
             match $mode {
                 ExploreMode::Exaustive =>{
@@ -464,15 +440,13 @@ mod no_exported {
             }
             println!("n_conf {}", n_conf/num_procs);
 
-            //build_dataframe!(FrameRow, input {$( $input:$input_ty)*, }, output[ $( $output:$output_ty )*]);
-
             let mut dataframe: Vec<FrameRow>  = Vec::new();
-
-
             for i in 0..n_conf/num_procs {
                 let mut state;
-                match $mode { // check which mode to use to generate the configurations
-                    ExploreMode::Exaustive =>{ // use all the possible combination
+                // check which mode to use to generate the configurations
+                match $mode { 
+                    // use all the possible combination
+                    ExploreMode::Exaustive =>{ 
                         let mut row_count = -1.;
                         state = <$s>::new(
                             $(
@@ -480,7 +454,8 @@ mod no_exported {
                             )*
                         );
                     },
-                    ExploreMode::Matched =>{ // create a configuration using the combination of input with the same index
+                    // create a configuration using the combination of input with the same index
+                    ExploreMode::Matched =>{ 
                         state = <$s>::new(
                             $(
                                 $input[i*num_procs + (my_rank as usize)],
@@ -489,27 +464,21 @@ mod no_exported {
                     },
                 }
 
-                // println!("-----\nCONF {}", i);
-                // $(
-                //     println!("{}: {:?}", stringify!(state.$input), state.$input);
-                // )*
-
                 for j in 0..$rep_conf{
                     println!("conf {}, rep {}, pid: {}", i*num_procs + (my_rank as usize), j, my_rank);
                     let result = simulate_explore!($nstep, state);
-                    dataframe.push( FrameRow::new(i as u32, j + 1 as u32, $(state.$input,)* $(state.$output,)* result[0].0, result[0].1, $($x,)*));
+                    dataframe.push(
+                        FrameRow::new(i as u32, j + 1 as u32, $(state.$input,)* $(state.$output,)* result[0].0, result[0].1, $($x,)*)
+                    );
                 }
             }
 
-            // i have to return a dummy dataframe but i dont use it
-            // only the master write the complete dataframe of all procs on csv
+            // must return a dummy dataframe that will not be used
+            // since only the master write the complete dataframe of all procs on csv
             if world.rank() == root_rank {
                 let mut all_dataframe = vec![dataframe[0]; n_conf];
-        
                 root_process.gather_into_root(&dataframe[..], &mut all_dataframe[..]);
-    
                 all_dataframe
-                
             } else {
                 //every proc send to root every row
                 root_process.gather_into(&dataframe[..]);
@@ -517,14 +486,12 @@ mod no_exported {
                 dataframe = Vec::new();
                 dataframe
             }
-
-            //dataframe
         }};
 
 
         //exploration taking default output: total time and step per second
         ($nstep: expr, $rep_conf:expr, $state_name:ty, input {$($input:ident: $input_ty: ty )*,},
-        $mode: expr, 
+        $mode: expr,
         $( $x:expr ),* ) => {
                 explore_distributed_mpi!($nstep, $rep_conf, $state_name, input { $($input: $input_ty)*}, output [],
                 $mode, $( $x:expr ),*)
@@ -547,19 +514,22 @@ macro_rules! explore {
 
         // optional parameters created for distributed mode
         $(
-            // it makes a new variable for optional parameters ant then it's passed
-            // as an optional expression 
+            // create a new variable for optional parameters and pass it as an optional expression
             let $x = $x;
         )*
-        
         build_dataframe!(FrameRow, input {$( $input:$input_ty)* }, output[ $( $output:$output_ty )*], $( $x:$x_ty ),* );
         match $cmode {
-            ComputationMode::Sequential => explore_sequential!($nstep, $rep_conf, $s, input {$($input: $input_ty)*}, output [$($output: $output_ty)*], $mode, $( $x ),*),
-            ComputationMode::Parallel => explore_parallel!($nstep, $rep_conf, $s, input {$($input: $input_ty)*}, output [$($output: $output_ty)*], $mode, $( $x ),*),
-            ComputationMode::DistributedMPI => explore_distributed_mpi!($nstep, $rep_conf, $s, input {$($input: $input_ty)*}, output [$($output: $output_ty)*], $mode, $( $x ),*),
+            ComputationMode::Sequential => explore_sequential!(
+                $nstep, $rep_conf, $s, input {$($input: $input_ty)*}, output [$($output: $output_ty)*], $mode, $( $x ),*
+            ),
+            ComputationMode::Parallel => explore_parallel!(
+                $nstep, $rep_conf, $s, input {$($input: $input_ty)*}, output [$($output: $output_ty)*], $mode, $( $x ),*
+            ),
+            ComputationMode::DistributedMPI => explore_distributed_mpi!(
+                $nstep, $rep_conf, $s, input {$($input: $input_ty)*}, output [$($output: $output_ty)*], $mode, $( $x ),*
+            ),
         }
     }};
-
 
     ($nstep: expr, $rep_conf:expr, $state_name:ty, input {$($input:ident: $input_ty: ty )*,},
     $mode: expr,
@@ -567,7 +537,6 @@ macro_rules! explore {
                 explore!($nstep, $rep_conf, $state_name, input { $($input: $input_ty)*}, output [],
                 $mode, $cmode)
         };
-
 
 }
 
@@ -588,7 +557,7 @@ pub fn write_csv<A: DataFrame>(name: &str, dataframe: &[A]) -> Result<(), Box<dy
 }
 
 ///Trait implemented dynamically for our dataframe struct.
-///We use it into "export_dataframe" function
+///Used into "export_dataframe" function
 pub trait DataFrame {
     fn field_names() -> &'static [&'static str];
     fn to_string(&self) -> Vec<String>;
@@ -596,7 +565,7 @@ pub trait DataFrame {
 
 ///Generate parameter values using a Uniform Distribution
 ///Params: Type, Min, Max and number of samples
-///n_samples is optional, can be omitted if you want a single sample
+///n_samples is optional, if omitted only a single simple is computed
 #[macro_export]
 macro_rules! gen_param {
     ( $type:ty, $min:expr, $max:expr, $n:expr) => {{
@@ -606,7 +575,7 @@ macro_rules! gen_param {
         maximum = $max;
         let mut n = $n as usize;
 
-        //Check range parameters to avoid error with Distribution
+        // Check parameters range to avoid error with Distribution
         let (minimum, maximum) = if minimum > maximum {
             (maximum, minimum)
         } else if minimum == maximum {
@@ -626,7 +595,7 @@ macro_rules! gen_param {
         dist
     }};
 
-    //gen a single value
+    // gen a single value
     (  $type:ty, $min:expr, $max:expr) => {{
         gen_param!($type, $min, $max, 1)
     }};
@@ -634,10 +603,10 @@ macro_rules! gen_param {
 
 #[macro_export]
 macro_rules! build_dataframe {
-    //Dataframe with input and output parameters
-
     //Dataframe with input and output parameters and optional parameters
-    ($name:ident, input {$($input: ident: $input_ty: ty)*}, output [$($output: ident: $output_ty: ty)*], $( $x:ident: $x_ty: ty ),*) => {
+    (
+        $name:ident, input {$($input: ident: $input_ty: ty)*}, output [$($output: ident: $output_ty: ty)*], $( $x:ident: $x_ty: ty ),*
+    ) => {
 
         #[derive(Default, Clone, Copy, PartialEq, Debug)]
         struct $name {
@@ -652,7 +621,6 @@ macro_rules! build_dataframe {
 
         unsafe impl Equivalence for $name {
             type Out = UserDatatype;
-            
             fn equivalent_datatype() -> Self::Out {
 
                 //count input and output parameters to create slice for blocklen
@@ -665,9 +633,9 @@ macro_rules! build_dataframe {
                 for i in 0..dim {
                     vec.push(1);
                 }
-                //UserDatatype::structured(blocklengths: &[Count], displacements: &[Address], types: &[D])
-                UserDatatype::structured(    
-                    vec.as_slice(), 
+                
+                UserDatatype::structured(
+                    vec.as_slice(),
                     &[
                         offset_of!($name, conf_num) as Address,
                         offset_of!($name, conf_rep) as Address,
@@ -704,7 +672,8 @@ macro_rules! build_dataframe {
 
         impl DataFrame for $name{
             fn field_names() -> &'static [&'static str] {
-                static NAMES: &'static [&'static str] = &["Simulation", "Run", $(stringify!($input),)* $(stringify!($output),)*  "Run Duration", "Step per sec", $(stringify!($x),)*];
+                static NAMES: &'static [&'static str] 
+                    = &["Simulation", "Run", $(stringify!($input),)* $(stringify!($output),)*  "Run Duration", "Step per sec", $(stringify!($x),)*];
                 NAMES
             }
 
@@ -729,7 +698,9 @@ macro_rules! build_dataframe {
         }
 
         impl $name {
-            pub fn new( conf_num: u32, conf_rep: u32 $(, $input: $input_ty)* $(, $output: $output_ty)*, run_duration: f32, step_per_sec: f32 $(, $x: $x_ty)*,) -> $name{
+            pub fn new(
+                conf_num: u32, conf_rep: u32 $(, $input: $input_ty)* $(, $output: $output_ty)*, run_duration: f32, step_per_sec: f32 $(, $x: $x_ty)*,
+            ) -> $name{
                 $name {
                     conf_num,
                     conf_rep,
@@ -754,7 +725,7 @@ macro_rules! build_dataframe {
         build_dataframe!($name, input{$($element: $input_ty)*}, output[]);
     };
 
-    //Dataframe with only input parameters
+    //Dataframe without output parameters
     ($name:ident, input {$($input: ident: $input_ty: ty)*}, $( $x:ident: $x_ty: ty ),*) => {
         build_dataframe!($name, input{$($element: $input_ty)*}, output[], $( $x:ident: $x_ty: ty ),*);
     };
@@ -764,7 +735,6 @@ macro_rules! build_dataframe {
 macro_rules! load_csv {
 
     ($input_file: expr, $( $x:ident: $x_ty: ty ),*) =>{{
-        
         let mut rdr = Reader::from_path($input_file).unwrap();
         $(
             let mut $x: Vec<$x_ty> = Vec::new();
@@ -782,9 +752,23 @@ macro_rules! load_csv {
         v
     }};
 }
-        
+
+
 #[macro_export]
-macro_rules! ga{
+// genaral macro to perform model exploration using a genetic algorithm
+// an individual is the state of the simulation to compute
+// init_population: function that creates the population, must return an array of individual
+// fitness: function that computes the fitness value, takes a single individual and the schedule, must return an f32
+// mutation: function that perform the mutation, takes a single individual as parameter
+// crossover: function that creates the population, takes the entire population as parameter
+// state: state of the simulation representing an individual
+// desired_fitness: desired fitness value
+// generation_num: max number of generations to compute
+// step: number of steps of the single simulation
+// cmode: mode to perform the computation
+// parameters(optional): parameter to write the csv, if not specified only fitness will be written
+macro_rules! explore_ga {
+
     (
         $init_population:tt,
         $fitness:tt,
@@ -794,31 +778,125 @@ macro_rules! ga{
         $state: ty,
         $desired_fitness: expr,
         $generation_num: expr,
-        $step: expr
-    ) => {
-        
-        let mut population: Vec<$state> = $init_population();
+        $step: expr,
+        $cmode: expr,
+        parameters {
+            $($p_name:ident: $p_type:ty)*
+        }
+    ) => {{
+        match $cmode {
+            ComputationMode::Sequential => {
+                explore_ga_sequential!(
+                    $init_population,
+                    $fitness,
+                    $selection,
+                    $mutation,
+                    $crossover,
+                    $state,
+                    $desired_fitness,
+                    $generation_num,
+                    $step,
+                    parameters {
+                        $($p_name: $p_type)*
+                    }
+                );
+            },
+            ComputationMode::Parallel => {
+                explore_ga_parallel!(
+                    $init_population,
+                    $fitness,
+                    $selection,
+                    $mutation,
+                    $crossover,
+                    $state,
+                    $desired_fitness,
+                    $generation_num,
+                    $step,
+                    parameters {
+                        $($p_name: $p_type)*
+                    }
+                );
+            },
+            _ => {
+                panic!("Invalid computation mode");
+            },
+        }
 
-        // let mut index = 0;
-        
+    }};
+
+    (
+        $init_population:tt,
+        $fitness:tt,
+        $selection:tt,
+        $mutation:tt,
+        $crossover:tt,
+        $state: ty,
+        $desired_fitness: expr,
+        $generation_num: expr,
+        $step: expr,
+        $cmode: expr
+    ) => {
+        explore_ga!( $init_population, $fitness, $selection, $mutation, $crossover, $state, $desired_fitness, $generation_num, $step, $cmode, parameters { }
+        );
+    };
+
+}
+
+// specific macro for explore_ga sequential
+#[macro_export]
+macro_rules! explore_ga_sequential {
+    (
+        $init_population:tt,
+        $fitness:tt,
+        $selection:tt,
+        $mutation:tt,
+        $crossover:tt,
+        $state: ty,
+        $desired_fitness: expr,
+        $generation_num: expr,
+        $step: expr,
+        parameters {
+            $($p_name:ident: $p_type:ty)*
+        }
+    ) => {
+
+        let mut population: Vec<$state> = $init_population();
         let mut generation = 0;
+        let mut best_fitness = 0.;
+        let mut best_generation = 0;
+
+        $(
+            let mut $p_name: Option<$p_type> = None;
+        )*
+
+        // flag to break from the loop
+        let mut flag = false;
+
+        let mut wtr = Writer::from_path("output.csv").unwrap();
+        //define column name
+        static NAMES: &'static [&'static str] = &["Generation", "Individual", "Fitness", $(stringify!($p_name),)*];
+        wtr.write_record(NAMES).unwrap();
+
         // calculate the fitness for the first population
         loop {
             // if generation_num is passed as 0, we have infinite generations
             if $generation_num != 0 && generation == $generation_num {
-                println!("Reached the desired generations number, exiting...");
+                println!("Reached {} generations, exiting...", $generation_num);
                 break;
             }
-            
             generation += 1;
             println!("Computing generation {}...", generation);
+
+            let mut best_fitness_gen = 0.;
             // execute the simulation for each member of population
-            let mut fitness_values: Vec<f32> = Vec::new();
+            // iterates through the population
+            let mut index = 0;
 
             for individual in population.iter_mut() {
+                // initialize the state
                 let mut schedule: Schedule = Schedule::new();
                 individual.init(&mut schedule);
-                
+                // compute the simulation
                 for _ in 0..($step as usize) {
                     let individual = individual.as_state_mut();
                     schedule.step(individual);
@@ -826,40 +904,48 @@ macro_rules! ga{
                         break;
                     }
                 }
-                
-                fitness_values.push($fitness(individual, schedule));
-            }
 
-            let mut file = OpenOptions::new()
-                        .read(true)
-                        .write(true)
-                        .append(true)
-                        .create(true)
-                        .open("ga_result.txt").unwrap();
+                // compute the fitness value
+                let fitness = $fitness(individual, schedule);
 
-            let _ = writeln!(&mut file, "Population at gen {}", generation).unwrap();
-            for i in 0..population.len(){
-                let _ = writeln!(&mut file, "- individual #{}: {} ", i, population[i]);
-            }
-            let _ = writeln!(&mut file, "------------------------------");
+                // saving the best fitness of this generation
+                if fitness >= best_fitness_gen {
+                    best_fitness_gen = fitness;
 
-            let mut flag = false;
-            for i in 0..fitness_values.len(){
-                if fitness_values[i] >= $desired_fitness{
+                    $(
+                        $p_name = Some(individual.$p_name);
+                    )*
+                }
+
+                //write each iteration on a csv file
+                wtr.write_record(&[generation.to_string(), index.to_string() , fitness.to_string(), $(individual.$p_name.to_string(),)*]).unwrap();
+
+                // if the desired fitness is reached break
+                // setting the flag at true
+                if fitness >= $desired_fitness{
                     flag = true;
-                    // index = i;
                     break;
                 }
-                
+                index += 1;
+            }
+            
+            // saving the best fitness of all generation computed until n
+            if (best_fitness_gen > best_fitness) {
+                best_fitness = best_fitness_gen;
+                best_generation = generation;
             }
 
+            println!("- best fitness in generation {} is {}", generation, best_fitness_gen);
+            println!("-- best fitness is found in generation {} and is {}", best_generation, best_fitness);
+
+            // if flag is true the desired fitness is found
             if flag {
                 break;
             }
 
             // compute selection
             $selection(&mut population);
-            
+            // check if after selection the population size is too small
             if population.len() <= 1 {
                 println!("Population size <= 1, exiting...");
                 break;
@@ -869,16 +955,214 @@ macro_rules! ga{
             for individual in population.iter_mut() {
                 $mutation(individual);
             }
-            
             // crossover the new population
             $crossover(&mut population);
         }
 
-        population.sort_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap());
+        println!("The best individual has the following parameters ");
+        $(
+            println!("--- {} : {}", stringify!($p_name), $p_name.unwrap());
+        )*
+        println!("--- fitness : {}", best_fitness);
+    };
 
-        println!("Best population is found at generation {}:", generation);
-        //for i in 0..population.len(){
-        println!("The best individual is: {} ", population[0]);
-        //}
+    // perform the model exploration with genetic algorithm without writing additional parameters
+    (
+        $init_population:tt,
+        $fitness:tt,
+        $selection:tt,
+        $mutation:tt,
+        $crossover:tt,
+        $state: ty,
+        $desired_fitness: expr,
+        $generation_num: expr,
+        $step: expr,
+    ) => {
+        explore_ga_sequential!( $init_population, $fitness, $selection, $mutation, $crossover, $state, $desired_fitness, $generation_num, $step, parameters { }
+        );
+    };
+}
+
+// specific macro for explore_ga in parallel using multiple processors
+#[macro_export]
+macro_rules! explore_ga_parallel {
+    (
+        $init_population:tt,
+        $fitness:tt,
+        $selection:tt,
+        $mutation:tt,
+        $crossover:tt,
+        $state: ty,
+        $desired_fitness: expr,
+        $generation_num: expr,
+        $step: expr,
+        parameters {
+            $($p_name:ident: $p_type:ty)*
+        }
+    ) => {
+        
+//         let mut population: Vec<$state> = $init_population();
+//         let mut generation = 0;
+//         let mut best_fitness = 0.;
+//         let mut best_generation = 0;
+
+//         $(
+//             let mut $p_name: Option<$p_type> = None;
+//         )*
+
+//         // flag to break from the loop
+//         let mut flag = false;
+
+//         let mut wtr = Writer::from_path("output.csv").unwrap();
+//         //define column name
+//         static NAMES: &'static [&'static str] = &["Generation", "Individual", "Fitness", $(stringify!($p_name),)*];
+//         wtr.write_record(NAMES).unwrap();
+
+//         // calculate the fitness for the first population
+//         loop {
+//             // if generation_num is passed as 0, we have infinite generations
+//             if $generation_num != 0 && generation == $generation_num {
+//                 println!("Reached {} generations, exiting...", $generation_num);
+//                 break;
+//             }
+//             generation += 1;
+//             println!("Computing generation {}...", generation);
+
+//             let mut best_fitness_gen = 0.;
+//             // execute the simulation for each member of population
+//             // iterates through the population
+//             let mut index = 0;
+
+//             let result = (0..population.len()).par_iter_mut().map( |idx| {
+//                 // initialize the state
+
+//                 let mut schedule: Schedule = Schedule::new();
+//                 individual.init(&mut schedule);
+//                 // compute the simulation
+//                 for _ in 0..($step as usize) {
+//                     let individual = individual.as_state_mut();
+//                     schedule.step(individual);
+//                     if individual.end_condition(&mut schedule) {
+//                         break;
+//                     }
+//                 }
+//                 [generation.to_string(), index.to_string() , fitness.to_string(), $(individual.$p_name.to_string(),)*]
+//                 // compute the fitness value
+// /*                 let fitness = $fitness(individual, schedule);
+
+//                 // saving the best fitness of this generation
+//                 if fitness >= best_fitness_gen {
+//                     best_fitness_gen = fitness;
+
+//                     $(
+//                         $p_name = Some(individual.$p_name);
+//                     )*
+//                 }
+//  */
+//                 //write each iteration on a csv file
+//                 //wtr.write_record(&[generation.to_string(), index.to_string() , fitness.to_string(), $(individual.$p_name.to_string(),)*]).unwrap();
+
+//                 // if the desired fitness is reached break
+//                 // setting the flag at true
+// /*                 if fitness >= $desired_fitness{
+//                     flag = true;
+//                     break;
+//                 }
+//                 index += 1; */
+//             }).collect();
+            
+
+
+
+//             // saving the best fitness of all generation computed until n
+//             if (best_fitness_gen > best_fitness) {
+//                 best_fitness = best_fitness_gen;
+//                 best_generation = generation;
+//             }
+
+//             println!("- best fitness in generation {} is {}", generation, best_fitness_gen);
+//             println!("-- best fitness is found in generation {} and is {}", best_generation, best_fitness);
+
+//             // if flag is true the desired fitness is found
+//             if flag {
+//                 break;
+//             }
+
+//             // compute selection
+//             $selection(&mut population);
+//             // check if after selection the population size is too small
+//             if population.len() <= 1 {
+//                 println!("Population size <= 1, exiting...");
+//                 break;
+//             }
+
+//             // mutate the new population
+//             for individual in population.iter_mut() {
+//                 $mutation(individual);
+//             }
+//             // crossover the new population
+//             $crossover(&mut population);
+//         }
+
+//         println!("The best individual has the following parameters ");
+//         $(
+//             println!("--- {} : {}", stringify!($p_name), $p_name.unwrap());
+//         )*
+//         println!("--- fitness : {}", best_fitness);
+        
+    };
+
+    // perform the model exploration with genetic algorithm without writing additional parameters
+    (
+        $init_population:tt,
+        $fitness:tt,
+        $selection:tt,
+        $mutation:tt,
+        $crossover:tt,
+        $state: ty,
+        $desired_fitness: expr,
+        $generation_num: expr,
+        $step: expr,
+    ) => {
+        explore_ga_parallel!( $init_population, $fitness, $selection, $mutation, $crossover, $state, $desired_fitness, $generation_num, $step, parameters { }
+        );
+    };
+}
+
+// specific macro for explore_ga using MPI for distributed computing
+#[macro_export]
+macro_rules! explore_ga_distributedMPI {
+    (
+        $init_population:tt,
+        $fitness:tt,
+        $selection:tt,
+        $mutation:tt,
+        $crossover:tt,
+        $state: ty,
+        $desired_fitness: expr,
+        $generation_num: expr,
+        $step: expr,
+        parameters {
+            $($p_name:ident: $p_type:ty)*
+        }
+    ) => {
+
+        println!("explore_ga_distributedMPI");
+    };
+
+    // perform the model exploration with genetic algorithm without writing additional parameters
+    (
+        $init_population:tt,
+        $fitness:tt,
+        $selection:tt,
+        $mutation:tt,
+        $crossover:tt,
+        $state: ty,
+        $desired_fitness: expr,
+        $generation_num: expr,
+        $step: expr,
+    ) => {
+        explore_ga_distributedMPI!( $init_population, $fitness, $selection, $mutation, $crossover, $state, $desired_fitness, $generation_num, $step, parameters { }
+        );
     };
 }
