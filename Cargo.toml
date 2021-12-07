@@ -71,5 +71,4 @@ visualization_wasm = [
     "bevy/png",
     "image",
     "bevy_egui",
-    "bevy_canvas"
 ]

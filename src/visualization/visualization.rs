@@ -14,6 +14,7 @@ use crate::visualization::{
 };
 
 use bevy::{prelude::*, window::WindowResizeConstraints, DefaultPlugins};
+#[cfg(not(feature = "visualization_wasm"))]
 use bevy_canvas::CanvasPlugin;
 use bevy_egui::EguiPlugin;
 
@@ -107,7 +108,7 @@ impl Visualization {
         #[cfg(target_arch = "wasm32")]
         app.add_plugin(bevy_webgl2::WebGL2Plugin);
 
-        // #[cfg(feature = "canvas")]
+        #[cfg(not(feature = "visualization_wasm"))]
         app.add_plugin(CanvasPlugin);
 
         app.insert_resource(SimulationDescriptor {

@@ -19,7 +19,7 @@ use image::ImageBuffer;
 pub trait BatchRender<S: State> {
     // Specifies the conversion from a 2d point in space in a pixel is done. The format of the return value
     // is [Rgba8UnormSrgb]
-    fn get_pixel(&self, pos: &Int2D) -> [u8; 4];
+    fn get_pixel(&self, loc: &Int2D) -> [u8; 4];
 
     // Specifies how big the texture should be. For example, for a grid the dimensions would be its width and height.
     fn get_dimensions(&self) -> (u32, u32);
@@ -31,11 +31,11 @@ pub trait BatchRender<S: State> {
     fn texture(&self) -> Texture {
         let (width, height) = self.get_dimensions();
         let image_buffer = ImageBuffer::from_fn(width, height, |x, y| {
-            let pos = Int2D {
+            let loc = Int2D {
                 x: x as i32,
                 y: y as i32,
             };
-            let pixel = self.get_pixel(&pos);
+            let pixel = self.get_pixel(&loc);
             image::Rgba(pixel)
         });
 

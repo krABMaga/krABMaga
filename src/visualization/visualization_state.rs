@@ -58,7 +58,7 @@ pub trait VisualizationState<S: State>: Send + Sync {
         state: &Box<&dyn State>,
     ) {
         // AgentVis separate object which accepts an agent reference
-        let (x, y, z) = agent_render.position(agent, state);
+        let (x, y, z) = agent_render.location(agent, state);
         let (scale_x, scale_y) = agent_render.scale(agent, state);
         let rotation = agent_render.rotation(agent, state);
 

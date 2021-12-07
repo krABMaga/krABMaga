@@ -183,10 +183,7 @@ cfg_if! {
                         for e in uedges {
 
                             let vid = nodes2id.get(self.id2nodes.get_read(&e.v).unwrap()).unwrap();
-                            if self.direct && e.u == *uid && e.v == *vid {
-                                return Some(e.clone());
-                            } else if !self.direct && ((e.u == *uid && e.v == *vid) || (e.v == *uid && e.u == *vid))
-                            {
+                            if (self.direct && e.u == *uid && e.v == *vid) || (!self.direct && ((e.u == *uid && e.v == *vid) || (e.v == *uid && e.u == *vid))) {
                                 return Some(e.clone());
                             }
                         }
