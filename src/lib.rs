@@ -811,6 +811,7 @@ macro_rules! ga{
             }
             
             generation += 1;
+            println!("Computing generation {}...", generation);
             // execute the simulation for each member of population
             let mut fitness_values: Vec<f32> = Vec::new();
 
@@ -873,9 +874,11 @@ macro_rules! ga{
             $crossover(&mut population);
         }
 
+        population.sort_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap());
+
         println!("Best population is found at generation {}:", generation);
-        for i in 0..population.len(){
-            println!("- individual #{}: {} ", i, population[i]);
-        }
+        //for i in 0..population.len(){
+        println!("The best individual is: {} ", population[0]);
+        //}
     };
 }
