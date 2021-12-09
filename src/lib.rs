@@ -21,7 +21,7 @@ pub use std::fs::File;
 pub use std::fs::OpenOptions;
 pub use std::io::Write;
 pub use std::time::Duration;
-
+pub use std::sync::{Arc, Mutex};
 use std::error::Error;
 
 #[cfg(feature = "explore")]
@@ -930,7 +930,7 @@ macro_rules! explore_ga_sequential {
             }
             
             // saving the best fitness of all generation computed until n
-            if (best_fitness_gen > best_fitness) {
+            if best_fitness_gen > best_fitness {
                 best_fitness = best_fitness_gen;
                 best_generation = generation;
             }
@@ -955,6 +955,7 @@ macro_rules! explore_ga_sequential {
             for individual in population.iter_mut() {
                 $mutation(individual);
             }
+            
             // crossover the new population
             $crossover(&mut population);
         }
@@ -1001,114 +1002,136 @@ macro_rules! explore_ga_parallel {
         }
     ) => {
         
-//         let mut population: Vec<$state> = $init_population();
-//         let mut generation = 0;
-//         let mut best_fitness = 0.;
-//         let mut best_generation = 0;
+        let mut population: Vec<$state> = $init_population();
+        let mut generation = 0;
+        let mut best_fitness = 0.;
+        let mut best_generation = 0;
 
-//         $(
-//             let mut $p_name: Option<$p_type> = None;
-//         )*
+        $(
+            let mut $p_name: Option<$p_type> = None;
+        )*
 
-//         // flag to break from the loop
-//         let mut flag = false;
+        // flag to break from the loop
+        let mut flag = false;
 
-//         let mut wtr = Writer::from_path("output.csv").unwrap();
-//         //define column name
-//         static NAMES: &'static [&'static str] = &["Generation", "Individual", "Fitness", $(stringify!($p_name),)*];
-//         wtr.write_record(NAMES).unwrap();
+        let mut wtr = Writer::from_path("output_parallel.csv").unwrap();
+        //define column name
+        static NAMES: &'static [&'static str] = &["Generation", "Individual", "Fitness", $(stringify!($p_name),)*];
+        wtr.write_record(NAMES).unwrap();
 
-//         // calculate the fitness for the first population
-//         loop {
-//             // if generation_num is passed as 0, we have infinite generations
-//             if $generation_num != 0 && generation == $generation_num {
-//                 println!("Reached {} generations, exiting...", $generation_num);
-//                 break;
-//             }
-//             generation += 1;
-//             println!("Computing generation {}...", generation);
+        // Wrap the population into a Mutex to be safely shared
+        let population = Arc::new(Mutex::new(population));
 
-//             let mut best_fitness_gen = 0.;
-//             // execute the simulation for each member of population
-//             // iterates through the population
-//             let mut index = 0;
+        // calculate the fitness for the first population
+        loop {
+            // if generation_num is passed as 0, we have infinite generations
+            if $generation_num != 0 && generation == $generation_num {
+                println!("Reached {} generations, exiting...", $generation_num);
+                break;
+            }
+            generation += 1;
+            println!("Computing generation {}...", generation);
 
-//             let result = (0..population.len()).par_iter_mut().map( |idx| {
-//                 // initialize the state
-
-//                 let mut schedule: Schedule = Schedule::new();
-//                 individual.init(&mut schedule);
-//                 // compute the simulation
-//                 for _ in 0..($step as usize) {
-//                     let individual = individual.as_state_mut();
-//                     schedule.step(individual);
-//                     if individual.end_condition(&mut schedule) {
-//                         break;
-//                     }
-//                 }
-//                 [generation.to_string(), index.to_string() , fitness.to_string(), $(individual.$p_name.to_string(),)*]
-//                 // compute the fitness value
-// /*                 let fitness = $fitness(individual, schedule);
-
-//                 // saving the best fitness of this generation
-//                 if fitness >= best_fitness_gen {
-//                     best_fitness_gen = fitness;
-
-//                     $(
-//                         $p_name = Some(individual.$p_name);
-//                     )*
-//                 }
-//  */
-//                 //write each iteration on a csv file
-//                 //wtr.write_record(&[generation.to_string(), index.to_string() , fitness.to_string(), $(individual.$p_name.to_string(),)*]).unwrap();
-
-//                 // if the desired fitness is reached break
-//                 // setting the flag at true
-// /*                 if fitness >= $desired_fitness{
-//                     flag = true;
-//                     break;
-//                 }
-//                 index += 1; */
-//             }).collect();
+            let mut best_fitness_gen = 0.;
             
+            // execute the simulation for each member of population
+            // iterates through the population
+            
+            let len = population.lock().unwrap().len();
+            let mut res = Vec::new();
+
+           (0..len).into_par_iter().map( |idx| {
+                // initialize the state
+                let mut schedule: Schedule = Schedule::new();
+                let mut individual: $state;
+                {
+                    let mut population = population.lock().unwrap();
+                    individual = <$state>::new(
+                        $(
+                            population[idx].$p_name,
+                        )*
+                    );
+                }
+                
+                individual.init(&mut schedule);
+                // compute the simulation
+                for _ in 0..($step as usize) {
+                    let individual = individual.as_state_mut();
+                    schedule.step(individual);
+                    if individual.end_condition(&mut schedule) {
+                        break;
+                    }
+                }
+
+                // compute the fitness value
+                let fitness = $fitness(&mut individual, schedule);
+                // here
+                // return an array containing the results of the simulation to be written in the csv file
+                [generation.to_string(), idx.to_string() , fitness.to_string(), $( individual.$p_name.to_string(),)*]
+                
+            }).collect_into_vec(&mut res);
+
+            // for each simulation result
+            for i in 0..res.len() {
+                //write each iteration result on the csv file
+                wtr.write_record(&res[i]).unwrap();
+                
+                let fitness = res[i][2].parse::<f32>().unwrap();
+                population.lock().unwrap()[i].fitness = fitness;
+
+                // saving the best fitness of this generation
+                if fitness >= best_fitness_gen {
+                    best_fitness_gen = fitness;
+                    $(
+                        $p_name = Some(population.lock().unwrap()[i].$p_name);
+                    )*
+                }
+
+                // if the desired fitness is reached break
+                // setting the flag at true
+                if fitness >= $desired_fitness {
+                    flag = true;
+                }
+            }
 
 
+            // saving the best fitness of all generation computed until now
+            if best_fitness_gen > best_fitness {
+                best_fitness = best_fitness_gen;
+                best_generation = generation;
+            }
 
-//             // saving the best fitness of all generation computed until n
-//             if (best_fitness_gen > best_fitness) {
-//                 best_fitness = best_fitness_gen;
-//                 best_generation = generation;
-//             }
+            println!("- best fitness in generation {} is {}", generation, best_fitness_gen);
+            println!("-- best fitness is found in generation {} and is {}", best_generation, best_fitness);
 
-//             println!("- best fitness in generation {} is {}", generation, best_fitness_gen);
-//             println!("-- best fitness is found in generation {} and is {}", best_generation, best_fitness);
+            // if flag is true the desired fitness is found
+            if flag {
+                break;
+            }
 
-//             // if flag is true the desired fitness is found
-//             if flag {
-//                 break;
-//             }
+            // compute selection
+            $selection(&mut population.lock().unwrap());
 
-//             // compute selection
-//             $selection(&mut population);
-//             // check if after selection the population size is too small
-//             if population.len() <= 1 {
-//                 println!("Population size <= 1, exiting...");
-//                 break;
-//             }
+            // check if after selection the population size is too small
+            if population.lock().unwrap().len() <= 1 {
+                println!("Population size <= 1, exiting...");
+                break;
+            }
 
-//             // mutate the new population
-//             for individual in population.iter_mut() {
-//                 $mutation(individual);
-//             }
-//             // crossover the new population
-//             $crossover(&mut population);
-//         }
+            // mutate the new population
+            for individual in population.lock().unwrap().iter_mut() {
+                $mutation(individual);
+            }
+            
+            // crossover the new population
+            $crossover(&mut population.lock().unwrap());
+        }
 
-//         println!("The best individual has the following parameters ");
-//         $(
-//             println!("--- {} : {}", stringify!($p_name), $p_name.unwrap());
-//         )*
-//         println!("--- fitness : {}", best_fitness);
+        println!("The best individual has the following parameters ");
+        $(
+            println!("--- {} : {}", stringify!($p_name), $p_name.unwrap());
+        )*
+        println!("--- fitness : {}", best_fitness);
         
     };
 
