@@ -3,6 +3,7 @@ pub mod utils;
 pub use hashbrown;
 pub use indicatif::ProgressBar;
 pub use rand;
+pub use core::fmt;
 
 #[cfg(any(feature = "visualization", feature = "visualization_wasm", doc))]
 pub mod visualization;
@@ -789,9 +790,20 @@ macro_rules! explore_ga {
             $($p_name:ident: $p_type:ty)*
         }
     ) => {{
+
+        build_dataframe_explore!(BufferGA, input {
+            generation: u32
+            index: i32
+            fitness: f32
+            $(
+                $p_name: $p_type
+            )*
+        });
+
+        let mut result: Option<Vec<_>> = None;
         match $cmode {
             ComputationMode::Sequential => {
-                explore_ga_sequential!(
+                let r = explore_ga_sequential!(
                     $init_population,
                     $fitness,
                     $selection,
@@ -805,9 +817,10 @@ macro_rules! explore_ga {
                         $($p_name: $p_type)*
                     }
                 );
+                result = Some(r);
             },
             ComputationMode::Parallel => {
-                explore_ga_parallel!(
+                let r = explore_ga_parallel!(
                     $init_population,
                     $fitness,
                     $selection,
@@ -821,9 +834,10 @@ macro_rules! explore_ga {
                         $($p_name: $p_type)*
                     }
                 );
+                result = Some(r);
             },
             ComputationMode::DistributedMPI => {
-                explore_ga_distributedMPI!(
+                let r = explore_ga_distributedMPI!(
                     $init_population,
                     $fitness,
                     $selection,
@@ -837,9 +851,10 @@ macro_rules! explore_ga {
                         $($p_name: $p_type)*
                     }
                 );
+                result = Some(r);
             },
         }
-
+        result.unwrap() 
     }};
 
     (
@@ -855,7 +870,7 @@ macro_rules! explore_ga {
         $cmode: expr
     ) => {
         explore_ga!( $init_population, $fitness, $selection, $mutation, $crossover, $state, $desired_fitness, $generation_num, $step, $cmode, parameters { }
-        );
+        )
     };
 
 }
@@ -876,11 +891,13 @@ macro_rules! explore_ga_sequential {
         parameters {
             $($p_name:ident: $p_type:ty)*
         }
-    ) => {
+    ) => {{
 
         let mut generation = 0;
         let mut best_fitness = 0.;
         let mut best_generation = 0;
+
+        let mut result:Vec<BufferGA> = Vec::new();
 
         // use init_population custom function to create a vector of state
         let mut population: Vec<$state> = $init_population();
@@ -891,13 +908,6 @@ macro_rules! explore_ga_sequential {
 
         // flag to break from the loop
         let mut flag = false;
-
-        // create the csv file
-        let mut wtr = Writer::from_path("output.csv").unwrap();
-        
-        //define column name
-        static NAMES: &'static [&'static str] = &["Generation", "Individual", "Fitness", $(stringify!($p_name),)*];
-        wtr.write_record(NAMES).unwrap();
 
         // calculate the fitness for the first population
         loop {
@@ -939,8 +949,15 @@ macro_rules! explore_ga_sequential {
                     )*
                 }
 
-                //write each iteration on a csv file
-                wtr.write_record(&[generation.to_string(), index.to_string() , fitness.to_string(), $(individual.$p_name.to_string(),)*]).unwrap();
+                // result is here
+                result.push(BufferGA::new(
+                    generation,
+                    index,
+                    fitness,
+                    $(
+                        individual.$p_name,
+                    )*
+                ));
 
                 // if the desired fitness is reached break
                 // setting the flag at true
@@ -987,7 +1004,8 @@ macro_rules! explore_ga_sequential {
             println!("--- {} : {}", stringify!($p_name), $p_name.unwrap());
         )*
         println!("--- fitness : {}", best_fitness);
-    };
+        result 
+    }};
 
     // perform the model exploration with genetic algorithm without writing additional parameters
     (
@@ -1022,7 +1040,7 @@ macro_rules! explore_ga_parallel {
         parameters {
             $($p_name:ident: $p_type:ty)*
         }
-    ) => {
+    ) => {{
 
         let mut generation = 0;
         let mut best_fitness = 0.;
@@ -1038,15 +1056,9 @@ macro_rules! explore_ga_parallel {
         // flag to break from the loop
         let mut flag = false;
 
-        // create the csv file
-        let mut wtr = Writer::from_path("output_parallel.csv").unwrap();
-        
-        //define column name
-        static NAMES: &'static [&'static str] = &["Generation", "Individual", "Fitness", $(stringify!($p_name),)*];
-        wtr.write_record(NAMES).unwrap();
-
         // Wrap the population into a Mutex to be safely shared
         let population = Arc::new(Mutex::new(population));
+        let mut res: Vec<BufferGA> = Vec::new();
 
         // calculate the fitness for the first population
         loop {
@@ -1061,12 +1073,12 @@ macro_rules! explore_ga_parallel {
             let mut best_fitness_gen = 0.;
 
             let len = population.lock().unwrap().len();
-            let mut res = Vec::new();
-
+            
+            let mut result = Vec::new();
             // execute the simulation for each member of population
             // iterates through the population
 
-            (0..len).into_par_iter().map( |idx| {
+            (0..len).into_par_iter().map( |index| {
                 // initialize the state
                 let mut schedule: Schedule = Schedule::new();
                 let mut individual: $state;
@@ -1075,7 +1087,7 @@ macro_rules! explore_ga_parallel {
                     // create the new state using the parameters
                     individual = <$state>::new(
                         $(
-                            population[idx].$p_name,
+                            population[index].$p_name,
                         )*
                     );
                 }
@@ -1094,17 +1106,22 @@ macro_rules! explore_ga_parallel {
                 // compute the fitness value
                 let fitness = $fitness(&mut individual, schedule);
                 
+                BufferGA::new(
+                    generation,
+                    index as i32,
+                    fitness,
+                    $(
+                        individual.$p_name,
+                    )*
+                )
+                
                 // return an array containing the results of the simulation to be written in the csv file
-                [generation.to_string(), idx.to_string() , fitness.to_string(), $( individual.$p_name.to_string(),)*]
-
-            }).collect_into_vec(&mut res);
+            }).collect_into_vec(&mut result);
 
             // for each simulation result
-            for i in 0..res.len() {
-                //write each iteration result on the csv file
-                wtr.write_record(&res[i]).unwrap();
-
-                let fitness = res[i][2].parse::<f32>().unwrap();
+            for i in 0..result.len() {
+                
+                let fitness = result[i].fitness;
                 population.lock().unwrap()[i].fitness = fitness;
 
                 // saving the best fitness of this generation
@@ -1121,7 +1138,6 @@ macro_rules! explore_ga_parallel {
                 }
             }
 
-
             // saving the best fitness of all generation computed until now
             if best_fitness_gen > best_fitness {
                 best_fitness = best_fitness_gen;
@@ -1131,6 +1147,8 @@ macro_rules! explore_ga_parallel {
             println!("- best fitness in generation {} is {}", generation, best_fitness_gen);
             println!("-- best fitness is found in generation {} and is {}", best_generation, best_fitness);
 
+            res.append(&mut result);
+            
             // if flag is true the desired fitness is found
             if flag {
                 break;
@@ -1159,8 +1177,8 @@ macro_rules! explore_ga_parallel {
             println!("--- {} : {}", stringify!($p_name), $p_name.unwrap());
         )*
         println!("--- fitness : {}", best_fitness);
-
-    };
+        res
+    }};
 
     // perform the model exploration with genetic algorithm without writing additional parameters
     (
@@ -1195,11 +1213,7 @@ macro_rules! explore_ga_distributedMPI {
         parameters {
             $($p_name:ident: $p_type:ty)*
         }
-    ) => {
-
-        let mut generation = 0;
-        let mut best_fitness = 0.;
-        let mut best_generation = 0;
+    ) => {{
 
         // MPI initialization
         let universe = mpi::initialize().unwrap();
@@ -1208,86 +1222,112 @@ macro_rules! explore_ga_distributedMPI {
         let root_process = world.process_at_rank(root_rank);
         let my_rank = world.rank();
         let num_procs = world.size() as usize;
-        let my_pop_size: usize;
+
+        let mut generation: u32 = 0;
+        let mut best_fitness = 0.;
+        let mut best_generation = 0;
+        let mut my_pop_size: usize = 0;
+        let mut population: Vec<$state> = Vec::new();
         let mut population_size = 0;
+      
         // create an array for each parameter
         $(
-           let mut $p_name: Vec<$p_type> = Vec::new();
+        let mut $p_name: Vec<$p_type> = Vec::new();
         )*
 
-        // TODO METTILO A FATTORE
-        // open the csv file
-        let mut wtr = Writer::from_path("output_MPI.csv").unwrap();
-        //define columns names
-        static NAMES: &'static [&'static str] = &["Generation", "Individual", "Fitness", $(stringify!($p_name),)*];
-        wtr.write_record(NAMES).unwrap();
+        let mut all_results: Vec<BufferGA> = Vec::with_capacity(population_size);
         
-        // only the root process split the workload among the processes
+        let mut flag = false;
+        
+        // initialization of best individual placeholder
+        let mut best_individual : Option<BufferGA> = None;
+
         if world.rank() == root_rank {
-
-            //create the whole population and send it to the other processes
-            let population: Vec<$state> = $init_population();
+            population = $init_population();
             population_size = population.len();
-            let mut population_size_per_process = population_size / num_procs;
-            
-            // for each processor
-            for i in 0..num_procs {
-                
-                let mut sub_population_size = 0;
 
-                if i == num_procs - 1 {
-                    sub_population_size = population_size - population_size_per_process * (num_procs - 1);
-                } else {
-                    sub_population_size = population_size_per_process;
-                }
-                
-                // save my_pop_size for master 
-                if i == 0 {
-                    my_pop_size = sub_population_size;
-                }
-                
-                // fulfill the parameters arrays
-                for j in 0..sub_population_size {
+            // dummy initilization
+            best_individual = Some(BufferGA::new(
+                0,
+                0,
+                0.,
+                $(
+                    population[0].$p_name,
+                )*
+            ));
+        }
+        
+        loop {
+            // only the root process split the workload among the processes
+            if world.rank() == root_rank {
+                //create the whole population and send it to the other processes
+                let mut population_size_per_process = population_size / num_procs;
+      
+                // for each processor
+                for i in 0..num_procs {
+                    let mut sub_population_size = 0;
+
+                    if i == num_procs - 1 {
+                        sub_population_size = population_size - population_size_per_process * (num_procs - 1);
+                    } else {
+                        sub_population_size = population_size_per_process;
+                    }
+                    
+                    // save my_pop_size for master 
+                    if i == 0 {
+                        my_pop_size = sub_population_size;
+                    }
+                    
+                    // fulfill the parameters arrays
+                    
+                    for j in 0..sub_population_size {
+                        $(
+                            $p_name.push(population[i * population_size_per_process + j].$p_name);
+                        )*
+                    }
+
+                    // send the arrays
+                    world.process_at_rank(i as i32).send(&sub_population_size);
                     $(
-                        $p_name.push(population[i * population_size_per_process + j].$p_name);
+                        world.process_at_rank(i as i32).send(&$p_name[..]);
                     )*
                 }
-
-                // send the arrays
-                world.process_at_rank(i as i32).send(&sub_population_size);
+            } else {
+                // every other processor receive the parameter
+                let (my_population_size, _) = world.any_process().receive::<usize>();
+                my_pop_size = my_population_size;
+                
                 $(
-                    world.process_at_rank(i as i32).send(&$p_name[..]);
+                    let (param, _) = world.any_process().receive_vec::<$p_type>();
+                    $p_name = param;
                 )*
             }
-        } else {
-            // every other processor receive the parameter
-            let (population_size, _) = world.any_process().receive::<usize>();
-            my_pop_size = population_size;
+
+            let mut my_population: Vec<$state>  = Vec::new();
+
+            for i in 0..my_pop_size {
+                my_population.push(
+                    <$state>::new(
+                        $(
+                            $p_name[i],  
+                        )*
+                    )
+                );
+            }
+
+            if $generation_num != 0 && generation == $generation_num {
+                println!("Reached {} generations, exiting...", $generation_num);
+                break;
+            }
+            generation += 1;
             
-            $(
-                let (param, _) = world.any_process().receive_vec::<$p_type>();
-                $p_name = param;
-            )*
-        }
+            if world.rank() == root_rank {
+                println!("Computing generation {}...", generation);
+            }
 
-        // populate array of state for each processor
-        let mut my_population: Vec<$state>  = Vec::new();
+            let mut best_fitness_gen = 0.;
 
-        for i in 0..my_pop_size {
-            my_population.push(
-                <$state>::new(
-                    $(
-                        $p_name[i],  
-                    )*
-                 )
-            );
-        }
-
-        //let mut best: ($( String, $p_type, )*);
-
-        loop {
-            let mut index = 0;
-
+            let mut local_index = 0;
             for individual in my_population.iter_mut() {
                 // initialize the state
                 let mut schedule: Schedule = Schedule::new();
@@ -1300,72 +1340,116 @@ macro_rules! explore_ga_distributedMPI {
                         break;
                     }
                 }
-
                 // compute the fitness value
                 let fitness = $fitness(individual, schedule);
-
-/*                 // saving the best fitness of this generation
-                if fitness >= best_fitness_gen {
-                    best_fitness_gen = fitness;
-                    
-                   // best = ($(stringify!($p_name), $p_name)*);
-
-                } */
-
                 
                 // send the result of each iteration to the master
-                // let result = [generation⁄to_string(), ((my_rank as usize) * my_pop_size + index).to_string() , fitness.to_string(), $(individual.$p_name.to_string(),)*];
-                let result = [generation, ((my_rank as usize) * my_pop_size + index) , fitness, $(individual.$p_name,)*];
-               
-                /*opzioni
-                provare a creare il buffer
-                struct + equivalence
-                pregare
-                */
-                // let mut buffer =
-                //     unsafe { 
-                //         DynBufferMut::from_raw(
-                //             result.as_mut_ptr(), 
-                //             result.count(), 
-                //             String::equivalent_datatype().into()
-                //         ) 
-                //     };
+                // let result = [generation.to_string(), ((my_rank as usize) * my_pop_size + index).to_string() , fitness.to_string(), $(individual.$p_name.to_string(),)*];
+                let index = ((my_rank as usize) * my_pop_size + local_index) as i32;
                 
+                let result = BufferGA::new(
+                    generation,
+                    index,
+                    fitness,
+                    $(
+                        individual.$p_name,
+                    )*
+                );
+
+                // saving the best fitness and the best individual of this generation
+                if fitness >= best_fitness_gen {
+                    best_fitness_gen = fitness;
+                }
 
                 // receive simulations results from each processors
                 if world.rank() == root_rank {
                     // root receives the results from other processors
-                    //
-                    let mut all_results = vec![result; population_size];
-                    root_process.gather_into_root(&result[..], &mut all_results[..]);
-                    // write on the csv file
-                    println!("{:?}", all_results);
-                    wtr.write_record(all_results).unwrap();
+                    let mut partial_results = vec![result; population_size];
+                    // let mut partial_best_individuals = vec![my_best_individual; num_procs];
+                    root_process.gather_into_root(&result, &mut partial_results[..]);
+
+                    // save the best individual of this generation
+                    for elem in &partial_results {
+                        if elem.fitness > best_individual.unwrap().fitness {
+                            best_individual = Some(elem.clone());
+                        }
+                    }
+                    
+                    all_results.append(&mut partial_results);
+
                 } else {
                     // send the result to the root processor
-                    root_process.gather_into(&result[..]);
+                    root_process.gather_into(&result);
                 }
-                
                 
                 // if the desired fitness is reached break
                 // setting the flag at true
-                // if fitness >= $desired_fitness{
-                //     flag = true;
-                //     break;
-                // }
-                index += 1;
+                if fitness >= $desired_fitness{
+                    flag = true;
+                    break;
+                }
+                local_index += 1;
             }
 
+            // saving the best fitness of all generation computed until n
+            if best_fitness_gen > best_fitness {
+                best_fitness = best_fitness_gen;
+                best_generation = generation;
+            }
+
+            if world.rank() == root_rank{
+                println!("- best fitness in generation {} is {}", generation, best_fitness_gen);
+                println!("-- best fitness is found in generation {} and is {}", best_generation, best_fitness);
+            }
+
+            // if flag is true the desired fitness is found
+            if flag {
+                break;
+            }
             
-        }
+            // the master do selection, mutation and crossover
+            if world.rank() == root_rank {
+
+                // set the population parameters owned by the master 
+                // using the ones received from other processors
+                for i in 0..population_size {
+                    
+                    population[i].fitness = all_results[(generation as usize)*population_size + i].fitness;
+                    println!("Computed index {} - fitness is {}", ((generation as usize)-1)*population_size + i, population[i].fitness);
+                }
+                // compute selection
+                $selection(&mut population);
+
+                // check if after selection the population size is too small
+                if population.len() <= 1 {
+                    println!("Population size <= 1, exiting...");
+                    break;
+                }
+
+                // mutate the new population
+                for individual in population.iter_mut() {
+                    $mutation(individual);
+                }
+
+                // crossover the new population
+                $crossover(&mut population);
+
+                $(
+                    $p_name.clear();
+                )*
+                
+            }
+
+        } // END OF LOOP
         
+        if world.rank() == root_rank{
+            println!("The best individual has the following parameters ");
+            println!("{:?}", best_individual.unwrap());   
+        }
 
-        //let best = ($( stringify!($p_name), $p_name)*);
-       
-
-
-
-    };
+        // return arrays containing all the results of each simulation
+        all_results
+    }};
 
     // perform the model exploration with genetic algorithm without writing additional parameters
     (
@@ -1381,5 +1465,90 @@ macro_rules! explore_ga_distributedMPI {
     ) => {
         explore_ga_distributedMPI!( $init_population, $fitness, $selection, $mutation, $crossover, $state, $desired_fitness, $generation_num, $step, parameters { }
         );
+    };
+}
+
+#[macro_export]
+macro_rules! build_dataframe_explore {
+    //Dataframe with input and output parameters and optional parameters
+    (
+        $name:ident, input {$($input: ident: $input_ty: ty)*}
+    ) => {
+
+        #[derive(Default, Clone, Copy, PartialEq, Debug)]
+        struct $name {
+            
+            $(pub $input: $input_ty,)*
+            
+        }
+
+        unsafe impl Equivalence for $name {
+            type Out = UserDatatype;
+            fn equivalent_datatype() -> Self::Out {
+
+                //count input and output parameters to create slice for blocklen
+                let v_in = count_tts!($($input)*);
+                
+
+                let mut vec = Vec::with_capacity(v_in);
+                for i in 0..v_in {
+                    vec.push(1);
+                }
+
+                UserDatatype::structured(
+                    vec.as_slice(),
+                    &[
+                        $(
+                            offset_of!($name, $input) as Address,
+                        )*
+                    ],
+                    &[
+                        $(
+                            <$input_ty>::equivalent_datatype(),
+                        )*
+                    ]
+                )
+            }
+        }
+
+        impl DataFrame for $name{
+            fn field_names() -> &'static [&'static str] {
+                static NAMES: &'static [&'static str]
+                    = &[$(stringify!($input),)*];
+                NAMES
+            }
+
+            fn to_string(&self) -> Vec<String> {
+                let mut v: Vec<String> = Vec::new();
+                $(
+                    v.push(format!("{:?}", self.$input));
+                )*
+               
+                v
+            }
+
+        }
+
+        impl $name {
+            pub fn new(
+                $($input: $input_ty,)*
+            ) -> $name{
+                $name {
+                   
+                    $(
+                        $input,
+                    )*
+            
+                }
+            }
+        }
+
+        // impl fmt::Display for $name {
+        //     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        //         $(
+        //             write!(f, "{} ", self.$input)
+        //         )*
+        //     }
+        // }
     };
 }
