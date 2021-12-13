@@ -648,6 +648,7 @@ cfg_if! {
 
                     // iterates on the node_set skipping the first two nodes
                     for i in 2..n_nodes {
+                        
                         let node = node_set[i].clone();
 
                         let amount: usize = if dist.len() < init_edges {
@@ -672,7 +673,6 @@ cfg_if! {
 
                         dist.push(((node.clone()), amount as i32, i));
 
-                        // self.update();
                     }
                 }
                 self.update();
