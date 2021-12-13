@@ -1273,14 +1273,17 @@ macro_rules! explore_ga_distributedMPI {
             if world.rank() == root_rank {
                 //create the whole population and send it to the other processes
                 let mut population_size_per_process = population_size / num_procs;
-      
+                let mut remainder = population_size % num_procs;
+
                 // for each processor
                 for i in 0..num_procs {
 
                     let mut sub_population_size = 0;
 
-                    if i == 0 {
-                        sub_population_size = population_size - population_size_per_process * (num_procs - 1);
+                    // calculate the workload subdivision
+                    if remainder > 0 {
+                        sub_population_size =  population_size_per_process + 1;
+                        remainder -= 1;
                     } else {
                         sub_population_size = population_size_per_process;
                     }        
@@ -1383,6 +1386,7 @@ macro_rules! explore_ga_distributedMPI {
             // receive simulations results from each processors
             if world.rank() == root_rank {
 
+                // dummy initialization
                 let dummy = BufferGA::new(
                     generation,
                     0,
