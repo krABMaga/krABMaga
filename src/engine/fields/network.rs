@@ -125,7 +125,7 @@ cfg_if! {
 
             pub fn add_node(&self, u: O) {
                 let mut nodes2id = self.nodes2id.borrow_mut();
-                let uid = (nodes2id.len() + 1) as u32;
+                let uid = nodes2id.len() as u32;
                 nodes2id.insert(u.clone(), uid);
                 self.id2nodes.insert(uid, u);
 
@@ -492,7 +492,7 @@ cfg_if! {
             pub fn add_node(&self, u: O) {
                 let mut nodes2id = self.nodes2id.borrow_mut();
                 let mut id2nodes = self.id2nodes.borrow_mut();
-                let uid = (nodes2id.len() + 1) as u32;
+                let uid = nodes2id.len() as u32;
                 nodes2id.insert(u.clone(), uid);
                 id2nodes.insert(uid, u);
 
@@ -618,7 +618,7 @@ cfg_if! {
             #[allow(non_snake_case)]
             pub fn preferential_attachment_BA(
                 &mut self,
-                node_set: Vec<O>,
+                node_set: &Vec<O>,
                 init_edges: usize
             ) {
                 {
@@ -636,7 +636,6 @@ cfg_if! {
                     let first_node = node_set[0].clone();
                     let second_node = node_set[1].clone();
                     self.add_edge(first_node.clone(), second_node.clone(), EdgeOptions::Simple);
-
                     // self.update();
 
                     let mut rng = rand::thread_rng();
