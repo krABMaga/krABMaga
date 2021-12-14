@@ -537,6 +537,7 @@ macro_rules! explore {
             ComputationMode::DistributedMPI => explore_distributed_mpi!(
                 $nstep, $rep_conf, $s, input {$($input: $input_ty)*}, output [$($output: $output_ty)*], $mode, $( $x ),*
             ),
+            
         }
     }};
 
@@ -762,6 +763,7 @@ macro_rules! load_csv {
     }};
 }
 
+/*
 #[macro_export]
 // genaral macro to perform model exploration using a genetic algorithm
 // an individual is the state of the simulation to compute
@@ -821,6 +823,7 @@ macro_rules! explore_ga {
                 );
                 result = Some(r);
             },
+            
             ComputationMode::Parallel => {
                 let r = explore_ga_parallel!(
                     $init_population,
@@ -874,8 +877,8 @@ macro_rules! explore_ga {
         explore_ga!( $init_population, $fitness, $selection, $mutation, $crossover, $state, $desired_fitness, $generation_num, $step, $cmode, parameters { }
         )
     };
-
 }
+*/
 
 // specific macro for explore_ga sequential
 #[macro_export]
@@ -894,6 +897,16 @@ macro_rules! explore_ga_sequential {
             $($p_name:ident: $p_type:ty)*
         }
     ) => {{
+
+
+        build_dataframe_explore!(BufferGA, input {
+            generation: u32
+            index: i32
+            fitness: f32
+            $(
+                $p_name: $p_type
+            )*
+        });
 
         let mut generation = 0;
         let mut best_fitness = 0.;
@@ -947,7 +960,7 @@ macro_rules! explore_ga_sequential {
                     best_fitness_gen = fitness;
 
                     $(
-                        $p_name = Some(individual.$p_name);
+                        $p_name = Some(individual.$p_name.clone());
                     )*
                 }
 
@@ -957,7 +970,7 @@ macro_rules! explore_ga_sequential {
                     index,
                     fitness,
                     $(
-                        individual.$p_name,
+                        individual.$p_name.clone(),
                     )*
                 ));
 
@@ -1003,7 +1016,7 @@ macro_rules! explore_ga_sequential {
 
         println!("The best individual has the following parameters ");
         $(
-            println!("--- {} : {}", stringify!($p_name), $p_name.unwrap());
+            println!("--- {} : {:?}", stringify!($p_name), $p_name.unwrap());
         )*
         println!("--- fitness : {}", best_fitness);
         result 
@@ -1044,6 +1057,16 @@ macro_rules! explore_ga_parallel {
         }
     ) => {{
 
+        build_dataframe_explore!(BufferGA, input {
+            generation: u32
+            index: i32
+            fitness: f32
+            $(
+                $p_name: $p_type
+            )*
+        });
+
+        
         let mut generation = 0;
         let mut best_fitness = 0.;
         let mut best_generation = 0;
@@ -1180,6 +1203,7 @@ macro_rules! explore_ga_parallel {
         )*
         println!("--- fitness : {}", best_fitness);
         res
+       
     }};
 
     // perform the model exploration with genetic algorithm without writing additional parameters
@@ -1216,7 +1240,7 @@ macro_rules! explore_ga_distributedMPI {
             $($p_name:ident: $p_type:ty)*
         }
     ) => {{
-
+        /*
         // MPI initialization
         let universe = mpi::initialize().unwrap();
         let world = universe.world();
@@ -1501,6 +1525,7 @@ macro_rules! explore_ga_distributedMPI {
 
         // return arrays containing all the results of each simulation
         all_results
+        */
     }};
 
     // perform the model exploration with genetic algorithm without writing additional parameters
@@ -1527,41 +1552,41 @@ macro_rules! build_dataframe_explore {
         $name:ident, input {$($input: ident: $input_ty: ty)*}
     ) => {
 
-        #[derive(Default, Clone, Copy, PartialEq, Debug)]
+        #[derive(Default, Clone, Debug)]
         struct $name {
             
             $(pub $input: $input_ty,)*
             
         }
 
-        unsafe impl Equivalence for $name {
-            type Out = UserDatatype;
-            fn equivalent_datatype() -> Self::Out {
+        // unsafe impl Equivalence for $name {
+        //     type Out = UserDatatype;
+        //     fn equivalent_datatype() -> Self::Out {
 
-                //count input and output parameters to create slice for blocklen
-                let v_in = count_tts!($($input)*);
+        //         //count input and output parameters to create slice for blocklen
+        //         let v_in = count_tts!($($input)*);
                 
 
-                let mut vec = Vec::with_capacity(v_in);
-                for i in 0..v_in {
-                    vec.push(1);
-                }
+        //         let mut vec = Vec::with_capacity(v_in);
+        //         for i in 0..v_in {
+        //             vec.push(1);
+        //         }
 
-                UserDatatype::structured(
-                    vec.as_slice(),
-                    &[
-                        $(
-                            offset_of!($name, $input) as Address,
-                        )*
-                    ],
-                    &[
-                        $(
-                            <$input_ty>::equivalent_datatype(),
-                        )*
-                    ]
-                )
-            }
-        }
+        //         UserDatatype::structured(
+        //             vec.as_slice(),
+        //             &[
+        //                 $(
+        //                     offset_of!($name, $input) as Address,
+        //                 )*
+        //             ],
+        //             &[
+        //                 $(
+        //                     <$input_ty>::equivalent_datatype(),
+        //                 )*
+        //             ]
+        //         )
+        //     }
+        // }
 
         impl DataFrame for $name{
             fn field_names() -> &'static [&'static str] {
