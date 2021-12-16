@@ -74,8 +74,11 @@ macro_rules! explore_distributed_mpi {
             }
 
             //typecheck
-            let _rep_conf = $rep_conf as usize;
+            let mut rep_conf = $rep_conf as usize;
             let _nstep = $nstep as u32;
+
+
+            if rep_conf <= 0 { rep_conf = 1;}
 
             build_dataframe!(FrameRow, input {$( $input:$input_ty)* }, output[ $( $output:$output_ty )*] Copy);
             extend_dataframe!(FrameRow, input {$( $input:$input_ty)* }, output[ $( $output:$output_ty )*] );
@@ -97,14 +100,24 @@ macro_rules! explore_distributed_mpi {
                 },
             }
 
+            
+            let total_sim = n_conf*rep_conf;
+
             if world.rank() == root_rank {
-                println!("Number of configurations in input: {}", n_conf*$rep_conf);
-                println!("- Configurations per processor: {}", n_conf/num_procs);
+                println!("Total simulations: {}", total_sim);
+                println!("Total configurations: {}", n_conf);
             }
 
+            let mut local_conf_size: usize = n_conf/num_procs;
+
+            if (my_rank as usize) < total_sim%num_procs {
+                local_conf_size += 1;
+            }
+
+            println!("Processor {}: assigned {} configurations", my_rank, local_conf_size);
 
             let mut dataframe: Vec<FrameRow>  = Vec::new();
-            for i in 0..n_conf/num_procs {
+            for i in 0..local_conf_size {
                 let mut state;
                 // check which mode to use to generate the configurations
                 match $mode {
@@ -128,8 +141,8 @@ macro_rules! explore_distributed_mpi {
                 }
 
                 // execute the exploration for each configuration
-                for j in 0..$rep_conf{
-                    println!("Running configuration {} - Simulation {} on processor {}", i*num_procs + (my_rank as usize), j, my_rank);
+                for j in 0..rep_conf{
+                    println!("Running configuration #{} - Simulation #{} on processor #{}", i*num_procs + (my_rank as usize), j, my_rank);
                     let result = simulate_explore!($nstep, state);
                     dataframe.push(
                         FrameRow::new(i as u32, j as u32, $(state.$input,)* $(state.$output,)* result[0].0, result[0].1)
@@ -137,15 +150,45 @@ macro_rules! explore_distributed_mpi {
                 }
             }
 
+        
             // must return a dummy dataframe that will not be used
             // since only the master write the complete dataframe of all procs on csv
             if world.rank() == root_rank {
+
+                let mut samples_count: Vec<Count> = Vec::new();
+
+
+                for i in 0..num_procs {
+                    if i < total_sim%num_procs {
+                        let temp:usize = local_conf_size*(rep_conf as usize);
+                        samples_count.push(temp as Count);
+                    }
+                    else {
+                        let temp:usize = (local_conf_size-1)*(rep_conf as usize);
+                        samples_count.push(temp as Count);
+                    }
+                }
+
+                let displs: Vec<Count> = samples_count
+                    .iter()
+                    .scan(0, |acc, &x| {
+                        let tmp = *acc;
+                        *acc += x;
+                        Some(tmp)
+                    })
+                    .collect();
+
                 let mut all_dataframe = vec![dataframe[0]; n_conf*$rep_conf];
-                root_process.gather_into_root(&dataframe[..], &mut all_dataframe[..]);
+                
+                let mut partition = PartitionMut::new(&mut all_dataframe[..], samples_count.clone(), &displs[..]);
+
+                // root receives all results from other processors
+                root_process.gather_varcount_into_root(&dataframe[..], &mut partition);
+                // root_process.gather_into_root(&dataframe[..], &mut all_dataframe[..]);
                 all_dataframe
             } else {
                 //every proc send to root every row
-                root_process.gather_into(&dataframe[..]);
+                root_process.gather_varcount_into(&dataframe[..]);
                 //return dummy dataframe
                 dataframe = Vec::new();
                 dataframe
