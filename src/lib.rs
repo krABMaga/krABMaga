@@ -1,9 +1,11 @@
 pub mod engine;
+pub mod exploration;
 pub mod utils;
+
+pub use core::fmt;
 pub use hashbrown;
 pub use indicatif::ProgressBar;
 pub use rand;
-pub use core::fmt;
 
 #[cfg(any(feature = "visualization", feature = "visualization_wasm", doc))]
 pub mod visualization;
@@ -28,11 +30,11 @@ pub use std::time::Duration;
 #[cfg(feature = "explore")]
 pub use {
     memoffset::{offset_of, span_of},
-    mpi::{datatype::UserDatatype, traits::*, Address},
-    mpi::point_to_point as p2p,
     mpi::datatype::DynBufferMut,
     mpi::datatype::PartitionMut,
+    mpi::point_to_point as p2p,
     mpi::Count,
+    mpi::{datatype::UserDatatype, traits::*, Address},
 };
 
 #[cfg(feature = "explore")]
@@ -62,12 +64,12 @@ pub enum ExploreMode {
  * Parallel: parallel computation
  * Distributed: distributed computation
  */
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+/* #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum ComputationMode {
     Sequential,
     Parallel,
-    DistributedMPI,
-}
+   // DistributedMPI,
+} */
 
 #[macro_export]
 //step = simulation step number
@@ -197,8 +199,8 @@ mod no_exported {
         ($($tts:tt)*) => {<[()]>::len(&[$(replace_expr!($tts ())),*])};
     }
 
-    #[macro_export]
-    macro_rules! build_configurations{
+   #[macro_export]
+     macro_rules! build_configurations{
 
         ($n_conf: expr, $( $input:ident )*) =>{{
         let mut config_table_index:Vec<Vec<usize>> = Vec::new();
@@ -224,7 +226,7 @@ mod no_exported {
         }};
 
     }
-
+/*
     #[macro_export]
     macro_rules! simulate_explore {
         ($step:expr, $s:expr) => {{
@@ -426,7 +428,7 @@ mod no_exported {
             let root_process = world.process_at_rank(root_rank);
             let my_rank = world.rank();
             let num_procs = world.size() as usize;
-            
+
             //typecheck
             let _rep_conf = $rep_conf as usize;
             let _nstep = $nstep as u32;
@@ -471,7 +473,7 @@ mod no_exported {
                         );
                     },
                 }
-                
+
                 // execute the exploration for each configuration
                 for j in 0..$rep_conf{
                     println!("conf {}, rep {}, pid: {}", i*num_procs + (my_rank as usize), j, my_rank);
@@ -495,6 +497,7 @@ mod no_exported {
                 dataframe = Vec::new();
                 dataframe
             }
+            }
         }};
 
         //exploration taking default output: total time and step per second
@@ -505,9 +508,10 @@ mod no_exported {
                 $mode, $( $x:expr ),*)
         };
     }
+    */
 }
-
-#[macro_export]
+ 
+/* #[macro_export]
 //macro general to call exploration
 macro_rules! explore {
 
@@ -537,7 +541,7 @@ macro_rules! explore {
             ComputationMode::DistributedMPI => explore_distributed_mpi!(
                 $nstep, $rep_conf, $s, input {$($input: $input_ty)*}, output [$($output: $output_ty)*], $mode, $( $x ),*
             ),
-            
+
         }
     }};
 
@@ -549,7 +553,7 @@ macro_rules! explore {
         };
 
 }
-
+ */
 ///Create a csv file with the experiment results
 ///"DataFrame" trait allow the function to know field names and
 ///params list + output list for each configuration runned
@@ -611,7 +615,7 @@ macro_rules! gen_param {
     }};
 }
 
-#[macro_export]
+/* #[macro_export]
 macro_rules! build_dataframe {
     //Dataframe with input and output parameters and optional parameters
     (
@@ -740,7 +744,7 @@ macro_rules! build_dataframe {
         build_dataframe!($name, input{$($element: $input_ty)*}, output[], $( $x:ident: $x_ty: ty ),*);
     };
 }
-
+ */
 #[macro_export]
 macro_rules! load_csv {
 
@@ -823,7 +827,7 @@ macro_rules! explore_ga {
                 );
                 result = Some(r);
             },
-            
+
             ComputationMode::Parallel => {
                 let r = explore_ga_parallel!(
                     $init_population,
@@ -859,7 +863,7 @@ macro_rules! explore_ga {
                 result = Some(r);
             },
         }
-        result.unwrap() 
+        result.unwrap()
     }};
 
     (
@@ -880,7 +884,7 @@ macro_rules! explore_ga {
 }
 */
 
-// specific macro for explore_ga sequential
+/* // specific macro for explore_ga sequential
 #[macro_export]
 macro_rules! explore_ga_sequential {
     (
@@ -1019,7 +1023,7 @@ macro_rules! explore_ga_sequential {
             println!("--- {} : {:?}", stringify!($p_name), $p_name.unwrap());
         )*
         println!("--- fitness : {}", best_fitness);
-        result 
+        result
     }};
 
     // perform the model exploration with genetic algorithm without writing additional parameters
@@ -1066,7 +1070,7 @@ macro_rules! explore_ga_parallel {
             )*
         });
 
-        
+
         let mut generation = 0;
         let mut best_fitness = 0.;
         let mut best_generation = 0;
@@ -1098,7 +1102,7 @@ macro_rules! explore_ga_parallel {
             let mut best_fitness_gen = 0.;
 
             let len = population.lock().unwrap().len();
-            
+
             let mut result = Vec::new();
             // execute the simulation for each member of population
             // iterates through the population
@@ -1130,7 +1134,7 @@ macro_rules! explore_ga_parallel {
 
                 // compute the fitness value
                 let fitness = $fitness(&mut individual, schedule);
-                
+
                 BufferGA::new(
                     generation,
                     index as i32,
@@ -1139,13 +1143,13 @@ macro_rules! explore_ga_parallel {
                         individual.$p_name,
                     )*
                 )
-                
+
                 // return an array containing the results of the simulation to be written in the csv file
             }).collect_into_vec(&mut result);
 
             // for each simulation result
             for i in 0..result.len() {
-                
+
                 let fitness = result[i].fitness;
                 population.lock().unwrap()[i].fitness = fitness;
 
@@ -1173,7 +1177,7 @@ macro_rules! explore_ga_parallel {
             println!("-- best fitness is found in generation {} and is {}", best_generation, best_fitness);
 
             res.append(&mut result);
-            
+
             // if flag is true the desired fitness is found
             if flag {
                 break;
@@ -1203,7 +1207,7 @@ macro_rules! explore_ga_parallel {
         )*
         println!("--- fitness : {}", best_fitness);
         res
-       
+
     }};
 
     // perform the model exploration with genetic algorithm without writing additional parameters
@@ -1255,16 +1259,16 @@ macro_rules! explore_ga_distributedMPI {
         let mut my_pop_size: usize = 0;
         let mut population: Vec<$state> = Vec::new();
         let mut population_size = 0;
-      
+
         // create an array for each parameter
         $(
         let mut $p_name: Vec<$p_type> = Vec::new();
         )*
 
         let mut all_results: Vec<BufferGA> = Vec::new();
-        
+
         let mut flag = false;
-        
+
         // initialization of best individual placeholder
         let mut best_individual : Option<BufferGA> = None;
 
@@ -1282,7 +1286,7 @@ macro_rules! explore_ga_distributedMPI {
                 )*
             ));
         }
-        
+
         loop {
 
             if $generation_num != 0 && generation == $generation_num {
@@ -1310,15 +1314,15 @@ macro_rules! explore_ga_distributedMPI {
                         remainder -= 1;
                     } else {
                         sub_population_size = population_size_per_process;
-                    }        
-                                
+                    }
+
                     samples_count.push(sub_population_size as Count);
-                    
-                    // save my_pop_size for master 
+
+                    // save my_pop_size for master
                     if i == 0 {
                         my_pop_size = sub_population_size;
                     }
-                    
+
                     // fulfill the parameters arrays
                     for j in 0..sub_population_size {
                         $(
@@ -1348,12 +1352,12 @@ macro_rules! explore_ga_distributedMPI {
                 my_population.push(
                     <$state>::new(
                         $(
-                            $p_name[i],  
+                            $p_name[i],
                         )*
                     )
                 );
             }
-       
+
             if world.rank() == root_rank {
                 println!("Computing generation {}...", generation);
             }
@@ -1379,9 +1383,9 @@ macro_rules! explore_ga_distributedMPI {
                 }
                 // compute the fitness value
                 let fitness = $fitness(individual, schedule);
-                
+
                 // send the result of each iteration to the master
-                
+
                 let result = BufferGA::new(
                     generation,
                     local_index,
@@ -1390,14 +1394,14 @@ macro_rules! explore_ga_distributedMPI {
                         individual.$p_name,
                     )*
                 );
-                
+
                 my_results.push(result);
 
                 // saving the best fitness and the best individual of this generation
                 // if fitness >= best_fitness_gen {
                 //     best_fitness_gen = fitness;
                 // }
-                
+
                 // if the desired fitness is reached break
                 // setting the flag at true
                 if fitness >= $desired_fitness{
@@ -1433,7 +1437,7 @@ macro_rules! explore_ga_distributedMPI {
 
                 let mut partition = PartitionMut::new(&mut partial_results[..], samples_count.clone(), &displs[..]);
                 // root receives all results from other processors
-                root_process.gather_varcount_into_root(&my_results[..], &mut partition); 
+                root_process.gather_varcount_into_root(&my_results[..], &mut partition);
 
                 best_fitness_gen = 0.;
                 // save the best individual of this generation
@@ -1441,8 +1445,8 @@ macro_rules! explore_ga_distributedMPI {
                 let mut j = 0;
                 for elem in partial_results.iter_mut() {
                     // only the master can update the index
-                    elem.index += displs[i]; 
-        
+                    elem.index += displs[i];
+
                     if elem.fitness > best_fitness_gen{
                         best_fitness_gen = elem.fitness;
                     }
@@ -1457,9 +1461,9 @@ macro_rules! explore_ga_distributedMPI {
                         i += 1;
                         j = 0;
                     }
-    
+
                 }
-                
+
                 // combine the results received
                 all_results.append(&mut partial_results);
             } else {
@@ -1482,11 +1486,11 @@ macro_rules! explore_ga_distributedMPI {
             if flag {
                 break;
             }
-            
+
             // the master do selection, mutation and crossover
             if world.rank() == root_rank {
 
-                // set the population parameters owned by the master 
+                // set the population parameters owned by the master
                 // using the ones received from other processors
                 for i in 0..population_size {
                     population[i].fitness = all_results[(generation as usize -1)*population_size + i].fitness;
@@ -1513,14 +1517,14 @@ macro_rules! explore_ga_distributedMPI {
                 $(
                     $p_name.clear();
                 )*
-                
+
             }
 
         } // END OF LOOP
-        
+
         if world.rank() == root_rank{
             println!("\nThe best individual has the following parameters ");
-            println!("{:?}", best_individual.unwrap());   
+            println!("{:?}", best_individual.unwrap());
         }
 
         // return arrays containing all the results of each simulation
@@ -1554,9 +1558,9 @@ macro_rules! build_dataframe_explore {
 
         #[derive(Default, Clone, Debug)]
         struct $name {
-            
+
             $(pub $input: $input_ty,)*
-            
+
         }
 
         // unsafe impl Equivalence for $name {
@@ -1565,7 +1569,7 @@ macro_rules! build_dataframe_explore {
 
         //         //count input and output parameters to create slice for blocklen
         //         let v_in = count_tts!($($input)*);
-                
+
 
         //         let mut vec = Vec::with_capacity(v_in);
         //         for i in 0..v_in {
@@ -1600,7 +1604,7 @@ macro_rules! build_dataframe_explore {
                 $(
                     v.push(format!("{:?}", self.$input));
                 )*
-               
+
                 v
             }
 
@@ -1611,14 +1615,15 @@ macro_rules! build_dataframe_explore {
                 $($input: $input_ty,)*
             ) -> $name{
                 $name {
-                   
+
                     $(
                         $input,
                     )*
-            
+
                 }
             }
         }
 
     };
 }
+ */

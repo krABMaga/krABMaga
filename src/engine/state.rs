@@ -6,7 +6,7 @@ cfg_if! {
     if #[cfg(feature ="parallel")] {
         //we need a specific type for the state
         pub trait State: Sync + Send + 'static {
-            
+
             fn init(&mut self, schedule: &mut Schedule);
             fn as_any(&self) -> &dyn Any;
             fn as_state_mut(&mut self) -> &mut dyn State;
@@ -27,7 +27,7 @@ cfg_if! {
         }
     } else if #[cfg(any(feature = "visualization", feature = "visualization_wasm"))] {
         pub trait State: Sync + Send + 'static {
-            
+
             fn init(&mut self, schedule: &mut Schedule);
             fn as_any(&self) -> &dyn Any;
             fn as_state_mut(&mut self) -> &mut dyn State;
@@ -48,7 +48,7 @@ cfg_if! {
         }
     } else{
         pub trait State: Send + 'static {
-            
+
             fn init(&mut self, schedule: &mut Schedule);
             fn as_any(&self) -> &dyn Any;
             fn as_state_mut(&mut self) -> &mut dyn State;
