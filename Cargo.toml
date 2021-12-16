@@ -56,7 +56,7 @@ getrandom = {version="0.*", features=["wasm-bindgen"]}
 # Must be kept separate and asked to the user due to missing support for conditional compilation of features
 # https://github.com/rust-lang/cargo/issues/7914
 [features]
-explore = [
+distributed_mpi = [
     "mpi",
     "memoffset"
 ]

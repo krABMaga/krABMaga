@@ -1,6 +1,5 @@
 pub use csv::{Reader, Writer};
 pub use rayon::prelude::*;
-use std::error::Error;
 pub use std::fs::File;
 pub use std::fs::OpenOptions;
 pub use std::io::Write;
@@ -11,16 +10,13 @@ pub use std::time::Duration;
 macro_rules! build_dataframe_explore {
     //Dataframe with input and output parameters and optional parameters
     (
-        $name:ident, input {$($input: ident: $input_ty: ty)*}
+        $name:ident, input {$($input: ident: $input_ty: ty)*} $($derive: tt)*
     ) => {
 
-        #[derive(Default, Clone, Debug)]
+        #[derive(Default, Clone, Debug,  $($derive,)*)]
         struct $name {
-
             $(pub $input: $input_ty,)*
-
         }
-
 
         impl DataFrame for $name{
             fn field_names() -> &'static [&'static str] {
@@ -57,10 +53,7 @@ macro_rules! build_dataframe_explore {
     };
 }
 
-
-
-/* #[macro_export]
-// genaral macro to perform model exploration using a genetic algorithm
+// macro to perform sequential model exploration using a genetic algorithm
 // an individual is the state of the simulation to compute
 // init_population: function that creates the population, must return an array of individual
 // fitness: function that computes the fitness value, takes a single individual and the schedule, must return an f32
@@ -70,97 +63,7 @@ macro_rules! build_dataframe_explore {
 // desired_fitness: desired fitness value
 // generation_num: max number of generations to compute
 // step: number of steps of the single simulation
-// cmode: mode to perform the computation
 // parameters(optional): parameter to write the csv, if not specified only fitness will be written
-macro_rules! explore_ga {
-
-    (
-        $init_population:tt,
-        $fitness:tt,
-        $selection:tt,
-        $mutation:tt,
-        $crossover:tt,
-        $state: ty,
-        $desired_fitness: expr,
-        $generation_num: expr,
-        $step: expr,
-        $cmode: expr,
-        parameters {
-            $($p_name:ident: $p_type:ty)*
-        }
-    ) => {{
-
-        build_dataframe_explore!(BufferGA, input {
-            generation: u32
-            index: i32
-            fitness: f32
-            $(
-                $p_name: $p_type
-            )*
-        });
-
-        let mut result: Option<Vec<_>> = None;
-        match $cmode {
-            ComputationMode::Sequential => {
-                let r = explore_ga_sequential!(
-                    $init_population,
-                    $fitness,
-                    $selection,
-                    $mutation,
-                    $crossover,
-                    $state,
-                    $desired_fitness,
-                    $generation_num,
-                    $step,
-                    parameters {
-                        $($p_name: $p_type)*
-                    }
-                );
-                result = Some(r);
-            },
-
-            ComputationMode::Parallel => {
-                let r = explore_ga_parallel!(
-                    $init_population,
-                    $fitness,
-                    $selection,
-                    $mutation,
-                    $crossover,
-                    $state,
-                    $desired_fitness,
-                    $generation_num,
-                    $step,
-                    parameters {
-                        $($p_name: $p_type)*
-                    }
-                );
-                result = Some(r);
-            },
-            _ => result = Some(Vec::new())
-        }
-        result.unwrap()
-    }};
-
-    (
-        $init_population:tt,
-        $fitness:tt,
-        $selection:tt,
-        $mutation:tt,
-        $crossover:tt,
-        $state: ty,
-        $desired_fitness: expr,
-        $generation_num: expr,
-        $step: expr,
-        $cmode: expr
-    ) => {
-        explore_ga!( $init_population, $fitness, $selection, $mutation, $crossover, $state, $desired_fitness, $generation_num, $step, $cmode, parameters { }
-        )
-    };
-} */
-
-
-
-// specific macro for explore_ga sequential
 #[macro_export]
 macro_rules! explore_ga_sequential {
     (
@@ -177,7 +80,7 @@ macro_rules! explore_ga_sequential {
             $($p_name:ident: $p_type:ty)*
         }
     ) => {{
-
+        println!("Running sequential GA exploration...");
 
         build_dataframe_explore!(BufferGA, input {
             generation: u32
@@ -269,8 +172,8 @@ macro_rules! explore_ga_sequential {
                 best_generation = generation;
             }
 
-            println!("- best fitness in generation {} is {}", generation, best_fitness_gen);
-            println!("-- best fitness is found in generation {} and is {}", best_generation, best_fitness);
+            println!("- Best fitness in generation {} is {}", generation, best_fitness_gen);
+            println!("-- Overall best fitness is found in generation {} and is {}", best_generation, best_fitness);
 
             // if flag is true the desired fitness is found
             if flag {
@@ -294,11 +197,12 @@ macro_rules! explore_ga_sequential {
             $crossover(&mut population);
         }
 
-        println!("The best individual has the following parameters ");
+        println!("Resulting best fitness is {}", best_fitness);
+        println!("- The best individual has the following parameters:");
         $(
-            println!("--- {} : {:?}", stringify!($p_name), $p_name.unwrap());
+            println!("-- {} : {:?}", stringify!($p_name), $p_name.unwrap());
         )*
-        println!("--- fitness : {}", best_fitness);
+        
         result
     }};
 
@@ -319,8 +223,17 @@ macro_rules! explore_ga_sequential {
     };
 }
 
-
-// specific macro for explore_ga in parallel using multiple processors
+// macro to perform parallel model exploration using a genetic algorithm
+// an individual is the state of the simulation to compute
+// init_population: function that creates the population, must return an array of individual
+// fitness: function that computes the fitness value, takes a single individual and the schedule, must return an f32
+// mutation: function that perform the mutation, takes a single individual as parameter
+// crossover: function that creates the population, takes the entire population as parameter
+// state: state of the simulation representing an individual
+// desired_fitness: desired fitness value
+// generation_num: max number of generations to compute
+// step: number of steps of the single simulation
+// parameters(optional): parameter to write the csv, if not specified only fitness will be written
 #[macro_export]
 macro_rules! explore_ga_parallel {
     (
@@ -338,6 +251,8 @@ macro_rules! explore_ga_parallel {
         }
     ) => {{
 
+        println!("Running parallel GA exploration...");
+
         build_dataframe_explore!(BufferGA, input {
             generation: u32
             index: i32
@@ -346,7 +261,6 @@ macro_rules! explore_ga_parallel {
                 $p_name: $p_type
             )*
         });
-
 
         let mut generation = 0;
         let mut best_fitness = 0.;
@@ -450,8 +364,8 @@ macro_rules! explore_ga_parallel {
                 best_generation = generation;
             }
 
-            println!("- best fitness in generation {} is {}", generation, best_fitness_gen);
-            println!("-- best fitness is found in generation {} and is {}", best_generation, best_fitness);
+            println!("- Best fitness in generation {} is {}", generation, best_fitness_gen);
+            println!("-- Overall best fitness is found in generation {} and is {}", best_generation, best_fitness);
 
             res.append(&mut result);
 
@@ -478,11 +392,12 @@ macro_rules! explore_ga_parallel {
             $crossover(&mut population.lock().unwrap());
         }
 
-        println!("The best individual has the following parameters ");
+        println!("Resulting best fitness is {}", best_fitness);
+        println!("- The best individual has the following parameters:");
         $(
-            println!("--- {} : {}", stringify!($p_name), $p_name.unwrap());
+            println!("-- {} : {}", stringify!($p_name), $p_name.unwrap());
         )*
-        println!("--- fitness : {}", best_fitness);
+        
         res
 
     }};

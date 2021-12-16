@@ -1,13 +1,12 @@
 pub use csv::{Reader, Writer};
 pub use rayon::prelude::*;
-use std::error::Error;
 pub use std::fs::File;
 pub use std::fs::OpenOptions;
 pub use std::io::Write;
 pub use std::sync::{Arc, Mutex};
 pub use std::time::Duration;
 
-#[cfg(feature = "explore")]
+#[cfg(feature = "distributed_mpi")]
 pub use {
     memoffset::{offset_of, span_of},
     mpi::datatype::DynBufferMut,
@@ -17,7 +16,7 @@ pub use {
     mpi::{datatype::UserDatatype, traits::*, Address},
 };
 
-#[cfg(feature = "explore")]
+#[cfg(feature = "distributed_mpi")]
 pub extern crate mpi;
 
 #[macro_export]
@@ -54,8 +53,19 @@ macro_rules! extend_dataframe_explore {
     };
 }
 
+// macro to perform distribued model exploration using a genetic algorithm based on MPI
+// an individual is the state of the simulation to compute
+// init_population: function that creates the population, must return an array of individual
+// fitness: function that computes the fitness value, takes a single individual and the schedule, must return an f32
+// mutation: function that perform the mutation, takes a single individual as parameter
+// crossover: function that creates the population, takes the entire population as parameter
+// state: state of the simulation representing an individual
+// desired_fitness: desired fitness value
+// generation_num: max number of generations to compute
+// step: number of steps of the single simulation
+// parameters(optional): parameter to write the csv, if not specified only fitness will be written
 #[macro_export]
-macro_rules! explore_ga_distributedMPI {
+macro_rules! explore_ga_distributed_mpi {
     (
         $init_population:tt,
         $fitness:tt,
@@ -79,6 +89,8 @@ macro_rules! explore_ga_distributedMPI {
         let my_rank = world.rank();
         let num_procs = world.size() as usize;
 
+        println!("Running distributed (MPI) GA exploration...");
+
         let mut generation: u32 = 0;
         let mut best_fitness = 0.;
         let mut best_generation = 0;
@@ -93,16 +105,17 @@ macro_rules! explore_ga_distributedMPI {
             $(
                 $p_name: $p_type
             )*
-        });
+        }
+        Copy);
 
-        extend_dataframe_explore!((BufferGA, input {
+        extend_dataframe_explore!(BufferGA, input {
             generation: u32
             index: i32
             fitness: f32
             $(
                 $p_name: $p_type
             )*
-        });)
+        });
 
         // create an array for each parameter
         $(
@@ -241,11 +254,6 @@ macro_rules! explore_ga_distributedMPI {
 
                 my_results.push(result);
 
-                // saving the best fitness and the best individual of this generation
-                // if fitness >= best_fitness_gen {
-                //     best_fitness_gen = fitness;
-                // }
-
                 // if the desired fitness is reached break
                 // setting the flag at true
                 if fitness >= $desired_fitness{
@@ -322,8 +330,8 @@ macro_rules! explore_ga_distributedMPI {
             }
 
             if world.rank() == root_rank{
-                println!("- best fitness in generation {} is {}", generation, best_fitness_gen);
-                println!("-- best fitness is found in generation {} and is {}", best_generation, best_fitness);
+                println!("- Best fitness in generation {} is {}", generation, best_fitness_gen);
+                println!("-- Overall best fitness is found in generation {} and is {}", best_generation, best_fitness);
             }
 
             // if flag is true the desired fitness is found
@@ -367,8 +375,9 @@ macro_rules! explore_ga_distributedMPI {
         } // END OF LOOP
 
         if world.rank() == root_rank{
-            println!("\nThe best individual has the following parameters ");
-            println!("{:?}", best_individual.unwrap());
+            println!("Overall best fitness is {}", best_fitness);
+            println!("- The best individual is:");
+            println!("-- {:?}", best_individual.unwrap());
         }
 
         // return arrays containing all the results of each simulation
@@ -388,7 +397,7 @@ macro_rules! explore_ga_distributedMPI {
         $generation_num: expr,
         $step: expr,
     ) => {
-        explore_ga_distributedMPI!( $init_population, $fitness, $selection, $mutation, $crossover, $state, $desired_fitness, $generation_num, $step, parameters { }
+        explore_ga_distributed_mpi!( $init_population, $fitness, $selection, $mutation, $crossover, $state, $desired_fitness, $generation_num, $step, parameters { }
         );
     };
 }

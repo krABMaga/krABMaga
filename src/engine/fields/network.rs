@@ -618,7 +618,7 @@ cfg_if! {
             #[allow(non_snake_case)]
             pub fn preferential_attachment_BA(
                 &mut self,
-                node_set: &Vec<O>,
+                node_set: &[O],
                 init_edges: usize
             ) {
                 {

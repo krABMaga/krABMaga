@@ -1,25 +1,10 @@
-use crate::build_configurations;
-
 pub use csv::{Reader, Writer};
 pub use rayon::prelude::*;
-use std::error::Error;
 pub use std::fs::File;
 pub use std::fs::OpenOptions;
 pub use std::io::Write;
 pub use std::sync::{Arc, Mutex};
 pub use std::time::Duration;
-
-/**
- * 3 mode to generate the data
- * Exaustive: Brute force parameter exploration
- * Matched: explore every input with the same indexes
- * File: Read from file
- */
-/* #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
-pub enum ExploreMode {
-    Exaustive,
-    Matched,
-} */
 
 #[macro_export]
 macro_rules! simulate_explore {
@@ -67,7 +52,9 @@ macro_rules! explore_sequential {
         input {$($input:ident: $input_ty: ty )*},
         output [$($output:ident: $output_ty: ty )*],
         $mode: expr,
-        $( $x:expr ),* ) => {{
+         ) => {{
+
+            println!("Running sequential model exploration...");
 
             //typecheck
             let _rep_conf = $rep_conf as usize;
@@ -76,7 +63,7 @@ macro_rules! explore_sequential {
             let mut n_conf:usize = 1;
             let mut config_table_index: Vec<Vec<usize>> = Vec::new();
 
-            build_dataframe!(FrameRow, input {$( $input:$input_ty)* }, output[ $( $output:$output_ty )*], $( $x:$x_ty ),* );
+            build_dataframe!(FrameRow, input {$( $input:$input_ty)* }, output[ $( $output:$output_ty )*] );
 
             match $mode {
                 ExploreMode::Exaustive =>{
@@ -89,10 +76,10 @@ macro_rules! explore_sequential {
                     $( n_conf = $input.len(); )*
                 }
             }
-            println!("n_conf {}", n_conf);
+
+            println!("Number of configuration in input {}", n_conf);
 
             let mut dataframe: Vec<FrameRow>  = Vec::new();
-
 
             for i in 0..n_conf{
                 let mut state;
@@ -117,16 +104,16 @@ macro_rules! explore_sequential {
                     }
                 }
 
-                println!("-----\nCONF {}", i);
+                println!("\n- Configuration {}", i);
                 $(
-                    println!("{}: {:?}", stringify!(state.$input), state.$input);
+                    println!("-- {}: {:?}", stringify!(state.$input), state.$input);
                 )*
 
                 for j in 0..$rep_conf{
-                    println!("------\nRun {}", j+1);
+                    println!("Running simulation {}", j+1);
                     let result = simulate_explore!($nstep, state);
                     dataframe.push(
-                        FrameRow::new(i as u32, j + 1 as u32, $(state.$input,)* $(state.$output,)* result[0].0, result[0].1, $($x,)*)
+                        FrameRow::new(i as u32, j + 1 as u32, $(state.$input,)* $(state.$output,)* result[0].0, result[0].1)
                     );
                 }
             }
@@ -146,7 +133,9 @@ macro_rules! explore_parallel {
             input {$($input:ident: $input_ty: ty )*},
             output [$($output:ident: $output_ty: ty )*],
             $mode: expr,
-            $( $x:expr ),* ) => {{
+             ) => {{
+
+            println!("Running parallel model exploration...");
 
             //typecheck
             let _rep_conf = $rep_conf as usize;
@@ -155,7 +144,7 @@ macro_rules! explore_parallel {
             let mut n_conf:usize = 1;
             let mut config_table_index: Vec<Vec<usize>> = Vec::new();
 
-            build_dataframe!(FrameRow, input {$( $input:$input_ty)* }, output[ $( $output:$output_ty )*], $( $x:$x_ty ),* );
+            build_dataframe!(FrameRow, input {$( $input:$input_ty)* }, output[ $( $output:$output_ty )*]);
 
             match $mode {
                 ExploreMode::Exaustive =>{
@@ -168,7 +157,8 @@ macro_rules! explore_parallel {
                     $( n_conf = $input.len(); )*
                 }
             }
-            println!("n_conf {}", n_conf);
+
+            println!("Number of configuration in input {}", n_conf);
 
             let dataframe: Vec<FrameRow> = (0..n_conf*$rep_conf).into_par_iter().map( |run| {
                 let i  = run / $rep_conf;
@@ -195,8 +185,14 @@ macro_rules! explore_parallel {
                     },
                 }
 
+                println!("\n- Configuration {}", i);
+                $(
+                    println!("-- {}: {:?}", stringify!(state.$input), state.$input);
+                )*
+
+                println!("\nRunning simulation {} of configuration {}", run % $rep_conf, i);
                 let result = simulate_explore!($nstep, state);
-                FrameRow::new(i as u32, (run % $rep_conf) as u32, $(state.$input,)* $(state.$output,)* result[0].0, result[0].1, $($x,)*)
+                FrameRow::new(i as u32, (run % $rep_conf) as u32, $(state.$input,)* $(state.$output,)* result[0].0, result[0].1)
             })
             .collect();
             dataframe
@@ -215,10 +211,10 @@ macro_rules! explore_parallel {
 macro_rules! build_dataframe {
         //Dataframe with input and output parameters and optional parameters
         (
-            $name:ident, input {$($input: ident: $input_ty: ty)*}, output [$($output: ident: $output_ty: ty)*], $( $x:ident: $x_ty: ty ),*
+            $name:ident, input {$($input: ident: $input_ty: ty)*}, output [$($output: ident: $output_ty: ty)*]  $($derive: tt)*
         ) => {
 
-            #[derive(Default, Clone, Copy, PartialEq, Debug)]
+            #[derive(Default, Clone, PartialEq, Debug, $($derive,)*)]
             struct $name {
                 pub conf_num: u32,
                 pub conf_rep: u32,
@@ -226,13 +222,12 @@ macro_rules! build_dataframe {
                 $(pub $output: $output_ty,)*
                 pub run_duration: f32,
                 pub step_per_sec: f32,
-                $(pub $x: $x_ty,)*
             }
 
             impl DataFrame for $name{
                 fn field_names() -> &'static [&'static str] {
                     static NAMES: &'static [&'static str]
-                        = &["Simulation", "Run", $(stringify!($input),)* $(stringify!($output),)*  "Run Duration", "Step per sec", $(stringify!($x),)*];
+                        = &["Simulation", "Run", $(stringify!($input),)* $(stringify!($output),)*  "Run Duration", "Step per sec"];
                     NAMES
                 }
 
@@ -248,9 +243,7 @@ macro_rules! build_dataframe {
                     )*
                     v.push(self.run_duration.to_string());
                     v.push(self.step_per_sec.to_string());
-                    $(
-                        v.push(format!("{:?}", self.$x));
-                    )*
+
                     v
                 }
 
@@ -258,7 +251,7 @@ macro_rules! build_dataframe {
 
             impl $name {
                 pub fn new(
-                    conf_num: u32, conf_rep: u32 $(, $input: $input_ty)* $(, $output: $output_ty)*, run_duration: f32, step_per_sec: f32 $(, $x: $x_ty)*,
+                    conf_num: u32, conf_rep: u32 $(, $input: $input_ty)* $(, $output: $output_ty)*, run_duration: f32, step_per_sec: f32,
                 ) -> $name{
                     $name {
                         conf_num,
@@ -271,22 +264,15 @@ macro_rules! build_dataframe {
                         )*
                         run_duration,
                         step_per_sec,
-                        $(
-                            $x,
-                        )*
+
                     }
                 }
             }
         };
 
-        //Dataframe with only input parameters
-        ($name:ident, input{$($element: ident: $input_ty: ty)* }) => {
-            build_dataframe!($name, input{$($element: $input_ty)*}, output[]);
-        };
-
         //Dataframe without output parameters
-        ($name:ident, input {$($input: ident: $input_ty: ty)*}, $( $x:ident: $x_ty: ty ),*) => {
-            build_dataframe!($name, input{$($element: $input_ty)*}, output[], $( $x:ident: $x_ty: ty ),*);
+        ($name:ident, input {$($input: ident: $input_ty: ty)*}  $($derive: tt)*) => {
+            build_dataframe!($name, input{$($element: $input_ty)*}, output[]  $($derive: tt)*);
         };
     }
 
