@@ -1,10 +1,10 @@
-pub use csv::{Reader, Writer};
+/* pub use csv::{Reader, Writer};
 pub use rayon::prelude::*;
 pub use std::fs::File;
 pub use std::fs::OpenOptions;
 pub use std::io::Write;
 pub use std::sync::{Arc, Mutex};
-pub use std::time::Duration;
+pub use std::time::Duration; */
 
 #[macro_export]
 macro_rules! simulate_explore {
