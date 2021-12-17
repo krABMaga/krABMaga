@@ -1,7 +1,8 @@
 use crate::engine::fields::field::Field;
 use cfg_if::cfg_if;
 use hashbrown::HashMap;
-use rand::prelude::SliceRandom;
+use rand::prelude::*;
+use rand_pcg::Pcg64;
 use std::cell::RefCell;
 use std::fmt::Display;
 use std::hash::Hash;
@@ -222,7 +223,7 @@ cfg_if! {
             #[allow(non_snake_case)]
             pub fn preferential_attachment_BA(
                 &mut self,
-                node_set: Vec<O>,
+                node_set: &[O],
                 init_edges: usize
             ) {
                 {
@@ -279,6 +280,74 @@ cfg_if! {
                 }
                 self.update();
             }
+
+            /**
+            Generate an undirected network based on
+            Barabási-Albert’s preferential attachment model
+            with defined seed
+            */
+            #[allow(non_snake_case)]
+            pub fn preferential_attachment_BA_with_seed(
+                &mut self,
+                node_set: &[O],
+                init_edges: usize,
+                my_seed: u64,
+            ) {
+                {
+                    let n_nodes = self.id2nodes.len();
+                    // clear the existing edges
+                    self.remove_all_edges();
+
+                    // if there are no nodes return
+                    if node_set.len() == 0 || node_set.len() == 1 {
+                        return;
+                    }
+
+                    // create the first edge between the first two nodes
+                    let first_node = node_set[0].clone();
+                    let second_node = node_set[1].clone();
+                    self.add_edge(first_node.clone(), second_node.clone(), EdgeOptions::Simple);
+
+                    // self.update();
+                    let mut rng = Pcg64::seed_from_u64(my_seed);
+                    //let mut rng = rand::thread_rng();
+                    let mut dist: Vec<(O, i32, usize)> = Vec::with_capacity(n_nodes);
+                    let mut choice_pos: Vec<usize> = Vec::with_capacity(init_edges);
+
+                    dist.push(((first_node.clone()), 1, 0));
+                    dist.push(((second_node.clone()), 1, 1));
+
+                    for i in 2..n_nodes {
+                        let node = node_set[i].clone();
+
+                        let amount: usize = if dist.len() < init_edges {
+                            dist.len()
+                        } else {
+                            init_edges
+                        };
+
+                        let choices_list = dist
+                            .choose_multiple_weighted(&mut rng, amount, |choice| choice.1)
+                            .unwrap()
+                            .collect::<Vec<_>>();
+
+                        for choice in choices_list {
+                            self.add_edge(node.clone(), choice.0.clone(), EdgeOptions::Simple);
+                            choice_pos.push(choice.2);
+                        }
+
+                        for i in 0..choice_pos.len() {
+                            dist[choice_pos[i]].1 += 1;
+                        }
+
+                        dist.push(((node.clone()), amount as i32, i));
+
+                        // self.update();
+                    }
+                }
+                self.update();
+            }
+
 
             // pub fn random_attachment(&mut self, node_set: Vec<O>, u: O, direct: bool, init_edges: usize) {
             //     let n_nodes = node_set.len();
@@ -639,6 +708,74 @@ cfg_if! {
                     // self.update();
 
                     let mut rng = rand::thread_rng();
+                    let mut dist: Vec<(O, i32, usize)> = Vec::with_capacity(n_nodes);
+                    let mut choice_pos: Vec<usize> = Vec::with_capacity(init_edges);
+
+                    dist.push((first_node, 1, 0));
+                    dist.push((second_node, 1, 1));
+
+                    // iterates on the node_set skipping the first two nodes
+                    for i in 2..n_nodes {
+
+                        let node = node_set[i].clone();
+
+                        let amount: usize = if dist.len() < init_edges {
+                            dist.len()
+                        } else {
+                            init_edges
+                        };
+
+                        let choices_list = dist
+                            .choose_multiple_weighted(&mut rng, amount, |choice| choice.1)
+                            .unwrap()
+                            .collect::<Vec<_>>();
+
+                        for choice in choices_list {
+                            self.add_edge(node.clone(), choice.0.clone(), EdgeOptions::Simple);
+                            choice_pos.push(choice.2);
+                        }
+
+                        for i in 0..choice_pos.len() {
+                            dist[choice_pos[i]].1 += 1;
+                        }
+
+                        dist.push(((node.clone()), amount as i32, i));
+
+                    }
+                }
+                self.update();
+            }
+
+            /**
+            Generate an undirected network based on
+            Barabási-Albert’s preferential attachment model
+            with defined seed
+            */
+            #[allow(non_snake_case)]
+            pub fn preferential_attachment_BA_with_seed(
+                &mut self,
+                node_set: &[O],
+                init_edges: usize,
+                my_seed: u64,
+            ) {
+                {
+                    let id2nodes = self.id2nodes.borrow_mut();
+                    let n_nodes = id2nodes.len();
+                    // clear the existing edges
+                    self.remove_all_edges();
+
+                    // if there are no nodes return
+                    if node_set.is_empty() || node_set.len() == 1 {
+                        return;
+                    }
+
+                    // create the first edge between the first two nodes
+                    let first_node = node_set[0].clone();
+                    let second_node = node_set[1].clone();
+                    self.add_edge(first_node.clone(), second_node.clone(), EdgeOptions::Simple);
+
+                    let mut rng = Pcg64::seed_from_u64(my_seed);
+
                     let mut dist: Vec<(O, i32, usize)> = Vec::with_capacity(n_nodes);
                     let mut choice_pos: Vec<usize> = Vec::with_capacity(init_edges);
 

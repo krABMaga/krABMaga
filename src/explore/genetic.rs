@@ -2,7 +2,9 @@
 macro_rules! build_dataframe_explore {
     //Dataframe with input and output parameters and optional parameters
     (
-        $name:ident, input {$($input: ident: $input_ty: ty)*} $($derive: tt)*
+        $name:ident, input {$($input: ident: $input_ty: ty)*},
+        vec: { $($input_vec: ident: $input_ty_vec: ty)*}
+        $($derive: tt)*
     ) => {
 
         #[derive(Default, Clone, Debug,  $($derive,)*)]
@@ -43,6 +45,25 @@ macro_rules! build_dataframe_explore {
         }
 
     };
+
+    //only input
+    (
+        $name:ident, input {$($input: ident: $input_ty: ty)*}
+        $($derive: tt)*
+    ) => {
+        build_dataframe_explore!($name, input {$($input: $input_ty)*}, vec { } $($derive,)*);
+    };
+
+    
+    //only vec
+    (
+        $name:ident,
+        vec: { $($input_vec: ident: $input_ty_vec: ty)*}
+        $($derive: tt)*
+    ) => {
+        build_dataframe_explore!($name, input {}, vec{$($input_vec: $input_ty_vec)*} $($derive)*);
+    };
+
 }
 
 // macro to perform sequential model exploration using a genetic algorithm
@@ -299,7 +320,7 @@ macro_rules! explore_ga_parallel {
                     // create the new state using the parameters
                     individual = <$state>::new(
                         $(
-                            population[index].$p_name,
+                            population[index].$p_name.clone(),
                         )*
                     );
                 }
@@ -323,7 +344,7 @@ macro_rules! explore_ga_parallel {
                     index as i32,
                     fitness,
                     $(
-                        individual.$p_name,
+                        individual.$p_name.clone(),
                     )*
                 )
 
@@ -340,7 +361,7 @@ macro_rules! explore_ga_parallel {
                 if fitness >= best_fitness_gen {
                     best_fitness_gen = fitness;
                     $(
-                        $p_name = Some(population.lock().unwrap()[i].$p_name);
+                        $p_name = Some(population.lock().unwrap()[i].$p_name.clone());
                     )*
                 }
 
@@ -387,7 +408,7 @@ macro_rules! explore_ga_parallel {
         println!("Resulting best fitness is {}", best_fitness);
         println!("- The best individual has the following parameters:");
         $(
-            println!("-- {} : {}", stringify!($p_name), $p_name.unwrap());
+            println!("-- {} : {:?}", stringify!($p_name), $p_name.unwrap());
         )*
         
         res

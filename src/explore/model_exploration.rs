@@ -160,6 +160,7 @@ macro_rules! explore_parallel {
 
             println!("Number of configuration in input {}", n_conf);
 
+            //create a task for each simulation
             let dataframe: Vec<FrameRow> = (0..n_conf*$rep_conf).into_par_iter().map( |run| {
                 let i  = run / $rep_conf;
 
