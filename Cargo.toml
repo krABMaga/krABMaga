@@ -38,7 +38,8 @@ rand_pcg = "0.*"
 
 # Model exploration features
 # rsmpi points to a specific commit
-mpi = { git = "https://github.com/bsteinb/rsmpi", rev = "f9aec8b8d82", optional = true }
+#mpi = { git = "https://github.com/bsteinb/rsmpi", rev = "f9aec8b8d82", optional = true }
+mpi = { git = "https://github.com/bsteinb/rsmpi", optional = true }
 memoffset = { version = "0.6.4", optional = true}
 
 # Visualization features

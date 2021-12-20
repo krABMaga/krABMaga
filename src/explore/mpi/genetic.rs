@@ -2,8 +2,8 @@
 macro_rules! extend_dataframe_explore {
     //implementation of a trait to send/receive with mpi
     ($name:ident,
-    input {$($input: ident: $input_ty: ty)*},
-    vec { $($input_vec: ident: $input_ty_vec: ty)* }
+    input {$($input:ident: $input_ty:ty)*},
+    vec {$($input_vec:ident: [$input_ty_vec:ty; $input_len: expr])*}
     ) => {
         unsafe impl Equivalence for $name {
             type Out = UserDatatype;
@@ -15,7 +15,7 @@ macro_rules! extend_dataframe_explore {
                 let v_vec_in = count_tts!($($input_vec)*);
 
                 let mut vec = Vec::with_capacity(v_in + v_vec_in);
-                for i in 0..v_in {
+                for i in 0..(v_in + v_vec_in){
                     vec.push(1);
                 }
 
@@ -24,7 +24,7 @@ macro_rules! extend_dataframe_explore {
                     &[
                         $(
                             offset_of!($name, $input) as Address,
-                        )*,
+                        )*
                         $(
                             offset_of!($name, $input_vec) as Address,
                         )*
@@ -32,9 +32,9 @@ macro_rules! extend_dataframe_explore {
                     &[
                         $(
                             <$input_ty>::equivalent_datatype(),
-                        )*,
+                        )*
                         $(
-                            UncommittedUserDatatype::contiguous($input_vec.len(), &$input_ty_vec::equivalent_datatype()).as_ref(),
+                            UserDatatype::contiguous($input_len, &<$input_ty_vec>::equivalent_datatype()).as_ref(),
                         )*
                     ]
                 )
@@ -70,10 +70,8 @@ macro_rules! explore_ga_distributed_mpi {
             $($p_name:ident: $p_type:ty)*
         },
         parameters_vec {
-            $($vec_p_name:ident: $vec_p_type:ty)*
+            $($vec_p_name:ident: [$vec_p_type:ty; $vec_len:expr])*
         }
-
-
     ) => {{
 
         // MPI initialization
@@ -84,7 +82,9 @@ macro_rules! explore_ga_distributed_mpi {
         let my_rank = world.rank();
         let num_procs = world.size() as usize;
 
-        println!("Running distributed (MPI) GA exploration...");
+        if world.rank() == root_rank {
+            println!("Running distributed (MPI) GA exploration...");
+        }
 
         let mut generation: u32 = 0;
         let mut best_fitness = 0.;
@@ -105,10 +105,10 @@ macro_rules! explore_ga_distributed_mpi {
             },
             vec {
                 $(
-                  $vec_p_name: Vec<$vec_p_type>
+                  $vec_p_name: [$vec_p_type; $vec_len]
                 )*
             }
-            Copy);
+        );
 
         //implement trait for BufferGA to send/receive with mpi
         extend_dataframe_explore!(BufferGA,
@@ -122,7 +122,7 @@ macro_rules! explore_ga_distributed_mpi {
             },
             vec {
                 $(
-                  $vec_p_name: Vec<$vec_p_type>
+                    $vec_p_name: [$vec_p_type; $vec_len]
                 )*
             }
         );
@@ -131,9 +131,11 @@ macro_rules! explore_ga_distributed_mpi {
         $(
         let mut $p_name: Vec<$p_type> = Vec::new();
         )*
-        // $(
-        //     let mut $vec_p_name: Vec<Vec<$vec_p_type>> = Vec::new();
-        // )*
+
+        $(
+            let mut $vec_p_name: Vec<[$vec_p_type; $vec_len]> = Vec::new();
+        )*
+
         let mut all_results: Vec<BufferGA> = Vec::new();
 
         //becomes true when the algorithm get desider fitness
@@ -141,7 +143,6 @@ macro_rules! explore_ga_distributed_mpi {
 
         // initialization of best individual placeholder
         let mut best_individual : Option<BufferGA> = None;
-
         if world.rank() == root_rank {
             population = $init_population();
             population_size = population.len();
@@ -155,7 +156,7 @@ macro_rules! explore_ga_distributed_mpi {
                     population[0].$p_name.clone(), //remove clone()
                 )*
                 $(
-                    population[0].$vec_p_name.clone(),
+                    [0 as $vec_p_type; $vec_len],
                 )*
 
             ));
@@ -169,7 +170,19 @@ macro_rules! explore_ga_distributed_mpi {
                 }
                 break;
             }
+
+            if flag {
+                if world.rank() == root_rank {
+                    println!("Reached best fitness on generation {}, exiting...", generation);
+                }
+                break;
+            }
+
             generation += 1;
+
+            if world.rank() == root_rank {
+                println!("Running Generation {}...", generation);
+            }
             let mut samples_count: Vec<Count> = Vec::new();
 
             // only the root process split the workload among the processes
@@ -205,34 +218,54 @@ macro_rules! explore_ga_distributed_mpi {
                         )*
 
                         $(
-                            $vec_p_name.push(population[i * population_size_per_process + j].$vec_p_name.clone());
+                            let mut tmp_slice: [$vec_p_type; $vec_len] = [0; $vec_len];
+                            let slice = population[i * population_size_per_process + j].$vec_p_name.clone();
+                            tmp_slice.copy_from_slice(&slice[..]);
+                            $vec_p_name.push(tmp_slice);
                         )*
                     }
 
                     // send the arrays
                     world.process_at_rank(i as i32).send(&sub_population_size);
-                    $(
-                        world.process_at_rank(i as i32).send(&$p_name[..]);
-                    )*
-                    $(
-                        world.process_at_rank(i as i32).send(&$vec_p_name[..]);
-                    )*
+                    let mut to_send: Vec<BufferGA> = Vec::new();
+                    for p in 0..sub_population_size {
+                        to_send.push(BufferGA::new(
+                                0,
+                                0,
+                                0.,
+                                $(
+                                    $p_name[i * population_size_per_process + p].clone(),
+                                )*
+                                $(
+                                    $vec_p_name[i * population_size_per_process + p].clone(),
+                                )*
+                            )
+                        );
+                    }
+
+                    world.process_at_rank(i as i32).send(&to_send[..]);
                 }
             } else {
                 // every other processor receive the parameter
                 let (my_population_size, _) = world.any_process().receive::<usize>();
                 my_pop_size = my_population_size;
-                $(
-                    let (param, _) = world.any_process().receive_vec::<$p_type>();
-                    $p_name = param;
-                )*
+                let (param, _) = world.any_process().receive_vec::<BufferGA>();
+                let my_param = param;
 
-                $(
-                    let (param, _) = world.any_process().receive_vec::Vec<<$vec_p_type>>();
-                    $vec_p_name = param;
-                )*
-
+                for i in 0..my_param.len(){
+                    $(
+                        $p_name.push(my_param[i].$p_name);
+                    )*
+                    $(
+                        $vec_p_name.push(my_param[i].$vec_p_name.clone());
+                    )*
+                }
             }
+            let mut count = Vec::new();
+
+            $(
+                count.push($vec_p_name.len());
+            )*
 
             let mut my_population: Vec<$state>  = Vec::new();
 
@@ -244,16 +277,11 @@ macro_rules! explore_ga_distributed_mpi {
                             $p_name[i].clone(), //remove clone
                         )*
                         $(
-                            $vec_p_name[i].clone(),
+                            $vec_p_name[i].clone().to_vec(),
                         )*
                     )
                 );
             }
-
-            if world.rank() == root_rank {
-                println!("Computing generation {}...", generation);
-            }
-
             let mut best_fitness_gen = 0.;
 
             let mut local_index = 0;
@@ -276,6 +304,11 @@ macro_rules! explore_ga_distributed_mpi {
                 let fitness = $fitness(individual, schedule);
 
                 // send the result of each iteration to the master
+                $(
+                    let mut $vec_p_name: [$vec_p_type; $vec_len] = [0; $vec_len];
+                    let slice = individual.$vec_p_name.clone();
+                    $vec_p_name.copy_from_slice(&slice[..]);
+                )*
 
                 let result = BufferGA::new(
                     generation,
@@ -285,18 +318,18 @@ macro_rules! explore_ga_distributed_mpi {
                         individual.$p_name.clone(), //remove clone
                     )*
                     $(
-                        individual.$vec_p_name.clone(),
+                        $vec_p_name.clone(),
                     )*
                 );
 
                 my_results.push(result);
-
                 // if the desired fitness is reached break
                 // setting the flag at true
+
                 if fitness >= $desired_fitness{
                     flag = true;
-                    break;
                 }
+
                 local_index += 1;
             }
 
@@ -311,9 +344,9 @@ macro_rules! explore_ga_distributed_mpi {
                     $(
                         population[0].$p_name.clone(), //remove clone
                     )*
-                    // $(
-                    //     population[0].$vec_p_name.clone(),
-                    // )*
+                    $(
+                        [0 as $vec_p_type; $vec_len],
+                    )*
                 );
 
                 let displs: Vec<Count> = samples_count
@@ -325,9 +358,13 @@ macro_rules! explore_ga_distributed_mpi {
                     })
                     .collect();
 
-                let mut partial_results = vec![dummy; population_size];
+                // println!("Displacements: {:?}", displs);
+                // println!("Samples count: {:?}", samples_count);
+                // println!("Population size: {:?}", population_size);
 
+                let mut partial_results = vec![dummy; population_size];
                 let mut partition = PartitionMut::new(&mut partial_results[..], samples_count.clone(), &displs[..]);
+                println!("Sending the result");
                 // root receives all results from other processors
                 root_process.gather_varcount_into_root(&my_results[..], &mut partition);
 
@@ -343,23 +380,29 @@ macro_rules! explore_ga_distributed_mpi {
                         best_fitness_gen = elem.fitness;
                     }
 
-                    if elem.fitness > best_individual.unwrap().fitness {
-                        best_individual = Some(elem.clone());
+                    match best_individual.clone() {
+                        Some(x) => {
+                            if elem.fitness > x.fitness {
+                                best_individual = Some(elem.clone());
+                            }
+                        },
+                        None => {
+                            best_individual = Some(elem.clone());
+                        }
                     }
 
                     j += 1;
-
                     if j == samples_count[i]{
                         i += 1;
                         j = 0;
                     }
-
                 }
 
                 // combine the results received
                 all_results.append(&mut partial_results);
             } else {
                 // send the result to the root processor
+                println!("Receiving the result");
                 root_process.gather_varcount_into(&my_results[..]);
             }
 
@@ -375,6 +418,8 @@ macro_rules! explore_ga_distributed_mpi {
             }
 
             // if flag is true the desired fitness is found
+            // and the master warns the other procs to exit
+            root_process.broadcast_into(&mut flag);
             if flag {
                 break;
             }
@@ -386,7 +431,6 @@ macro_rules! explore_ga_distributed_mpi {
                 // using the ones received from other processors
                 for i in 0..population_size {
                     population[i].fitness = all_results[(generation as usize -1)*population_size + i].fitness;
-
                 }
 
                 // compute selection
@@ -405,24 +449,23 @@ macro_rules! explore_ga_distributed_mpi {
 
                 // crossover the new population
                 $crossover(&mut population);
-
-                $(
-                    $p_name.clear();
-                )*
-
             }
 
-        } // END OF LOOP
+            $(
+                $p_name.clear();
+            )*
 
+            $(
+                $vec_p_name.clear();
+            )*
+        } // END OF LOOP
         if world.rank() == root_rank{
             println!("Overall best fitness is {}", best_fitness);
-            println!("- The best individual is:");
-            println!("-- {:?}", best_individual.unwrap());
+            println!("- The best individual is: {:?}", best_individual.unwrap());
         }
 
         // return arrays containing all the results of each simulation
         all_results
-
     }};
 
     // perform the model exploration with genetic algorithm without writing additional parameters
@@ -437,7 +480,17 @@ macro_rules! explore_ga_distributed_mpi {
         $generation_num: expr,
         $step: expr
     ) => {
-        explore_ga_distributed_mpi!( $init_population, $fitness, $selection, $mutation, $crossover, $state, $desired_fitness, $generation_num, $step, parameters { }, parameters_vec { }
+        explore_ga_distributed_mpi!(
+            $init_population, $fitness,
+            $selection,
+            $mutation,
+            $crossover,
+            $state,
+            $desired_fitness,
+            $generation_num,
+            $step,
+            parameters { },
+            parameters_vec { }
         );
     };
 
@@ -457,7 +510,18 @@ macro_rules! explore_ga_distributed_mpi {
             $($p_name:ident: $p_type:ty)*
         }
     ) => {
-        explore_ga_distributed_mpi!( $init_population, $fitness, $selection, $mutation, $crossover, $state, $desired_fitness, $generation_num, $step, parameters { $($p_name:$p_type)*}, parameters_vec { }
+        explore_ga_distributed_mpi!(
+            $init_population,
+            $fitness,
+            $selection,
+            $mutation,
+            $crossover,
+            $state,
+            $desired_fitness,
+            $generation_num,
+            $step,
+            parameters { $($p_name: $p_type)*},
+            parameters_vec { }
         );
     };
 
@@ -473,10 +537,21 @@ macro_rules! explore_ga_distributed_mpi {
         $generation_num: expr,
         $step: expr,
         parameters_vec {
-            $($vec_p_name:ident: $vec_p_type:ty)*
+            $($vec_p_name:ident: [$vec_p_type:ty; $vec_len: expr])*
         }
     ) => {
-        explore_ga_distributed_mpi!( $init_population, $fitness, $selection, $mutation, $crossover, $state, $desired_fitness, $generation_num, $step, parameters { }, parameters_vec { $($vec_p_name: $vec_p_type)* }
+        explore_ga_distributed_mpi!(
+            $init_population,
+            $fitness,
+            $selection,
+            $mutation,
+            $crossover,
+            $state,
+            $desired_fitness,
+            $generation_num,
+            $step,
+            parameters { },
+            parameters_vec { $($vec_p_name: [$vec_p_type; $vec_len] )* }
         );
     };
 

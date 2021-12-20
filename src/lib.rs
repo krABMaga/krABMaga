@@ -35,7 +35,7 @@ pub use {
     mpi::datatype::PartitionMut,
     mpi::point_to_point as p2p,
     mpi::Count,
-    mpi::{datatype::UserDatatype, traits::*, Address},
+    mpi::{datatype::{UserDatatype, UncommittedUserDatatype}, traits::*, Address},
 };
 
 #[cfg(feature = "distributed_mpi")]

@@ -2,20 +2,22 @@
 macro_rules! build_dataframe_explore {
     //Dataframe with input and output parameters and optional parameters
     (
-        $name:ident, input {$($input: ident: $input_ty: ty)*},
-        vec: { $($input_vec: ident: $input_ty_vec: ty)*}
+        $name:ident,
+        input {$($input:ident: $input_ty:ty)*},
+        vec {$($input_vec:ident: [$input_ty_vec:ty; $input_len:expr])*}
         $($derive: tt)*
     ) => {
 
-        #[derive(Default, Clone, Debug,  $($derive,)*)]
+        #[derive(Clone, Debug,  $($derive,)*)]
         struct $name {
             $(pub $input: $input_ty,)*
+            $(pub $input_vec: [$input_ty_vec; $input_len],)*
         }
 
         impl DataFrame for $name{
             fn field_names() -> &'static [&'static str] {
                 static NAMES: &'static [&'static str]
-                    = &[$(stringify!($input),)*];
+                    = &[$(stringify!($input),)* $(stringify!($input_vec),)*];
                 NAMES
             }
 
@@ -24,22 +26,27 @@ macro_rules! build_dataframe_explore {
                 $(
                     v.push(format!("{:?}", self.$input));
                 )*
-
+                $(
+                    v.push(format!("{:?}", self.$input_vec));
+                )*
                 v
             }
 
         }
 
+
+        // new of BufferGA
         impl $name {
             pub fn new(
-                $($input: $input_ty,)*
+                $($input: $input_ty,)* $($input_vec: [$input_ty_vec; $input_len],)*
             ) -> $name{
                 $name {
-
                     $(
                         $input,
                     )*
-
+                    $(
+                        $input_vec,
+                    )*
                 }
             }
         }
@@ -48,20 +55,31 @@ macro_rules! build_dataframe_explore {
 
     //only input
     (
-        $name:ident, input {$($input: ident: $input_ty: ty)*}
+        $name:ident,
+        input {$($input:ident: $input_ty:ty)*}
         $($derive: tt)*
     ) => {
-        build_dataframe_explore!($name, input {$($input: $input_ty)*}, vec { } $($derive,)*);
+        build_dataframe_explore!(
+            $name, 
+            input {$($input: $input_ty)*},
+            vec { }
+            $($derive)*
+        );
     };
 
     
     //only vec
     (
         $name:ident,
-        vec: { $($input_vec: ident: $input_ty_vec: ty)*}
+        vec {$($input_vec:ident: [$input_ty_vec:ty; $input_len:expr])*}
         $($derive: tt)*
     ) => {
-        build_dataframe_explore!($name, input {}, vec{$($input_vec: $input_ty_vec)*} $($derive)*);
+        build_dataframe_explore!(
+            $name,
+            input { },
+            vec {$($input_vec: [$input_ty_vec; $input_len])*}
+            $($derive)*
+        );
     };
 
 }
@@ -231,7 +249,17 @@ macro_rules! explore_ga_sequential {
         $generation_num: expr,
         $step: expr,
     ) => {
-        explore_ga_sequential!( $init_population, $fitness, $selection, $mutation, $crossover, $state, $desired_fitness, $generation_num, $step, parameters { }
+        explore_ga_sequential!(
+            $init_population,
+            $fitness,
+            $selection,
+            $mutation,
+            $crossover,
+            $state,
+            $desired_fitness,
+            $generation_num,
+            $step,
+            parameters { }
         );
     };
 }
@@ -427,7 +455,17 @@ macro_rules! explore_ga_parallel {
         $generation_num: expr,
         $step: expr,
     ) => {
-        explore_ga_parallel!( $init_population, $fitness, $selection, $mutation, $crossover, $state, $desired_fitness, $generation_num, $step, parameters { }
+        explore_ga_parallel!(
+            $init_population,
+            $fitness,
+            $selection,
+            $mutation,
+            $crossover,
+            $state,
+            $desired_fitness,
+            $generation_num,
+            $step,
+            parameters { }
         );
     };
 }
