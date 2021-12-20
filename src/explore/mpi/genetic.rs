@@ -92,7 +92,7 @@ macro_rules! explore_ga_distributed_mpi {
         let mut my_pop_size: usize = 0;
         let mut population: Vec<$state> = Vec::new();
         let mut population_size = 0;
-
+        
         //definition of a dataframe called BufferGA
         build_dataframe_explore!(BufferGA,
             input {
@@ -261,11 +261,7 @@ macro_rules! explore_ga_distributed_mpi {
                     )*
                 }
             }
-            let mut count = Vec::new();
-
-            $(
-                count.push($vec_p_name.len());
-            )*
+            
 
             let mut my_population: Vec<$state>  = Vec::new();
 
@@ -464,6 +460,7 @@ macro_rules! explore_ga_distributed_mpi {
             println!("- The best individual is: {:?}", best_individual.unwrap());
         }
 
+        
         // return arrays containing all the results of each simulation
         all_results
     }};
