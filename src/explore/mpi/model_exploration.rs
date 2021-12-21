@@ -65,9 +65,17 @@ macro_rules! extend_dataframe {
     };
 }
 
+
+//macro to perform distributed model exploration based on MPI
+//nstep: number of steps of the single simulation
+//rep_conf: how many times run a configuration
+//state: struct name implementing trait State
+//input {name: type}: input paramaters of simulation
+//input_vec { name : [type, size] }: array params of simulations
+//output [name: type]: output parameters of simulation
 #[macro_export]
 macro_rules! explore_distributed_mpi {
-        ($nstep: expr, $rep_conf:expr, $s:ty,
+        ($nstep: expr, $rep_conf:expr, $state:ty,
         input {$($input:ident: $input_ty: ty )*},
         input_vec {$($input_vec:ident:  [$input_ty_vec:ty; $input_len:expr])*},
         output [$($output:ident: $output_ty: ty )*],
@@ -135,6 +143,7 @@ macro_rules! explore_distributed_mpi {
 
             let mut local_conf_size: usize = n_conf/num_procs;
 
+            //load balancing extra configuration
             if (my_rank as usize) < n_conf%num_procs {
                 local_conf_size += 1;
             }
@@ -149,7 +158,7 @@ macro_rules! explore_distributed_mpi {
                     // use all the possible combination
                     ExploreMode::Exaustive =>{
                         let mut row_count = -1.;
-                        state = <$s>::new(
+                        state = <$state>::new(
                             $(
                             $input[config_table_index[{row_count+=1.; row_count as usize}][i*num_procs + (my_rank as usize)]],
                             )*
@@ -160,7 +169,7 @@ macro_rules! explore_distributed_mpi {
                     },
                     // create a configuration using the combination of input with the same index
                     ExploreMode::Matched =>{
-                        state = <$s>::new(
+                        state = <$state>::new(
                             $(
                                 $input[i*num_procs + (my_rank as usize)],
                             )*
@@ -176,6 +185,7 @@ macro_rules! explore_distributed_mpi {
                     println!("Running configuration #{} - Simulation #{} on processor #{}", i*num_procs + (my_rank as usize), j, my_rank);
                     let result = simulate_explore!($nstep, state);
 
+                    //convert a Vec into a fixed size slice, because Vec can't be sent as MPI message
                     $(
                         let mut $input_vec: [$input_ty_vec; $input_len] = [0; $input_len];
                         let slice = state.$input_vec.clone();
@@ -206,6 +216,7 @@ macro_rules! explore_distributed_mpi {
                         samples_count.push(temp as Count);
                     }
                 }
+
 
                 let displs: Vec<Count> = samples_count
                     .iter()

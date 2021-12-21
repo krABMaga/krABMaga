@@ -1,8 +1,8 @@
 
 #[macro_export]
 macro_rules! simulate_explore {
-    ($step:expr, $s:expr) => {{
-        let mut s = $s;
+    ($step:expr, $state:expr) => {{
+        let mut s = $state;
         let mut state = s.as_state_mut();
         let n_step: u64 = $step;
 
@@ -27,7 +27,7 @@ macro_rules! simulate_explore {
             schedule.step as f32 / (run_duration.as_nanos() as f32 * 1e-9),
         ));
 
-        $s = s; // needed for model_exploration, requires also the state to be mut
+        $state = s; // needed for model_exploration, requires also the state to be mut
         results
     }};
 }
@@ -41,7 +41,7 @@ macro_rules! simulate_explore {
 macro_rules! explore_sequential {
 
         //exploration with explicit output parameters
-        ($nstep: expr, $rep_conf:expr, $s:ty,
+        ($nstep: expr, $rep_conf:expr, $state:ty,
         input {$($input:ident: $input_ty: ty )*},
         output [$($output:ident: $output_ty: ty )*],
         $mode: expr,
@@ -55,7 +55,6 @@ macro_rules! explore_sequential {
 
             let mut n_conf:usize = 1;
             let mut config_table_index: Vec<Vec<usize>> = Vec::new();
-
             build_dataframe!(FrameRow, input {$( $input:$input_ty)* }, output[ $( $output:$output_ty )*] );
 
             match $mode {
@@ -81,17 +80,17 @@ macro_rules! explore_sequential {
                     // use all the possible combination
                     ExploreMode::Exaustive =>{
                         let mut row_count = -1.;
-                        state = <$s>::new(
+                        state = <$state>::new(
                             $(
-                            $input[config_table_index[{row_count+=1.; row_count as usize}][i]],
+                            $input[config_table_index[{row_count+=1.; row_count as usize}][i]].clone(),
                             )*
                         );
                     },
                     // create a configuration using the combination of input with the same index
                     ExploreMode::Matched =>{
-                        state = <$s>::new(
+                        state = <$state>::new(
                             $(
-                                $input[i],
+                                $input[i].clone(),
                             )*
                         );
                     }
@@ -106,23 +105,24 @@ macro_rules! explore_sequential {
                     println!("Running simulation {}", j+1);
                     let result = simulate_explore!($nstep, state);
                     dataframe.push(
-                        FrameRow::new(i as u32, j + 1 as u32, $(state.$input,)* $(state.$output,)* result[0].0, result[0].1)
+                        FrameRow::new(i as u32, j + 1 as u32, $(state.$input.clone(),)* $(state.$output,)* result[0].0, result[0].1)
                     );
                 }
             }
             dataframe
+
         }};
 
         //exploration taking default output: total time and step per second
-        ($nstep: expr, $rep_conf:expr, $s:expr, input {$($input:ident: $input_ty: ty )*}, $mode:expr) => {
-            explore_sequential!($nstep, $s, $rep_conf, input {$($input: $input_ty)*}, output [], $mode)
+        ($nstep: expr, $rep_conf:expr, $state:expr, input {$($input:ident: $input_ty: ty )*}, $mode:expr) => {
+            explore_sequential!($nstep, $state, $rep_conf, input {$($input: $input_ty)*}, output [], $mode)
         }
 
     }
 
 #[macro_export]
 macro_rules! explore_parallel {
-        ($nstep: expr, $rep_conf:expr, $s:ty,
+        ($nstep: expr, $rep_conf:expr, $state:ty,
             input {$($input:ident: $input_ty: ty )*},
             output [$($output:ident: $output_ty: ty )*],
             $mode: expr,
@@ -163,7 +163,7 @@ macro_rules! explore_parallel {
                     // use all the possible combination
                     ExploreMode::Exaustive =>{
                         let mut row_count = -1.;
-                        state = <$s>::new(
+                        state = <$state>::new(
                             $(
                             $input[config_table_index[{row_count+=1.; row_count as usize}][i]],
                             )*
@@ -171,7 +171,7 @@ macro_rules! explore_parallel {
                     },
                     // create a configuration using the combination of input with the same index
                     ExploreMode::Matched =>{
-                        state = <$s>::new(
+                        state = <$state>::new(
                             $(
                                 $input[i],
                             )*
@@ -273,15 +273,34 @@ macro_rules! build_dataframe {
                     }
                 }
             }
+
+            
         };
-    }
+        
+        (
+            $name:ident,
+            input {$($input: ident: $input_ty: ty)*},
+            output [$($output: ident: $output_ty: ty)*]
+            $($derive: tt)*
+        ) => {
+                build_dataframe!(
+                        $name,
+                        input {$($input: $input_ty)*},
+                        input_vec { },
+                        output [$($output: $output_ty)*]
+                        $($derive)*
+                )
+        };
+}
+
+        
 
 /* #[macro_export]
 //macro general to call exploration
 macro_rules! explore {
 
     //exploration with explicit output parameters
-    ($nstep: expr, $rep_conf:expr, $s:ty,
+    ($nstep: expr, $rep_conf:expr, $state:ty,
     input {$($input:ident: $input_ty: ty )*},
     output [$($output:ident: $output_ty: ty )*],
     $mode: expr,
@@ -298,10 +317,10 @@ macro_rules! explore {
         // check which computation mode is required for the exploration
         match $cmode {
             ComputationMode::Sequential => explore_sequential!(
-                $nstep, $rep_conf, $s, input {$($input: $input_ty)*}, output [$($output: $output_ty)*], $mode, $( $x ),*
+                $nstep, $rep_conf, $state, input {$($input: $input_ty)*}, output [$($output: $output_ty)*], $mode, $( $x ),*
             ),
             ComputationMode::Parallel => explore_parallel!(
-                $nstep, $rep_conf, $s, input {$($input: $input_ty)*}, output [$($output: $output_ty)*], $mode, $( $x ),*
+                $nstep, $rep_conf, $state, input {$($input: $input_ty)*}, output [$($output: $output_ty)*], $mode, $( $x ),*
             ),
             _ => Vec::new()
         }
