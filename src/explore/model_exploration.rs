@@ -205,7 +205,11 @@ macro_rules! explore_parallel {
 macro_rules! build_dataframe {
         //Dataframe with input and output parameters and optional parameters
         (
-            $name:ident, input {$($input: ident: $input_ty: ty)*}, output [$($output: ident: $output_ty: ty)*]  $($derive: tt)*
+            $name:ident,
+            input {$($input: ident: $input_ty: ty)*},
+            input_vec {$($input_vec:ident: [$input_ty_vec:ty; $input_len:expr])*},
+            output [$($output: ident: $output_ty: ty)*]
+            $($derive: tt)*
         ) => {
 
             #[derive(Default, Clone, PartialEq, Debug, $($derive,)*)]
@@ -214,6 +218,7 @@ macro_rules! build_dataframe {
                 pub conf_rep: u32,
                 $(pub $input: $input_ty,)*
                 $(pub $output: $output_ty,)*
+                $(pub $input_vec: [$input_ty_vec; $input_len],)*
                 pub run_duration: f32,
                 pub step_per_sec: f32,
             }
@@ -221,7 +226,7 @@ macro_rules! build_dataframe {
             impl DataFrame for $name{
                 fn field_names() -> &'static [&'static str] {
                     static NAMES: &'static [&'static str]
-                        = &["Simulation", "Run", $(stringify!($input),)* $(stringify!($output),)*  "Run Duration", "Step per sec"];
+                        = &["Simulation", "Run", $(stringify!($input),)* $(stringify!($input_vec),)* $(stringify!($output),)*  "Run Duration", "Step per sec"];
                     NAMES
                 }
 
@@ -231,6 +236,9 @@ macro_rules! build_dataframe {
                     v.push(self.conf_rep.to_string());
                     $(
                         v.push(format!("{:?}", self.$input));
+                    )*
+                    $(
+                        v.push(format!("{:?}", self.$input_vec));
                     )*
                     $(
                         v.push(format!("{:?}", self.$output));
@@ -245,13 +253,16 @@ macro_rules! build_dataframe {
 
             impl $name {
                 pub fn new(
-                    conf_num: u32, conf_rep: u32 $(, $input: $input_ty)* $(, $output: $output_ty)*, run_duration: f32, step_per_sec: f32,
+                    conf_num: u32, conf_rep: u32, $($input: $input_ty,)* $($input_vec: [$input_ty_vec; $input_len],)* $($output: $output_ty,)* run_duration: f32, step_per_sec: f32,
                 ) -> $name{
                     $name {
                         conf_num,
                         conf_rep,
                         $(
                             $input,
+                        )*
+                        $(
+                            $input_vec,
                         )*
                         $(
                             $output,
@@ -262,11 +273,6 @@ macro_rules! build_dataframe {
                     }
                 }
             }
-        };
-
-        //Dataframe without output parameters
-        ($name:ident, input {$($input: ident: $input_ty: ty)*}  $($derive: tt)*) => {
-            build_dataframe!($name, input{$($element: $input_ty)*}, output[]  $($derive: tt)*);
         };
     }
 

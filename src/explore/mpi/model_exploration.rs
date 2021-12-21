@@ -1,9 +1,11 @@
-
 #[macro_export]
 macro_rules! extend_dataframe {
     //Dataframe with input and output parameters and optional parameters
     (
-        $name:ident, input {$($input: ident: $input_ty: ty)*}, output [$($output: ident: $output_ty: ty)*]
+        $name:ident,
+        input {$($input: ident: $input_ty: ty)*},    
+        input_vec {$($input_vec:ident: [$input_ty_vec:ty; $input_len: expr])*},
+        output [$($output: ident: $output_ty: ty)*]
     ) =>{
         unsafe impl Equivalence for $name {
             type Out = UserDatatype;
@@ -13,8 +15,12 @@ macro_rules! extend_dataframe {
                 let v_in = count_tts!($($input)*);
                 let v_out = count_tts!($($output)*);
 
-                let dim = v_in + v_out + 4;
+                //count vec optional parameters
+                let v_vec_in = count_tts!($($input_vec)*);
+
+                let dim = v_in + v_out + v_vec_in + 4;
                 let mut vec = Vec::with_capacity(dim);
+
                 for i in 0..dim {
                     vec.push(1);
                 }
@@ -28,6 +34,9 @@ macro_rules! extend_dataframe {
                             offset_of!($name, $input) as Address,
                         )*
                         $(
+                            offset_of!($name, $input_vec) as Address,
+                        )*
+                        $(
                             offset_of!($name, $output) as Address,
                         )*
                         offset_of!($name, run_duration) as Address,
@@ -39,6 +48,9 @@ macro_rules! extend_dataframe {
                         u32::equivalent_datatype(),
                         $(
                             <$input_ty>::equivalent_datatype(),
+                        )*
+                        $(
+                            UserDatatype::contiguous($input_len, &<$input_ty_vec>::equivalent_datatype()).as_ref(),
                         )*
                         $(
                             <$output_ty>::equivalent_datatype(),
@@ -56,10 +68,11 @@ macro_rules! extend_dataframe {
 #[macro_export]
 macro_rules! explore_distributed_mpi {
         ($nstep: expr, $rep_conf:expr, $s:ty,
-            input {$($input:ident: $input_ty: ty )*},
-            output [$($output:ident: $output_ty: ty )*],
-            $mode: expr,
-             ) => {{
+        input {$($input:ident: $input_ty: ty )*},
+        input_vec {$($input_vec:ident:  [$input_ty_vec:ty; $input_len:expr])*},
+        output [$($output:ident: $output_ty: ty )*],
+        $mode: expr,
+        ) => {{
 
             // mpi initilization
             let universe = mpi::initialize().unwrap();
@@ -80,8 +93,18 @@ macro_rules! explore_distributed_mpi {
 
             if rep_conf <= 0 { rep_conf = 1;}
 
-            build_dataframe!(FrameRow, input {$( $input:$input_ty)* }, output[ $( $output:$output_ty )*] Copy);
-            extend_dataframe!(FrameRow, input {$( $input:$input_ty)* }, output[ $( $output:$output_ty )*] );
+            build_dataframe!(FrameRow,
+                input { $($input:$input_ty)* },
+                input_vec { $($input_vec: [$input_ty_vec; $input_len] )* },
+                output[ $($output:$output_ty)*]
+                Copy);
+            
+            extend_dataframe!(FrameRow,
+                input {$($input:$input_ty)* },
+                input_vec { $($input_vec: [$input_ty_vec; $input_len] )* },
+                output[ $( $output:$output_ty )*]
+            );
+
 
 
             let mut n_conf:usize = 1;
@@ -91,16 +114,18 @@ macro_rules! explore_distributed_mpi {
             match $mode {
                 ExploreMode::Exaustive =>{
                     $( n_conf *= $input.len(); )*
+                    $( n_conf *= $input_vec.len(); )*
                     //Cartesian product with variadics, to build a table with all parameter combinations
                     //They are of different type, so i have to work with indexes
-                    config_table_index = build_configurations!(n_conf, $($input )*);
+                    config_table_index = build_configurations!(n_conf, $($input )* $($input_vec)*);
                 },
                 ExploreMode::Matched =>{
                     $( n_conf = $input.len(); )*
+                    $( n_conf = $input_vec.len(); )*
+
                 },
             }
 
-            
             let total_sim = n_conf*rep_conf;
 
             if world.rank() == root_rank {
@@ -110,7 +135,7 @@ macro_rules! explore_distributed_mpi {
 
             let mut local_conf_size: usize = n_conf/num_procs;
 
-            if (my_rank as usize) < total_sim%num_procs {
+            if (my_rank as usize) < n_conf%num_procs {
                 local_conf_size += 1;
             }
 
@@ -128,6 +153,9 @@ macro_rules! explore_distributed_mpi {
                             $(
                             $input[config_table_index[{row_count+=1.; row_count as usize}][i*num_procs + (my_rank as usize)]],
                             )*
+                            $(
+                            $input_vec[config_table_index[{row_count+=1.; row_count as usize}][i*num_procs + (my_rank as usize)]].clone(),
+                            )*
                         );
                     },
                     // create a configuration using the combination of input with the same index
@@ -135,6 +163,9 @@ macro_rules! explore_distributed_mpi {
                         state = <$s>::new(
                             $(
                                 $input[i*num_procs + (my_rank as usize)],
+                            )*
+                            $(
+                                $input_vec[i*num_procs + (my_rank as usize)].clone(),
                             )*
                         );
                     },
@@ -144,13 +175,20 @@ macro_rules! explore_distributed_mpi {
                 for j in 0..rep_conf{
                     println!("Running configuration #{} - Simulation #{} on processor #{}", i*num_procs + (my_rank as usize), j, my_rank);
                     let result = simulate_explore!($nstep, state);
+
+                    $(
+                        let mut $input_vec: [$input_ty_vec; $input_len] = [0; $input_len];
+                        let slice = state.$input_vec.clone();
+                        $input_vec.copy_from_slice(&slice[..]);
+                    )*
+
                     dataframe.push(
-                        FrameRow::new(i as u32, j as u32, $(state.$input,)* $(state.$output,)* result[0].0, result[0].1)
+                        FrameRow::new(i as u32, j as u32, $(state.$input,)* $($input_vec,)* $(state.$output,)* result[0].0, result[0].1)
                     );
                 }
             }
 
-        
+
             // must return a dummy dataframe that will not be used
             // since only the master write the complete dataframe of all procs on csv
             if world.rank() == root_rank {
@@ -159,7 +197,7 @@ macro_rules! explore_distributed_mpi {
 
 
                 for i in 0..num_procs {
-                    if i < total_sim%num_procs {
+                    if i < n_conf%num_procs {
                         let temp:usize = local_conf_size*(rep_conf as usize);
                         samples_count.push(temp as Count);
                     }
@@ -179,9 +217,9 @@ macro_rules! explore_distributed_mpi {
                     .collect();
 
                 let mut all_dataframe = vec![dataframe[0]; n_conf*$rep_conf];
-                
+        
                 let mut partition = PartitionMut::new(&mut all_dataframe[..], samples_count.clone(), &displs[..]);
-
+                
                 // root receives all results from other processors
                 root_process.gather_varcount_into_root(&dataframe[..], &mut partition);
                 // root_process.gather_into_root(&dataframe[..], &mut all_dataframe[..]);
@@ -193,13 +231,45 @@ macro_rules! explore_distributed_mpi {
                 dataframe = Vec::new();
                 dataframe
             }
+
         }};
 
         //exploration taking default output: total time and step per second
-        ($nstep: expr, $rep_conf:expr, $state_name:ty, input {$($input:ident: $input_ty: ty )*,},
+        ($nstep: expr, $rep_conf:expr, $state_name:ty,
+        input {$($input:ident: $input_ty: ty )*,},
+        input_vec {$($input_vec:ident: [$input_vec_type:ty; $input_vec_len:expr])*},
         $mode: expr,
         ) => {
-                explore_distributed_mpi!($nstep, $rep_conf, $state_name, input { $($input: $input_ty)*}, output [],
+                explore_distributed_mpi!($nstep, $rep_conf, $state_name,
+                input { $($input: $input_ty)*},
+                input_vec { $($input_vec: [$input_vec_type; $input_vec_len])* },
+                output [],
                 $mode,)
         };
+
+        //exploration taking  no vec input and default output: total time and step per second
+        ($nstep: expr, $rep_conf:expr, $state_name:ty,
+        input {$($input:ident: $input_ty: ty )*,},
+        $mode: expr,
+        ) => {
+                explore_distributed_mpi!($nstep, $rep_conf, $state_name,
+                input { $($input: $input_ty)*},
+                input_vec { },
+                output [],
+                $mode,)
+        };
+
+
+        //exploration taking vec input and default output: total time and step per second
+        ($nstep: expr, $rep_conf:expr, $state_name:ty,
+        input_vec {$($input_vec:ident: [$input_vec_type:ty; $input_vec_len:expr])*},
+        $mode: expr,
+        ) => {
+                explore_distributed_mpi!($nstep, $rep_conf, $state_name,
+                input { },
+                input_vec { $($input_vec: [$input_vec_type; $input_vec_len])* },
+                output [],
+                $mode,)
+        };
+
     }

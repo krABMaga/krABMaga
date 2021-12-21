@@ -225,7 +225,7 @@ mod no_exported {
 
         config_table_index
         }};
-
+  
     }
 }
 
