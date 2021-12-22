@@ -34,10 +34,12 @@ downcast-rs = "1.*"
 csv = "1.*"
 indicatif = "0.*"
 crossbeam = "0.*"
+rand_pcg = "0.*"
 
 # Model exploration features
 # rsmpi points to a specific commit
 mpi = { git = "https://github.com/bsteinb/rsmpi", rev = "f9aec8b8d82", optional = true }
+#mpi = { git = "https://github.com/bsteinb/rsmpi", optional = true }
 memoffset = { version = "0.6.4", optional = true}
 
 # Visualization features
@@ -56,7 +58,7 @@ getrandom = {version="0.*", features=["wasm-bindgen"]}
 # Must be kept separate and asked to the user due to missing support for conditional compilation of features
 # https://github.com/rust-lang/cargo/issues/7914
 [features]
-explore = [
+distributed_mpi = [
     "mpi",
     "memoffset"
 ]
