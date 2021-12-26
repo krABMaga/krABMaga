@@ -19,6 +19,8 @@ use bevy_canvas::CanvasPlugin;
 use bevy_egui::EguiPlugin;
 
 use std::sync::{Arc, Mutex};
+use crate::visualization::utils::fixed_timestep::{FixedTimestep, FixedTimestepState};
+use crate::visualization::utils::updated_time::{Time, time_system};
 
 // The application main struct, used to build and start the event loop. Offers several methods in a builder-pattern style
 // to allow for basic customization, such as background color, asset path and custom systems. Right now the framework
@@ -126,15 +128,29 @@ impl Visualization {
         .insert_resource(ActiveState(Arc::new(Mutex::new(state))))
         .insert_resource(ActiveSchedule(Arc::new(Mutex::new(schedule))))
         .insert_resource(Initializer(cloned_init_call, Default::default()))
+            .init_resource::<Time>()
+            .init_resource::<FixedTimestepState>()
         .add_startup_system(init_system::<I, S>.system())
+            .add_startup_system(set_initial_timestep.system())
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
-        .add_system(renderer_system::<I, S>.system().label("render"))
-        .add_system(simulation_system::<S>.system().before("render"))
+            .add_system_set(SystemSet::new()
+                .with_run_criteria(FixedTimestep::step.system())
+                .with_system(renderer_system::<I, S>.system().label("render"))
+                .with_system(simulation_system::<S>.system().before("render"))
+            )
         .add_system(ui_system::<I, S>.system().before("render"))
-        .add_system(camera_system.system());
+        .add_system(camera_system.system())
+            .add_system_to_stage(
+                CoreStage::First,
+                time_system.exclusive_system(),
+            );
 
         app
     }
+}
+
+fn set_initial_timestep(mut time: ResMut<Time>) {
+    time.set_steps_per_second(60.);
 }
 
 impl Default for Visualization {
