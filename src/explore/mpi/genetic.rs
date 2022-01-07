@@ -2,8 +2,8 @@
 macro_rules! extend_dataframe_explore {
     //implementation of a trait to send/receive with mpi
     ($name:ident,
-    input {$($input:ident: $input_ty:ty)*},
-    vec {$($input_vec:ident: [$input_ty_vec:ty; $input_len: expr])*}
+    input {$($input:ident: $input_ty:ty)*}
+  //  vec {$($input_vec:ident: [$input_ty_vec:ty; $input_len: expr])*}
     ) => {
         unsafe impl Equivalence for $name {
             type Out = UserDatatype;
@@ -11,11 +11,9 @@ macro_rules! extend_dataframe_explore {
 
                 //count input and output parameters to create slice for blocklen
                 let v_in = count_tts!($($input)*);
-                //count vec optional parameters
-                let v_vec_in = count_tts!($($input_vec)*);
 
-                let mut vec = Vec::with_capacity(v_in + v_vec_in);
-                for i in 0..(v_in + v_vec_in){
+                let mut vec = Vec::with_capacity(v_in);
+                for i in 0..(v_in){
                     vec.push(1);
                 }
 
@@ -25,16 +23,10 @@ macro_rules! extend_dataframe_explore {
                         $(
                             offset_of!($name, $input) as Address,
                         )*
-                        $(
-                            offset_of!($name, $input_vec) as Address,
-                        )*
                     ],
                     &[
                         $(
                             <$input_ty>::equivalent_datatype(),
-                        )*
-                        $(
-                            UserDatatype::contiguous($input_len, &<$input_ty_vec>::equivalent_datatype()).as_ref(),
                         )*
                     ]
                 )
@@ -83,7 +75,7 @@ macro_rules! explore_ga_distributed_mpi {
         let mut best_fitness = 0.;
         let mut best_generation = 0;
         let mut my_pop_size: usize = 0;
-        let mut population: Vec<$state> = Vec::new();
+        let mut population: Vec<String> = Vec::new();
         let mut population_size = 0;
         
         //definition of a dataframe called BufferGA
@@ -92,7 +84,6 @@ macro_rules! explore_ga_distributed_mpi {
                 generation: u32
                 index: i32
                 fitness: f32
-                individual: String
             }
         );
 
@@ -102,28 +93,20 @@ macro_rules! explore_ga_distributed_mpi {
                 generation: u32
                 index: i32
                 fitness: f32
-            },
-            vec {
-                individual: [char; individual.len()]    
-            }
+            }    
         );
 
-        // create an array for each parameter
-        $(
-        let mut $p_name: Vec<$p_type> = Vec::new();
-        )*
-
-        $(
-            let mut $vec_p_name: Vec<[$vec_p_type; $vec_len]> = Vec::new();
-        )*
-
+        let mut population_params: Vec<String> = Vec::new();
+        let mut pop_fitness: Vec<(String, f32)> = Vec::new();
+        
         let mut all_results: Vec<BufferGA> = Vec::new();
 
         //becomes true when the algorithm get desider fitness
         let mut flag = false;
 
         // initialization of best individual placeholder
-        let mut best_individual : Option<BufferGA> = None;
+        let mut best_individual: Option<BufferGA> = None;
+
         if world.rank() == root_rank {
             population = $init_population();
             population_size = population.len();
@@ -132,14 +115,7 @@ macro_rules! explore_ga_distributed_mpi {
             best_individual = Some(BufferGA::new(
                 0,
                 0,
-                0.,
-                $(
-                    population[0].$p_name.clone(), //remove clone()
-                )*
-                $(
-                    [0 as $vec_p_type; $vec_len],
-                )*
-
+                0.
             ));
         }
 
@@ -195,79 +171,63 @@ macro_rules! explore_ga_distributed_mpi {
 
                     // fulfill the parameters arrays
                     for j in 0..sub_population_size {
-                        $(
-                            $p_name.push(population[i * population_size_per_process + j].$p_name.clone());  //remove clone
-                        )*
-
-                        $(
-                            let mut tmp_slice: [$vec_p_type; $vec_len] = [0; $vec_len];
-                            let slice = population[i * population_size_per_process + j].$vec_p_name.clone();
-                            tmp_slice.copy_from_slice(&slice[..]);
-                            $vec_p_name.push(tmp_slice);
-                        )*
+                        population_params.push(population[i * population_size_per_process + j].clone());  //remove clone
                     }
 
                     // send the arrays
                     world.process_at_rank(i as i32).send(&sub_population_size);
                     let mut to_send: Vec<BufferGA> = Vec::new();
-                    for p in 0..sub_population_size {
-                        to_send.push(BufferGA::new(
-                                0,
-                                0,
-                                0.,
-                                $(
-                                    $p_name[i * population_size_per_process + p].clone(),
-                                )*
-                                $(
-                                    $vec_p_name[i * population_size_per_process + p].clone(),
-                                )*
-                            )
-                        );
-                    }
 
-                    world.process_at_rank(i as i32).send(&to_send[..]);
+                    for p in 0..sub_population_size {
+                        // to_send.push(BufferGA::new(
+                        //         0,
+                        //         0,
+                        //         0.,
+                        //         population_params[i * population_size_per_process + p].clone(),
+                        //     )
+                        // );
+                        let int_type = u8::equivalent_datatype().dup();
+                        
+                        let buffer_to_send = unsafe{
+                            DynBufferMut::from_raw(
+                                &mut population_params[i * population_size_per_process + p].clone().as_bytes(),
+                                population_params[i * population_size_per_process + p].clone().len() as i32,
+                                int_type.as_ref()
+                            )
+                        };
+
+                        world.process_at_rank(i as i32).send(&buffer_to_send);
+                    }
+                    
+                    
                 }
             } else {
                 // every other processor receive the parameter
                 let (my_population_size, _) = world.any_process().receive::<usize>();
                 my_pop_size = my_population_size;
-                let (param, _) = world.any_process().receive_vec::<BufferGA>();
-                let my_param = param;
+                // let (param, _) = world.any_process().receive::<DynBufferMut>();
+                // let my_param = param;
 
-                for i in 0..my_param.len(){
-                    $(
-                        $p_name.push(my_param[i].$p_name);
-                    )*
-                    $(
-                        $vec_p_name.push(my_param[i].$vec_p_name.clone());
-                    )*
-                }
+                // for i in 0..my_param.len(){
+                //     population_params.push(my_param[i]);
+                // }
             }
-            
+        }
+  /*           
+            // let mut my_population: Vec<String>  = Vec::new();
 
-            let mut my_population: Vec<$state>  = Vec::new();
-
-            //init local sub-population
-            for i in 0..my_pop_size {
-                my_population.push(
-                    <$state>::new(
-                        $(
-                            $p_name[i].clone(), //remove clone
-                        )*
-                        $(
-                            $vec_p_name[i].clone().to_vec(),
-                        )*
-                    )
-                );
-            }
+            // //init local sub-population
+            // for i in 0..my_pop_size {
+            //     my_population.push(population_params[i]);
+            // }
             let mut best_fitness_gen = 0.;
-
             let mut local_index = 0;
             // array collecting the results of each simulation run
             let mut my_results: Vec<BufferGA> = Vec::new();
 
-            for individual in my_population.iter_mut() {
+            for individual_params in population_params.iter_mut() {
                 // initialize the state
+                let mut individual = <$state>::new_with_parameters(&individual_params);
                 let mut schedule: Schedule = Schedule::new();
                 individual.init(&mut schedule);
                 // compute the simulation
@@ -279,31 +239,25 @@ macro_rules! explore_ga_distributed_mpi {
                     }
                 }
                 // compute the fitness value
-                let fitness = $fitness(individual, schedule);
-
+                let fitness = $fitness(&mut individual, schedule);
                 // send the result of each iteration to the master
-                $(
-                    let mut $vec_p_name: [$vec_p_type; $vec_len] = [0; $vec_len];
-                    let slice = individual.$vec_p_name.clone();
-                    $vec_p_name.copy_from_slice(&slice[..]);
-                )*
+                // $(
+                //     let mut $vec_p_name: [$vec_p_type; $vec_len] = [0; $vec_len];
+                //     let slice = individual.$vec_p_name.clone();
+                //     $vec_p_name.copy_from_slice(&slice[..]);
+                // )*
 
                 let result = BufferGA::new(
                     generation,
                     local_index,
                     fitness,
-                    $(
-                        individual.$p_name.clone(), //remove clone
-                    )*
-                    $(
-                        $vec_p_name.clone(),
-                    )*
+                    individual_params.clone(),
                 );
 
                 my_results.push(result);
+
                 // if the desired fitness is reached break
                 // setting the flag at true
-
                 if fitness >= $desired_fitness{
                     flag = true;
                 }
@@ -319,12 +273,7 @@ macro_rules! explore_ga_distributed_mpi {
                     generation,
                     0,
                     -999.,
-                    $(
-                        population[0].$p_name.clone(), //remove clone
-                    )*
-                    $(
-                        [0 as $vec_p_type; $vec_len],
-                    )*
+                    "dummy".to_string()
                 );
 
                 let displs: Vec<Count> = samples_count
@@ -404,34 +353,30 @@ macro_rules! explore_ga_distributed_mpi {
                 // set the population parameters owned by the master
                 // using the ones received from other processors
                 for i in 0..population_size {
-                    population[i].fitness = all_results[(generation as usize -1)*population_size + i].fitness;
+                    let fitness = all_results[(generation as usize -1)*population_size + i].fitness;
+                    let individual = all_results[(generation as usize -1)*population_size + i].individual.clone();
+                    pop_fitness[i].push((individual, fitness));
                 }
 
                 // compute selection
-                $selection(&mut population);
+                $selection(&mut pop_fitness);
 
                 // check if after selection the population size is too small
-                if population.len() <= 1 {
+                if pop_fitness.len() <= 1 {
                     println!("Population size <= 1, exiting...");
                     break;
                 }
 
+                population.clear();
                 // mutate the new population
-                for individual in population.iter_mut() {
+                for (individual, _) in pop_fitness.iter_mut() {
                     $mutation(individual);
+                    population.push(individual.clone());
                 }
 
                 // crossover the new population
                 $crossover(&mut population);
             }
-
-            $(
-                $p_name.clear();
-            )*
-
-            $(
-                $vec_p_name.clear();
-            )*
         } // END OF LOOP
         if world.rank() == root_rank{
             println!("Overall best fitness is {}", best_fitness);
@@ -440,6 +385,9 @@ macro_rules! explore_ga_distributed_mpi {
 
         
         // return arrays containing all the results of each simulation
-        all_results
+        all_results */
+   
+   
     }};
+
 }

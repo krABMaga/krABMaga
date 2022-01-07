@@ -266,7 +266,7 @@ macro_rules! explore_ga_parallel {
         let mut best_fitness = 0.;
         let mut best_generation = 0;
 
-        // use init_population custom function to create a vector of state
+        // use init_population custom function to create a vector of individual
         let mut population: Vec<String> = $init_population();
         let mut pop_fitness: Vec<(String, f32)> = Vec::new();
         let mut best_individual: String = String::new();

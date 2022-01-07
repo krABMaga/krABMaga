@@ -9,7 +9,6 @@
 // generation_num: max number of generations to compute
 // step: number of steps of the single simulation
 // num_func: number of functions to invoke
-// parameters(optional): parameter to write the csv, if not specified only fitness will be written
 #[macro_export]
 macro_rules! explore_ga_aws {
     (
@@ -23,45 +22,37 @@ macro_rules! explore_ga_aws {
         $generation_num: expr,
         $step: expr,
 		$num_func: expr,
-        parameters {
-            $($p_name:ident: $p_type:ty)*
-        }
     ) => {{
         println!("Running GA exploration on AWS...");
 
 		println!("Checking if aws-cli is installed and configured..."); // TODO
 
         build_dataframe_explore!(BufferGA, input {
-            // generation: u32
-            // index: i32
-            // fitness: f32
-            $(
-                $p_name: $p_type
-            )*
-            Serialize
-            Deserialize
+            generation: u32
+            index: i32
+            fitness: f32
+            individual: String
         });
 
         let mut generation = 0;
         let mut best_fitness = 0.;
         let mut best_generation = 0;
 
-        let mut result:Vec<BufferGA> = Vec::new();
+        // use init_population custom function to create a vector of individual
+        let mut population: Vec<String> = $init_population();
+        let mut pop_fitness: Vec<(String, f32)> = Vec::new();
+        let mut best_individual: String = String::new();
 
-        // use init_population custom function to create a vector of state
-        let mut population: Vec<$state> = $init_population();
+        let mut my_population_params: Vec<String> = Vec::new();
+   
+        // flag to break from the loop
+        let mut flag = false;
 
-        let population_size = population.len();
+        // population size for each function
+        let mut population_size_per_function = population.len() / $num_func;
+        let mut remainder = population.len() % $num_func;
 
-        // parameters of the individual
-        $(
-            let mut $p_name: Vec<$p_type> = Vec::new();
-        )*
-
-        let mut population_size_per_function = population_size / $num_func;
-        let mut remainder = population_size % $num_func;
-
-        // for each function
+        // for each function prepare the population to compute
         for i in 0..$num_func {
 
             let mut sub_population_size = 0;
@@ -77,35 +68,15 @@ macro_rules! explore_ga_aws {
             // fulfill the parameters arrays
             // we got sub_population_size arrays each one with parameters for individual to compute
             for j in 0..sub_population_size {
-                $(
-                    $p_name.push(population[i * population_size_per_function + j].$p_name.clone());  //remove clone
-                )*
-            }
-            // creates an array of bufferGA containing the parameters for the simulation
-            let mut to_send: Vec<BufferGA> = Vec::new();
-            for p in 0..sub_population_size {
-                to_send.push(
-                    serde_json::to_string(
-                        &BufferGA::new(
-                            $(
-                                $p_name[i * population_size_per_function + p].clone(),
-                            )*
-                        )
-                    ).unwrap()
-                );
+                my_population_params.push(population[i * population_size_per_function + j].clone());  //remove clone
             }
 
-            
             {
-                $(
-                    let mut $p_name = serde_json::to_string(&$p_name).unwrap();
-                )*
+                let mut pop_params_json= serde_json::to_string(&my_population_params).unwrap();
 
                 let mut params = String::new();
                 
-                $(
-                    params.push_str(&format!("\t\"{}\": \"{}\", \n", stringify!($p_name), $p_name));
-                )*
+                params.push_str(&format!("\t\"individuals\": {}, \n", pop_params_json));
 
                 params = format!("{{\n{}\t\"step\": \"{}\"\n}}", params, $step);
 
@@ -113,9 +84,7 @@ macro_rules! explore_ga_aws {
                 fs::write(file_name, params).expect("Unable to write parameters.json file.");
             }
 
-            $(
-                $p_name.clear();
-            )*
+            my_population_params.clear();
         }
 
         // flag to break from the loop
@@ -127,24 +96,36 @@ macro_rules! explore_ga_aws {
 
         let import_str = contents.split_once("fn main() {");
 
-        let mut params_file = File::open("rab_aws/parameters_t.json").expect("Cannot open json file!");
+        let mut params_file = File::open("rab_aws/parameters_0.json").expect("Cannot open json file!");
         let mut contents_params = String::new();
         params_file.read_to_string(&mut contents_params);
 
         let params_json: serde_json::Value = serde_json::from_str(&contents_params).expect("Cannot parse the json file!");
 
-        println!("Json \n {}", &params_json["positions"][0]);
+        let my_population_params = params_json["individuals"].as_array().unwrap();
 
-        $(
-            let $p_name = &params_json[stringify!($p_name)][0];
-            println!("{} {:?}", stringify!($p_name), $p_name);
-        )*
-        
-        let indivudal = <$state>::new(
-            $(
-                $p_name[i].clone(),
-            )*
-        );
+        let mut my_pop: Vec<String> = Vec::new();
+        for ind in my_population_params{
+            let individual = ind.as_str().unwrap().to_string();
+
+            // initialize the state
+            let mut individual_state = <$state>::new_with_parameters(&individual);
+            let mut schedule: Schedule = Schedule::new();
+            individual_state.init(&mut schedule);
+            // compute the simulation
+            for _ in 0..($step as usize) {
+                let individual_state = individual_state.as_state_mut();
+                schedule.step(individual_state);
+                if individual_state.end_condition(&mut schedule) {
+                    break;
+                }
+            }
+
+            // compute the fitness value
+            let fitness = $fitness(&mut individual_state, schedule);
+        }
+                
+
         let first_code = r#"
         use lambda_runtime::{handler_fn, Context, Error};
         use serde_json::{json, Value};
@@ -159,10 +140,7 @@ macro_rules! explore_ga_aws {
         async fn func(event: Value, _: Context) -> Result<Value, Error> {
             
             // leggo dal payload i parametri che mi servono
-
-
-            let my_pop_size = event["pop_size"].as_str();
-            let parameters = event["parameters"]
+            let parameters = event["individuals"].as_str().unwrap().to_string();
 
 
 
@@ -187,30 +165,4 @@ macro_rules! explore_ga_aws {
         
     }};
 
-    // perform the model exploration with genetic algorithm on AWS without writing additional parameters
-    (
-        $init_population:tt,
-        $fitness:tt,
-        $selection:tt,
-        $mutation:tt,
-        $crossover:tt,
-        $state: ty,
-        $desired_fitness: expr,
-        $generation_num: expr,
-        $step: expr,
-    ) => {
-        explore_ga_aws!(
-            $init_population,
-            $fitness,
-            $selection,
-            $mutation,
-            $crossover,
-            $state,
-            $desired_fitness,
-            $generation_num,
-            $step,
-			$num_func,
-            parameters { }
-        );
-    };
 }
