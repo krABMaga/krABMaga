@@ -53,7 +53,6 @@ macro_rules! extend_dataframe_explore {
 // desired_fitness: desired fitness value
 // generation_num: max number of generations to compute
 // step: number of steps of the single simulation
-// parameters(optional): parameter to write the csv, if not specified only fitness will be written
 #[macro_export]
 macro_rules! explore_ga_distributed_mpi {
     (
@@ -66,12 +65,6 @@ macro_rules! explore_ga_distributed_mpi {
         $desired_fitness: expr,
         $generation_num: expr,
         $step: expr,
-        parameters {
-            $($p_name:ident: $p_type:ty)*
-        },
-        parameters_vec {
-            $($vec_p_name:ident: [$vec_p_type:ty; $vec_len:expr])*
-        }
     ) => {{
 
         // MPI initialization
@@ -99,14 +92,7 @@ macro_rules! explore_ga_distributed_mpi {
                 generation: u32
                 index: i32
                 fitness: f32
-                $(
-                    $p_name: $p_type
-                )*
-            },
-            vec {
-                $(
-                  $vec_p_name: [$vec_p_type; $vec_len]
-                )*
+                individual: String
             }
         );
 
@@ -116,14 +102,9 @@ macro_rules! explore_ga_distributed_mpi {
                 generation: u32
                 index: i32
                 fitness: f32
-                $(
-                    $p_name: $p_type
-                )*
             },
             vec {
-                $(
-                    $vec_p_name: [$vec_p_type; $vec_len]
-                )*
+                individual: [char; individual.len()]    
             }
         );
 
@@ -461,93 +442,4 @@ macro_rules! explore_ga_distributed_mpi {
         // return arrays containing all the results of each simulation
         all_results
     }};
-
-    // perform the model exploration with genetic algorithm without writing additional parameters
-    (
-        $init_population:tt,
-        $fitness:tt,
-        $selection:tt,
-        $mutation:tt,
-        $crossover:tt,
-        $state: ty,
-        $desired_fitness: expr,
-        $generation_num: expr,
-        $step: expr
-    ) => {
-        explore_ga_distributed_mpi!(
-            $init_population, $fitness,
-            $selection,
-            $mutation,
-            $crossover,
-            $state,
-            $desired_fitness,
-            $generation_num,
-            $step,
-            parameters { },
-            parameters_vec { }
-        );
-    };
-
-
-    // perform the model exploration with genetic algorithm without vec_params
-    (
-        $init_population:tt,
-        $fitness:tt,
-        $selection:tt,
-        $mutation:tt,
-        $crossover:tt,
-        $state: ty,
-        $desired_fitness: expr,
-        $generation_num: expr,
-        $step: expr,
-        parameters {
-            $($p_name:ident: $p_type:ty)*
-        }
-    ) => {
-        explore_ga_distributed_mpi!(
-            $init_population,
-            $fitness,
-            $selection,
-            $mutation,
-            $crossover,
-            $state,
-            $desired_fitness,
-            $generation_num,
-            $step,
-            parameters { $($p_name: $p_type)*},
-            parameters_vec { }
-        );
-    };
-
-    // perform the model exploration with genetic algorithm with only vec params
-    (
-        $init_population:tt,
-        $fitness:tt,
-        $selection:tt,
-        $mutation:tt,
-        $crossover:tt,
-        $state: ty,
-        $desired_fitness: expr,
-        $generation_num: expr,
-        $step: expr,
-        parameters_vec {
-            $($vec_p_name:ident: [$vec_p_type:ty; $vec_len: expr])*
-        }
-    ) => {
-        explore_ga_distributed_mpi!(
-            $init_population,
-            $fitness,
-            $selection,
-            $mutation,
-            $crossover,
-            $state,
-            $desired_fitness,
-            $generation_num,
-            $step,
-            parameters { },
-            parameters_vec { $($vec_p_name: [$vec_p_type; $vec_len] )* }
-        );
-    };
-
-
 }
