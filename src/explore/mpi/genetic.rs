@@ -183,6 +183,7 @@ macro_rules! explore_ga_distributed_mpi {
             if world.rank() == root_rank {
                 println!("Running Generation {}...", generation);
             }
+            
             let mut samples_count: Vec<Count> = Vec::new();
 
             // only the root process split the workload among the processes
@@ -353,10 +354,6 @@ macro_rules! explore_ga_distributed_mpi {
                         Some(tmp)
                     })
                     .collect();
-
-                // println!("Displacements: {:?}", displs);
-                // println!("Samples count: {:?}", samples_count);
-                // println!("Population size: {:?}", population_size);
 
                 let mut partial_results = vec![dummy; population_size];
                 let mut partition = PartitionMut::new(&mut partial_results[..], samples_count.clone(), &displs[..]);
