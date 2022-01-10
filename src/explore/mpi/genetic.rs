@@ -156,7 +156,7 @@ macro_rules! explore_ga_distributed_mpi {
 
                     // calculate the workload subdivision
                     if remainder > 0 {
-                        sub_population_size =  population_size_per_process + 1;
+                        sub_population_size = population_size_per_process + 1;
                         remainder -= 1;
                     } else {
                         sub_population_size = population_size_per_process;
