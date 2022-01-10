@@ -30,17 +30,6 @@ macro_rules! explore_ga_aws {
 
 		println!("Checking if aws-cli is installed and configured..."); // TODO
 
-        // Client creation for aws_lambda
-        let pkg = env!("CARGO_PKG_NAME");
-
-        async{
-            let region_provider = RegionProviderChain::default_provider();
-            let config = aws_config::from_env().region(region_provider).load().await;
-        
-    
-            let client_lambda = aws_sdk_lambda::Client::new(&config);
-
-        }
         
         build_dataframe_explore!(BufferGA, input {
             generation: u32
