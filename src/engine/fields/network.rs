@@ -470,7 +470,7 @@ cfg_if! {
                     }
                 };
 
-                id2nodes.remove(uid);
+                self.id2nodes.remove(uid);
                 nodes2id.remove(&u);
                 true
             }
