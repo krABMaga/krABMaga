@@ -431,7 +431,7 @@ cfg_if! {
                 }
             }
 
-            pub fn remove_edges(&self, u: O) -> Option<Vec<Edge<L>>> {
+            pub fn remove_outgoing_edges(&self, u: O) -> Option<Vec<Edge<L>>> {
                 let nodes = self.edges.keys();
                 let mut ris = vec![];
                 let nodes2id = self.nodes2id.borrow();
@@ -444,7 +444,7 @@ cfg_if! {
                 for v in nodes {
                     if v != uid {
                         let vnode = self.id2nodes.get_read(v).unwrap();
-                        match self.remove_edge(vnode.clone(), u.clone()) {
+                        match self.remove_edge(u.clone(), vnode.clone()) {
                             Some(e) => ris.push(e),
                             None => (),
                         }
@@ -461,7 +461,7 @@ cfg_if! {
                     None => return false
                 };
 
-                match self.remove_edges(u.clone()) {
+                match self.remove_outgoing_edges(u.clone()) {
                     Some(_) => {
                         self.edges.remove(uid);
                     },
@@ -470,7 +470,6 @@ cfg_if! {
                     }
                 };
 
-                let mut id2nodes = self.id2nodes.borrow_mut();
                 id2nodes.remove(uid);
                 nodes2id.remove(&u);
                 true
@@ -872,7 +871,8 @@ cfg_if! {
             
             }
 
-            pub fn remove_edges(&self, u: O) -> Option<Vec<Edge<L>>> {
+
+            pub fn remove_incoming_edges(&self, u: O) -> Option<Vec<Edge<L>>> {
                 // let edges = self.edges.borrow();
                 // let nodes = edges.keys();
                 let mut ris = vec![];
@@ -903,6 +903,37 @@ cfg_if! {
                 Some(ris)
             }
 
+            pub fn remove_outgoing_edges(&self, u: O) -> Option<Vec<Edge<L>>> {
+                // let edges = self.edges.borrow();
+                // let nodes = edges.keys();
+                let mut ris = vec![];
+                let id2nodes = self.id2nodes.borrow();
+                let nodes2id = self.nodes2id.borrow();
+
+                let uid = match nodes2id.get(&u) {
+                    Some(u) => u,
+                    None => return None,
+                };
+
+                for v in id2nodes.keys(){
+                    if v != uid {
+                            let vnode = id2nodes.get(v).unwrap();
+                            if let Some(e) = self.remove_edge(u.clone(), vnode.clone()) {
+                                ris.push(e)
+                        }
+                    }
+                }
+                // for v in nodes {
+                //     if v != uid {
+                //         let vnode = id2nodes.get(v).unwrap();
+                //         if let Some(e) = self.remove_edge(vnode.clone(), u.clone()) {
+                //             ris.push(e)
+                //         }
+                //     }
+                // }
+                Some(ris)
+            }
+
             pub fn remove_node(&self, u: O) -> bool {
                 let uid: u32;
                 {
@@ -915,7 +946,7 @@ cfg_if! {
                 }
 
 
-                match self.remove_edges(u.clone()) {
+                match self.remove_outgoing_edges(u.clone()) {
                     Some(_) => {
                         let mut edges = self.edges.borrow_mut();
                         edges.remove(&uid);
