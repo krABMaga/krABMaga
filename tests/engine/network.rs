@@ -8,6 +8,7 @@ use rust_ab::engine::fields::network::*;
 static NUM_NODES: u16 = 10;
 static INIT_EDGES: usize = 1;
 
+#[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
 #[test]
 fn network_directed(){
     let mut net: Network<u16, String> = Network::new(true);
@@ -50,6 +51,7 @@ fn network_directed(){
     }
 }
 
+#[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
 #[test]
 fn network_undirected(){
 
@@ -77,6 +79,7 @@ fn network_undirected(){
     }
 }
 
+//#[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
 #[test]
 fn network_remove(){
     let mut net: Network<u16, String> = Network::new(true);    
@@ -105,42 +108,43 @@ fn network_remove(){
     assert_eq!(None, net.get_object(0));
 
     let edges = net.get_edges(1).unwrap();
-    for e in edges {
+    for e in edges.clone() {
         println!("{} -- {} ", e.u, e.v);
     }
 
-    //assert_eq!(1, edges.len());
+    assert_eq!(1, edges.len());
     
-    // let edges = net.get_edges(NUM_NODES-1).unwrap();
-    // assert_eq!(1, edges.len());
+    let edges = net.get_edges(NUM_NODES-1).unwrap();
+    assert_eq!(1, edges.len());
 
-    // let removed = net.remove_outgoing_edges(3);
-    // // assert_eq!(removed.unwrap().len(), 2);
-    // net.lazy_update();
+    let removed = net.remove_outgoing_edges(3);
+    // assert_eq!(removed.unwrap().len(), 2);
+    net.lazy_update();
 
-    // println!("Removed edges");
-    // for e in removed.unwrap() {
-    //     println!("{} --- {}", e.u, e.v);
-    // }
+    println!("Removed edges");
+    for e in removed.unwrap() {
+        println!("{} --- {}", e.u, e.v);
+    }
 
 
-    // let edges = net.get_edges(3).unwrap();
-    // // assert_eq!(0, edges.len());
+    let edges = net.get_edges(3).unwrap();
+    // assert_eq!(0, edges.len());
 
-    // println!("Actual");
-    // for e in edges {
-    //     println!("{} --- {}", e.u, e.v);
-    // }
+    println!("Actual");
+    for e in edges.clone() {
+        println!("{} --- {}", e.u, e.v);
+    }
 
-    // net.remove_all_edges();
-    // net.lazy_update();
+    net.remove_all_edges();
+    net.lazy_update();
 
-    // assert!(net.edges.borrow_mut().is_empty());
+    assert!(net.edges.borrow_mut().is_empty());
 
 
 }
 
 
+#[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
 #[test]
 fn network_scale_free_1(){
     let mut net: Network<u16, String> = Network::new(false);
@@ -163,6 +167,7 @@ fn network_scale_free_1(){
 
 }
 
+#[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
 #[test]
 fn network_scale_free_2(){
 

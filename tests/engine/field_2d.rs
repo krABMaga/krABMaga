@@ -11,6 +11,7 @@ use rust_ab::engine::schedule::Schedule;
 use rust_ab::engine::state::State;
 
 
+#[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
 #[test]
 pub fn field_2d_single_step() {
     let mut state = Flocker::new((WIDTH, HEIGHT), NUM_AGENT);
@@ -29,6 +30,7 @@ pub fn field_2d_single_step() {
     assert_eq!(NUM_AGENT as usize, vec.len());
 }
 
+#[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
 #[test]
 fn field_2d_neighbors() {
     let mut state = Flocker::new((WIDTH, HEIGHT), 2);
@@ -74,7 +76,7 @@ fn field_2d_neighbors() {
     assert!(vec.contains(&bird2));
 }
 
-
+#[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
 #[test]
 fn field_2d_gets(){
     let mut state = Flocker::new((WIDTH, HEIGHT), 2);

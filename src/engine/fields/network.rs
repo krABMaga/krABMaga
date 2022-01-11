@@ -469,6 +469,15 @@ cfg_if! {
                         return false
                     }
                 };
+                
+                match self.remove_outgoing_edges(u.clone()) {
+                    Some(_) => {
+                        self.edges.remove(uid);
+                    },
+                    None => {
+                        return false
+                    }
+                };
 
                 self.id2nodes.remove(uid);
                 nodes2id.remove(&u);
@@ -947,6 +956,14 @@ cfg_if! {
 
 
                 match self.remove_outgoing_edges(u.clone()) {
+                    Some(_) => {
+                        let mut edges = self.edges.borrow_mut();
+                        edges.remove(&uid);
+                    }
+                    None => return false,
+                };
+
+                match self.remove_incoming_edges(u.clone()) {
                     Some(_) => {
                         let mut edges = self.edges.borrow_mut();
                         edges.remove(&uid);

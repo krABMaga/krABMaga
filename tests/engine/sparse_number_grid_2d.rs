@@ -8,6 +8,7 @@ use rust_ab::engine::fields::field::Field;
 use rust_ab::engine::fields::grid_option::GridOption;
 use rust_ab::engine::location::Int2D;
 
+#[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
 #[test]
 fn sparse_number_grid_2d(){
     let mut grid: SparseNumberGrid2D<u16> = SparseNumberGrid2D::new(WIDTH, HEIGHT);
