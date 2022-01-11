@@ -49,13 +49,13 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --features visualization
+          # args: --features visualization
 
-      - name: TestNoFeatures
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args:
+      # - name: TestNoFeatures
+      #   uses: actions-rs/cargo@v1
+      #   with:
+      #     command: test
+      #     args:
 
   coverage:
     runs-on: ubuntu-latest
