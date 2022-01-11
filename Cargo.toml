@@ -41,8 +41,10 @@ serde_json = "1.*"
 tokio = { version = "1.*", features = ["full"] }
 aws-config = "0.4"
 aws-sdk-sqs = "0.4"
+aws-sdk-lambda = "0.4"
+futures = "0.3"
 
-# Model exploration features
+# Model exploration MPI features
 # rsmpi points to a specific commit
 mpi = { git = "https://github.com/bsteinb/rsmpi", rev = "f9aec8b8d82", optional = true }
 #mpi = { git = "https://github.com/bsteinb/rsmpi", optional = true }

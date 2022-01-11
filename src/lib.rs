@@ -30,8 +30,15 @@ pub use std::time::Duration;
 pub use std::process::Command;
 pub use std::io::prelude::*;
 pub use serde_json;
-pub use serde_json::{Value};
+pub use serde_json::{json, Value};
 pub use std::fs;
+pub use aws_config;
+pub use aws_sdk_sqs;
+pub use lambda_runtime;
+pub use futures::executor::block_on;
+pub use aws_sdk_lambda::{ByteStream};
+pub use tokio;
+pub use tokio::runtime::Runtime; // 0.3.5
 
 #[cfg(feature = "distributed_mpi")]
 pub use {

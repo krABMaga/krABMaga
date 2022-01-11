@@ -1,6 +1,3 @@
-use aws_config::meta::region::RegionProviderChain;
-use aws_sdk_sqs::{Client, Error, Region, PKG_VERSION};
-
 // macro to perform sequential model exploration using a genetic algorithm
 // an individual is the state of the simulation to compute
 // init_population: function that creates the population, must return an array of individual
@@ -28,15 +25,203 @@ macro_rules! explore_ga_aws {
     ) => {{
         println!("Running GA exploration on AWS...");
 
-		println!("Checking if aws-cli is installed and configured..."); // TODO
+        // Stuff for AWS
 
+        // create the folder rab_aws where all the file will be put
+        println!("Creating rab_aws folder...");
+        Command::new("mkdir").arg("rab_aws").output().expect("Command \"mkdir rab_aws\" failed!");
+
+        // let result = Runtime::new().unwrap().block_on(function_lambda());
+
+        // // configuration of the different aws clients
+        // let region_provider = RegionProviderChain::default_provider();
+        // let config = aws_config::from_env().region(region_provider).load().await;
+
+        // // create the sqs client
+        // let client_sqs = aws_sdk_sqs::Client::new(&config);
+
+        // let create_queue = client_sqs.create_queue().queue_name("rab_queue").send().await;
+
+        // create the string that will be written in the function.rs file and deployed on aws
+
+        // copy the main.rs content
+        let mut main_file = File::open("src/main.rs").expect("Cannot open main.rs file!");
+        let mut main_str = String::new();
+        main_file.read_to_string(&mut main_str);
+        // replace the main with a dummy main to avoid overlapping
+        main_str = main_str.replace("fn main", "fn dummy_main");
+
+        // generate the lambda function
+        let function_str = format!(r#"
+use rust_ab::{{
+    lambda_runtime,
+    aws_sdk_sqs,
+    aws_config,
+    tokio
+}};
+
+#[tokio::main]
+async fn main() -> Result<(), lambda_runtime::Error> {{
+    let func = lambda_runtime::handler_fn(func);
+    lambda_runtime::run(func).await?;
+    Ok(())
+}}
+
+async fn func(event: Value, _: lambda_runtime::Context) -> Result<(), lambda_runtime::Error> {{
+
+    // read the payload
+    let id = event["id"].as_str().unwrap();
+
+    let my_population_params = event["individuals"].as_array().unwrap();
+
+    // prepare the result json to send on the queue
+    let mut results: String = format!("{{{{\n\t\"function_{{}}\":[", id);
+    
+    for (index, ind) in my_population_params.iter().enumerate(){{
+        let individual = ind.as_str().unwrap().to_string();
         
-        build_dataframe_explore!(BufferGA, input {
-            generation: u32
-            index: i32
-            fitness: f32
-            individual: String
-        });
+        // initialize the state
+        let mut individual_state = <{}>::new_with_parameters(&individual); // <$state>::new_with_parameters(&individual);
+        let mut schedule: Schedule = Schedule::new();
+        individual_state.init(&mut schedule);
+        // compute the simulation
+        for _ in 0..({} as usize) {{ // $step as usize
+            let individual_state = individual_state.as_state_mut();
+            schedule.step(individual_state);
+            if individual_state.end_condition(&mut schedule) {{
+                break;
+            }}
+        }}
+
+        // compute the fitness value
+        let fitness = {}(&mut individual_state, schedule); //$fitness(&mut individual_state, schedule);
+
+        {{
+            results.push_str(&format!("\n\t{{{{\n\t\t\"Index\": {{}}, \n\t\t\"Fitness\": {{}}, \n\t\t\"Individual\": \"{{}}\"\n\t}}}},", index, fitness, individual).to_string());
+        }}
+    }}
+
+    results.truncate(results.len()-1); // required to remove the last comma
+    results.push_str(&format!("\n\t]\n}}}}").to_string());
+
+    // send the result on the SQS queue
+    send_on_sqs(results.to_string()).await;
+    
+    Ok(())
+}}
+
+async fn send_on_sqs(results: String) -> Result<(), aws_sdk_sqs::Error> {{
+    // configuration of the aws client
+	let region_provider = aws_config::meta::region::RegionProviderChain::default_provider();
+	let config = aws_config::from_env().region(region_provider).load().await;
+
+    // create the SQS client
+	let client_sqs = aws_sdk_sqs::Client::new(&config);
+    
+
+    // get the queue_url of the queue
+    let queue = client_sqs.get_queue_url().queue_name("rab_queue".to_string()).send().await?;
+    let queue_url = queue.queue_url.unwrap();
+
+    let send_request = client_sqs
+        .send_message()
+        .queue_url(queue_url)
+        .message_body(results)
+        .send()
+        .await?;
+
+    Ok(())
+}}
+// end of the lambda function
+        "#, stringify!($state), stringify!($step), stringify!($fitness));
+        
+        // join the two strings and write the function.rs file
+        main_str.push_str(&function_str);
+        
+        // write the function in function.rs file
+        let file_name = format!("src/function.rs");
+        fs::write(file_name, main_str).expect("Unable to write function.rs file.");
+        
+        // create the rab_aws_deploy.sh file
+        let rab_aws_deploy = r#"
+#!/bin/bash
+
+echo "Checking that aws-cli is installed..."
+which aws
+if [ $? -eq 0 ]; then
+        echo "aws-cli is installed, continuing..."
+else
+        echo "You need aws-cli to deploy the lambda function. Exiting...'"
+        exit 1
+fi
+
+echo "Generating the json files required for lambda creation..."
+echo '{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "sqs:*"
+            ],
+            "Resource": "*" 
+        },
+        {
+            "Effect":"Allow",
+            "Action": [
+                "logs:CreateLogGroup",
+                "logs:CreateLogStream",
+                "logs:PutLogEvents"
+            ],
+            "Resource": "*"
+        }
+    ]
+}' > rab_aws/policy.json
+    
+echo '{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "lambda.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole" 
+        }
+    ]
+}' > rab_aws/rolePolicy.json
+
+echo "Creation of IAM Role rab_role..."
+role_arn=$(aws iam create-role --role-name rab_role --assume-role-policy-document file://rab_aws/rolePolicy.json --query 'Role.Arn')
+echo "IAM Role rab_role created at ARN "${role_arn//\"}
+
+echo "Attacching policy to IAM Role..."	
+aws iam put-role-policy --role-name rab_role --policy-name rab_policy --policy-document file://rab_aws/policy.json
+
+echo "Function building..."
+cargo build --release --bin function --target x86_64-unknown-linux-gnu
+
+echo "Zipping the target for the upload..."
+cp ./target/x86_64-unknown-linux-gnu/release/function ./bootstrap && zip rab_aws/rab_lambda.zip bootstrap && rm bootstrap 
+
+echo "Creation of the lambda function..."
+aws lambda create-function --function-name rab_lambda --handler test --zip-file fileb://rab_aws/rab_lambda.zip --runtime provided.al2 --role ${role_arn//\"} --environment Variables={RUST_BACKTRACE=1} --tracing-config Mode=Active 
+echo "Lambda function created successfully!"
+
+echo "Clearing the rab_aws folder..."
+#rm -r rab_aws/
+"#;
+
+        // write the deploy_script in function.rs file
+        let file_name = format!("rab_aws/rab_aws_deploy.sh");
+        fs::write(file_name, rab_aws_deploy).expect("Unable to write rab_aws_deploy.sh file.");
+
+        // build_dataframe_explore!(BufferGA, input {
+        //     generation: u32
+        //     index: i32
+        //     fitness: f32
+        //     individual: String
+        // });
 
         let mut generation = 0;
         let mut best_fitness = 0.;
@@ -58,7 +243,6 @@ macro_rules! explore_ga_aws {
 
         // for each function prepare the population to compute
         for i in 0..$num_func {
-
             let mut sub_population_size = 0;
 
             // calculate the workload subdivision
@@ -82,145 +266,28 @@ macro_rules! explore_ga_aws {
                 
                 params.push_str(&format!("\t\"individuals\": {}, \n", pop_params_json));
 
-                params = format!("{{\n{}\t\"step\": \"{}\",\n\t\"id\": \"{}\"\n}}", params, $step, i);
+                params = format!("{{\n{}\t\"id\": \"{}\"\n}}", params, i);
 
                 let file_name = format!("rab_aws/parameters_{}.json", i);
                 fs::write(file_name, params).expect("Unable to write parameters.json file.");
             }
 
             // invoke the function
-            client_lambda
-			    .invoke_async()
-			    .function_name("rustab_function")
-			    .invoke_args(ByteStream::from(format!("{{\"text\": \"msg{}\"}}", i).as_bytes().to_vec()))
-			    .send().await;
-
+            // client_lambda
+			//     .invoke_async()
+			//     .function_name("rustab_function")
+			//     .invoke_args(ByteStream::from(params.as_bytes().to_vec()))
+			//     .send().await;
 
             population_params.clear();
         }
 
-        let mut params_file = File::open("rab_aws/parameters_0.json").expect("Cannot open json file!");
-        let mut contents_params = String::new();
-        params_file.read_to_string(&mut contents_params);
+        // let mut params_file = File::open("rab_aws/parameters_0.json").expect("Cannot open json file!");
+        // let mut contents_params = String::new();
+        // params_file.read_to_string(&mut contents_params);
 
-        let params_json: serde_json::Value = serde_json::from_str(&contents_params).expect("Cannot parse the json file!");
-
-        let my_population_params = params_json["individuals"].as_array().unwrap();
-
-       
-       
-        // lambda function execution
-       
-        let mut results: String = format!("{{\n\t\"function_x\":[");
-        for (index, ind) in my_population_params.iter().enumerate(){
-            let individual = ind.as_str().unwrap().to_string();
-
-            // initialize the state
-            let mut individual_state = <$state>::new_with_parameters(&individual);
-            let mut schedule: Schedule = Schedule::new();
-            individual_state.init(&mut schedule);
-            // compute the simulation
-            for _ in 0..($step as usize) {
-                let individual_state = individual_state.as_state_mut();
-                schedule.step(individual_state);
-                if individual_state.end_condition(&mut schedule) {
-                    break;
-                }
-            }
-
-            // compute the fitness value
-            let fitness = $fitness(&mut individual_state, schedule);
-
-            {
-                results.push_str(&format!("\n\t{{\n\t\t\"Index\": {}, \n\t\t\"Fitness\": {}, \n\t\t\"Individual\": \"{}\"\n\t}},", index, fitness, individual).to_string());
-            }
-        }
-
-
-        results.truncate(results.len()-1); // required to remove the last comma
-        results.push_str(&format!("\n\t]\n}}").to_string());
-        
-        // #[tokio::main]
-        // async fn main() -> Result<(), Error> {
-        
-        //     let region_provider = RegionProviderChain::default_provider();
-        //     let config = aws_config::from_env().region(region_provider).load().await;
-        //     let client = Client::new(&config);
-
-        //     let func = handler_fn(func);
-        //     lambda_runtime::run(func).await?;
-        
-        // }
-        
-        
-        // async fn send_receive(client: &Client, results: String) -> Result<(), Error> {
-        //     let pkg = env!("CARGO_PKG_NAME");
-        //     let queue = client.get_queue_url().queue_name(pkg.to_string()).send().await?;
-        //     let queue_url = queue.queue_url.unwrap_or_default();
-
-            
-        
-        //     let send_request = client
-        //         .send_message()
-        //         .queue_url(queue_url)
-        //         .message_body(results)
-        //         .send()
-        //         .await?;
-        //     Ok(())
-        // }
-
-
-        // let mut main_file = File::open("src/main.rs").expect("Cannot open main.rs file!");
-        // let mut function_str = String::new();
-        // main_file.read_to_string(&mut function_str);
-
-        // let function_str = function_str.replace("fn main", "fn dummy_main");
-        
-
-        let first_code = r#"
-        use lambda_runtime::{handler_fn, Context, Error};
-        use serde_json::{json, Value};
-
-        #[tokio::main]
-        async fn main() -> Result<(), Error> {
-            let func = handler_fn(func);
-            lambda_runtime::run(func).await?;
-            Ok(())
-        }
-
-        async fn func(event: Value, _: Context) -> Result<Value, Error> {
-            
-            // leggo dal payload i parametri che mi servono
-            let my_population_params = event["individuals"].as_str().unwrap().to_string();
-            let steps = event["steps"].as_str().unwrap().to_string();
-
-            for ind in my_population_params{
-                let individual = ind.as_str().unwrap().to_string();
-    
-                // initialize the state
-                let mut individual_state = <$state>::new_with_parameters(&individual);
-                let mut schedule: Schedule = Schedule::new();
-                individual_state.init(&mut schedule);
-                // compute the simulation
-                for _ in 0..($step as usize) {
-                    let individual_state = individual_state.as_state_mut();
-                    schedule.step(individual_state);
-                    if individual_state.end_condition(&mut schedule) {
-                        break;
-                    }
-                }
-    
-                // compute the fitness value
-                let fitness = $fitness(&mut individual_state, schedule);
-            }
-
-            send_receive(&client, results).await
-
-
-            let check = event["check"].as_str().unwrap_or("unsuccess");
-            Ok(json!({ "message": format!("The function was executed with {}!", check) }))
-        }"#;
-        
+        // let params_json: serde_json::Value = serde_json::from_str(&contents_params).expect("Cannot parse the json file!");
+ 
     }};
 
 }
