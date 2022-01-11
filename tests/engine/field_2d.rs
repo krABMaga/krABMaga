@@ -5,11 +5,13 @@ static mut _COUNT: u128 = 0;
 static _STEP: u128 = 10;
 static NUM_AGENT: u32 = 10;
 
-use crate::model::flockers::{bird::*, state::*};
-use rust_ab::engine::location::Real2D;
-use rust_ab::engine::schedule::Schedule;
-use rust_ab::engine::state::State;
-
+#[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
+use {
+    crate::model::flockers::{bird::*, state::*},
+    rust_ab::engine::location::Real2D,
+    rust_ab::engine::schedule::Schedule,
+    rust_ab::engine::state::State
+};
 
 #[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
 #[test]

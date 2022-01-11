@@ -1,9 +1,11 @@
 
-use rust_ab::engine::fields::field::Field;
 #[cfg(test)]
 
-
-use rust_ab::engine::fields::network::*;
+#[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
+use {
+ rust_ab::engine::fields::network::*,
+ rust_ab::engine::fields::field::Field
+};
 
 static NUM_NODES: u16 = 10;
 static INIT_EDGES: usize = 1;
@@ -79,7 +81,7 @@ fn network_undirected(){
     }
 }
 
-//#[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
+#[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
 #[test]
 fn network_remove(){
     let mut net: Network<u16, String> = Network::new(true);    

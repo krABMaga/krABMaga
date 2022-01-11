@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use bevy::prelude::{Commands, SpriteBundle};
 
 use crate::bevy::prelude::{Quat, Transform, Vec3};

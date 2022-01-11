@@ -3,10 +3,13 @@
 static HEIGHT:i32 = 10;
 static WIDTH:i32 = 10;
 
-use rust_ab::engine::fields::sparse_number_grid_2d::SparseNumberGrid2D;
-use rust_ab::engine::fields::field::Field;
-use rust_ab::engine::fields::grid_option::GridOption;
-use rust_ab::engine::location::Int2D;
+#[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
+use {
+ rust_ab::engine::fields::sparse_number_grid_2d::SparseNumberGrid2D,
+ rust_ab::engine::fields::field::Field,
+ rust_ab::engine::fields::grid_option::GridOption,
+ rust_ab::engine::location::Int2D
+};
 
 #[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
 #[test]
