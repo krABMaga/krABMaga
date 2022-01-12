@@ -1,20 +1,19 @@
+use rand::Rng;
 #[cfg(test)]
 
 static mut _COUNT: u128 = 0;
 static _STEP: u128 = 10;
-#[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
 static NUM_AGENT: u32 = 10;
 
-#[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
+#[cfg(any(feature = "parallel"))]
 use {
     crate::model::flockers::{bird::*, state::*},
     rust_ab::engine::location::Real2D,
     rust_ab::engine::schedule::Schedule,
-    rust_ab::engine::state::State,
-    rand::Rng
+    rust_ab::engine::state::State
 };
 
-#[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
+#[cfg(any(feature = "parallel"))]
 #[test]
 pub fn field_2d_single_step() {
     let mut state = Flocker::new((WIDTH, HEIGHT), NUM_AGENT);
@@ -23,7 +22,7 @@ pub fn field_2d_single_step() {
     state.init(&mut schedule);
     schedule.step(&mut state);
 
-    let v = *(state.field1.nagents.borrow());
+    let v = state.field1.num_objects();
     assert_eq!(NUM_AGENT as usize, v);
 
     let vec = state
@@ -33,7 +32,7 @@ pub fn field_2d_single_step() {
     assert_eq!(NUM_AGENT as usize, vec.len());
 }
 
-#[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
+#[cfg(any(feature = "parallel"))]
 #[test]
 fn field_2d_neighbors() {
     let mut state = Flocker::new((WIDTH, HEIGHT), 2);
@@ -48,7 +47,7 @@ fn field_2d_neighbors() {
 
     state.update(0);
 
-    let v = *(state.field1.nagents.borrow());
+    let v = state.field1.num_objects();
     assert_eq!(2, v);
 
     let mut rng = rand::thread_rng();
@@ -79,7 +78,7 @@ fn field_2d_neighbors() {
     assert!(vec.contains(&bird2));
 }
 
-#[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
+#[cfg(any(feature = "parallel"))]
 #[test]
 fn field_2d_gets(){
     let mut state = Flocker::new((WIDTH, HEIGHT), 2);
@@ -96,13 +95,13 @@ fn field_2d_gets(){
 
     state.update(0);
 
-    let v = *(state.field1.nagents.borrow());
+    let v = state.field1.num_objects();
     assert_eq!(3, v);
 
     let birds = state.field1.get_objects(Real2D { x: 5.0, y: 5.0 });
     assert_eq!(2, birds.len());
-    assert!(birds.contains(&bird2));
-    assert!(birds.contains(&bird3));
+    assert!(birds.contains(&&bird2));
+    assert!(birds.contains(&&bird3));
 
     let no_birds = state.field1.get_objects(Real2D { x: 10.0, y: 0.0 });
     assert_eq!(0, no_birds.len());
@@ -114,4 +113,27 @@ fn field_2d_gets(){
     assert_eq!(1, num_birds);
 
     
+    let bird = state.field1.get(&bird1);
+    assert!(None != bird);
+    assert_eq!(bird.unwrap().id, 1);
+
+    let loc = Real2D { x: 1.0, y: 2.0};
+    state.field1.set_object_location(bird1, loc);
+    state.update(1);
+
+    let get_loc = state.field1.get_location(bird1.clone());
+    assert!(None != get_loc);
+    let get_loc = get_loc.unwrap();
+    assert_eq!(get_loc.x, loc.x);
+    assert_eq!(get_loc.y, loc.y);
+
+
+    let bird4 = Bird::new(3, Real2D { x: 6.0, y: 6.0 }, last_d);
+    state.field1.set_object_location(bird4, Real2D { x: 6.0, y: 6.0 });
+    let get_loc = state.field1.get_location_unbuffered(bird4.clone());
+    assert!(None != get_loc);
+    let get_loc = get_loc.unwrap();
+    assert_eq!(get_loc.x, 6.);
+    assert_eq!(get_loc.y,  6.);
+
 }

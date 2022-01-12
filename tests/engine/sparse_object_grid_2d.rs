@@ -1,9 +1,11 @@
 #[cfg(test)]
 
+#[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
 static HEIGHT: i32 = 10;
+#[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
 static WIDTH: i32 = 10;
 
-//#[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
+#[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
 use {
     crate::model::flockers::bird::Bird, rust_ab::engine::fields::sparse_object_grid_2d::SparseGrid2D,
     rust_ab::engine::fields::field::Field, rust_ab::engine::fields::grid_option::GridOption,
@@ -11,7 +13,7 @@ use {
 };
 
 
-//#[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
+#[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
 #[test]
 fn dense_object_grid_2d_bags() {
     let mut grid: SparseGrid2D<Bird> = SparseGrid2D::new(WIDTH, HEIGHT);
@@ -50,7 +52,7 @@ fn dense_object_grid_2d_bags() {
 }
 
 
-//#[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
+#[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
 #[test]
 fn dense_object_grid_2d_apply() {
     let mut grid: SparseGrid2D<Bird> = SparseGrid2D::new(WIDTH, HEIGHT);

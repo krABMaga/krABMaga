@@ -7,7 +7,9 @@ use {
  rust_ab::engine::fields::field::Field
 };
 
+#[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
 static NUM_NODES: u16 = 10;
+#[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
 static INIT_EDGES: usize = 1;
 
 #[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]

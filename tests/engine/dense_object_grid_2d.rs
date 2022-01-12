@@ -1,6 +1,9 @@
 #[cfg(test)]
 
+
+#[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
 static HEIGHT: i32 = 10;
+#[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
 static WIDTH: i32 = 10;
 
 #[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
