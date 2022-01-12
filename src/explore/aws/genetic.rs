@@ -29,17 +29,26 @@ macro_rules! explore_ga_aws {
 
         // create the folder rab_aws where all the file will be put
         println!("Creating rab_aws folder...");
-        Command::new("mkdir").arg("rab_aws").output().expect("Command \"mkdir rab_aws\" failed!");
+        let output = Command::new("mkdir").arg("rab_aws").stdout(Stdio::piped()).output().expect("Command \"mkdir rab_aws\" failed!");
+        let output = Command::new("ls").stdout(Stdio::piped()).output().expect("Command \"mkdir rab_aws\" failed!");
+        // extract the raw bytes that we captured and interpret them as a string
+        let output = String::from_utf8(output.stdout).unwrap();
+
+        println!("mkdir output {}", output);
 
         let result = Runtime::new().unwrap().block_on({
+            async {
             // configuration of the different aws clients
-            let region_provider = RegionProviderChain::default_provider();
+            let region_provider = aws_config::meta::region::RegionProviderChain::default_provider();
             let config = aws_config::from_env().region(region_provider).load().await;
-
+            
+            println!("Creating the SQS queue rab_queue...");
             // create the sqs client
             let client_sqs = aws_sdk_sqs::Client::new(&config);
             // create the sqs queue
             let create_queue = client_sqs.create_queue().queue_name("rab_queue").send().await;
+
+            }
         });
         
         // create the string that will be written in the function.rs file and deployed on aws
@@ -279,16 +288,28 @@ echo "Clearing the rab_aws folder..."
                 params = format!("{{\n{}\t\"id\": \"{}\"\n}}", params, i);
 
                 let file_name = format!("rab_aws/parameters_{}.json", i);
-                fs::write(file_name, params).expect("Unable to write parameters.json file.");
+                fs::write(file_name, params.clone()).expect("Unable to write parameters.json file.");
+
+                let result = Runtime::new().unwrap().block_on({
+                    async {
+                        // configuration of the different aws clients
+                        let region_provider = aws_config::meta::region::RegionProviderChain::default_provider();
+                        let config = aws_config::from_env().region(region_provider).load().await;
+                        
+                        // create the lambda client
+                        let client_lambda = aws_sdk_lambda::Client::new(&config);
+                        
+                        println!("Invoking lambda function {}...", i);
+                        // invoke the function
+                        client_lambda
+                        .invoke_async()
+                        .function_name("rustab_function")
+                        .invoke_args(aws_sdk_lambda::ByteStream::from(params.as_bytes().to_vec()))
+                        .send().await;
+                    }
+                });
+                
             }
-
-            invoke the function
-            client_lambda
-			    .invoke_async()
-			    .function_name("rustab_function")
-			    .invoke_args(ByteStream::from(params.as_bytes().to_vec()))
-			    .send().await;
-
             population_params.clear();
         }
  
