@@ -22,11 +22,12 @@ pub struct Bird {
     pub id: u32,
     pub pos: Real2D,
     pub last_d: Real2D,
+    pub flag: bool,
 }
 
 impl Bird {
     pub fn new(id: u32, pos: Real2D, last_d: Real2D) -> Self {
-        Bird { id, pos, last_d }
+        Bird { id, pos, last_d, flag:false}
     }
 }
 

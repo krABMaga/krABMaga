@@ -278,11 +278,28 @@ cfg_if! {
                 }
             }
 
+
+            pub fn get_empty_bags(&self) -> Vec<Int2D>{
+                let mut empty_bags = Vec::new();
+                for i in 0 ..  self.width{
+                    for j in 0 .. self.height{
+                        let loc = Int2D{x: i, y: j};
+                        match self.rlocs.borrow().get(&loc){
+                            Some(_bag) =>{},
+                            None => {
+                                empty_bags.push(Int2D{x: i, y: j});
+                            }    
+                        }
+                    }
+                }
+                empty_bags
+            }
+
             pub fn get_random_empty_bag(&self) -> Option<Int2D>{
                 let mut rng = rand::thread_rng();
                 loop {
                     let loc = Int2D{x: rng.gen_range(0..self.width), y: rng.gen_range(0..self.height)};
-                    match self.locs.borrow().get(&loc){
+                    match self.rlocs.borrow().get(&loc){
                         Some(_bag) =>{},
                         None => {
                             return Some(loc)

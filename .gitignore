@@ -5,3 +5,4 @@
 *.profraw
 Cargo.lock
 .vscode
+/bin

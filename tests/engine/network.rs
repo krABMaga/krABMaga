@@ -120,22 +120,13 @@ fn network_remove(){
     assert_eq!(1, edges.len());
 
     let removed = net.remove_outgoing_edges(3);
-    // assert_eq!(removed.unwrap().len(), 2);
+    assert_eq!(removed.unwrap().len(), 2);
     net.lazy_update();
 
-    println!("Removed edges");
-    for e in removed.unwrap() {
-        println!("{} --- {}", e.u, e.v);
-    }
-
+    
 
     let edges = net.get_edges(3).unwrap();
-    // assert_eq!(0, edges.len());
-
-    println!("Actual");
-    for e in edges.clone() {
-        println!("{} --- {}", e.u, e.v);
-    }
+    assert_eq!(0, edges.len());
 
     net.remove_all_edges();
     net.lazy_update();
