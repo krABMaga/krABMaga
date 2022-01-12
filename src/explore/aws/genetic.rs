@@ -31,17 +31,17 @@ macro_rules! explore_ga_aws {
         println!("Creating rab_aws folder...");
         Command::new("mkdir").arg("rab_aws").output().expect("Command \"mkdir rab_aws\" failed!");
 
-        // let result = Runtime::new().unwrap().block_on(function_lambda());
+        let result = Runtime::new().unwrap().block_on({
+            // configuration of the different aws clients
+            let region_provider = RegionProviderChain::default_provider();
+            let config = aws_config::from_env().region(region_provider).load().await;
 
-        // // configuration of the different aws clients
-        // let region_provider = RegionProviderChain::default_provider();
-        // let config = aws_config::from_env().region(region_provider).load().await;
-
-        // // create the sqs client
-        // let client_sqs = aws_sdk_sqs::Client::new(&config);
-
-        // let create_queue = client_sqs.create_queue().queue_name("rab_queue").send().await;
-
+            // create the sqs client
+            let client_sqs = aws_sdk_sqs::Client::new(&config);
+            // create the sqs queue
+            let create_queue = client_sqs.create_queue().queue_name("rab_queue").send().await;
+        });
+        
         // create the string that will be written in the function.rs file and deployed on aws
 
         // copy the main.rs content
@@ -149,10 +149,10 @@ async fn send_on_sqs(results: String) -> Result<(), aws_sdk_sqs::Error> {{
 echo "Checking that aws-cli is installed..."
 which aws
 if [ $? -eq 0 ]; then
-        echo "aws-cli is installed, continuing..."
+    echo "aws-cli is installed, continuing..."
 else
-        echo "You need aws-cli to deploy the lambda function. Exiting...'"
-        exit 1
+    echo "You need aws-cli to deploy the lambda function. Exiting...'"
+    exit 1
 fi
 
 echo "Generating the json files required for lambda creation..."
@@ -198,14 +198,21 @@ echo "IAM Role rab_role created at ARN "${role_arn//\"}
 echo "Attacching policy to IAM Role..."	
 aws iam put-role-policy --role-name rab_role --policy-name rab_policy --policy-document file://rab_aws/policy.json
 
+echo "Checking that cross is installed..."
+which cross
+if [ $? -eq 0 ]; then
+    echo "cross is installed, continuing..."
+else
+    echo "cross is not installed, installing..."
+    cargo install cross
+fi
 echo "Function building..."
-cargo build --release --bin function --target x86_64-unknown-linux-gnu
-
+cross build --release --bin function --target x86_64-unknown-linux-gnus
 echo "Zipping the target for the upload..."
 cp ./target/x86_64-unknown-linux-gnu/release/function ./bootstrap && zip rab_aws/rab_lambda.zip bootstrap && rm bootstrap 
 
 echo "Creation of the lambda function..."
-aws lambda create-function --function-name rab_lambda --handler test --zip-file fileb://rab_aws/rab_lambda.zip --runtime provided.al2 --role ${role_arn//\"} --environment Variables={RUST_BACKTRACE=1} --tracing-config Mode=Active 
+aws lambda create-function --function-name rab_lambda --handler main --zip-file fileb://rab_aws/rab_lambda.zip --runtime provided.al2 --role ${role_arn//\"} --environment Variables={RUST_BACKTRACE=1} --tracing-config Mode=Active 
 echo "Lambda function created successfully!"
 
 echo "Clearing the rab_aws folder..."
@@ -215,6 +222,9 @@ echo "Clearing the rab_aws folder..."
         // write the deploy_script in function.rs file
         let file_name = format!("rab_aws/rab_aws_deploy.sh");
         fs::write(file_name, rab_aws_deploy).expect("Unable to write rab_aws_deploy.sh file.");
+
+        println!("Running rab_aws_deploy.sh...");
+        Command::new("bash").arg("rab_aws/rab_aws_deploy.sh").output().expect("Command \"bash rab_aws/rab_aws_deploy.sh\" failed!");
 
         // build_dataframe_explore!(BufferGA, input {
         //     generation: u32
@@ -272,21 +282,15 @@ echo "Clearing the rab_aws folder..."
                 fs::write(file_name, params).expect("Unable to write parameters.json file.");
             }
 
-            // invoke the function
-            // client_lambda
-			//     .invoke_async()
-			//     .function_name("rustab_function")
-			//     .invoke_args(ByteStream::from(params.as_bytes().to_vec()))
-			//     .send().await;
+            invoke the function
+            client_lambda
+			    .invoke_async()
+			    .function_name("rustab_function")
+			    .invoke_args(ByteStream::from(params.as_bytes().to_vec()))
+			    .send().await;
 
             population_params.clear();
         }
-
-        // let mut params_file = File::open("rab_aws/parameters_0.json").expect("Cannot open json file!");
-        // let mut contents_params = String::new();
-        // params_file.read_to_string(&mut contents_params);
-
-        // let params_json: serde_json::Value = serde_json::from_str(&contents_params).expect("Cannot parse the json file!");
  
     }};
 
