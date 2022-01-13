@@ -121,7 +121,7 @@ macro_rules! explore_ga_sequential {
         let mut best_fitness = 0.;
         let mut best_generation = 0;
 
-        let mut result:Vec<BufferGA> = Vec::new();
+        let mut result: Vec<BufferGA> = Vec::new();
 
         // use init_population custom function to create a vector of state
         let mut population: Vec<String> = $init_population();

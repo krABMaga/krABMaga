@@ -25,7 +25,7 @@ macro_rules! explore_ga_aws {
     ) => {{
         println!("Running GA exploration on AWS...");
 
-        // Stuff for AWS
+        // Stuff for AWS 
 
         // create the folder rab_aws where all the file will be put
         println!("Creating rab_aws folder...");
@@ -33,21 +33,26 @@ macro_rules! explore_ga_aws {
         let output = String::from_utf8(output.stdout).unwrap();
         println!("{}", output);
 
-        let result = Runtime::new().unwrap().block_on({
-            async {
-            // configuration of the different aws clients
-            let region_provider = aws_config::meta::region::RegionProviderChain::default_provider();
-            let config = aws_config::from_env().region(region_provider).load().await;
-            
-            println!("Creating the SQS queue rab_queue...");
-            // create the sqs client
-            let client_sqs = aws_sdk_sqs::Client::new(&config);
-            // create the sqs queue
-            let create_queue = client_sqs.create_queue().queue_name("rab_queue").send().await;
+        // configuration of the different aws clients
+        let mut aws_config: Option<aws_config::Config> = None;
+        let mut client_sqs: Option<aws_sdk_sqs::Client> = None;
+        let mut queue_url: String = String::new();
 
+        let _result = Runtime::new().unwrap().block_on({
+            async {
+                aws_config = Some(aws_config::load_from_env().await);
+
+                // create the sqs client
+                client_sqs = Some(aws_sdk_sqs::Client::new(&aws_config.unwrap()));
+                
+                println!("Creating the SQS queue rab_queue...");
+                // create the sqs queue
+                let create_queue = client_sqs.as_ref().unwrap().create_queue().queue_name("rab_queue").send().await;
+                queue_url = create_queue.as_ref().unwrap().queue_url.as_ref().unwrap().to_string();
+                println!("SQS queue creation {:?}", create_queue);
             }
         });
-        
+
         // create the string that will be written in the function.rs file and deployed on aws
 
         // copy the main.rs content
@@ -213,12 +218,12 @@ else
     cargo install cross
 fi
 echo "Function building..."
-cross build --release --bin function --target x86_64-unknown-linux-gnus
+cross build --release --bin function --target x86_64-unknown-linux-gnu
 echo "Zipping the target for the upload..."
 cp ./target/x86_64-unknown-linux-gnu/release/function ./bootstrap && zip rab_aws/rab_lambda.zip bootstrap && rm bootstrap 
 
 echo "Creation of the lambda function..."
-aws lambda create-function --function-name rab_lambda --handler main --zip-file fileb://rab_aws/rab_lambda.zip --runtime provided.al2 --role ${role_arn//\"} --environment Variables={RUST_BACKTRACE=1} --tracing-config Mode=Active 
+aws lambda create-function --function-name rab_lambda --handler main --zip-file fileb://rab_aws/rab_lambda.zip --runtime provided.al2 --role ${role_arn//\"} --timeout 900 --memory-size 10240 --environment Variables={RUST_BACKTRACE=1} --tracing-config Mode=Active 
 echo "Lambda function created successfully!"
 
 echo "Clearing the rab_aws folder..."
@@ -229,21 +234,23 @@ echo "Clearing the rab_aws folder..."
         let file_name = format!("rab_aws/rab_aws_deploy.sh");
         fs::write(file_name, rab_aws_deploy).expect("Unable to write rab_aws_deploy.sh file.");
 
-        println!("Running rab_aws_deploy.sh...");
-        let output = Command::new("bash").arg("rab_aws/rab_aws_deploy.sh").stdout(Stdio::piped()).output().expect("Command \"bash rab_aws/rab_aws_deploy.sh\" failed!");
-        let output = String::from_utf8(output.stdout).unwrap();
-        println!("{}", output);
+        // println!("Running rab_aws_deploy.sh...");
+        // let output = Command::new("bash").arg("rab_aws/rab_aws_deploy.sh").stdout(Stdio::piped()).output().expect("Command \"bash rab_aws/rab_aws_deploy.sh\" failed!");
+        // let output = String::from_utf8(output.stdout).unwrap();
+        // println!("{}", output);
 
-        // build_dataframe_explore!(BufferGA, input {
-        //     generation: u32
-        //     index: i32
-        //     fitness: f32
-        //     individual: String
-        // });
+        build_dataframe_explore!(BufferGA, input {
+            generation: u32
+            index: i32
+            fitness: f32
+            individual: String
+        });
 
         let mut generation = 0;
         let mut best_fitness = 0.;
         let mut best_generation = 0;
+
+        let mut results: Vec<BufferGA> = Vec::new();
 
         // use init_population custom function to create a vector of individual
         let mut population: Vec<String> = $init_population();
@@ -289,29 +296,85 @@ echo "Clearing the rab_aws folder..."
                 let file_name = format!("rab_aws/parameters_{}.json", i);
                 fs::write(file_name, params.clone()).expect("Unable to write parameters.json file.");
 
-                let result = Runtime::new().unwrap().block_on({
-                    async {
-                        // configuration of the different aws clients
-                        let region_provider = aws_config::meta::region::RegionProviderChain::default_provider();
-                        let config = aws_config::from_env().region(region_provider).load().await;
+                // let _result = Runtime::new().unwrap().block_on({
+                //     async {
+                //         // configuration of the different aws clients
+                //         let region_provider = aws_config::meta::region::RegionProviderChain::default_provider();
+                //         let config = aws_config::from_env().region(region_provider).load().await;
                         
-                        // create the lambda client
-                        let client_lambda = aws_sdk_lambda::Client::new(&config);
+                //         // create the lambda client
+                //         let client_lambda = aws_sdk_lambda::Client::new(&config);
                         
-                        println!("Invoking lambda function {}...", i);
-                        // invoke the function
-                        client_lambda
-                        .invoke_async()
-                        .function_name("rustab_function")
-                        .invoke_args(aws_sdk_lambda::ByteStream::from(params.as_bytes().to_vec()))
-                        .send().await;
-                    }
-                });
+                //         println!("Invoking lambda function {}...", i);
+                //         // invoke the function
+                //         let invoke_lambda = client_lambda
+                //         .invoke_async()
+                //         .function_name("rab_lambda")
+                //         .invoke_args(aws_sdk_lambda::ByteStream::from(params.as_bytes().to_vec()))
+                //         .send().await;
+                //         println!("Result of the invocation: {:?}", invoke_lambda);
+                //     }
+                // });
                 
             }
             population_params.clear();
         }
- 
+
+        // retrieve the result of the function from the SQS queue
+        // receive messages until we got the same number of messages as the number of functions invoked
+        let mut num_msg = 0;
+        let mut messages: Vec<String> = Vec::new();
+        println!("Trying to receive the messages num_msg {} - num_func {}...", num_msg, $num_func);
+        while num_msg != $num_func {
+            let _result = Runtime::new().unwrap().block_on({
+                async {
+                    let receive_msg = client_sqs.as_ref().unwrap().receive_message()
+                    .queue_url(queue_url.clone())
+                    .send().await;
+                    // println!("Receiving message {}: {:?}", num_msg, receive_msg.unwrap().messages);
+            
+                    // save the message received
+                    let mut receipts: Vec<String> = Vec::new();
+
+                    for message in receive_msg.unwrap().messages.unwrap_or_default() {
+                        messages.push(message.body.unwrap());
+                        receipts.push(message.receipt_handle.unwrap());
+                    }
+
+                    // delete the message received from the queue
+                    for rec in receipts{
+                        let delete_msg = client_sqs.as_ref().unwrap().delete_message()
+                        .queue_url(queue_url.clone())
+                        .receipt_handle(rec)
+                        .send().await;
+                    }
+                    num_msg += 1;
+                }
+            });
+        }
+
+        for i in 0..$num_func{
+            for msg in &messages{
+                let json: serde_json::Value = serde_json::from_str(&msg).expect("Cannot parse the json file!");
+        
+                let function_res = json[&format!("function_{}", i)].as_array().unwrap();
+                
+                for res in function_res {
+                    // results.push(BufferGA::new(
+                    //     1, //generation,
+                    //     res["Index"].as_i64().unwrap() as i32, // index,
+                    //     res["Fitness"].as_f64().unwrap() as f32,// fitness,
+                    //     res["Individual"].as_str().unwrap().to_string()// individual
+                    // ));
+
+                    println!("Res is {:?}", res);
+                }
+        
+                // println!("Message is {}", res);
+            }
+        }
+        println!("&&&&&&&&&&&&&&Result to save is {:?}", results);
+
     }};
 
 }
