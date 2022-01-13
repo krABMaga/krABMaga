@@ -9,7 +9,7 @@ static _NUM_AGENT: u32 = 10;
 use {
     crate::model::flockers::{bird::*, state::*},
     rust_ab::engine::location::Real2D,
-    rust_ab::engine::schedule::Schedule,
+    // rust_ab::engine::schedule::Schedule,
     rust_ab::engine::state::State,
     rand::Rng
 };

@@ -67,8 +67,17 @@ fn dense_object_grid_2d_apply() {
             );
         }
     }
-    
+    grid.iter_objects_unbuffered(|loc, val|{
+        let value = grid.get_objects_unbuffered(loc);
+        assert!(None != value);
+        assert_eq!(value.unwrap()[0].id, val.id);
+    });
     grid.lazy_update();
+    grid.iter_objects(|loc, val|{
+        let value = grid.get_objects(loc);
+        assert!(None != value);
+        assert_eq!(value.unwrap()[0].id, val.id);
+    });
 
     grid.apply_to_all_values(|_index, bird|{
         let mut b = *bird;

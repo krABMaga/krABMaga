@@ -53,10 +53,18 @@ fn dense_number_grid_2d(){
     grid.apply_to_all_values(
         |value| {
             assert_eq!(*value, 2);
-            *value
+            *value + 1
         },
         GridOption::READ,
     );
+
+    for i in 0..10 {
+        for j in 0..10 {
+            let loc = Int2D { x: i, y: j };
+            let val = grid.get_value_unbuffered(&loc).unwrap();
+            assert_eq!(val, 3);
+        }   
+    }
 
     for i in 0..10 {
         for j in 0..10 {

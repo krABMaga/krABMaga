@@ -16,15 +16,11 @@ use{
 
 #[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
 #[test]
-fn dense_number_grid_2d(){
+fn dense_number_grid_2d_apply(){
     let mut grid: DenseNumberGrid2D<u16> = DenseNumberGrid2D::new(WIDTH, HEIGHT);
 
-    let all = grid.get_empty_bags();
-    assert_eq!((HEIGHT*WIDTH) as usize, all.len());
-
-
-    for i in 0..10 {
-        for j in 0..10 {
+    for i in 0..WIDTH {
+        for j in 0..HEIGHT {
             let loc = Int2D { x: i, y: j };
             grid.set_value_location(0, &loc);
         }
@@ -55,25 +51,35 @@ fn dense_number_grid_2d(){
     
     grid.apply_to_all_values(
         |value| {
-            *value
+            *value + 1
         },
         GridOption::READ,
     );
 
-    for i in 0..10 {
-        for j in 0..10 {
+    
+    for i in 0..WIDTH {
+        for j in 0..HEIGHT {
             let loc = Int2D { x: i, y: j };
             let val = grid.get_value(&loc).unwrap();
-            assert_eq!(val, 2);
+            assert_eq!(val, 3);
         }   
     }
 
-    for i in 0..10 {
-        for j in 0..10 {
+    for i in 0..WIDTH {
+        for j in 0..HEIGHT {
             let loc = Int2D { x: i, y: j };
             grid.set_value_location((i*j) as u16, &loc);
         }   
     }
+
+    grid.iter_values_unbuffered(
+        |loc, val| {
+            let value = grid.get_value_unbuffered(&loc).unwrap();
+            assert_eq!(*val, value[0]);
+            assert_eq!((loc.x*loc.y) as u16, value[0]);
+        }
+    );
+
 
     grid.lazy_update();
 
@@ -85,8 +91,34 @@ fn dense_number_grid_2d(){
         }
     );
 
+    
+
+
+}
+
+#[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
+#[test]
+fn dense_number_grid_2d_bags(){
+    let mut grid: DenseNumberGrid2D<u16> = DenseNumberGrid2D::new(WIDTH, HEIGHT);
+
+    let all = grid.get_empty_bags();
+    assert_eq!((HEIGHT*WIDTH) as usize, all.len());
+
+    let loc = grid.get_random_empty_bag();
+    assert!(None != loc);
+    grid.set_value_location(10, &(loc.unwrap()));
+    grid.update();
+    let all = grid.get_empty_bags();
+    assert_eq!((HEIGHT*WIDTH - 1) as usize, all.len());
+    
+    for i in 0..WIDTH {
+        for j in 0..HEIGHT {
+            let loc = Int2D { x: i, y: j };
+            grid.set_value_location(0, &loc);
+        }
+    }
+    
+    grid.update();
     let none = grid.get_empty_bags();
     assert_eq!(0, none.len());
-
-
 }
