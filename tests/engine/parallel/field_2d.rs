@@ -1,36 +1,38 @@
-use rand::Rng;
 #[cfg(test)]
 
 static mut _COUNT: u128 = 0;
 static _STEP: u128 = 10;
-static NUM_AGENT: u32 = 10;
+#[cfg(any(feature = "parallel"))]
+static _NUM_AGENT: u32 = 10;
 
 #[cfg(any(feature = "parallel"))]
 use {
     crate::model::flockers::{bird::*, state::*},
     rust_ab::engine::location::Real2D,
     rust_ab::engine::schedule::Schedule,
-    rust_ab::engine::state::State
+    rust_ab::engine::state::State,
+    rand::Rng
 };
 
-#[cfg(any(feature = "parallel"))]
-#[test]
-pub fn field_2d_single_step() {
-    let mut state = Flocker::new((WIDTH, HEIGHT), NUM_AGENT);
-    let mut schedule: Schedule = Schedule::new();
+// #[cfg(any(feature = "parallel"))]
+// #[test]
+// pub fn field_2d_single_step() {
+//     let mut state = Flocker::new((WIDTH, HEIGHT), NUM_AGENT);
+//     let mut schedule: Schedule = Schedule::with_threads(2);
+    
+//     state.init(&mut schedule);
+//     schedule.step(&mut state);
+//     state.update(1);
 
-    state.init(&mut schedule);
-    schedule.step(&mut state);
+//     let v = state.field1.num_objects();
+//     assert_eq!(NUM_AGENT as usize, v);
 
-    let v = state.field1.num_objects();
-    assert_eq!(NUM_AGENT as usize, v);
+//     let vec = state
+//         .field1
+//         .get_neighbors_within_distance(Real2D { x: 5.0, y: 5.0 }, 10.0);
 
-    let vec = state
-        .field1
-        .get_neighbors_within_distance(Real2D { x: 5.0, y: 5.0 }, 10.0);
-
-    assert_eq!(NUM_AGENT as usize, vec.len());
-}
+//     assert_eq!(NUM_AGENT as usize, vec.len());
+// }
 
 #[cfg(any(feature = "parallel"))]
 #[test]

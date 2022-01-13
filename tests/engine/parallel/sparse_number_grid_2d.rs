@@ -1,6 +1,8 @@
 #[cfg(test)]
 
+#[cfg(any(feature = "parallel"))]
 static HEIGHT:i32 = 10;
+#[cfg(any(feature = "parallel"))]
 static WIDTH:i32 = 10;
 
 #[cfg(any(feature = "parallel"))]
