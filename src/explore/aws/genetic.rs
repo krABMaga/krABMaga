@@ -30,11 +30,8 @@ macro_rules! explore_ga_aws {
         // create the folder rab_aws where all the file will be put
         println!("Creating rab_aws folder...");
         let output = Command::new("mkdir").arg("rab_aws").stdout(Stdio::piped()).output().expect("Command \"mkdir rab_aws\" failed!");
-        let output = Command::new("ls").stdout(Stdio::piped()).output().expect("Command \"mkdir rab_aws\" failed!");
-        // extract the raw bytes that we captured and interpret them as a string
         let output = String::from_utf8(output.stdout).unwrap();
-
-        println!("mkdir output {}", output);
+        println!("{}", output);
 
         let result = Runtime::new().unwrap().block_on({
             async {
@@ -233,7 +230,9 @@ echo "Clearing the rab_aws folder..."
         fs::write(file_name, rab_aws_deploy).expect("Unable to write rab_aws_deploy.sh file.");
 
         println!("Running rab_aws_deploy.sh...");
-        Command::new("bash").arg("rab_aws/rab_aws_deploy.sh").output().expect("Command \"bash rab_aws/rab_aws_deploy.sh\" failed!");
+        let output = Command::new("bash").arg("rab_aws/rab_aws_deploy.sh").stdout(Stdio::piped()).output().expect("Command \"bash rab_aws/rab_aws_deploy.sh\" failed!");
+        let output = String::from_utf8(output.stdout).unwrap();
+        println!("{}", output);
 
         // build_dataframe_explore!(BufferGA, input {
         //     generation: u32
