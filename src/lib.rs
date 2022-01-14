@@ -39,6 +39,7 @@ pub use futures::executor::block_on;
 pub use aws_sdk_lambda;
 pub use tokio;
 pub use tokio::runtime::Runtime; // 0.3.5
+pub use std::io::BufReader;
 
 #[cfg(feature = "distributed_mpi")]
 pub use {
