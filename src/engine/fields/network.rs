@@ -431,6 +431,29 @@ cfg_if! {
                 }
             }
 
+            pub fn remove_incoming_edges(&self, u: O) -> Option<Vec<Edge<L>>> {
+                let nodes = self.edges.keys();
+                let mut ris = vec![];
+                let nodes2id = self.nodes2id.borrow();
+
+                let uid = match nodes2id.get(&u){
+                    Some(u)=> u,
+                    None => return None
+                };
+
+                for v in nodes {
+                    if v != uid {
+                        let vnode = self.id2nodes.get_read(v).unwrap();
+                        match self.remove_edge(vnode.clone(), u.clone()) {
+                            Some(e) => ris.push(e),
+                            None => (),
+                        }
+                    }
+                }
+                Some(ris)
+            }
+
+
             pub fn remove_outgoing_edges(&self, u: O) -> Option<Vec<Edge<L>>> {
                 let nodes = self.edges.keys();
                 let mut ris = vec![];
@@ -454,32 +477,35 @@ cfg_if! {
             }
 
             pub fn remove_node(&self, u: O) -> bool {
+
+                let uid: u32;
+                {
+                    let nodes2id = self.nodes2id.borrow_mut();
+
+                    uid = match nodes2id.get(&u) {
+                    Some(u) => u.clone(),
+                    None => return false,
+                    };
+                }
+
+
+                match self.remove_outgoing_edges(u.clone()) {
+                    Some(_) => {
+                        self.edges.remove(&uid);
+                    }
+                    None => return false,
+                };
+
+                match self.remove_incoming_edges(u.clone()) {
+                    Some(_) => {
+                        self.edges.remove(&uid);
+                    }
+                    None => return false,
+                };
+
                 let mut nodes2id = self.nodes2id.borrow_mut();
-
-                let uid = match nodes2id.get(&u){
-                    Some(u)=> u,
-                    None => return false
-                };
-
-                match self.remove_outgoing_edges(u.clone()) {
-                    Some(_) => {
-                        self.edges.remove(uid);
-                    },
-                    None => {
-                        return false
-                    }
-                };
-                
-                match self.remove_outgoing_edges(u.clone()) {
-                    Some(_) => {
-                        self.edges.remove(uid);
-                    },
-                    None => {
-                        return false
-                    }
-                };
-
-                self.id2nodes.remove(uid);
+                let d = self.id2nodes.remove(&uid);
+                println!("ASBREGA FIOI {}", d.unwrap().0);
                 nodes2id.remove(&u);
                 true
             }
@@ -877,7 +903,7 @@ cfg_if! {
                     });
                 }
                 Some(u_edge)
-            
+
             }
 
 
