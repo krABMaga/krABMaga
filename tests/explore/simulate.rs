@@ -3,7 +3,7 @@
 #[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
 use {
     rust_ab::*,
-    crate::model::flockers::{bird::*, state::*},
+    crate::model::flockers::state::*,
     rust_ab::engine::schedule::Schedule, rust_ab::engine::state::State,
 };
 
@@ -27,9 +27,7 @@ fn simulate(){
     for r in res {
         let ( duration, step_per_sec) = r;
         assert!(duration.as_secs_f32() > 0.);
-        assert!(step_per_sec > 0);
-
-        assert
+        assert!(step_per_sec > 0.);
     }
 }
 
