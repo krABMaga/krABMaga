@@ -470,25 +470,25 @@ aws iam delete-role-policy --role-name rab_role --policy-name rab_policy
 aws iam delete-role --role-name rab_role
 
 rm -r rab_aws
-rm function.rs
+rm ../function.rs
 "#;
 
         // write the deploy_script in function.rs file
         let file_name = format!("rab_aws/rab_aws_undeploy.sh");
         fs::write(file_name, rab_aws_undeploy).expect("Unable to write rab_aws_undeploy.sh file.");
 
-        println!("Running rab_aws_undeploy.sh...");
-        let undeploy = Command::new("bash").arg("rab_aws/rab_aws_undeploy.sh")
-        .stdout(Stdio::piped())
-        .spawn()
-        .expect("Command \"bash rab_aws/rab_aws_undeploy.sh\" failed!");
+        // println!("Running rab_aws_undeploy.sh...");
+        // let undeploy = Command::new("bash").arg("rab_aws/rab_aws_undeploy.sh")
+        // .stdout(Stdio::piped())
+        // .spawn()
+        // .expect("Command \"bash rab_aws/rab_aws_undeploy.sh\" failed!");
         
-        let undeploy_output = undeploy
-        .wait_with_output()
-        .expect("Failed to wait on child");
+        // let undeploy_output = undeploy
+        // .wait_with_output()
+        // .expect("Failed to wait on child");
 
-        let undeploy_output = String::from_utf8(undeploy_output.stdout).expect("Cannot cast the undeploy output to string!");
-        println!("{}", undeploy_output);
+        // let undeploy_output = String::from_utf8(undeploy_output.stdout).expect("Cannot cast the undeploy output to string!");
+        // println!("{}", undeploy_output);
        
         results
     }};
