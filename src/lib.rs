@@ -72,6 +72,7 @@ pub enum ComputationMode {
    // DistributedMPI,
 } */
 
+#[ignore]
 #[macro_export]
 //step = simulation step number
 //states
