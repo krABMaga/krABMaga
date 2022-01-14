@@ -96,7 +96,7 @@ async fn func(event: Value, _: lambda_runtime::Context) -> Result<(), lambda_run
     let mut results: String = format!("{{{{\n\t\"function\":[");
     
     for (index, ind) in my_population_params.iter().enumerate(){{
-        let individual = ind.as_str()..expect("Cannot cast individual!").to_string();
+        let individual = ind.as_str().expect("Cannot cast individual!").to_string();
         
         // initialize the state
         let mut individual_state = <{}>::new_with_parameters(&individual); // <$state>::new_with_parameters(&individual);
