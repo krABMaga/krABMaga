@@ -234,10 +234,10 @@ echo "Clearing the rab_aws folder..."
         let file_name = format!("rab_aws/rab_aws_deploy.sh");
         fs::write(file_name, rab_aws_deploy).expect("Unable to write rab_aws_deploy.sh file.");
 
-        // println!("Running rab_aws_deploy.sh...");
-        // let output = Command::new("bash").arg("rab_aws/rab_aws_deploy.sh").stdout(Stdio::piped()).output().expect("Command \"bash rab_aws/rab_aws_deploy.sh\" failed!");
-        // let output = String::from_utf8(output.stdout).unwrap();
-        // println!("{}", output);
+        println!("Running rab_aws_deploy.sh...");
+        let output = Command::new("bash").arg("rab_aws/rab_aws_deploy.sh").stdout(Stdio::piped()).output().expect("Command \"bash rab_aws/rab_aws_deploy.sh\" failed!");
+        let output = String::from_utf8(output.stdout).unwrap();
+        println!("{}", output);
 
         build_dataframe_explore!(BufferGA, input {
             generation: u32
@@ -296,25 +296,25 @@ echo "Clearing the rab_aws folder..."
                 let file_name = format!("rab_aws/parameters_{}.json", i);
                 fs::write(file_name, params.clone()).expect("Unable to write parameters.json file.");
 
-                // let _result = Runtime::new().unwrap().block_on({
-                //     async {
-                //         // configuration of the different aws clients
-                //         let region_provider = aws_config::meta::region::RegionProviderChain::default_provider();
-                //         let config = aws_config::from_env().region(region_provider).load().await;
+                let _result = Runtime::new().unwrap().block_on({
+                    async {
+                        // configuration of the different aws clients
+                        let region_provider = aws_config::meta::region::RegionProviderChain::default_provider();
+                        let config = aws_config::from_env().region(region_provider).load().await;
                         
-                //         // create the lambda client
-                //         let client_lambda = aws_sdk_lambda::Client::new(&config);
+                        // create the lambda client
+                        let client_lambda = aws_sdk_lambda::Client::new(&config);
                         
-                //         println!("Invoking lambda function {}...", i);
-                //         // invoke the function
-                //         let invoke_lambda = client_lambda
-                //         .invoke_async()
-                //         .function_name("rab_lambda")
-                //         .invoke_args(aws_sdk_lambda::ByteStream::from(params.as_bytes().to_vec()))
-                //         .send().await;
-                //         println!("Result of the invocation: {:?}", invoke_lambda);
-                //     }
-                // });
+                        println!("Invoking lambda function {}...", i);
+                        // invoke the function
+                        let invoke_lambda = client_lambda
+                        .invoke_async()
+                        .function_name("rab_lambda")
+                        .invoke_args(aws_sdk_lambda::ByteStream::from(params.as_bytes().to_vec()))
+                        .send().await;
+                        println!("Result of the invocation: {:?}", invoke_lambda);
+                    }
+                });
                 
             }
             population_params.clear();
