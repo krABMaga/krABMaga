@@ -25,36 +25,45 @@ macro_rules! explore_ga_aws {
     ) => {{
         println!("Running GA exploration on AWS...");
 
-        // Stuff for AWS 
-
         // create the folder rab_aws where all the file will be put
         println!("Creating rab_aws folder...");
-        let output = Command::new("mkdir").arg("rab_aws").stdout(Stdio::piped()).output().expect("Command \"mkdir rab_aws\" failed!");
-        let output = String::from_utf8(output.stdout).unwrap();
-        println!("{}", output);
+        let mkdir_output = Command::new("mkdir")
+        .arg("rab_aws")
+        .stdout(Stdio::piped())
+        .output()
+        .expect("Command \"mkdir rab_aws\" failed!");
+        let mkdir_output = String::from_utf8(mkdir_output.stdout).expect("Cannot cast output of command into String!");
+        println!("{}", mkdir_output);
 
         // configuration of the different aws clients
         let mut aws_config: Option<aws_config::Config> = None;
         let mut client_sqs: Option<aws_sdk_sqs::Client> = None;
         let mut queue_url: String = String::new();
 
-        let _result = Runtime::new().unwrap().block_on({
+
+        // wait until all the async operations completes
+        let _result = Runtime::new().expect("Cannot create Runtime!").block_on({
             async {
                 aws_config = Some(aws_config::load_from_env().await);
 
                 // create the sqs client
-                client_sqs = Some(aws_sdk_sqs::Client::new(&aws_config.unwrap()));
+                client_sqs = Some(aws_sdk_sqs::Client::new(&aws_config.expect("Cannot create SQS client!")));
                 
                 println!("Creating the SQS queue rab_queue...");
                 // create the sqs queue
-                let create_queue = client_sqs.as_ref().unwrap().create_queue().queue_name("rab_queue").send().await;
-                queue_url = create_queue.as_ref().unwrap().queue_url.as_ref().unwrap().to_string();
+                let create_queue = client_sqs.as_ref().expect("Cannot create the create queue request!")
+                .create_queue()
+                .queue_name("rab_queue")
+                .send().await;
+
+                queue_url = create_queue.as_ref().expect("Cannot create the get queue request!")
+                .queue_url.as_ref().expect("Cannot create the get queue request!")
+                .to_string();
                 println!("SQS queue creation {:?}", create_queue);
             }
         });
 
         // create the string that will be written in the function.rs file and deployed on aws
-
         // copy the main.rs content
         let mut main_file = File::open("src/main.rs").expect("Cannot open main.rs file!");
         let mut main_str = String::new();
@@ -81,15 +90,13 @@ async fn main() -> Result<(), lambda_runtime::Error> {{
 async fn func(event: Value, _: lambda_runtime::Context) -> Result<(), lambda_runtime::Error> {{
 
     // read the payload
-    let id = event["id"].as_str().unwrap();
-
-    let my_population_params = event["individuals"].as_array().unwrap();
+    let my_population_params = event["individuals"].as_array().expect("Cannot parse individuals value from event!");
 
     // prepare the result json to send on the queue
-    let mut results: String = format!("{{{{\n\t\"function_{{}}\":[", id);
+    let mut results: String = format!("{{{{\n\t\"function\":[");
     
     for (index, ind) in my_population_params.iter().enumerate(){{
-        let individual = ind.as_str().unwrap().to_string();
+        let individual = ind.as_str().expect("Cannot cast individual!").to_string();
         
         // initialize the state
         let mut individual_state = <{}>::new_with_parameters(&individual); // <$state>::new_with_parameters(&individual);
@@ -132,7 +139,7 @@ async fn send_on_sqs(results: String) -> Result<(), aws_sdk_sqs::Error> {{
 
     // get the queue_url of the queue
     let queue = client_sqs.get_queue_url().queue_name("rab_queue".to_string()).send().await?;
-    let queue_url = queue.queue_url.unwrap();
+    let queue_url = queue.queue_url.expect("Cannot get the queue url!");
 
     let send_request = client_sqs
         .send_message()
@@ -225,9 +232,6 @@ cp ./target/x86_64-unknown-linux-gnu/release/function ./bootstrap && zip rab_aws
 echo "Creation of the lambda function..."
 aws lambda create-function --function-name rab_lambda --handler main --zip-file fileb://rab_aws/rab_lambda.zip --runtime provided.al2 --role ${role_arn//\"} --timeout 900 --memory-size 10240 --environment Variables={RUST_BACKTRACE=1} --tracing-config Mode=Active 
 echo "Lambda function created successfully!"
-
-echo "Clearing the rab_aws folder..."
-#rm -r rab_aws/
 "#;
 
         // write the deploy_script in function.rs file
@@ -235,9 +239,17 @@ echo "Clearing the rab_aws folder..."
         fs::write(file_name, rab_aws_deploy).expect("Unable to write rab_aws_deploy.sh file.");
 
         println!("Running rab_aws_deploy.sh...");
-        let output = Command::new("bash").arg("rab_aws/rab_aws_deploy.sh").stdout(Stdio::piped()).output().expect("Command \"bash rab_aws/rab_aws_deploy.sh\" failed!");
-        let output = String::from_utf8(output.stdout).unwrap();
-        println!("{}", output);
+        // let deploy = Command::new("bash").arg("rab_aws/rab_aws_deploy.sh")
+        // .stdout(Stdio::piped())
+        // .spawn()
+        // .expect("Command \"bash rab_aws/rab_aws_deploy.sh\" failed!");
+        
+        // let deploy_output = deploy
+        // .wait_with_output()
+        // .expect("Failed to wait on child");
+
+        // let deploy_output = String::from_utf8(deploy_output.stdout).expect("Cannot cast the deploy output to string!");
+        // println!("{}", deploy_output);
 
         build_dataframe_explore!(BufferGA, input {
             generation: u32
@@ -262,119 +274,225 @@ echo "Clearing the rab_aws folder..."
         // flag to break from the loop
         let mut flag = false;
 
-        // population size for each function
-        let mut population_size_per_function = population.len() / $num_func;
-        let mut remainder = population.len() % $num_func;
+        // iterates until the desired fitness is found or
+        // maximum number of generation is reached
+        loop {
 
-        // for each function prepare the population to compute
-        for i in 0..$num_func {
-            let mut sub_population_size = 0;
-
-            // calculate the workload subdivision
-            if remainder > 0 {
-                sub_population_size =  population_size_per_function + 1;
-                remainder -= 1;
-            } else {
-                sub_population_size = population_size_per_function;
+            if $generation_num != 0 && generation == $generation_num {
+                println!("Reached {} generations, exiting...", $generation_num);
+                break;
             }
 
-            // fulfill the parameters arrays
-            // we got sub_population_size arrays each one with parameters for individual to compute
-            for j in 0..sub_population_size {
-                population_params.push(population[i * population_size_per_function + j].clone());  //remove clone
+            if flag {
+                println!("Reached best fitness on generation {}, exiting...", generation);
+                break;
+            }
+
+            generation += 1;
+            println!("Running Generation {}...", generation);
+
+            // population size for each function
+            let mut population_size_per_function = population.len() / $num_func;
+            let mut remainder = population.len() % $num_func;
+
+            let mut best_fitness_gen = 0.;
+
+            // for each function prepare the population to compute and
+            // invoke the function with that population
+            for i in 0..$num_func {
+                let mut sub_population_size = 0;
+
+                // calculate the workload subdivision
+                if remainder > 0 {
+                    sub_population_size =  population_size_per_function + 1;
+                    remainder -= 1;
+                } else {
+                    sub_population_size = population_size_per_function;
+                }
+
+                // fulfill the parameters arrays
+                // we got sub_population_size arrays each one with parameters for individual to compute
+                for j in 0..sub_population_size {
+                    population_params.push(population[i * population_size_per_function + j].clone());  //remove clone
+                }
+
+                // create the json file with the parameters required to run the lambda function
+                {
+                    let mut pop_params_json= serde_json::to_string(&population_params).expect("Cannot parse params!");
+
+                    let mut params = String::new();
+                    
+                    params.push_str(&format!("{{\n\t\"individuals\": {}\n}}", pop_params_json));
+
+                    // wait until all the async operations completes
+                    let _result = Runtime::new().expect("Cannot create Runtime!").block_on({
+                        async {
+                            // create the lambda client
+                            let config = aws_config::load_from_env().await;
+                            let client_lambda = aws_sdk_lambda::Client::new(&config);
+                            
+                            println!("Invoking lambda function {}...", i);
+                            // invoke the function
+                            let invoke_lambda = client_lambda
+                            .invoke_async()
+                            .function_name("rab_lambda")
+                            .invoke_args(
+                                aws_sdk_lambda::ByteStream::from(params.as_bytes().to_vec())
+                            )
+                            .send().await;
+                            println!("Result of the invocation: {:?}", invoke_lambda);
+                        }
+                    });
+                    
+                }
+                population_params.clear();
+            }
+
+            // retrieve the result of the function from the SQS queue
+            // receive messages until we got the same number of messages as the number of functions invoked
+            let mut num_msg = 0;
+            let mut messages: Vec<String> = Vec::new();
+            println!("Receiving messages from the SQS queue...");
+            while num_msg != $num_func {
+                // wait until all the async operations completes
+
+                let _result = Runtime::new().expect("Cannot create Runtime!").block_on({
+                    async {
+                        // receive the message from the queue
+                        let receive_msg = client_sqs.as_ref().expect("Cannot create the receive message request!")
+                        .receive_message()
+                        .queue_url(queue_url.clone())
+                        .send().await;
+
+                        // save the messages received and their receipts 
+                        let mut receipts: Vec<String> = Vec::new();
+                        for message in receive_msg.expect("Cannot use the receive message request!")
+                        .messages.expect("Cannot get the message from the receive request!") {
+                            messages.push(message.body.expect("Cannot get the body from message!"));
+                            receipts.push(message.receipt_handle.expect("Cannot get the receipt from message!"));
+                        }
+
+                        // delete the message received from the queue
+                        // using the receipts
+                        for rec in receipts{
+                            let delete_msg = client_sqs.as_ref().expect("Cannot create the delete message request!").delete_message()
+                            .queue_url(queue_url.clone())
+                            .receipt_handle(rec)
+                            .send().await;
+                        }
+                        num_msg += 1;
+                    }
+                });
+            }
+
+            // parse the messages received
+            for i in 0..messages.len(){
+                let json: serde_json::Value = serde_json::from_str(&messages[i]).expect("Cannot parse the json file!");
+
+                let function_res = json["function"].as_array().expect("Cannot parse messages of function!");
+                
+                let mut json_fitness = 0.;
+                let mut json_individual: String = String::new();
+
+                for res in function_res {
+
+                    json_fitness = res["Fitness"].as_f64().expect("Cannot parse \"Fitness\" field!") as f32;
+                    json_individual = res["Individual"].as_str().expect("Cannot parse \"Individual\" field!").to_string();
+
+                    pop_fitness.push((json_individual.clone(), json_fitness));
+
+                    if json_fitness > best_fitness_gen {
+                        best_fitness_gen = json_fitness;
+                        best_individual = json_individual.clone();
+                    }
+
+                    if json_fitness >= $desired_fitness{
+                        flag = true;
+                    }
+
+                    results.push(BufferGA::new(
+                        generation, //generation,
+                        res["Index"].as_i64().expect("Cannot parse \"Index\" field!") as i32, // index,
+                        json_fitness,
+                        json_individual
+                    ));
+                }
+            }
+
+            if best_fitness_gen > best_fitness {
+                best_fitness = best_fitness_gen;
+                best_generation = generation;
+            }
+
+            println!("- Best fitness in generation {} is {}", generation, best_fitness_gen);
+            println!("-- Overall best fitness is found in generation {} and is {}", best_generation, best_fitness);
+
+            if flag {
+                break;
+            }
+
+            // compute selection
+            $selection(&mut pop_fitness);
+
+            // check if after selection the population size is too small
+            if pop_fitness.len() <= 1 {
+                println!("Population size <= 1, exiting...");
+                break;
             }
 
             {
-                let mut pop_params_json= serde_json::to_string(&population_params).unwrap();
-
-                let mut params = String::new();
+                // mutate the new population
+                population.clear();
                 
-                params.push_str(&format!("\t\"individuals\": {}, \n", pop_params_json));
-
-                params = format!("{{\n{}\t\"id\": \"{}\"\n}}", params, i);
-
-                let file_name = format!("rab_aws/parameters_{}.json", i);
-                fs::write(file_name, params.clone()).expect("Unable to write parameters.json file.");
-
-                let _result = Runtime::new().unwrap().block_on({
-                    async {
-                        // configuration of the different aws clients
-                        let region_provider = aws_config::meta::region::RegionProviderChain::default_provider();
-                        let config = aws_config::from_env().region(region_provider).load().await;
-                        
-                        // create the lambda client
-                        let client_lambda = aws_sdk_lambda::Client::new(&config);
-                        
-                        println!("Invoking lambda function {}...", i);
-                        // invoke the function
-                        let invoke_lambda = client_lambda
-                        .invoke_async()
-                        .function_name("rab_lambda")
-                        .invoke_args(aws_sdk_lambda::ByteStream::from(params.as_bytes().to_vec()))
-                        .send().await;
-                        println!("Result of the invocation: {:?}", invoke_lambda);
-                    }
-                });
-                
-            }
-            population_params.clear();
-        }
-
-        // retrieve the result of the function from the SQS queue
-        // receive messages until we got the same number of messages as the number of functions invoked
-        let mut num_msg = 0;
-        let mut messages: Vec<String> = Vec::new();
-        println!("Trying to receive the messages num_msg {} - num_func {}...", num_msg, $num_func);
-        while num_msg != $num_func {
-            let _result = Runtime::new().unwrap().block_on({
-                async {
-                    let receive_msg = client_sqs.as_ref().unwrap().receive_message()
-                    .queue_url(queue_url.clone())
-                    .send().await;
-                    // println!("Receiving message {}: {:?}", num_msg, receive_msg.unwrap().messages);
-            
-                    // save the message received
-                    let mut receipts: Vec<String> = Vec::new();
-
-                    for message in receive_msg.unwrap().messages.unwrap_or_default() {
-                        messages.push(message.body.unwrap());
-                        receipts.push(message.receipt_handle.unwrap());
-                    }
-
-                    // delete the message received from the queue
-                    for rec in receipts{
-                        let delete_msg = client_sqs.as_ref().unwrap().delete_message()
-                        .queue_url(queue_url.clone())
-                        .receipt_handle(rec)
-                        .send().await;
-                    }
-                    num_msg += 1;
+                for (individual, _) in pop_fitness.iter_mut() {
+                    $mutation(individual);
+                    population.push(individual.clone())
                 }
-            });
-        }
 
-        for i in 0..$num_func{
-            for msg in &messages{
-                let json: serde_json::Value = serde_json::from_str(&msg).expect("Cannot parse the json file!");
-        
-                let function_res = json[&format!("function_{}", i)].as_array().unwrap();
-                
-                for res in function_res {
-                    // results.push(BufferGA::new(
-                    //     1, //generation,
-                    //     res["Index"].as_i64().unwrap() as i32, // index,
-                    //     res["Fitness"].as_f64().unwrap() as f32,// fitness,
-                    //     res["Individual"].as_str().unwrap().to_string()// individual
-                    // ));
-
-                    println!("Res is {:?}", res);
-                }
-        
-                // println!("Message is {}", res);
+                // crossover the new population
+                $crossover(&mut population);
             }
         }
-        println!("&&&&&&&&&&&&&&Result to save is {:?}", results);
 
+        println!("Resulting best fitness is {}", best_fitness);
+        println!("- The best individual is:\n\t{}", best_individual);
+
+        let rab_aws_undeploy = r#"
+echo "Deleting resources created on AWS for the execution..."
+
+echo "Deleting the lambda function rab_lambda..."
+aws lambda delete-function --function-name rab_lambda
+
+echo "Deleting the SQS queue rab_queue..."
+queue_url=$(aws sqs get-queue-url --queue-name rab_queue --query "QueueUrl")
+aws sqs delete-queue --queue-url ${queue_url//\"}
+
+echo "Deleting the IAM role rab_role..."
+aws iam delete-role-policy --role-name rab_role --policy-name rab_policy
+aws iam delete-role --role-name rab_role
+
+rm -r rab_aws
+rm ../function.rs
+"#;
+
+        // write the deploy_script in function.rs file
+        let file_name = format!("rab_aws/rab_aws_undeploy.sh");
+        fs::write(file_name, rab_aws_undeploy).expect("Unable to write rab_aws_undeploy.sh file.");
+
+        println!("Running rab_aws_undeploy.sh...");
+        let undeploy = Command::new("bash").arg("rab_aws/rab_aws_undeploy.sh")
+        .stdout(Stdio::piped())
+        .spawn()
+        .expect("Command \"bash rab_aws/rab_aws_undeploy.sh\" failed!");
+        
+        let undeploy_output = undeploy
+        .wait_with_output()
+        .expect("Failed to wait on child");
+
+        let undeploy_output = String::from_utf8(undeploy_output.stdout).expect("Cannot cast the undeploy output to string!");
+        println!("{}", undeploy_output);
+       
+        results
     }};
 
 }
