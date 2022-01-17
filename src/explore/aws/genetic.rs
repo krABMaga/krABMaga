@@ -239,17 +239,17 @@ echo "Lambda function created successfully!"
         fs::write(file_name, rab_aws_deploy).expect("Unable to write rab_aws_deploy.sh file.");
 
         println!("Running rab_aws_deploy.sh...");
-        let deploy = Command::new("bash").arg("rab_aws/rab_aws_deploy.sh")
-        .stdout(Stdio::piped())
-        .spawn()
-        .expect("Command \"bash rab_aws/rab_aws_deploy.sh\" failed!");
+        // let deploy = Command::new("bash").arg("rab_aws/rab_aws_deploy.sh")
+        // .stdout(Stdio::piped())
+        // .spawn()
+        // .expect("Command \"bash rab_aws/rab_aws_deploy.sh\" failed!");
         
-        let deploy_output = deploy
-        .wait_with_output()
-        .expect("Failed to wait on child");
+        // let deploy_output = deploy
+        // .wait_with_output()
+        // .expect("Failed to wait on child");
 
-        let deploy_output = String::from_utf8(deploy_output.stdout).expect("Cannot cast the deploy output to string!");
-        println!("{}", deploy_output);
+        // let deploy_output = String::from_utf8(deploy_output.stdout).expect("Cannot cast the deploy output to string!");
+        // println!("{}", deploy_output);
 
         build_dataframe_explore!(BufferGA, input {
             generation: u32
@@ -355,13 +355,15 @@ echo "Lambda function created successfully!"
             println!("Receiving messages from the SQS queue...");
             while num_msg != $num_func {
                 // wait until all the async operations completes
+
                 let _result = Runtime::new().expect("Cannot create Runtime!").block_on({
                     async {
                         // receive the message from the queue
-                        let receive_msg = client_sqs.as_ref().expect("Cannot create the receive message request!").receive_message()
+                        let receive_msg = client_sqs.as_ref().expect("Cannot create the receive message request!")
+                        .receive_message()
                         .queue_url(queue_url.clone())
                         .send().await;
-                
+                        
                         // save the messages received and their receipts 
                         let mut receipts: Vec<String> = Vec::new();
                         for message in receive_msg.expect("Cannot use the receive message request!")
