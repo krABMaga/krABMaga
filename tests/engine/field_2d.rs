@@ -53,6 +53,9 @@ fn field_2d_neighbors() {
 
     state.update(0);
 
+    let v = *(state.field1.nagents.borrow());
+    assert_eq!(2, v);
+
     let vec = state
         .field1
         .get_neighbors_within_distance(Real2D { x: 5.0, y: 5.0 }, 1.0);
@@ -61,9 +64,6 @@ fn field_2d_neighbors() {
         .field1
         .get_neighbors_within_relax_distance(Real2D { x: 5.0, y: 5.0 }, 1.0);
     assert_eq!(0, vec.len());
-
-    let v = *(state.field1.nagents.borrow());
-    assert_eq!(2, v);
 
     let mut rng = rand::thread_rng();
 

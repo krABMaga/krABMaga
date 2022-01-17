@@ -52,29 +52,46 @@ fn field_2d_neighbors() {
     let v = state.field1.num_objects();
     assert_eq!(2, v);
 
+    let vec = state
+        .field1
+        .get_neighbors_within_distance(Real2D { x: 5.0, y: 5.0 }, 1.0);
+    assert_eq!(0, vec.len());
+    let vec = state
+        .field1
+        .get_neighbors_within_relax_distance(Real2D { x: 5.0, y: 5.0 }, 1.0);
+    assert_eq!(0, vec.len());
+
     let mut rng = rand::thread_rng();
 
-    let fly: f32 = rng.gen_range(0..10) as f32;
+    let fly: f32 = rng.gen_range(5..10) as f32;
 
     bird1.pos = Real2D {
         x: bird1.pos.x + fly,
         y: bird1.pos.y + fly,
     };
-    bird2.pos = Real2D {
-        x: bird2.pos.x + fly,
-        y: bird2.pos.y + fly,
-    };
-
+    
     state.field1.set_object_location(bird1, bird1.pos);
     state.field1.set_object_location(bird2, bird2.pos);
 
     state.update(0);
 
     let vec = state.field1.get_neighbors_within_distance(bird1.pos, 1.0);
+    assert_eq!(1, vec.len());
+    assert!(vec.contains(&bird1));
+    let vec = state.field1.get_neighbors_within_distance(bird2.pos, 1.0);
+    assert_eq!(1, vec.len());
+    assert!(vec.contains(&bird2));
+
+    let vec = state
+        .field1
+        .get_neighbors_within_distance(Real2D { x: 5.0, y: 5.0 }, 10.0);
     assert_eq!(2, vec.len());
     assert!(vec.contains(&bird1));
     assert!(vec.contains(&bird2));
-    let vec = state.field1.get_neighbors_within_distance(bird2.pos, 1.0);
+
+    let vec = state
+        .field1
+        .get_neighbors_within_relax_distance(Real2D { x: 5.0, y: 5.0 }, 10.0);
     assert_eq!(2, vec.len());
     assert!(vec.contains(&bird1));
     assert!(vec.contains(&bird2));
