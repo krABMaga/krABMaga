@@ -2,10 +2,9 @@
 
 use crate::engine::state::State;
 
-pub trait ExploreState: {
+pub trait ExploreState {
+    fn new_with_parameters(parameters: &String) -> dyn State;
 
-	fn new_with_parameters(parameters: &String) -> dyn State;
-
-	/*Optional functions*/
-	// #[allow(unused_variables)]
+    /*Optional functions*/
+    // #[allow(unused_variables)]
 }

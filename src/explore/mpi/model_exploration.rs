@@ -3,7 +3,7 @@ macro_rules! extend_dataframe {
     //Dataframe with input and output parameters and optional parameters
     (
         $name:ident,
-        input {$($input: ident: $input_ty: ty)*},    
+        input {$($input: ident: $input_ty: ty)*},
         input_vec {$($input_vec:ident: [$input_ty_vec:ty; $input_len: expr])*},
         output [$($output: ident: $output_ty: ty)*]
     ) =>{
@@ -65,7 +65,6 @@ macro_rules! extend_dataframe {
     };
 }
 
-
 //macro to perform distributed model exploration based on MPI
 //nstep: number of steps of the single simulation
 //rep_conf: how many times run a configuration
@@ -106,7 +105,7 @@ macro_rules! explore_distributed_mpi {
                 input_vec { $($input_vec: [$input_ty_vec; $input_len] )* },
                 output[ $($output:$output_ty)*]
                 Copy);
-            
+
             extend_dataframe!(FrameRow,
                 input {$($input:$input_ty)* },
                 input_vec { $($input_vec: [$input_ty_vec; $input_len] )* },
@@ -228,9 +227,9 @@ macro_rules! explore_distributed_mpi {
                     .collect();
 
                 let mut all_dataframe = vec![dataframe[0]; n_conf*$rep_conf];
-        
+
                 let mut partition = PartitionMut::new(&mut all_dataframe[..], samples_count.clone(), &displs[..]);
-                
+
                 // root receives all results from other processors
                 root_process.gather_varcount_into_root(&dataframe[..], &mut partition);
                 // root_process.gather_into_root(&dataframe[..], &mut all_dataframe[..]);

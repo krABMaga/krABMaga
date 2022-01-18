@@ -48,7 +48,7 @@ macro_rules! explore_ga_aws {
 
                 // create the sqs client
                 client_sqs = Some(aws_sdk_sqs::Client::new(&aws_config.expect("Cannot create SQS client!")));
-                
+
                 println!("Creating the SQS queue rab_queue...");
                 // create the sqs queue
                 let create_queue = client_sqs.as_ref().expect("Cannot create the create queue request!")
@@ -152,14 +152,14 @@ async fn send_on_sqs(results: String) -> Result<(), aws_sdk_sqs::Error> {{
 }}
 // end of the lambda function
         "#, stringify!($state), stringify!($step), stringify!($fitness));
-        
+
         // join the two strings and write the function.rs file
         main_str.push_str(&function_str);
-        
+
         // write the function in function.rs file
         let file_name = format!("src/function.rs");
         fs::write(file_name, main_str).expect("Unable to write function.rs file.");
-        
+
         // create the rab_aws_deploy.sh file
         let rab_aws_deploy = r#"
 #!/bin/bash
@@ -243,7 +243,7 @@ echo "Lambda function created successfully!"
         .stdout(Stdio::piped())
         .spawn()
         .expect("Command \"bash rab_aws/rab_aws_deploy.sh\" failed!");
-        
+
         let deploy_output = deploy
         .wait_with_output()
         .expect("Failed to wait on child");
@@ -270,7 +270,7 @@ echo "Lambda function created successfully!"
         let mut best_individual: String = String::new();
 
         let mut population_params: Vec<String> = Vec::new();
-   
+
         // flag to break from the loop
         let mut flag = false;
 
@@ -321,7 +321,7 @@ echo "Lambda function created successfully!"
                     let mut pop_params_json= serde_json::to_string(&population_params).expect("Cannot parse params!");
 
                     let mut params = String::new();
-                    
+
                     params.push_str(&format!("{{\n\t\"individuals\": {}\n}}", pop_params_json));
 
                     // wait until all the async operations completes
@@ -330,7 +330,7 @@ echo "Lambda function created successfully!"
                             // create the lambda client
                             let config = aws_config::load_from_env().await;
                             let client_lambda = aws_sdk_lambda::Client::new(&config);
-                            
+
                             println!("Invoking lambda function {}...", i);
                             // invoke the function
                             let invoke_lambda = client_lambda
@@ -343,7 +343,7 @@ echo "Lambda function created successfully!"
                             println!("Result of the invocation: {:?}", invoke_lambda);
                         }
                     });
-                    
+
                 }
                 population_params.clear();
             }
@@ -364,7 +364,7 @@ echo "Lambda function created successfully!"
                         .queue_url(queue_url.clone())
                         .send().await;
 
-                        // save the messages received and their receipts 
+                        // save the messages received and their receipts
                         let mut receipts: Vec<String> = Vec::new();
                         for message in receive_msg.expect("Cannot use the receive message request!")
                         .messages.expect("Cannot get the message from the receive request!") {
@@ -390,7 +390,7 @@ echo "Lambda function created successfully!"
                 let json: serde_json::Value = serde_json::from_str(&messages[i]).expect("Cannot parse the json file!");
 
                 let function_res = json["function"].as_array().expect("Cannot parse messages of function!");
-                
+
                 let mut json_fitness = 0.;
                 let mut json_individual: String = String::new();
 
@@ -443,7 +443,7 @@ echo "Lambda function created successfully!"
             {
                 // mutate the new population
                 population.clear();
-                
+
                 for (individual, _) in pop_fitness.iter_mut() {
                     $mutation(individual);
                     population.push(individual.clone())
@@ -484,14 +484,14 @@ rm ../function.rs
         .stdout(Stdio::piped())
         .spawn()
         .expect("Command \"bash rab_aws/rab_aws_undeploy.sh\" failed!");
-        
+
         let undeploy_output = undeploy
         .wait_with_output()
         .expect("Failed to wait on child");
 
         let undeploy_output = String::from_utf8(undeploy_output.stdout).expect("Cannot cast the undeploy output to string!");
         println!("{}", undeploy_output);
-       
+
         results
     }};
 
