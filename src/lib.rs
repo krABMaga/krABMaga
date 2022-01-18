@@ -118,13 +118,13 @@ macro_rules! simulate {
                 println!("----------------------------------------------------------------");
             }
         }
-        // print!("{:width$}|", 1, width = 14 - $reps.to_string().len());
-        // println!(
-        //     "{:width$}|",
-        //     n_step,
-        //     width = 15 - n_step.to_string().len() - $reps.to_string().len()
-        // );
-        // println!("{esc}c", esc = 27 as char);
+        print!("{:width$}|", 1, width = 14 - $reps.to_string().len());
+        println!(
+            "{:width$}|",
+            n_step,
+            width = 15 - n_step.to_string().len() - $reps.to_string().len()
+        );
+        println!("{esc}c", esc = 27 as char);
 
         for r in 0..$reps {
             let mut schedule: Schedule = Schedule::new();
