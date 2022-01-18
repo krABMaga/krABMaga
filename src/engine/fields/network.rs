@@ -331,13 +331,14 @@ cfg_if! {
                             .unwrap()
                             .collect::<Vec<_>>();
 
+                        
                         for choice in choices_list {
                             self.add_edge(node.clone(), choice.0.clone(), EdgeOptions::Simple);
                             choice_pos.push(choice.2);
                         }
 
-                        for i in 0..choice_pos.len() {
-                            dist[choice_pos[i]].1 += 1;
+                        for j in 0..choice_pos.len() {
+                            dist[choice_pos[j]].1 += 1;
                         }
 
                         dist.push(((node.clone()), amount as i32, i));

@@ -119,9 +119,8 @@ macro_rules! explore_ga_sequential {
         });
 
         let mut reps = 1;
-        $(
-            reps = $reps;
-        )?
+        $(reps = $reps;)?
+        
         let mut generation = 0;
         let mut best_fitness = 0.;
         let mut best_generation = 0;
@@ -262,6 +261,7 @@ macro_rules! explore_ga_parallel {
         $desired_fitness: expr,
         $generation_num: expr,
         $step: expr,
+        $($reps: expr,)?
     ) => {{
 
         println!("Running parallel GA exploration...");
@@ -273,6 +273,9 @@ macro_rules! explore_ga_parallel {
             individual: String
         });
 
+        let mut reps = 1;
+        $( reps = $reps;)?
+        
         let mut generation = 0;
         let mut best_fitness = 0.;
         let mut best_generation = 0;
@@ -308,28 +311,33 @@ macro_rules! explore_ga_parallel {
             // iterates through the population
 
             (0..len).into_par_iter().map( |index| {
-                // initialize the state
-                let mut schedule: Schedule = Schedule::new();
-                let mut individual: $state;
-                {
-                    let mut population = population.lock().unwrap();
-                    // create the new state using the parameters
-                    individual = <$state>::new_with_parameters(&population[index]);
-                }
+                let mut computed_ind: Vec<($state, Schedule)> = Vec::new();
 
-                // state initilization
-                individual.init(&mut schedule);
-                // simulation computation
-                for _ in 0..($step as usize) {
-                    let individual = individual.as_state_mut();
-                    schedule.step(individual);
-                    if individual.end_condition(&mut schedule) {
-                        break;
+                for _ in 0..(reps as usize){
+                    // initialize the state
+                    let mut schedule: Schedule = Schedule::new();
+                    let mut individual: $state;
+                    {
+                        let mut population = population.lock().unwrap();
+                        // create the new state using the parameters
+                        individual = <$state>::new_with_parameters(&population[index]);
                     }
+
+                    // state initilization
+                    individual.init(&mut schedule);
+                    // simulation computation
+                    for _ in 0..($step as usize) {
+                        let individual = individual.as_state_mut();
+                        schedule.step(individual);
+                        if individual.end_condition(&mut schedule) {
+                            break;
+                        }
+                    }
+                    computed_ind.push((individual, schedule));
                 }
 
                 // compute the fitness value
-                let fitness = $fitness(&mut individual, schedule);
+                let fitness = $fitness(&mut computed_ind);
 
                 let mut population = population.lock().unwrap();
 
