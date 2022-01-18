@@ -94,6 +94,7 @@ macro_rules! build_dataframe_explore {
 // desired_fitness: desired fitness value
 // generation_num: max number of generations to compute
 // step: number of steps of the single simulation
+// reps: number of repetitions of the simulation using each individual
 #[macro_export]
 macro_rules! explore_ga_sequential {
     (
@@ -106,7 +107,7 @@ macro_rules! explore_ga_sequential {
         $desired_fitness: expr,
         $generation_num: expr,
         $step: expr,
-
+        $reps: expr,
     ) => {{
         println!("Running sequential GA exploration...");
 
@@ -147,21 +148,27 @@ macro_rules! explore_ga_sequential {
             let mut index = 0;
 
             for individual in population.iter_mut() {
-                // initialize the state
-                let mut individual_state = <$state>::new_with_parameters(individual);
-                let mut schedule: Schedule = Schedule::new();
-                individual_state.init(&mut schedule);
-                // compute the simulation
-                for _ in 0..($step as usize) {
-                    let individual_state = individual_state.as_state_mut();
-                    schedule.step(individual_state);
-                    if individual_state.end_condition(&mut schedule) {
-                        break;
-                    }
-                }
+                
+                let mut computed_ind: Vec<($state, Schedule)> = Vec::new();
 
+                for _ in 0..($reps as usize){
+                    // initialize the state
+                    let mut individual_state = <$state>::new_with_parameters(individual);
+                    let mut schedule: Schedule = Schedule::new();
+                    individual_state.init(&mut schedule);
+                    // compute the simulation
+                    for _ in 0..($step as usize) {
+                        let individual_state = individual_state.as_state_mut();
+                        schedule.step(individual_state);
+                        if individual_state.end_condition(&mut schedule) {
+                            break;
+                        }
+                    }                
+                    computed_ind.push((individual_state, schedule));
+                }
+                
                 // compute the fitness value
-                let fitness = $fitness(&mut individual_state, schedule);
+                let fitness = $fitness(&mut computed_ind);
                 pop_fitness.push((individual.clone(), fitness));
 
                 // saving the best fitness of this generation
@@ -227,6 +234,30 @@ macro_rules! explore_ga_sequential {
         result
     }};
 
+    (
+        $init_population:tt,
+        $fitness:tt,
+        $selection:tt,
+        $mutation:tt,
+        $crossover:tt,
+        $state: ty,
+        $desired_fitness: expr,
+        $generation_num: expr,
+        $step: expr
+    ) => {{
+        explore_ga_sequential(
+            $init_population,
+            $fitness,
+            $selection,
+            $mutation,
+            $crossover,
+            $state,
+            $desired_fitness,
+            $generation_num,
+            $step,
+            1,
+        )
+    }};
 }
 
 // macro to perform parallel model exploration using a genetic algorithm
