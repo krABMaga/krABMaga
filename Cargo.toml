@@ -35,15 +35,16 @@ csv = "1.*"
 indicatif = "0.*"
 crossbeam = "0.*"
 rand_pcg = "0.*"
-# aws dependencies
-lambda_runtime = "0.4"
-serde = { version = "1.*", features = ["derive"] }
-serde_json = "1.*"
-tokio = { version = "1.*", features = ["full"] }
-aws-config = "0.4"
-aws-sdk-sqs = "0.4"
-aws-sdk-lambda = "0.4"
-futures = "0.3"
+
+# Model exploration AWS features
+lambda_runtime = {version = "0.4", optional = true}
+serde = { version = "1.*", features = ["derive"], optional = true}
+serde_json = {version = "1.*", optional = true}
+tokio = { version = "1.*", features = ["full"], optional = true }
+aws-config = {version = "0.4", optional = true}
+aws-sdk-sqs = {version = "0.4", optional = true}
+aws-sdk-lambda = {version = "0.4", optional = true}
+futures = {version = "0.3", optional = true}
 
 # Model exploration MPI features
 # rsmpi points to a specific commit
@@ -70,6 +71,16 @@ getrandom = {version="0.*", features=["wasm-bindgen"]}
 distributed_mpi = [
     "mpi",
     "memoffset"
+]
+aws = [
+    "lambda_runtime",
+    "serde",
+    "serde_json",
+    "tokio",
+    "aws-config",
+    "aws-sdk-sqs",
+    "aws-sdk-lambda",
+    "futures"
 ]
 parallel = []
 visualization = [

@@ -225,7 +225,7 @@ else
     cargo install cross
 fi
 echo "Function building..."
-cross build --release --bin function --target x86_64-unknown-linux-gnu
+cross build --release --features aws --bin function --target x86_64-unknown-linux-gnu
 echo "Zipping the target for the upload..."
 cp ./target/x86_64-unknown-linux-gnu/release/function ./bootstrap && zip rab_aws/rab_lambda.zip bootstrap && rm bootstrap 
 
