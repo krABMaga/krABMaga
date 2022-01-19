@@ -9,7 +9,6 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
-
 jobs:
   build:
     runs-on: ${{ matrix.os }}
@@ -61,33 +60,49 @@ jobs:
   coverage:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
+     - uses: actions/checkout@v2
+     - uses: actions-rs/toolchain@v1
+       with:
+        toolchain: nightly
+        override: true
+        components: llvm-tools-preview
 
-      - name: Install stable toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
+     - uses: Swatinem/rust-cache@v1
+       with:
+        key: coverage 
 
-      - name: Run cargo-tarpaulin
-        uses: actions-rs/tarpaulin@v0.1
-        with:
-          version: '0.15.0'
-          args: '-- --test-threads 1'
+     - name: Cargo Clean
+       run: |
+        cargo clean
 
-      - name: Upload to codecov.io
-        uses: codecov/codecov-action@v1.0.2
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-       
-    #  - name: Install grcov
-    #    run: |
-    #     rustup component add llvm-tools-preview
-    #     curl -L https://github.com/mozilla/grcov/releases/download/v0.6.1/grcov-linux-x86_64.tar.bz2 | tar jxf -
-    #  - name: Run grcov
-    #    run: |
-    #     ./grcov . --source-dir . --binary-path ./target/debug/ --output-type lcov --output-path ./lcov.info --branch --ignore-not-existing
-    #  - name: Upload to Codecov
-    #    run: |
-    #     bash <(curl -s https://codecov.io/bash) -f ./lcov.info
+     - name: Setup
+       run: |
+        rustup update
+        cargo install grcov
+        
+     - name: Run Tests
+       run: |
+        export CARGO_INCREMENTAL=0
+        export RUSTFLAGS="-Zprofile -Ccodegen-units=1 -Copt-level=0 -Clink-dead-code -Coverflow-checks=off -Zpanic_abort_tests -Cpanic=abort"
+        export RUSTDOCFLAGS="-Cpanic=abort"
+        cargo build --release
+        cargo test 
+        cargo test --features parallel
+      
+     - name: Grcov run
+       run: |
+        grcov . -s . -t lcov --branch --llvm --ignore-not-existing --ignore "/*" -o lcov.info
+        
+    #  - name: Archive code coverage results
+    #    uses: actions/upload-artifact@v2
+    #    with:
+    #     name: coverage
+    #     path: target/debug/coverage
+    
+    #  - name: Download all workflow run artifacts
+    #    uses: actions/download-artifact@v2
+     
+     - uses: codecov/codecov-action@v2
+       with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: ./lcov.info
