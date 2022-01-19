@@ -215,7 +215,7 @@ macro_rules! explore_ga_sequential {
             $selection(&mut pop_fitness);
 
             // check if after selection the population size is too small
-            if population.len() <= 1 {
+            if pop_fintess.len() <= 1 {
                 println!("Population size <= 1, exiting...");
                 break;
             }
@@ -226,6 +226,7 @@ macro_rules! explore_ga_sequential {
                 $mutation(individual);
                 population.push(individual.clone());
             }
+            pop_fitness.clear();
 
             // crossover the new population
             $crossover(&mut population);
@@ -400,12 +401,12 @@ macro_rules! explore_ga_parallel {
                 // mutate the new population
                 let mut population = population.lock().unwrap();
                 population.clear();
-
                 for (individual, _) in pop_fitness.iter_mut() {
                     $mutation(individual);
                     population.push(individual.clone())
                 }
-
+                pop_fitness.clear();
+                
                 // crossover the new population
                 $crossover(&mut population);
             }
