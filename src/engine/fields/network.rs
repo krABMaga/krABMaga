@@ -250,13 +250,13 @@ cfg_if! {
 
                     let mut rng = rand::thread_rng();
                     let mut dist: Vec<(O, i32, usize)> = Vec::with_capacity(n_nodes);
-                    let mut choice_pos: Vec<usize> = Vec::with_capacity(init_edges);
 
                     dist.push(((first_node.clone()), 1, 0));
                     dist.push(((second_node.clone()), 1, 1));
 
                     for i in 2..n_nodes {
                         let node = node_set[i].clone();
+                        let mut choice_pos: Vec<usize> = Vec::with_capacity(init_edges);
 
                         let amount: usize = if dist.len() < init_edges {
                             dist.len()
@@ -279,7 +279,7 @@ cfg_if! {
                         }
 
                         dist.push(((node.clone()), amount as i32, i));
-
+                        
                         // self.update();
                     }
                 }
@@ -317,13 +317,13 @@ cfg_if! {
                     let mut rng = Pcg64::seed_from_u64(my_seed);
                     //let mut rng = rand::thread_rng();
                     let mut dist: Vec<(O, i32, usize)> = Vec::with_capacity(n_nodes);
-                    let mut choice_pos: Vec<usize> = Vec::with_capacity(init_edges);
 
                     dist.push(((first_node.clone()), 1, 0));
                     dist.push(((second_node.clone()), 1, 1));
 
                     for i in 2..n_nodes {
                         let node = node_set[i].clone();
+                        let mut choice_pos: Vec<usize> = Vec::with_capacity(init_edges);
 
                         let amount: usize = if dist.len() < init_edges {
                             dist.len()
@@ -754,7 +754,6 @@ cfg_if! {
 
                     let mut rng = rand::thread_rng();
                     let mut dist: Vec<(O, i32, usize)> = Vec::with_capacity(n_nodes);
-                    let mut choice_pos: Vec<usize> = Vec::with_capacity(init_edges);
 
                     // if self.direct {
                     //     dist.push((first_node, 0, 0));
@@ -768,6 +767,7 @@ cfg_if! {
 
                     // iterates on the node_set skipping the first two nodes
                     for i in 2..n_nodes {
+                        let mut choice_pos: Vec<usize> = Vec::with_capacity(init_edges);
 
                         let node = node_set[i].clone();
 
@@ -828,7 +828,6 @@ cfg_if! {
                     let mut rng = Pcg64::seed_from_u64(my_seed);
 
                     let mut dist: Vec<(O, i32, usize)> = Vec::with_capacity(n_nodes);
-                    let mut choice_pos: Vec<usize> = Vec::with_capacity(init_edges);
 
                     dist.push((first_node, 1, 0));
                     dist.push((second_node, 1, 1));
@@ -837,6 +836,7 @@ cfg_if! {
                     for i in 2..n_nodes {
 
                         let node = node_set[i].clone();
+                        let mut choice_pos: Vec<usize> = Vec::with_capacity(init_edges);
 
                         let amount: usize = if dist.len() < init_edges {
                             dist.len()

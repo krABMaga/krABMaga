@@ -87,8 +87,8 @@ jobs:
         export RUSTDOCFLAGS="-Cpanic=abort"
         cargo build --release
         cargo test 
-        cargo test --features parallel
-      
+      # cargo test --features parallel
+     
      - name: Grcov run
        run: |
         grcov . -s . -t lcov --branch --llvm --ignore-not-existing --ignore "/*" -o lcov.info
