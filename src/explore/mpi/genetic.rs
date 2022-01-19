@@ -431,7 +431,7 @@ macro_rules! explore_ga_distributed_mpi {
                     $mutation(individual);
                     population.push(individual.clone());
                 }
-                pop_fintess.clear();
+                pop_fitness.clear();
 
                 // crossover the new population
                 $crossover(&mut population);

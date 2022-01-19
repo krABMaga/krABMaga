@@ -215,7 +215,7 @@ macro_rules! explore_ga_sequential {
             $selection(&mut pop_fitness);
 
             // check if after selection the population size is too small
-            if pop_fintess.len() <= 1 {
+            if pop_fitness.len() <= 1 {
                 println!("Population size <= 1, exiting...");
                 break;
             }
