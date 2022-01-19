@@ -448,7 +448,7 @@ echo "Lambda function created successfully!"
                     $mutation(individual);
                     population.push(individual.clone())
                 }
-                pop_fintess.clear();
+                pop_fitness.clear();
                 
                 // crossover the new population
                 $crossover(&mut population);
