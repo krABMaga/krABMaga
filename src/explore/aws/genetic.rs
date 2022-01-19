@@ -235,21 +235,21 @@ echo "Lambda function created successfully!"
 "#;
 
         // write the deploy_script in function.rs file
-        // let file_name = format!("rab_aws/rab_aws_deploy.sh");
-        // fs::write(file_name, rab_aws_deploy).expect("Unable to write rab_aws_deploy.sh file.");
+        let file_name = format!("rab_aws/rab_aws_deploy.sh");
+        fs::write(file_name, rab_aws_deploy).expect("Unable to write rab_aws_deploy.sh file.");
 
-        // println!("Running rab_aws_deploy.sh...");
-        // let deploy = Command::new("bash").arg("rab_aws/rab_aws_deploy.sh")
-        // .stdout(Stdio::piped())
-        // .spawn()
-        // .expect("Command \"bash rab_aws/rab_aws_deploy.sh\" failed!");
+        println!("Running rab_aws_deploy.sh...");
+        let deploy = Command::new("bash").arg("rab_aws/rab_aws_deploy.sh")
+        .stdout(Stdio::piped())
+        .spawn()
+        .expect("Command \"bash rab_aws/rab_aws_deploy.sh\" failed!");
 
-        // let deploy_output = deploy
-        // .wait_with_output()
-        // .expect("Failed to wait on child");
+        let deploy_output = deploy
+        .wait_with_output()
+        .expect("Failed to wait on child");
 
-        // let deploy_output = String::from_utf8(deploy_output.stdout).expect("Cannot cast the deploy output to string!");
-        // println!("{}", deploy_output);
+        let deploy_output = String::from_utf8(deploy_output.stdout).expect("Cannot cast the deploy output to string!");
+        println!("{}", deploy_output);
 
         build_dataframe_explore!(BufferGA, input {
             generation: u32
