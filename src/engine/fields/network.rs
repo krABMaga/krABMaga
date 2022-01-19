@@ -331,7 +331,7 @@ cfg_if! {
                             .unwrap()
                             .collect::<Vec<_>>();
 
-                        
+
                         for choice in choices_list {
                             self.add_edge(node.clone(), choice.0.clone(), EdgeOptions::Simple);
                             choice_pos.push(choice.2);
@@ -778,13 +778,14 @@ cfg_if! {
                     let mut rng = Pcg64::seed_from_u64(my_seed);
 
                     let mut dist: Vec<(O, i32, usize)> = Vec::with_capacity(n_nodes);
-                    let mut choice_pos: Vec<usize> = Vec::with_capacity(init_edges);
 
                     dist.push((first_node, 1, 0));
                     dist.push((second_node, 1, 1));
 
+
                     // iterates on the node_set skipping the first two nodes
                     for i in 2..n_nodes {
+                        let mut choice_pos: Vec<usize> = Vec::with_capacity(init_edges);
 
                         let node = node_set[i].clone();
 
@@ -810,6 +811,7 @@ cfg_if! {
 
                         dist.push(((node.clone()), amount as i32, i));
 
+                       
                     }
                 }
                 self.update();
