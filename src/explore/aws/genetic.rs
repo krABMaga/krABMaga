@@ -363,6 +363,7 @@ echo "Lambda function created successfully!"
                         let receive_msg = client_sqs.as_ref().expect("Cannot create the receive message request!")
                         .receive_message()
                         .queue_url(queue_url.clone())
+                        .wait_time_seconds(5)
                         .send().await;
 
                         // save the messages received and their receipts
@@ -450,7 +451,7 @@ echo "Lambda function created successfully!"
                     $mutation(individual);
                     population.push(individual.clone())
                 }
-                pop_fintess.clear();
+                pop_fitness.clear();
                 
                 // crossover the new population
                 $crossover(&mut population);
@@ -475,7 +476,7 @@ aws iam delete-role-policy --role-name rab_role --policy-name rab_policy
 aws iam delete-role --role-name rab_role
 
 rm -r rab_aws
-rm ../function.rs
+rm src/function.rs
 "#;
 
         // write the deploy_script in function.rs file
