@@ -146,6 +146,8 @@ macro_rules! explore_ga_sequential {
             println!("Computing generation {}...", generation);
 
             let mut best_fitness_gen = 0.;
+            let mut best_individual_gen: String = String::new();
+
             // execute the simulation for each member of population
             // iterates through the population
             let mut index = 0;
@@ -177,7 +179,7 @@ macro_rules! explore_ga_sequential {
                 // saving the best fitness of this generation
                 if fitness >= best_fitness_gen {
                     best_fitness_gen = fitness;
-                    best_individual = individual.clone();
+                    best_individual_gen = individual.clone();
                 }
 
                 // result is here
@@ -200,6 +202,7 @@ macro_rules! explore_ga_sequential {
             // saving the best fitness of all generation computed until n
             if best_fitness_gen > best_fitness {
                 best_fitness = best_fitness_gen;
+                best_individual = best_individual_gen.clone();
                 best_generation = generation;
             }
 
@@ -304,6 +307,7 @@ macro_rules! explore_ga_parallel {
             println!("Computing generation {}...", generation);
 
             let mut best_fitness_gen = 0.;
+            let mut best_individual_gen: String = String::new();
 
             let len = population.lock().unwrap().len();
 
@@ -363,7 +367,7 @@ macro_rules! explore_ga_parallel {
                 // saving the best fitness of this generation
                 if fitness >= best_fitness_gen {
                     best_fitness_gen = fitness;
-                    best_individual = individual.clone();
+                    best_individual_gen = individual.clone();
                 }
 
                 // if the desired fitness set the flag at true
@@ -375,11 +379,12 @@ macro_rules! explore_ga_parallel {
             // saving the best fitness of all generation computed until now
             if best_fitness_gen > best_fitness {
                 best_fitness = best_fitness_gen;
+                best_individual = best_individual_gen.clone();
                 best_generation = generation;
             }
 
-            println!("- Best fitness in generation {} is {}", generation, best_fitness_gen);
-            println!("-- Overall best fitness is found in generation {} and is {}", best_generation, best_fitness);
+            println!("- Best fitness in generation {} is {} with individual {}", generation, best_fitness_gen, best_individual_gen);
+            println!("-- Overall best fitness is found in generation {} and is {} with individual {}", best_generation, best_fitness, best_individual);
 
             res.append(&mut result);
 

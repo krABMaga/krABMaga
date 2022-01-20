@@ -212,7 +212,9 @@ macro_rules! explore_ga_distributed_mpi {
             for i in 0..my_pop_size {
                 my_population.push(population_params[i].clone());
             }
+            
             let mut best_fitness_gen = 0.;
+
             let mut local_index = 0;
             // array collecting the results of each simulation run
             let mut my_results: Vec<BufferGA> = Vec::new();
@@ -259,7 +261,6 @@ macro_rules! explore_ga_distributed_mpi {
                     generation,
                     local_index,
                     fitness,
-                    //individual_params.clone(),
                 );
 
                 my_results.push(result);
@@ -312,7 +313,6 @@ macro_rules! explore_ga_distributed_mpi {
                     generation,
                     0,
                     -999.,
-                    //"dummy".to_string()
                 );
 
                 let displs: Vec<Count> = samples_count

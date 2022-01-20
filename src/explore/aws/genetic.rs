@@ -296,6 +296,7 @@ echo "Lambda function created successfully!"
             let mut remainder = population.len() % $num_func;
 
             let mut best_fitness_gen = 0.;
+            let mut best_individual_gen: String = String::new();
 
             // for each function prepare the population to compute and
             // invoke the function with that population
@@ -403,7 +404,7 @@ echo "Lambda function created successfully!"
 
                     if json_fitness > best_fitness_gen {
                         best_fitness_gen = json_fitness;
-                        best_individual = json_individual.clone();
+                        best_individual_gen = json_individual.clone();
                     }
 
                     if json_fitness >= $desired_fitness{
@@ -421,6 +422,7 @@ echo "Lambda function created successfully!"
 
             if best_fitness_gen > best_fitness {
                 best_fitness = best_fitness_gen;
+                best_individual = best_individual_gen.clone();
                 best_generation = generation;
             }
 
