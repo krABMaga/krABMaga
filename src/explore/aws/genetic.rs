@@ -76,13 +76,13 @@ fi
 "#;
 
         // write the deploy_script in function.rs file
-        let file_name = format!("rab_aws/check.sh");
+        let file_name = format!("check.sh");
         fs::write(file_name, rab_aws_check).expect("Unable to write check.sh file.");
 
-        let check = Command::new("bash").arg("rab_aws/check.sh")
+        let check = Command::new("bash").arg("check.sh")
         .stdout(Stdio::piped())
         .spawn()
-        .expect("Command \"bash rab_aws/check.sh\" failed!");
+        .expect("Command \"bash check.sh\" failed!");
 
         let check_output = check
         .wait_with_output()
@@ -90,6 +90,14 @@ fi
 
         let check_output = String::from_utf8(check_output.stdout).expect("Cannot cast the check output to string!");
         println!("{}", check_output);
+
+        let mkdir_output = Command::new("rm")
+        .arg("check.sh")
+        .stdout(Stdio::piped())
+        .output()
+        .expect("Command \"rm check.sh\" failed!");
+        let mkdir_output = String::from_utf8(mkdir_output.stdout).expect("Cannot cast output of command into String!");
+        println!("{}", mkdir_output);
 
         if check_output.contains("Exiting") {
             std::process::exit(0);
