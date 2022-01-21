@@ -505,7 +505,6 @@ cfg_if! {
 
                 let mut nodes2id = self.nodes2id.borrow_mut();
                 let d = self.id2nodes.remove(&uid);
-                println!("ASBREGA FIOI {}", d.unwrap().0);
                 nodes2id.remove(&u);
                 true
             }
@@ -927,20 +926,12 @@ cfg_if! {
                         }
                     }
                 }
-                // for v in nodes {
-                //     if v != uid {
-                //         let vnode = id2nodes.get(v).unwrap();
-                //         if let Some(e) = self.remove_edge(vnode.clone(), u.clone()) {
-                //             ris.push(e)
-                //         }
-                //     }
-                // }
+
                 Some(ris)
             }
 
             pub fn remove_outgoing_edges(&self, u: O) -> Option<Vec<Edge<L>>> {
-                // let edges = self.edges.borrow();
-                // let nodes = edges.keys();
+
                 let mut ris = vec![];
                 let id2nodes = self.id2nodes.borrow();
                 let nodes2id = self.nodes2id.borrow();
@@ -958,14 +949,7 @@ cfg_if! {
                         }
                     }
                 }
-                // for v in nodes {
-                //     if v != uid {
-                //         let vnode = id2nodes.get(v).unwrap();
-                //         if let Some(e) = self.remove_edge(vnode.clone(), u.clone()) {
-                //             ris.push(e)
-                //         }
-                //     }
-                // }
+
                 Some(ris)
             }
 
