@@ -21,7 +21,7 @@ macro_rules! explore_ga_aws {
         $desired_fitness: expr,
         $generation_num: expr,
         $step: expr,
-		$num_func: expr
+		$num_func: expr,
     ) => {{
         println!("Running GA exploration on AWS...");
 
