@@ -11,6 +11,9 @@ use {
 #[test]
 fn hnetwork_edges(){
     let edge: HEdge<String> = HEdge::new(&[1, 1, 2, 3, 3, 3], EdgeOptions::Simple);
+    assert!([1, 1, 2, 3, 3, 3].len() > edge.nodes.len());
+    assert!(edge.weight.is_none());
+
     assert_eq!(3, edge.nodes.len());
 
 
