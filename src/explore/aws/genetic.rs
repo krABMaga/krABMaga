@@ -25,6 +25,76 @@ macro_rules! explore_ga_aws {
     ) => {{
         println!("Running GA exploration on AWS...");
 
+        println!("Checking if requirements are installed...");
+
+        let rab_aws_check = r#"
+#!/bin/bash
+
+echo "Checking that aws-cli is installed and configured..."
+which aws
+if [ $? -eq 0 ]; then
+    echo "aws-cli is installed, continuing..."
+else
+    echo "You need aws-cli to deploy the lambda function! Exiting..."
+    exit 1
+fi
+
+aws configure get region
+if [ $? -eq 0 ]; then
+    echo "aws-cli is configured, continuing..."
+else
+    echo "You need to configure the aws-cli to deploy the lambda function! Exiting..."
+    exit 1
+fi
+
+echo "Checking that docker is installed and configured..."
+which docker
+if [ $? -eq 0 ]; then
+    echo "docker is installed, continuing..."
+else
+    echo "You need docker to build the lambda function! Exiting..."
+    exit 1
+fi
+
+docker_check=$(groups $USER)
+if [[ $docker_check == *"docker"* ]]; then 
+    echo "docker is configured correctly, continuing..."
+else 
+    echo "You need to configure docker to run without sudo permission! Exiting..."
+    exit 1
+fi
+
+echo "Checking that cross is installed..."
+which cross
+if [ $? -eq 0 ]; then
+    echo "cross is installed, continuing..."
+else
+    echo "cross is not installed, installing..."
+    cargo install cross
+fi
+
+"#;
+
+        // write the deploy_script in function.rs file
+        let file_name = format!("rab_aws/check.sh");
+        fs::write(file_name, rab_aws_check).expect("Unable to write check.sh file.");
+
+        let check = Command::new("bash").arg("rab_aws/check.sh")
+        .stdout(Stdio::piped())
+        .spawn()
+        .expect("Command \"bash rab_aws/check.sh\" failed!");
+
+        let check_output = check
+        .wait_with_output()
+        .expect("Failed to wait on child");
+
+        let check_output = String::from_utf8(check_output.stdout).expect("Cannot cast the check output to string!");
+        println!("{}", check_output);
+
+        if check_output.contains("Exiting") {
+            std::process::exit(0);
+        }
+
         // create the folder rab_aws where all the file will be put
         println!("Creating rab_aws folder...");
         let mkdir_output = Command::new("mkdir")
@@ -39,7 +109,6 @@ macro_rules! explore_ga_aws {
         let mut aws_config: Option<aws_config::Config> = None;
         let mut client_sqs: Option<aws_sdk_sqs::Client> = None;
         let mut queue_url: String = String::new();
-
 
         // wait until all the async operations completes
         let _result = Runtime::new().expect("Cannot create Runtime!").block_on({
@@ -164,15 +233,6 @@ async fn send_on_sqs(results: String) -> Result<(), aws_sdk_sqs::Error> {{
         let rab_aws_deploy = r#"
 #!/bin/bash
 
-echo "Checking that aws-cli is installed..."
-which aws
-if [ $? -eq 0 ]; then
-    echo "aws-cli is installed, continuing..."
-else
-    echo "You need aws-cli to deploy the lambda function. Exiting...'"
-    exit 1
-fi
-
 echo "Generating the json files required for lambda creation..."
 echo '{
     "Version": "2012-10-17",
@@ -216,14 +276,6 @@ echo "IAM Role rab_role created at ARN "${role_arn//\"}
 echo "Attacching policy to IAM Role..."	
 aws iam put-role-policy --role-name rab_role --policy-name rab_policy --policy-document file://rab_aws/policy.json
 
-echo "Checking that cross is installed..."
-which cross
-if [ $? -eq 0 ]; then
-    echo "cross is installed, continuing..."
-else
-    echo "cross is not installed, installing..."
-    cargo install cross
-fi
 echo "Function building..."
 cross build --release --features aws --bin function --target x86_64-unknown-linux-gnu
 echo "Zipping the target for the upload..."
@@ -231,7 +283,6 @@ cp ./target/x86_64-unknown-linux-gnu/release/function ./bootstrap && zip rab_aws
 
 echo "Creation of the lambda function..."
 aws lambda create-function --function-name rab_lambda --handler main --zip-file fileb://rab_aws/rab_lambda.zip --runtime provided.al2 --role ${role_arn//\"} --timeout 900 --memory-size 10240 --environment Variables={RUST_BACKTRACE=1} --tracing-config Mode=Active 
-echo "Lambda function created successfully!"
 "#;
 
         // write the deploy_script in function.rs file
@@ -363,7 +414,7 @@ echo "Lambda function created successfully!"
                         let receive_msg = client_sqs.as_ref().expect("Cannot create the receive message request!")
                         .receive_message()
                         .queue_url(queue_url.clone())
-                        .wait_time_seconds(5)
+                        .wait_time_seconds(30)
                         .send().await;
 
                         // save the messages received and their receipts
