@@ -21,7 +21,8 @@ macro_rules! explore_ga_aws {
         $desired_fitness: expr,
         $generation_num: expr,
         $step: expr,
-		$num_func: expr,
+        $($reps: expr,)?,
+		$num_func: expr
     ) => {{
         println!("Running GA exploration on AWS...");
 
@@ -317,6 +318,9 @@ aws lambda create-function --function-name rab_lambda --handler main --zip-file 
             individual: String
         });
 
+        let mut reps = 1;
+        $(reps = $reps;)?
+
         let mut generation = 0;
         let mut best_fitness = 0.;
         let mut best_generation = 0;
@@ -422,7 +426,7 @@ aws lambda create-function --function-name rab_lambda --handler main --zip-file 
                         let receive_msg = client_sqs.as_ref().expect("Cannot create the receive message request!")
                         .receive_message()
                         .queue_url(queue_url.clone())
-                        .wait_time_seconds(30)
+                        .wait_time_seconds(20)
                         .send().await;
 
                         // save the messages received and their receipts
