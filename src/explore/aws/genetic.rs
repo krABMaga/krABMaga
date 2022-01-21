@@ -21,7 +21,6 @@ macro_rules! explore_ga_aws {
         $desired_fitness: expr,
         $generation_num: expr,
         $step: expr,
-        $($reps: expr,)?,
 		$num_func: expr
     ) => {{
         println!("Running GA exploration on AWS...");
@@ -317,9 +316,6 @@ aws lambda create-function --function-name rab_lambda --handler main --zip-file 
             fitness: f32
             individual: String
         });
-
-        let mut reps = 1;
-        $(reps = $reps;)?
 
         let mut generation = 0;
         let mut best_fitness = 0.;
