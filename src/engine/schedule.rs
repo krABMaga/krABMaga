@@ -15,29 +15,33 @@ cfg_if! {
     }
 }
 
-lazy_static! {
-    pub static ref THREAD_NUM: usize = {
-        let matches = App::new("Rust-AB")
-            .arg(Arg::with_name("bench").long("bench"))
-            .arg(
-                Arg::with_name("num_thread")
-                    .help("sets the number of threads to use")
-                    .takes_value(true)
-                    .long("nt"),
-            )
-            .get_matches();
-        let n = match matches.value_of("num_thread") {
-            Some(nt) => match nt.parse::<usize>() {
-                Ok(ris) => ris,
-                Err(_) => {
-                    eprintln!("error: --nt value is not an integer");
-                    num_cpus::get()
-                }
-            },
-            _ => 1,
-        };
-        n
-    };
+cfg_if! {
+    if #[cfg(feature ="parallel")]{
+        lazy_static! {
+            pub static ref THREAD_NUM: usize = {
+                let matches = App::new("Rust-AB")
+                    .arg(Arg::with_name("bench").long("bench"))
+                    .arg(
+                        Arg::with_name("num_thread")
+                            .help("sets the number of threads to use")
+                            .takes_value(true)
+                            .long("nt"),
+                    )
+                    .get_matches();
+                let n = match matches.value_of("num_thread") {
+                    Some(nt) => match nt.parse::<usize>() {
+                        Ok(ris) => ris,
+                        Err(_) => {
+                            eprintln!("error: --nt value is not an integer");
+                            num_cpus::get()
+                        }
+                    },
+                    _ => 1,
+                };
+                n
+            };
+        }
+    }
 }
 cfg_if! {
     if #[cfg(feature ="parallel")] {
