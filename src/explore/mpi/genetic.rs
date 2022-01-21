@@ -57,6 +57,7 @@ macro_rules! explore_ga_distributed_mpi {
         $desired_fitness: expr,
         $generation_num: expr,
         $step: expr,
+        $($reps: expr,)?
     ) => {{
 
         // MPI initialization
@@ -70,6 +71,9 @@ macro_rules! explore_ga_distributed_mpi {
         if world.rank() == root_rank {
             println!("Running distributed (MPI) GA exploration...");
         }
+
+        let mut reps = 1;
+        $(reps = $reps;)?
 
         let mut generation: u32 = 0;
         let mut best_fitness = 0.;
@@ -97,19 +101,23 @@ macro_rules! explore_ga_distributed_mpi {
         );
 
         let mut population_params: Vec<String> = Vec::new();
+
+        // only master modifies these four variables
+        let mut all_bests_fitness;
+        let mut all_bests_index;
+        let mut all_bests_individual;
+        let mut best_individual_string = String::new();
+        let mut best_individual: Option<BufferGA> = None;
         let mut pop_fitness: Vec<(String, f32)> = Vec::new();
         let mut all_results: Vec<BufferGA> = Vec::new();
 
-        // my best through generations
+        // my best for each proc through generations
         let mut my_best_fitness = 0.;
         let mut my_best_index = 0;
         let mut my_best_individual = String::new();
 
         //becomes true when the algorithm get desider fitness
         let mut flag = false;
-
-        // initialization of best individual placeholder
-        let mut best_individual: Option<BufferGA> = None;
 
         if world.rank() == root_rank {
             population = $init_population();
@@ -214,7 +222,6 @@ macro_rules! explore_ga_distributed_mpi {
             }
             
             let mut best_fitness_gen = 0.;
-
             let mut local_index = 0;
             // array collecting the results of each simulation run
             let mut my_results: Vec<BufferGA> = Vec::new();
@@ -229,27 +236,25 @@ macro_rules! explore_ga_distributed_mpi {
                 }
 
                 // initialize the state
-                let mut individual = <$state>::new_with_parameters(&individual_params);
-                let mut schedule: Schedule = Schedule::new();
-                individual.init(&mut schedule);
-                // compute the simulation
-                for _ in 0..($step as usize) {
-                    let individual = individual.as_state_mut();
-                    schedule.step(individual);
-                    if individual.end_condition(&mut schedule) {
-                        break;
+                let mut computed_ind: Vec<($state, Schedule)> = Vec::new();
+
+                for _ in 0..(reps as usize){
+                    let mut individual = <$state>::new_with_parameters(&individual_params);
+                    let mut schedule: Schedule = Schedule::new();
+                    individual.init(&mut schedule);
+                    // compute the simulation
+                    for _ in 0..($step as usize) {
+                        let individual = individual.as_state_mut();
+                        schedule.step(individual);
+                        if individual.end_condition(&mut schedule) {
+                            break;
+                        }
                     }
+                    computed_ind.push((individual, schedule));
                 }
 
                 // compute the fitness value
-                let fitness = $fitness(&mut individual, schedule);
-                // send the result of each iteration to the master
-                // $(
-                //     let mut $vec_p_name: [$vec_p_type; $vec_len] = [0; $vec_len];
-                //     let slice = individual.$vec_p_name.clone();
-                //     $vec_p_name.copy_from_slice(&slice[..]);
-                // )*
-
+                let fitness = $fitness(&mut computed_ind);
 
                 if fitness > my_best_fitness {
                     my_best_fitness = fitness;
@@ -280,9 +285,10 @@ macro_rules! explore_ga_distributed_mpi {
 
             //best individual sent from each proc
             if world.rank() == root_rank {
-                let mut all_bests_fitness = vec![0f32; num_procs];
-                let mut all_bests_index= vec![0i32; num_procs];
-                let mut all_bests_individual = Vec::with_capacity(num_procs);
+                all_bests_fitness = vec![0f32; num_procs];
+                all_bests_index= vec![0i32; num_procs];
+                all_bests_individual = Vec::with_capacity(num_procs);
+                // gather_into remap mpi_gather so we memorize values in rank order
                 root_process.gather_into_root(&my_best_fitness, &mut all_bests_fitness[..]);
                 root_process.gather_into_root(&my_best_index, &mut all_bests_index[..]);
 
@@ -296,9 +302,19 @@ macro_rules! explore_ga_distributed_mpi {
                     }
                 }
 
-                println!("--Fitness: {:?}", all_bests_fitness);
-                println!("--Index: {:?}", all_bests_index);
-                println!("--Individual: {:?}", all_bests_individual);
+                // get the index of max fitness from all_bests_fitness
+                let mut max_fitness_index = 0;
+                for i in 0..num_procs {
+                    if all_bests_fitness[i] > all_bests_fitness[max_fitness_index] {
+                        max_fitness_index = i;
+                    }
+                }
+
+                best_individual_string = all_bests_individual[max_fitness_index].clone();
+
+                // println!("--Fitness: {:?}", all_bests_fitness);
+                // println!("--Index: {:?}", all_bests_index);
+                //println!("--Individual: {:?}", all_bests_individual);
             } else {
                 root_process.gather_into(&my_best_fitness);
                 root_process.gather_into(&my_best_index);
@@ -405,14 +421,9 @@ macro_rules! explore_ga_distributed_mpi {
                 // using the ones received from other processors
                 for i in 0..population_size {
                     let fitness = all_results[(generation as usize -1)*population_size + i].fitness;
-
-                    //here -- individual not find
-                    //println!("num {}", (generation as usize -1)*population_size + i);
-                    //let individual = population_params[(generation as usize -1)*population_size + i].clone();
                     let individual = population_params[i].clone();
                     let tup = (individual, fitness);
                     pop_fitness.insert(i, tup);
-
                 }
 
                 // compute selection
@@ -437,20 +448,23 @@ macro_rules! explore_ga_distributed_mpi {
                 $crossover(&mut population);
             }
 
-        //TODO clear qua?
         population_params.clear();
 
         } // END OF LOOP
         if world.rank() == root_rank{
-            println!("Overall best fitness is {}", best_fitness);
-            println!("- The best individual is: {:?}", best_individual.unwrap());
+            println!("\n\n- Overall best fitness is {}", best_fitness);
+            println!("- The best individual is:
+                generation:\t{}
+                index:\t\t{}
+                fitness:\t{}
+                string:\t{}\n", 
+                best_individual.as_ref().unwrap().generation, 
+                best_individual.as_ref().unwrap().index, 
+                best_individual.as_ref().unwrap().fitness,
+                best_individual_string);
         }
-
-
         // return arrays containing all the results of each simulation
         all_results
-
-
     }};
 
 }
