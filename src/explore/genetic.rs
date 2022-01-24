@@ -60,14 +60,14 @@ macro_rules! build_dataframe_explore {
         $($derive: tt)*
     ) => {
         build_dataframe_explore!(
-            $name, 
+            $name,
             input {$($input: $input_ty)*},
             vec { }
             $($derive)*
         );
     };
 
-    
+
     //only vec
     (
         $name:ident,
@@ -94,7 +94,7 @@ macro_rules! build_dataframe_explore {
 // desired_fitness: desired fitness value
 // generation_num: max number of generations to compute
 // step: number of steps of the single simulation
-// parameters(optional): parameter to write the csv, if not specified only fitness will be written
+// reps: number of repetitions of the simulation using each individual
 #[macro_export]
 macro_rules! explore_ga_sequential {
     (
@@ -107,9 +107,7 @@ macro_rules! explore_ga_sequential {
         $desired_fitness: expr,
         $generation_num: expr,
         $step: expr,
-        parameters {
-            $($p_name:ident: $p_type:ty)*
-        }
+        $($reps: expr,)?
     ) => {{
         println!("Running sequential GA exploration...");
 
@@ -117,26 +115,25 @@ macro_rules! explore_ga_sequential {
             generation: u32
             index: i32
             fitness: f32
-            $(
-                $p_name: $p_type
-            )*
+            individual: String
         });
+
+        let mut reps = 1;
+        $(reps = $reps;)?
 
         let mut generation = 0;
         let mut best_fitness = 0.;
         let mut best_generation = 0;
 
-        let mut result:Vec<BufferGA> = Vec::new();
+        let mut result: Vec<BufferGA> = Vec::new();
 
         // use init_population custom function to create a vector of state
-        let mut population: Vec<$state> = $init_population();
-
-        $(
-            let mut $p_name: Option<$p_type> = None;
-        )*
+        let mut population: Vec<String> = $init_population();
+        let mut pop_fitness: Vec<(String, f32)> = Vec::new();
 
         // flag to break from the loop
         let mut flag = false;
+        let mut best_individual: String = String::new();
 
         // calculate the fitness for the first population
         loop {
@@ -149,33 +146,40 @@ macro_rules! explore_ga_sequential {
             println!("Computing generation {}...", generation);
 
             let mut best_fitness_gen = 0.;
+            let mut best_individual_gen: String = String::new();
+
             // execute the simulation for each member of population
             // iterates through the population
             let mut index = 0;
 
             for individual in population.iter_mut() {
-                // initialize the state
-                let mut schedule: Schedule = Schedule::new();
-                individual.init(&mut schedule);
-                // compute the simulation
-                for _ in 0..($step as usize) {
-                    let individual = individual.as_state_mut();
-                    schedule.step(individual);
-                    if individual.end_condition(&mut schedule) {
-                        break;
+
+                let mut computed_ind: Vec<($state, Schedule)> = Vec::new();
+
+                for _ in 0..(reps as usize){
+                    // initialize the state
+                    let mut individual_state = <$state>::new_with_parameters(individual);
+                    let mut schedule: Schedule = Schedule::new();
+                    individual_state.init(&mut schedule);
+                    // compute the simulation
+                    for _ in 0..($step as usize) {
+                        let individual_state = individual_state.as_state_mut();
+                        schedule.step(individual_state);
+                        if individual_state.end_condition(&mut schedule) {
+                            break;
+                        }
                     }
+                    computed_ind.push((individual_state, schedule));
                 }
 
                 // compute the fitness value
-                let fitness = $fitness(individual, schedule);
+                let fitness = $fitness(&mut computed_ind);
+                pop_fitness.push((individual.clone(), fitness));
 
                 // saving the best fitness of this generation
                 if fitness >= best_fitness_gen {
                     best_fitness_gen = fitness;
-
-                    $(
-                        $p_name = Some(individual.$p_name.clone());
-                    )*
+                    best_individual_gen = individual.clone();
                 }
 
                 // result is here
@@ -183,9 +187,7 @@ macro_rules! explore_ga_sequential {
                     generation,
                     index,
                     fitness,
-                    $(
-                        individual.$p_name.clone(),
-                    )*
+                    individual.clone()
                 ));
 
                 // if the desired fitness is reached break
@@ -200,6 +202,7 @@ macro_rules! explore_ga_sequential {
             // saving the best fitness of all generation computed until n
             if best_fitness_gen > best_fitness {
                 best_fitness = best_fitness_gen;
+                best_individual = best_individual_gen.clone();
                 best_generation = generation;
             }
 
@@ -212,56 +215,32 @@ macro_rules! explore_ga_sequential {
             }
 
             // compute selection
-            $selection(&mut population);
+            $selection(&mut pop_fitness);
+
             // check if after selection the population size is too small
-            if population.len() <= 1 {
+            if pop_fitness.len() <= 1 {
                 println!("Population size <= 1, exiting...");
                 break;
             }
 
             // mutate the new population
-            for individual in population.iter_mut() {
+            population.clear();
+            for (individual, _) in pop_fitness.iter_mut() {
                 $mutation(individual);
+                population.push(individual.clone());
             }
+            pop_fitness.clear();
 
             // crossover the new population
             $crossover(&mut population);
         }
 
         println!("Resulting best fitness is {}", best_fitness);
-        println!("- The best individual has the following parameters:");
-        $(
-            println!("-- {} : {:?}", stringify!($p_name), $p_name.unwrap());
-        )*
+        println!("- The best individual is: \n\t{}", best_individual);
 
         result
     }};
 
-    // perform the model exploration with genetic algorithm without writing additional parameters
-    (
-        $init_population:tt,
-        $fitness:tt,
-        $selection:tt,
-        $mutation:tt,
-        $crossover:tt,
-        $state: ty,
-        $desired_fitness: expr,
-        $generation_num: expr,
-        $step: expr,
-    ) => {
-        explore_ga_sequential!(
-            $init_population,
-            $fitness,
-            $selection,
-            $mutation,
-            $crossover,
-            $state,
-            $desired_fitness,
-            $generation_num,
-            $step,
-            parameters { }
-        );
-    };
 }
 
 // macro to perform parallel model exploration using a genetic algorithm
@@ -274,7 +253,6 @@ macro_rules! explore_ga_sequential {
 // desired_fitness: desired fitness value
 // generation_num: max number of generations to compute
 // step: number of steps of the single simulation
-// parameters(optional): parameter to write the csv, if not specified only fitness will be written
 #[macro_export]
 macro_rules! explore_ga_parallel {
     (
@@ -287,9 +265,7 @@ macro_rules! explore_ga_parallel {
         $desired_fitness: expr,
         $generation_num: expr,
         $step: expr,
-        parameters {
-            $($p_name:ident: $p_type:ty)*
-        }
+        $($reps: expr,)?
     ) => {{
 
         println!("Running parallel GA exploration...");
@@ -298,21 +274,20 @@ macro_rules! explore_ga_parallel {
             generation: u32
             index: i32
             fitness: f32
-            $(
-                $p_name: $p_type
-            )*
+            individual: String
         });
+
+        let mut reps = 1;
+        $( reps = $reps;)?
 
         let mut generation = 0;
         let mut best_fitness = 0.;
         let mut best_generation = 0;
 
-        // use init_population custom function to create a vector of state
-        let mut population: Vec<$state> = $init_population();
-
-        $(
-            let mut $p_name: Option<$p_type> = None;
-        )*
+        // use init_population custom function to create a vector of individual
+        let mut population: Vec<String> = $init_population();
+        let mut pop_fitness: Vec<(String, f32)> = Vec::new();
+        let mut best_individual: String = String::new();
 
         // flag to break from the loop
         let mut flag = false;
@@ -332,6 +307,7 @@ macro_rules! explore_ga_parallel {
             println!("Computing generation {}...", generation);
 
             let mut best_fitness_gen = 0.;
+            let mut best_individual_gen: String = String::new();
 
             let len = population.lock().unwrap().len();
 
@@ -340,40 +316,41 @@ macro_rules! explore_ga_parallel {
             // iterates through the population
 
             (0..len).into_par_iter().map( |index| {
-                // initialize the state
-                let mut schedule: Schedule = Schedule::new();
-                let mut individual: $state;
-                {
-                    let mut population = population.lock().unwrap();
-                    // create the new state using the parameters
-                    individual = <$state>::new(
-                        $(
-                            population[index].$p_name.clone(),
-                        )*
-                    );
-                }
+                let mut computed_ind: Vec<($state, Schedule)> = Vec::new();
 
-                // state initilization
-                individual.init(&mut schedule);
-                // simulation computation
-                for _ in 0..($step as usize) {
-                    let individual = individual.as_state_mut();
-                    schedule.step(individual);
-                    if individual.end_condition(&mut schedule) {
-                        break;
+                for _ in 0..(reps as usize){
+                    // initialize the state
+                    let mut schedule: Schedule = Schedule::new();
+                    let mut individual: $state;
+                    {
+                        let mut population = population.lock().unwrap();
+                        // create the new state using the parameters
+                        individual = <$state>::new_with_parameters(&population[index]);
                     }
+
+                    // state initilization
+                    individual.init(&mut schedule);
+                    // simulation computation
+                    for _ in 0..($step as usize) {
+                        let individual = individual.as_state_mut();
+                        schedule.step(individual);
+                        if individual.end_condition(&mut schedule) {
+                            break;
+                        }
+                    }
+                    computed_ind.push((individual, schedule));
                 }
 
                 // compute the fitness value
-                let fitness = $fitness(&mut individual, schedule);
+                let fitness = $fitness(&mut computed_ind);
+
+                let mut population = population.lock().unwrap();
 
                 BufferGA::new(
                     generation,
                     index as i32,
                     fitness,
-                    $(
-                        individual.$p_name.clone(),
-                    )*
+                    population[index].clone()
                 )
 
                 // return an array containing the results of the simulation to be written in the csv file
@@ -383,14 +360,14 @@ macro_rules! explore_ga_parallel {
             for i in 0..result.len() {
 
                 let fitness = result[i].fitness;
-                population.lock().unwrap()[i].fitness = fitness;
+                let individual = result[i].individual.clone();
+
+                pop_fitness.push((individual.clone(), fitness));
 
                 // saving the best fitness of this generation
                 if fitness >= best_fitness_gen {
                     best_fitness_gen = fitness;
-                    $(
-                        $p_name = Some(population.lock().unwrap()[i].$p_name.clone());
-                    )*
+                    best_individual_gen = individual.clone();
                 }
 
                 // if the desired fitness set the flag at true
@@ -402,6 +379,7 @@ macro_rules! explore_ga_parallel {
             // saving the best fitness of all generation computed until now
             if best_fitness_gen > best_fitness {
                 best_fitness = best_fitness_gen;
+                best_individual = best_individual_gen.clone();
                 best_generation = generation;
             }
 
@@ -416,56 +394,34 @@ macro_rules! explore_ga_parallel {
             }
 
             // compute selection
-            $selection(&mut population.lock().unwrap());
+            $selection(&mut pop_fitness);
 
             // check if after selection the population size is too small
-            if population.lock().unwrap().len() <= 1 {
+            if pop_fitness.len() <= 1 {
                 println!("Population size <= 1, exiting...");
                 break;
             }
 
-            // mutate the new population
-            for individual in population.lock().unwrap().iter_mut() {
-                $mutation(individual);
-            }
+            {
+                // mutate the new population
+                let mut population = population.lock().unwrap();
+                population.clear();
+                for (individual, _) in pop_fitness.iter_mut() {
+                    $mutation(individual);
+                    population.push(individual.clone())
+                }
+                pop_fitness.clear();
 
-            // crossover the new population
-            $crossover(&mut population.lock().unwrap());
+                // crossover the new population
+                $crossover(&mut population);
+            }
         }
 
         println!("Resulting best fitness is {}", best_fitness);
-        println!("- The best individual has the following parameters:");
-        $(
-            println!("-- {} : {:?}", stringify!($p_name), $p_name.unwrap());
-        )*
-        
+        println!("- The best individual is:\n\t{}", best_individual);
+
         res
 
     }};
 
-    // perform the model exploration with genetic algorithm without writing additional parameters
-    (
-        $init_population:tt,
-        $fitness:tt,
-        $selection:tt,
-        $mutation:tt,
-        $crossover:tt,
-        $state: ty,
-        $desired_fitness: expr,
-        $generation_num: expr,
-        $step: expr,
-    ) => {
-        explore_ga_parallel!(
-            $init_population,
-            $fitness,
-            $selection,
-            $mutation,
-            $crossover,
-            $state,
-            $desired_fitness,
-            $generation_num,
-            $step,
-            parameters { }
-        );
-    };
 }

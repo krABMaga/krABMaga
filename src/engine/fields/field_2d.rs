@@ -311,7 +311,7 @@ cfg_if! {
                 let mut neighbors: Vec<O>;
 
                 if self.density_estimation_check {
-                    neighbors =Vec::with_capacity(self.density_estimation*2);
+                    neighbors = Vec::with_capacity(self.density_estimation*2);
                 }else {neighbors = Vec::new();}
 
                 if dist <= 0.0 {

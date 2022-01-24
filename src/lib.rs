@@ -24,7 +24,9 @@ pub use rayon::prelude::*;
 use std::error::Error;
 pub use std::fs::File;
 pub use std::fs::OpenOptions;
+pub use std::io::prelude::*;
 pub use std::io::Write;
+pub use std::process::{Command, Stdio};
 pub use std::sync::{Arc, Mutex};
 pub use std::time::Duration;
 
@@ -35,11 +37,30 @@ pub use {
     mpi::datatype::PartitionMut,
     mpi::point_to_point as p2p,
     mpi::Count,
-    mpi::{datatype::{UserDatatype, UncommittedUserDatatype}, traits::*, Address},
+    mpi::{
+        datatype::{UncommittedUserDatatype, UserDatatype},
+        traits::*,
+        Address,
+    },
 };
 
 #[cfg(feature = "distributed_mpi")]
 pub extern crate mpi;
+
+#[cfg(feature = "aws")]
+pub use {
+    aws_config,
+    aws_sdk_lambda,
+    aws_sdk_sqs,
+    futures::executor::block_on,
+    lambda_runtime,
+    serde_json,
+    serde_json::{json, Value},
+    std::fs,
+    std::io::BufReader,
+    tokio,
+    tokio::runtime::Runtime, // 0.3.5
+};
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Info {
@@ -58,20 +79,6 @@ pub enum ExploreMode {
     Exaustive,
     Matched,
 }
-
-/**
- * 3 mode to do model exploration
- * Local: local computation
- * Parallel: parallel computation
- * Distributed: distributed computation
- */
-/* #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
-pub enum ComputationMode {
-    Sequential,
-    Parallel,
-   // DistributedMPI,
-} */
-
 
 #[macro_export]
 //step = simulation step number
@@ -226,7 +233,7 @@ mod no_exported {
 
         config_table_index
         }};
-  
+
     }
 }
 

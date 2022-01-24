@@ -336,13 +336,14 @@ cfg_if! {
                             .unwrap()
                             .collect::<Vec<_>>();
 
+
                         for choice in choices_list {
                             self.add_edge(node.clone(), choice.0.clone(), EdgeOptions::Simple);
                             choice_pos.push(choice.2);
                         }
 
-                        for i in 0..choice_pos.len() {
-                            dist[choice_pos[i]].1 += 1;
+                        for j in 0..choice_pos.len() {
+                            dist[choice_pos[j]].1 += 1;
                         }
 
                         dist.push(((node.clone()), amount as i32, i));
@@ -831,8 +832,10 @@ cfg_if! {
                     dist.push((first_node, 1, 0));
                     dist.push((second_node, 1, 1));
 
+
                     // iterates on the node_set skipping the first two nodes
                     for i in 2..n_nodes {
+                        let mut choice_pos: Vec<usize> = Vec::with_capacity(init_edges);
 
                         let node = node_set[i].clone();
                         let mut choice_pos: Vec<usize> = Vec::with_capacity(init_edges);
@@ -858,6 +861,7 @@ cfg_if! {
                         }
 
                         dist.push(((node.clone()), amount as i32, i));
+
 
                     }
                 }
