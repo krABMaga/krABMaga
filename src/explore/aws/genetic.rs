@@ -242,7 +242,7 @@ async fn send_on_sqs(results: String) -> Result<(), aws_sdk_sqs::Error> {{
     Ok(())
 }}
 // end of the lambda function
-        "#, stringify($reps), stringify!($state), stringify!($state), stringify!($step), stringify!($fitness));
+        "#, stringify(reps), stringify!($state), stringify!($state), stringify!($step), stringify!($fitness));
 
         // join the two strings and write the function.rs file
         main_str.push_str(&function_str);
