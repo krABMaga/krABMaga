@@ -220,7 +220,7 @@ macro_rules! explore_ga_distributed_mpi {
             for i in 0..my_pop_size {
                 my_population.push(population_params[i].clone());
             }
-            
+
             let mut best_fitness_gen = 0.;
             let mut local_index = 0;
             // array collecting the results of each simulation run
@@ -457,9 +457,9 @@ macro_rules! explore_ga_distributed_mpi {
                 generation:\t{}
                 index:\t\t{}
                 fitness:\t{}
-                string:\t{}\n", 
-                best_individual.as_ref().unwrap().generation, 
-                best_individual.as_ref().unwrap().index, 
+                string:\t{}\n",
+                best_individual.as_ref().unwrap().generation,
+                best_individual.as_ref().unwrap().index,
                 best_individual.as_ref().unwrap().fitness,
                 best_individual_string);
         }

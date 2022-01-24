@@ -503,7 +503,7 @@ aws lambda create-function --function-name rab_lambda --handler main --zip-file 
                     population.push(individual.clone())
                 }
                 pop_fitness.clear();
-                
+
                 // crossover the new population
                 $crossover(&mut population);
             }

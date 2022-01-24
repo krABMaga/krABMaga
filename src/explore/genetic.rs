@@ -120,7 +120,7 @@ macro_rules! explore_ga_sequential {
 
         let mut reps = 1;
         $(reps = $reps;)?
-        
+
         let mut generation = 0;
         let mut best_fitness = 0.;
         let mut best_generation = 0;
@@ -279,7 +279,7 @@ macro_rules! explore_ga_parallel {
 
         let mut reps = 1;
         $( reps = $reps;)?
-        
+
         let mut generation = 0;
         let mut best_fitness = 0.;
         let mut best_generation = 0;
@@ -383,8 +383,8 @@ macro_rules! explore_ga_parallel {
                 best_generation = generation;
             }
 
-            println!("- Best fitness in generation {} is {} with individual {}", generation, best_fitness_gen, best_individual_gen);
-            println!("-- Overall best fitness is found in generation {} and is {} with individual {}", best_generation, best_fitness, best_individual);
+            println!("- Best fitness in generation {} is {}", generation, best_fitness_gen);
+            println!("-- Overall best fitness is found in generation {} and is {}", best_generation, best_fitness);
 
             res.append(&mut result);
 
@@ -411,7 +411,7 @@ macro_rules! explore_ga_parallel {
                     population.push(individual.clone())
                 }
                 pop_fitness.clear();
-                
+
                 // crossover the new population
                 $crossover(&mut population);
             }
