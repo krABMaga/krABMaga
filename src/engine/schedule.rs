@@ -3,8 +3,6 @@ extern crate priority_queue;
 use crate::engine::{agent::Agent, agentimpl::AgentImpl, priority::Priority, state::State};
 
 use cfg_if::cfg_if;
-use clap::{App, Arg};
-use lazy_static::*;
 use priority_queue::PriorityQueue;
 use std::fmt;
 
@@ -12,6 +10,9 @@ cfg_if! {
     if #[cfg(feature ="parallel")]{
         use crossbeam::thread;
         use std::sync::{Arc,Mutex};
+        use clap::{App, Arg};
+        use lazy_static::*;
+
     }
 }
 

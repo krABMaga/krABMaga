@@ -220,7 +220,7 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> HNetwork<O, L> {
     }
 
 
-    fn remove_edge_from_hedge(&self, to_remove: &HEdge<L>) -> Option<HEdge<L>> {
+    fn remove_edge_with_hedge(&self, to_remove: &HEdge<L>) -> Option<HEdge<L>> {
         
         let mut removed: Option<HEdge<L>> = None;
         let mut all_edges = self.edges.borrow_mut();
@@ -256,7 +256,7 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> HNetwork<O, L> {
         match self.get_edges(u.clone()) {
             Some(to_remove) => {
                 for hedge in to_remove{
-                self.remove_edge_from_hedge(&hedge);
+                self.remove_edge_with_hedge(&hedge);
                 }
             },
             None => (),

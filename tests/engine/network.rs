@@ -12,6 +12,63 @@ static NUM_NODES: u16 = 10;
 #[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
 static INIT_EDGES: usize = 1;
 
+
+#[cfg(not(any(
+    feature = "visualization",
+    feature = "visualization_wasm",
+    feature = "parallel"
+)))]
+#[test]
+fn hnetwork_hedge_types(){
+    let mut net: Network<u32, String> = Network::new(false);
+    net.add_node(1);
+    net.add_node(2);
+    net.update();
+
+    net.add_edge(1 , 2, EdgeOptions::Labeled("Edge12".to_string()));
+    net.update();
+    let labeled = net.get_edge(1, 2);
+    assert!(labeled.is_some());
+    let labeled = labeled.unwrap();
+    assert!(labeled.label.is_some());
+    assert_eq!(labeled.label.unwrap(), "Edge12");
+    let removed = net.remove_edge(1 , 2);
+    assert!(removed.is_some());
+    let removed = removed.unwrap();
+    assert_eq!(removed.label.unwrap(), "Edge12");
+
+    //----
+
+    net.add_edge(1 , 2, EdgeOptions::Weighted(0.123));
+    net.update();
+    let weighted = net.get_edge(1, 2);
+    assert!(weighted.is_some());
+    let weighted = weighted.unwrap();
+    assert!(weighted.weight.is_some());
+    assert_eq!(weighted.weight.unwrap(), 0.123);
+    let removed = net.remove_edge(1 , 2);
+    assert!(removed.is_some());
+    let removed = removed.unwrap();
+    assert_eq!(removed.weight.unwrap(), 0.123);
+
+    //----
+    net.add_edge(1 ,2, EdgeOptions::WeightedLabeled("Edge12".to_string(), 0.123));
+    net.update();
+    let wl = net.get_edge(1, 2);
+    assert!(wl.is_some());
+    let wl = wl.unwrap();
+    assert!(wl.weight.is_some());
+    assert!(wl.label.is_some());
+    assert_eq!(wl.clone().weight.unwrap(), 0.123);
+    assert_eq!(wl.clone().label.unwrap(), "Edge12");
+    let removed = net.remove_edge(1 , 2);
+    assert!(removed.is_some());
+    let removed = removed.unwrap();
+    assert_eq!(removed.clone().weight.unwrap(), 0.123);
+    assert_eq!(removed.clone().label.unwrap(), "Edge12");
+}   
+
+
 #[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
 #[test]
 fn network_gets_fault(){
