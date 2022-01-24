@@ -22,6 +22,7 @@ macro_rules! explore_ga_aws {
         $generation_num: expr,
         $step: expr,
 		$num_func: expr,
+        $($reps: expr,)?
     ) => {{
         println!("Running GA exploration on AWS...");
 
@@ -117,7 +118,7 @@ fi
         let mut aws_config: Option<aws_config::Config> = None;
         let mut client_sqs: Option<aws_sdk_sqs::Client> = None;
         let mut queue_url: String = String::new();
-
+        
         // wait until all the async operations completes
         let _result = Runtime::new().expect("Cannot create Runtime!").block_on({
             async {
@@ -148,6 +149,9 @@ fi
         // replace the main with a dummy main to avoid overlapping
         main_str = main_str.replace("fn main", "fn dummy_main");
 
+        let mut reps = 1;
+        $(reps = $reps;)?
+
         // generate the lambda function
         let function_str = format!(r#"
 use rust_ab::{{
@@ -171,25 +175,35 @@ async fn func(event: Value, _: lambda_runtime::Context) -> Result<(), lambda_run
 
     // prepare the result json to send on the queue
     let mut results: String = format!("{{{{\n\t\"function\":[");
+
+    let reps = {}; // $reps
     
     for (index, ind) in my_population_params.iter().enumerate(){{
         let individual = ind.as_str().expect("Cannot cast individual!").to_string();
         
-        // initialize the state
-        let mut individual_state = <{}>::new_with_parameters(&individual); // <$state>::new_with_parameters(&individual);
-        let mut schedule: Schedule = Schedule::new();
-        individual_state.init(&mut schedule);
-        // compute the simulation
-        for _ in 0..({} as usize) {{ // $step as usize
-            let individual_state = individual_state.as_state_mut();
-            schedule.step(individual_state);
-            if individual_state.end_condition(&mut schedule) {{
-                break;
+        let mut computed_ind: Vec<({}, Schedule)> = Vec::new(); // $state
+
+        for _ in 0..(reps as usize){{
+            // initialize the state
+            let mut individual_state = <{}>::new_with_parameters(&individual); // <$state>::new_with_parameters(&individual);
+            let mut schedule: Schedule = Schedule::new();
+            individual_state.init(&mut schedule);
+            // compute the simulation
+            for _ in 0..({} as usize) {{ // $step as usize
+                let individual_state = individual_state.as_state_mut();
+                schedule.step(individual_state);
+                if individual_state.end_condition(&mut schedule) {{
+                    break;
+                }}
             }}
+
+            computed_ind.push((individual, schedule));
+
+
         }}
 
         // compute the fitness value
-        let fitness = {}(&mut individual_state, schedule); //$fitness(&mut individual_state, schedule);
+        let fitness = {}(&mut computed_ind); //$fitness(&mut computed_ind);
 
         {{
             results.push_str(&format!("\n\t{{{{\n\t\t\"Index\": {{}}, \n\t\t\"Fitness\": {{}}, \n\t\t\"Individual\": \"{{}}\"\n\t}}}},", index, fitness, individual).to_string());
@@ -228,7 +242,7 @@ async fn send_on_sqs(results: String) -> Result<(), aws_sdk_sqs::Error> {{
     Ok(())
 }}
 // end of the lambda function
-        "#, stringify!($state), stringify!($step), stringify!($fitness));
+        "#, stringify($reps), stringify!($state), stringify!($state), stringify!($step), stringify!($fitness));
 
         // join the two strings and write the function.rs file
         main_str.push_str(&function_str);
