@@ -172,7 +172,7 @@ cfg_if! {
                 }
             }
 
-            pub fn get_edge(&self, u: O, _v: O) -> Option<Edge<L>> {
+            pub fn get_edge(&self, u: O, v: O) -> Option<Edge<L>> {
                 let nodes2id = self.nodes2id.borrow();
                 let uid = match nodes2id.get(&u){
                     Some(u)=> u,
@@ -181,12 +181,17 @@ cfg_if! {
 
                 match self.edges.get_read(uid) {
                     Some(uedges) => {
+                        let vid = match nodes2id.get(&v){
+                            Some(v)=> v,
+                            None => return None
+                        };
+
                         for e in uedges {
 
-                            let vid = nodes2id.get(self.id2nodes.get_read(&e.v).unwrap()).unwrap();
-                            if self.direct && e.u == *uid && e.v == *vid {
+                            let vid_edge = nodes2id.get(self.id2nodes.get_read(&e.v).unwrap()).unwrap();
+                            if self.direct && e.u == *uid && *vid == *vid_edge {
                                 return Some(e.clone());
-                            } else if !self.direct && ((e.u == *uid && e.v == *vid) || (e.v == *uid && e.u == *vid))
+                            } else if !self.direct && ((e.u == *uid && *vid_edge == *vid) || (*vid_edge == *uid && e.u == *vid))
                             {
                                 return Some(e.clone());
                             }
@@ -245,13 +250,13 @@ cfg_if! {
 
                     let mut rng = rand::thread_rng();
                     let mut dist: Vec<(O, i32, usize)> = Vec::with_capacity(n_nodes);
-                    let mut choice_pos: Vec<usize> = Vec::with_capacity(init_edges);
 
                     dist.push(((first_node.clone()), 1, 0));
                     dist.push(((second_node.clone()), 1, 1));
 
                     for i in 2..n_nodes {
                         let node = node_set[i].clone();
+                        let mut choice_pos: Vec<usize> = Vec::with_capacity(init_edges);
 
                         let amount: usize = if dist.len() < init_edges {
                             dist.len()
@@ -274,7 +279,7 @@ cfg_if! {
                         }
 
                         dist.push(((node.clone()), amount as i32, i));
-
+                        
                         // self.update();
                     }
                 }
@@ -312,13 +317,13 @@ cfg_if! {
                     let mut rng = Pcg64::seed_from_u64(my_seed);
                     //let mut rng = rand::thread_rng();
                     let mut dist: Vec<(O, i32, usize)> = Vec::with_capacity(n_nodes);
-                    let mut choice_pos: Vec<usize> = Vec::with_capacity(init_edges);
 
                     dist.push(((first_node.clone()), 1, 0));
                     dist.push(((second_node.clone()), 1, 1));
 
                     for i in 2..n_nodes {
                         let node = node_set[i].clone();
+                        let mut choice_pos: Vec<usize> = Vec::with_capacity(init_edges);
 
                         let amount: usize = if dist.len() < init_edges {
                             dist.len()
@@ -427,7 +432,7 @@ cfg_if! {
                 }
             }
 
-            pub fn remove_edges(&self, u: O) -> Option<Vec<Edge<L>>> {
+            pub fn remove_incoming_edges(&self, u: O) -> Option<Vec<Edge<L>>> {
                 let nodes = self.edges.keys();
                 let mut ris = vec![];
                 let nodes2id = self.nodes2id.borrow();
@@ -449,24 +454,58 @@ cfg_if! {
                 Some(ris)
             }
 
-            pub fn remove_node(&self, u: O) -> bool {
-                let mut nodes2id = self.nodes2id.borrow_mut();
+
+            pub fn remove_outgoing_edges(&self, u: O) -> Option<Vec<Edge<L>>> {
+                let nodes = self.edges.keys();
+                let mut ris = vec![];
+                let nodes2id = self.nodes2id.borrow();
 
                 let uid = match nodes2id.get(&u){
                     Some(u)=> u,
-                    None => return false
+                    None => return None
                 };
 
-                match self.remove_edges(u.clone()) {
-                    Some(_) => {
-                        self.edges.remove(uid);
-                    },
-                    None => {
-                        return false
+                for v in nodes {
+                    if v != uid {
+                        let vnode = self.id2nodes.get_read(v).unwrap();
+                        match self.remove_edge(u.clone(), vnode.clone()) {
+                            Some(e) => ris.push(e),
+                            None => (),
+                        }
                     }
+                }
+                Some(ris)
+            }
+
+            pub fn remove_node(&self, u: O) -> bool {
+
+                let uid: u32;
+                {
+                    let nodes2id = self.nodes2id.borrow_mut();
+
+                    uid = match nodes2id.get(&u) {
+                    Some(u) => u.clone(),
+                    None => return false,
+                    };
+                }
+
+
+                match self.remove_outgoing_edges(u.clone()) {
+                    Some(_) => {
+                        self.edges.remove(&uid);
+                    }
+                    None => return false,
                 };
 
-                self.id2nodes.remove(uid);
+                match self.remove_incoming_edges(u.clone()) {
+                    Some(_) => {
+                        self.edges.remove(&uid);
+                    }
+                    None => return false,
+                };
+
+                let mut nodes2id = self.nodes2id.borrow_mut();
+                let d = self.id2nodes.remove(&uid);
                 nodes2id.remove(&u);
                 true
             }
@@ -638,7 +677,7 @@ cfg_if! {
             //     self.redges.borrow().keys().collect()
             // }
 
-            pub fn get_edge(&self, u: O, _v: O) -> Option<Edge<L>> {
+            pub fn get_edge(&self, u: O, v: O) -> Option<Edge<L>> {
                 let nodes2id = self.nodes2id.borrow();
                 let id2nodes = self.id2nodes.borrow();
 
@@ -650,9 +689,14 @@ cfg_if! {
                 let edges = self.redges.borrow();
                 match edges.get(uid) {
                     Some(uedges) => {
+                        let vid = match nodes2id.get(&v) {
+                            Some(v) => v,
+                            None => return None,
+                        };
+
                         for e in uedges {
-                            let vid = nodes2id.get(id2nodes.get(&e.v).unwrap()).unwrap();
-                            if e.u == *uid && e.v == *vid || !self.direct && e.v == *uid && e.u == *vid {
+                            let vid_edge = nodes2id.get(id2nodes.get(&e.v).unwrap()).unwrap();
+                            if e.u == *uid && *vid_edge == *vid || !self.direct && *vid_edge == *uid && e.u == *vid {
                                 return Some(e.clone());
                             }
                         }
@@ -710,13 +754,20 @@ cfg_if! {
 
                     let mut rng = rand::thread_rng();
                     let mut dist: Vec<(O, i32, usize)> = Vec::with_capacity(n_nodes);
-                    let mut choice_pos: Vec<usize> = Vec::with_capacity(init_edges);
+
+                    // if self.direct {
+                    //     dist.push((first_node, 0, 0));
+                    // }
+                    // else {
+                    //     dist.push((first_node, 1, 0));
+                    // }
 
                     dist.push((first_node, 1, 0));
                     dist.push((second_node, 1, 1));
 
                     // iterates on the node_set skipping the first two nodes
                     for i in 2..n_nodes {
+                        let mut choice_pos: Vec<usize> = Vec::with_capacity(init_edges);
 
                         let node = node_set[i].clone();
 
@@ -741,7 +792,6 @@ cfg_if! {
                         }
 
                         dist.push(((node.clone()), amount as i32, i));
-
                     }
                 }
                 self.update();
@@ -788,6 +838,7 @@ cfg_if! {
                         let mut choice_pos: Vec<usize> = Vec::with_capacity(init_edges);
 
                         let node = node_set[i].clone();
+                        let mut choice_pos: Vec<usize> = Vec::with_capacity(init_edges);
 
                         let amount: usize = if dist.len() < init_edges {
                             dist.len()
@@ -855,11 +906,13 @@ cfg_if! {
                     });
                 }
                 Some(u_edge)
+
             }
 
-            pub fn remove_edges(&self, u: O) -> Option<Vec<Edge<L>>> {
-                let edges = self.edges.borrow_mut();
-                let nodes = edges.keys();
+
+            pub fn remove_incoming_edges(&self, u: O) -> Option<Vec<Edge<L>>> {
+                // let edges = self.edges.borrow();
+                // let nodes = edges.keys();
                 let mut ris = vec![];
                 let id2nodes = self.id2nodes.borrow();
                 let nodes2id = self.nodes2id.borrow();
@@ -869,35 +922,73 @@ cfg_if! {
                     None => return None,
                 };
 
-                for v in nodes {
+                for v in id2nodes.keys(){
                     if v != uid {
-                        let vnode = id2nodes.get(v).unwrap();
-                        if let Some(e) = self.remove_edge(vnode.clone(), u.clone()) {
-                            ris.push(e)
+                            let vnode = id2nodes.get(v).unwrap();
+                            if let Some(e) = self.remove_edge(vnode.clone(), u.clone()) {
+                                ris.push(e)
                         }
                     }
                 }
+
+                Some(ris)
+            }
+
+            pub fn remove_outgoing_edges(&self, u: O) -> Option<Vec<Edge<L>>> {
+
+                let mut ris = vec![];
+                let id2nodes = self.id2nodes.borrow();
+                let nodes2id = self.nodes2id.borrow();
+
+                let uid = match nodes2id.get(&u) {
+                    Some(u) => u,
+                    None => return None,
+                };
+
+                for v in id2nodes.keys(){
+                    if v != uid {
+                            let vnode = id2nodes.get(v).unwrap();
+                            if let Some(e) = self.remove_edge(u.clone(), vnode.clone()) {
+                                ris.push(e)
+                        }
+                    }
+                }
+
                 Some(ris)
             }
 
             pub fn remove_node(&self, u: O) -> bool {
-                let mut edges = self.edges.borrow_mut();
-                let mut id2nodes = self.id2nodes.borrow_mut();
-                let mut nodes2id = self.nodes2id.borrow_mut();
+                let uid: u32;
+                {
+                    let nodes2id = self.nodes2id.borrow_mut();
 
-                let uid = match nodes2id.get(&u) {
-                    Some(u) => u,
+                    uid = match nodes2id.get(&u) {
+                    Some(u) => u.clone(),
                     None => return false,
-                };
+                    };
+                }
 
-                match self.remove_edges(u.clone()) {
+
+                match self.remove_outgoing_edges(u.clone()) {
                     Some(_) => {
-                        edges.remove(uid);
+                        let mut edges = self.edges.borrow_mut();
+                        edges.remove(&uid);
                     }
                     None => return false,
                 };
 
-                id2nodes.remove(uid);
+                match self.remove_incoming_edges(u.clone()) {
+                    Some(_) => {
+                        let mut edges = self.edges.borrow_mut();
+                        edges.remove(&uid);
+                    }
+                    None => return false,
+                };
+
+                let mut id2nodes = self.id2nodes.borrow_mut();
+                let mut nodes2id = self.nodes2id.borrow_mut();
+
+                id2nodes.remove(&uid);
                 nodes2id.remove(&u);
                 true
             }

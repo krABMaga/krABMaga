@@ -3,5 +3,7 @@
 .criterion
 .idea
 *.profraw
+*.info
 Cargo.lock
 .vscode
+/bin

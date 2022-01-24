@@ -104,3 +104,6 @@ visualization_wasm = [
     "bevy_egui",
     "bevy_canvas"
 ]
+
+[lib]
+doctest = false
