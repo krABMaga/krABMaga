@@ -80,19 +80,6 @@ pub enum ExploreMode {
     Matched,
 }
 
-/**
- * 3 mode to do model exploration
- * Local: local computation
- * Parallel: parallel computation
- * Distributed: distributed computation
- */
-/* #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
-pub enum ComputationMode {
-    Sequential,
-    Parallel,
-   // DistributedMPI,
-} */
-
 #[macro_export]
 //step = simulation step number
 //states
