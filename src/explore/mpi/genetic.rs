@@ -312,9 +312,6 @@ macro_rules! explore_ga_distributed_mpi {
 
                 best_individual_string = all_bests_individual[max_fitness_index].clone();
 
-                // println!("--Fitness: {:?}", all_bests_fitness);
-                // println!("--Index: {:?}", all_bests_index);
-                //println!("--Individual: {:?}", all_bests_individual);
             } else {
                 root_process.gather_into(&my_best_fitness);
                 root_process.gather_into(&my_best_index);
