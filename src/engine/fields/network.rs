@@ -836,9 +836,8 @@ cfg_if! {
                     // iterates on the node_set skipping the first two nodes
                     for i in 2..n_nodes {
                         let mut choice_pos: Vec<usize> = Vec::with_capacity(init_edges);
-
+                        
                         let node = node_set[i].clone();
-                        let mut choice_pos: Vec<usize> = Vec::with_capacity(init_edges);
 
                         let amount: usize = if dist.len() < init_edges {
                             dist.len()
@@ -963,7 +962,7 @@ cfg_if! {
                     let nodes2id = self.nodes2id.borrow_mut();
 
                     uid = match nodes2id.get(&u) {
-                    Some(u) => u.clone(),
+                    Some(u) => *u,
                     None => return false,
                     };
                 }

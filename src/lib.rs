@@ -119,7 +119,13 @@ macro_rules! simulate {
             n_step,
             width = 15 - n_step.to_string().len() - $reps.to_string().len()
         );
-        println!("{esc}c", esc = 27 as char);
+        
+        match option {
+            Info::Verbose => {}
+            Info::Normal => {
+                println!("{esc}c", esc = 27 as char);
+            }
+        }
 
         for r in 0..$reps {
             let mut schedule: Schedule = Schedule::new();
