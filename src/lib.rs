@@ -29,6 +29,7 @@ pub use std::io::Write;
 pub use std::process::{Command, Stdio};
 pub use std::sync::{Arc, Mutex};
 pub use std::time::Duration;
+pub use::lazy_static::*;
 
 #[cfg(feature = "distributed_mpi")]
 pub use {
