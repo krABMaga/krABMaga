@@ -2,7 +2,7 @@
 /// with slight fixes to add compatibility with Bevy 0.5, as well as a safety check in the time system
 /// to prevent the app from freezing when the steps per second value is too high.
 
-use std::time::{Duration, Instant};
+use bevy::utils::{Instant, Duration};
 use bevy::prelude::ResMut;
 use crate::visualization::utils::fixed_timestep::FixedTimestepState;
 

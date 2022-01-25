@@ -55,6 +55,8 @@ an issue:
 ```sh
 cargo update -p tracing-wasm --precise 0.2.0
 ```
+- "Data remaining" issue or "len is 0 but index is 0" when running a simulation on the web: Force update your wasm-bindgen-cli local installation to version 0.2.79.
+- Out of memory error when running a simulation on the web, in chrome: run your simulation with the release profile.
 
 ### Dependencies
 The visualization framework requires certain dependencies to run the simulation properly.

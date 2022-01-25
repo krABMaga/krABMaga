@@ -3,7 +3,7 @@ use bevy::render::camera::WindowOrigin;
 
 use crate::bevy::prelude::Transform;
 use crate::bevy::render::camera::{Camera, DepthCalculation, OrthographicProjection};
-use crate::bevy::render::render_graph::base::camera::CAMERA_2D;
+use bevy::render::camera::CameraPlugin;
 
 use crate::engine::state::State;
 
@@ -38,7 +38,7 @@ pub fn init_system<I: VisualizationState<S> + 'static, S: State>(
 
     let camera_bundle = OrthographicCameraBundle {
         camera: Camera {
-            name: Some(CAMERA_2D.to_string()),
+            name: Some(CameraPlugin::CAMERA_2D.to_string()),
             ..Default::default()
         },
         orthographic_projection: OrthographicProjection {
@@ -48,6 +48,7 @@ pub fn init_system<I: VisualizationState<S> + 'static, S: State>(
             ..Default::default()
         },
         visible_entities: Default::default(),
+        frustum: Default::default(),
         transform: initial_transform,
         global_transform: Default::default(),
     };

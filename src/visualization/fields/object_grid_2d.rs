@@ -11,11 +11,8 @@ use crate::visualization::{
 };
 
 use crate::bevy::math::Quat;
-// use bevy::prelude::{
-//     Assets, ColorMaterial, Commands, Handle, Query, Res, ResMut, SpriteBundle, Texture, Transform,
-// };
 
-use bevy::prelude::{ColorMaterial, Commands, Handle, Query, Res, Transform};
+use bevy::prelude::{Commands, Component, Handle, Image, Query, Res, Transform};
 
 use std::hash::Hash;
 use std::marker::PhantomData;
@@ -23,7 +20,7 @@ use std::marker::Sync;
 
 // Allows rendering field structs as a single texture, to improve performance by sending the whole struct to the GPU in a single batch.
 // Use the trait by declaring a wrapper struct over a field, for example over a ObjectGrid2D<f32>, and implementing this trait on said wrapper.
-pub trait RenderObjectGrid2D<S: State, O: 'static + Sync + Send + Hash + Copy + Eq> {
+pub trait RenderObjectGrid2D<S: State, O: 'static + Sync + Send + Hash + Copy + Eq + Component> {
     // Handles telling bevy how to draw the texture.
     fn init_graphics_grid(
         sprite_render_factory: &mut AssetHandleFactoryResource,
@@ -94,7 +91,7 @@ pub trait RenderObjectGrid2D<S: State, O: 'static + Sync + Send + Hash + Copy + 
             &Marker<Self>,
             &O,
             &mut Transform,
-            &mut Handle<ColorMaterial>,
+            &mut Handle<Image>,
         )>,
         mut sprite_render_factory: AssetHandleFactoryResource,
         state_wrapper: Res<ActiveState<S>>,
@@ -128,6 +125,7 @@ pub trait RenderObjectGrid2D<S: State, O: 'static + Sync + Send + Hash + Copy + 
 }
 
 // Marker required to mark the batch render entity, to be able to query for it.
+#[derive(Component)]
 pub struct Marker<T> {
     marker: PhantomData<T>,
 }

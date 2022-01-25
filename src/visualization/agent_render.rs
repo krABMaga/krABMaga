@@ -1,10 +1,11 @@
-use bevy::prelude::{Transform, Visible};
+use bevy::ecs::component::TableStorage;
+use bevy::prelude::{Component, Transform, Visibility};
 
 use crate::engine::{agent::Agent, state::State};
 
 use downcast_rs::{impl_downcast, Downcast};
 
-pub trait AgentRender: Downcast + Send + Sync + 'static {
+pub trait AgentRender: Downcast + Send + Sync + 'static + Component<Storage=TableStorage> {
     // Specifies the asset to use when visualizing the agent.
     // This should be overwritten to return a string which can point to two things:
     // 1) An emoji code, a list of compatible ones can be found here: https://www.webfx.com/tools/emoji-cheat-sheet/
@@ -35,10 +36,14 @@ pub trait AgentRender: Downcast + Send + Sync + 'static {
         agent: &Box<dyn Agent>,
         transform: &mut Transform,
         state: &Box<&dyn State>,
-        visible: &mut Visible,
+        visible: &mut Visibility,
     );
 
     fn get_id(&self) -> u32;
+
+    /*fn get_component(&self) -> AgentRenderComponent {
+        AgentRenderComponent(Box::new(self))
+    }*/
 }
 
 impl_downcast!(AgentRender);
@@ -48,3 +53,5 @@ pub enum SpriteType {
     Emoji(String),
     // File(String), TODO
 }
+
+impl Component for Box<dyn AgentRender> { type Storage = TableStorage; }

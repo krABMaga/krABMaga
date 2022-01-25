@@ -14,11 +14,10 @@ use crate::visualization::{
 };
 
 use bevy::{prelude::*, window::WindowResizeConstraints, DefaultPlugins};
-#[cfg(not(feature = "visualization_wasm"))]
-use bevy_canvas::CanvasPlugin;
 use bevy_egui::EguiPlugin;
 
 use std::sync::{Arc, Mutex};
+use bevy_prototype_lyon::prelude::ShapePlugin;
 use crate::visualization::utils::fixed_timestep::{FixedTimestep, FixedTimestepState};
 use crate::visualization::utils::updated_time::{Time, time_system};
 
@@ -83,7 +82,7 @@ impl Visualization {
         &self,
         init_call: I,
         mut state: S,
-    ) -> AppBuilder {
+    ) -> App {
         // Minimum constraints taking into account a 300 x 300 simulation window + a 300 width UI panel
         let mut window_constraints = WindowResizeConstraints::default();
         window_constraints.min_width = 600.;
@@ -98,7 +97,7 @@ impl Visualization {
             ..Default::default()
         };
 
-        let mut app = App::build();
+        let mut app = App::new();
         let mut schedule = Schedule::new();
         state.init(&mut schedule);
         let cloned_init_call = init_call.clone();
@@ -107,11 +106,8 @@ impl Visualization {
             .add_plugins(DefaultPlugins)
             .add_plugin(EguiPlugin);
 
-        #[cfg(target_arch = "wasm32")]
-        app.add_plugin(bevy_webgl2::WebGL2Plugin);
-
-        #[cfg(not(feature = "visualization_wasm"))]
-        app.add_plugin(CanvasPlugin);
+        // Required for network visualization
+        app.add_plugin(ShapePlugin);
 
         app.insert_resource(SimulationDescriptor {
             title: self.window_name.parse().unwrap(),
