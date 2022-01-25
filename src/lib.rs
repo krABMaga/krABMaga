@@ -119,7 +119,7 @@ macro_rules! simulate {
             n_step,
             width = 15 - n_step.to_string().len() - $reps.to_string().len()
         );
-        
+
         match option {
             Info::Verbose => {}
             Info::Normal => {

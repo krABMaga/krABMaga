@@ -2,19 +2,31 @@
 
 static mut _COUNT: u128 = 0;
 static _STEP: u128 = 10;
-#[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
+#[cfg(not(any(
+    feature = "visualization",
+    feature = "visualization_wasm",
+    feature = "parallel"
+)))]
 static NUM_AGENT: u32 = 10;
 
-#[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
+#[cfg(not(any(
+    feature = "visualization",
+    feature = "visualization_wasm",
+    feature = "parallel"
+)))]
 use {
     crate::model::flockers::{bird::*, state::*},
+    rand::Rng,
     rust_ab::engine::location::Real2D,
     rust_ab::engine::schedule::Schedule,
     rust_ab::engine::state::State,
-    rand::Rng
 };
 
-#[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
+#[cfg(not(any(
+    feature = "visualization",
+    feature = "visualization_wasm",
+    feature = "parallel"
+)))]
 #[test]
 pub fn field_2d_single_step() {
     let mut state = Flocker::new((WIDTH, HEIGHT), NUM_AGENT);
@@ -30,15 +42,18 @@ pub fn field_2d_single_step() {
         .field1
         .get_neighbors_within_distance(Real2D { x: 5.0, y: 5.0 }, 10.0);
     assert_eq!(NUM_AGENT as usize, vec.len());
-    
+
     let vec = state
         .field1
         .get_neighbors_within_relax_distance(Real2D { x: 5.0, y: 5.0 }, 10.0);
     assert_eq!(NUM_AGENT as usize, vec.len());
-
 }
 
-#[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
+#[cfg(not(any(
+    feature = "visualization",
+    feature = "visualization_wasm",
+    feature = "parallel"
+)))]
 #[test]
 fn field_2d_neighbors() {
     let mut state = Flocker::new((WIDTH, HEIGHT), 2);
@@ -73,7 +88,7 @@ fn field_2d_neighbors() {
         x: bird1.pos.x + fly,
         y: bird1.pos.y + fly,
     };
-    
+
     state.field1.set_object_location(bird1, bird1.pos);
     state.field1.set_object_location(bird2, bird2.pos);
 
@@ -85,7 +100,6 @@ fn field_2d_neighbors() {
     let vec = state.field1.get_neighbors_within_distance(bird2.pos, 1.0);
     assert_eq!(1, vec.len());
     assert!(vec.contains(&bird2));
-
 
     let vec = state
         .field1
@@ -100,12 +114,15 @@ fn field_2d_neighbors() {
     assert_eq!(2, vec.len());
     assert!(vec.contains(&bird1));
     assert!(vec.contains(&bird2));
-
 }
 
-#[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
+#[cfg(not(any(
+    feature = "visualization",
+    feature = "visualization_wasm",
+    feature = "parallel"
+)))]
 #[test]
-fn field_2d_gets(){
+fn field_2d_gets() {
     let mut state = Flocker::new((WIDTH, HEIGHT), 2);
 
     let last_d = Real2D { x: 0.0, y: 0.0 };
@@ -130,12 +147,14 @@ fn field_2d_gets(){
 
     let no_birds = state.field1.get_objects(Real2D { x: 10.0, y: 0.0 });
     assert_eq!(0, no_birds.len());
-    
-    let mut num_birds = state.field1.num_objects_at_location(Real2D { x: 5.0, y: 5.0 });
+
+    let mut num_birds = state
+        .field1
+        .num_objects_at_location(Real2D { x: 5.0, y: 5.0 });
     assert_eq!(2, num_birds);
 
-    num_birds = state.field1.num_objects_at_location(Real2D { x: 0.0, y: 0.0});
+    num_birds = state
+        .field1
+        .num_objects_at_location(Real2D { x: 0.0, y: 0.0 });
     assert_eq!(1, num_birds);
-
-    
 }

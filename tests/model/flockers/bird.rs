@@ -9,7 +9,6 @@ use std::hash::{Hash, Hasher};
 
 use crate::model::flockers::state::Flocker;
 
-
 static COHESION: f32 = 1.0;
 static AVOIDANCE: f32 = 1.0;
 static RANDOMNESS: f32 = 1.0;
@@ -27,12 +26,16 @@ pub struct Bird {
 
 impl Bird {
     pub fn new(id: u32, pos: Real2D, last_d: Real2D) -> Self {
-        Bird { id, pos, last_d, flag:false}
+        Bird {
+            id,
+            pos,
+            last_d,
+            flag: false,
+        }
     }
 }
 
 impl Agent for Bird {
-
     fn step(&mut self, state: &mut dyn State) {
         let state = state.as_any().downcast_ref::<Flocker>().unwrap();
         let vec = state.field1.get_neighbors_within_distance(self.pos, 10.0);
