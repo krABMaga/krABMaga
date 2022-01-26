@@ -296,6 +296,7 @@ macro_rules! explore_ga_parallel {
             index: i32
             fitness: f32
             individual: String
+            state: String
         });
 
         let mut reps = 1;
@@ -339,6 +340,7 @@ macro_rules! explore_ga_parallel {
             (0..len).into_par_iter().map( |index| {
                 let mut computed_ind: Vec<($state, Schedule)> = Vec::new();
 
+                let mut save_state: String = String::new();
                 for _ in 0..(reps as usize){
                     // initialize the state
                     let mut schedule: Schedule = Schedule::new();
@@ -359,6 +361,7 @@ macro_rules! explore_ga_parallel {
                             break;
                         }
                     }
+                    save_state = format!("{}", individual);
                     computed_ind.push((individual, schedule));
                 }
 
@@ -371,7 +374,8 @@ macro_rules! explore_ga_parallel {
                     generation,
                     index as i32,
                     fitness,
-                    population[index].clone()
+                    population[index].clone(),
+                    save_state
                 )
 
                 // return an array containing the results of the simulation to be written in the csv file
