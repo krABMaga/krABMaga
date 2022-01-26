@@ -63,37 +63,41 @@ jobs:
      - uses: actions/checkout@v2
      - uses: actions-rs/toolchain@v1
        with:
-        profile: minimal
-        toolchain: nightly-2021-03-25
+        toolchain: stable
         override: true
+        components: llvm-tools-preview
 
      - uses: Swatinem/rust-cache@v1
        with:
         key: coverage 
-     - uses: actions-rs/cargo@v1
-       with:
-        command: test
-        #args: --features visualization
-       env:
-          RUSTFLAGS: '-Zinstrument-coverage'
-          LLVM_PROFILE_FILE: '%m.profraw'
 
-     - uses: actions-rs/cargo@v1
-       with:
-        command: test
-        args: --features parallel
-       env:
-          RUSTFLAGS: '-Zinstrument-coverage'
-          LLVM_PROFILE_FILE: '%m.profraw'
-       
-     - name: Install grcov
+     - name: Cargo Clean
        run: |
-        rustup component add llvm-tools-preview
-        curl -L https://github.com/mozilla/grcov/releases/download/v0.6.1/grcov-linux-x86_64.tar.bz2 | tar jxf -
-     - name: Run grcov
+        cargo clean
+
+     - name: Setup
        run: |
+<<<<<<< HEAD
         ./grcov . --binary-path ./target/debug/ -s . -t lcov --branch --ignore-not-existing --ignore "/*" -o lcov.info
     
      - name: Upload to Codecov
+=======
+        rustup update
+        cargo install cargo-tarpaulin
+        
+     - name: Run Tests
+>>>>>>> ee3c945f2304f1dee81849bc5983c379b10c3ea0
        run: |
-        bash <(curl -s https://codecov.io/bash) -f ./lcov.info
+        cargo tarpaulin --implicit-test-threads  --out Xml --exclude-files src/utils/* src/visualization/*
+      # mv cobertura.xml cobertura2.xml
+     
+    #  - name: Run Tests - Feature Parallel
+    #    run: |
+    #     cargo tarpaulin --implicit-test-threads  --out Xml --exclude-files src/utils/* src/visualization/* --features parallel
+        
+
+     - uses: codecov/codecov-action@v2
+       with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: ./cobertura.xml #,./cobertura2.xml
+        verbose: true 

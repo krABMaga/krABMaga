@@ -1,4 +1,3 @@
-
 #[macro_export]
 macro_rules! simulate_explore {
     ($step:expr, $state:expr) => {{
@@ -274,9 +273,9 @@ macro_rules! build_dataframe {
                 }
             }
 
-            
+
         };
-        
+
         (
             $name:ident,
             input {$($input: ident: $input_ty: ty)*},
@@ -292,8 +291,6 @@ macro_rules! build_dataframe {
                 )
         };
 }
-
-        
 
 /* #[macro_export]
 //macro general to call exploration

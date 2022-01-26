@@ -36,10 +36,20 @@ indicatif = "0.*"
 crossbeam = "0.*"
 rand_pcg = "0.*"
 
-# Model exploration features
+# Model exploration AWS features
+lambda_runtime = {version = "0.4", optional = true}
+serde = { version = "1.*", features = ["derive"], optional = true}
+serde_json = {version = "1.*", optional = true}
+tokio = { version = "1.*", features = ["full"], optional = true }
+aws-config = {version = "0.4", optional = true}
+aws-sdk-sqs = {version = "0.4", optional = true}
+aws-sdk-lambda = {version = "0.4", optional = true}
+futures = {version = "0.3", optional = true}
+
+# Model exploration MPI features
 # rsmpi points to a specific commit
-mpi = { git = "https://github.com/bsteinb/rsmpi", rev = "f9aec8b8d82", optional = true }
-#mpi = { git = "https://github.com/bsteinb/rsmpi", optional = true }
+#mpi = { git = "https://github.com/bsteinb/rsmpi", rev = "f9aec8b8d82", optional = true }
+mpi = { git = "https://github.com/bsteinb/rsmpi", optional = true }
 memoffset = { version = "0.6.4", optional = true}
 
 # Visualization features
@@ -61,6 +71,16 @@ getrandom = {version="0.*", features=["wasm-bindgen"]}
 distributed_mpi = [
     "mpi",
     "memoffset"
+]
+aws = [
+    "lambda_runtime",
+    "serde",
+    "serde_json",
+    "tokio",
+    "aws-config",
+    "aws-sdk-sqs",
+    "aws-sdk-lambda",
+    "futures"
 ]
 parallel = []
 visualization = [

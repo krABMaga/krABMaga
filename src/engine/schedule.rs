@@ -3,8 +3,6 @@ extern crate priority_queue;
 use crate::engine::{agent::Agent, agentimpl::AgentImpl, priority::Priority, state::State};
 
 use cfg_if::cfg_if;
-use clap::{App, Arg};
-use lazy_static::*;
 use priority_queue::PriorityQueue;
 use std::fmt;
 
@@ -12,32 +10,39 @@ cfg_if! {
     if #[cfg(feature ="parallel")]{
         use crossbeam::thread;
         use std::sync::{Arc,Mutex};
+        use clap::{App, Arg};
+        use lazy_static::*;
+
     }
 }
 
-lazy_static! {
-    pub static ref THREAD_NUM: usize = {
-        let matches = App::new("Rust-AB")
-            .arg(Arg::with_name("bench").long("bench"))
-            .arg(
-                Arg::with_name("num_thread")
-                    .help("sets the number of threads to use")
-                    .takes_value(true)
-                    .long("nt"),
-            )
-            .get_matches();
-        let n = match matches.value_of("num_thread") {
-            Some(nt) => match nt.parse::<usize>() {
-                Ok(ris) => ris,
-                Err(_) => {
-                    eprintln!("error: --nt value is not an integer");
-                    num_cpus::get()
-                }
-            },
-            _ => 1,
-        };
-        n
-    };
+cfg_if! {
+    if #[cfg(feature ="parallel")]{
+        lazy_static! {
+            pub static ref THREAD_NUM: usize = {
+                let matches = App::new("Rust-AB")
+                    .arg(Arg::with_name("bench").long("bench"))
+                    .arg(
+                        Arg::with_name("num_thread")
+                            .help("sets the number of threads to use")
+                            .takes_value(true)
+                            .long("nt"),
+                    )
+                    .get_matches();
+                let n = match matches.value_of("num_thread") {
+                    Some(nt) => match nt.parse::<usize>() {
+                        Ok(ris) => ris,
+                        Err(_) => {
+                            eprintln!("error: --nt value is not an integer");
+                            num_cpus::get()
+                        }
+                    },
+                    _ => 1,
+                };
+                n
+            };
+        }
+    }
 }
 cfg_if! {
     if #[cfg(feature ="parallel")] {

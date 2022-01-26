@@ -12,6 +12,78 @@ static NUM_NODES: u16 = 10;
 #[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
 static INIT_EDGES: usize = 1;
 
+
+#[cfg(not(any(
+    feature = "visualization",
+    feature = "visualization_wasm",
+    feature = "parallel"
+)))]
+#[test]
+fn hnetwork_hedge_types(){
+    let mut net: Network<u32, String> = Network::new(false);
+    net.add_node(1);
+    net.add_node(2);
+    net.update();
+
+    net.add_edge(1 , 2, EdgeOptions::Labeled("Edge12".to_string()));
+    net.update();
+    let labeled = net.get_edge(1, 2);
+    assert!(labeled.is_some());
+    let labeled = labeled.unwrap();
+    assert!(labeled.label.is_some());
+    assert_eq!(labeled.label.unwrap(), "Edge12");
+    let removed = net.remove_edge(1 , 2);
+    assert!(removed.is_some());
+    let removed = removed.unwrap();
+    assert_eq!(removed.label.unwrap(), "Edge12");
+
+    //----
+
+    net.add_edge(1 , 2, EdgeOptions::Weighted(0.123));
+    net.update();
+    let weighted = net.get_edge(1, 2);
+    assert!(weighted.is_some());
+    let weighted = weighted.unwrap();
+    assert!(weighted.weight.is_some());
+    assert_eq!(weighted.weight.unwrap(), 0.123);
+    let removed = net.remove_edge(1 , 2);
+    assert!(removed.is_some());
+    let removed = removed.unwrap();
+    assert_eq!(removed.weight.unwrap(), 0.123);
+
+    //----
+    net.add_edge(1 ,2, EdgeOptions::WeightedLabeled("Edge12".to_string(), 0.123));
+    net.update();
+    let wl = net.get_edge(1, 2);
+    assert!(wl.is_some());
+    let wl = wl.unwrap();
+    assert!(wl.weight.is_some());
+    assert!(wl.label.is_some());
+    assert_eq!(wl.clone().weight.unwrap(), 0.123);
+    assert_eq!(wl.clone().label.unwrap(), "Edge12");
+    let removed = net.remove_edge(1 , 2);
+    assert!(removed.is_some());
+    let removed = removed.unwrap();
+    assert_eq!(removed.clone().weight.unwrap(), 0.123);
+    assert_eq!(removed.clone().label.unwrap(), "Edge12");
+}   
+
+
+#[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
+#[test]
+fn network_gets_fault(){
+    let mut net: Network<u16, String> = Network::new(true);
+
+    assert!(!net.get_edge(1, 2).is_some());
+    assert!(!net.get_object(1).is_some());
+
+    net.add_node(1);
+    net.update();
+    assert!(!net.get_edge(1, 2).is_some());
+    net.add_node(2);
+    assert!(!net.get_edge(1, 2).is_some());
+}
+
 #[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
 #[test]
 fn network_directed(){
@@ -85,7 +157,7 @@ fn network_undirected(){
 
 #[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
 #[test]
-fn network_remove(){
+fn network_remove_directed(){
     let mut net: Network<u16, String> = Network::new(true);    
     
     for i in 0..NUM_NODES{
@@ -96,6 +168,59 @@ fn network_remove(){
         net.add_edge(i, (i+1)%NUM_NODES, EdgeOptions::Simple);
         net.add_edge((i+1)%NUM_NODES,i,  EdgeOptions::Simple);
 
+    }
+    net.lazy_update();
+
+    net.remove_edge(0, 1);
+    net.lazy_update();
+
+    {
+        let edges = net.get_edges(0).unwrap();
+        assert_eq!(1, edges.len());
+    }
+    assert!(net.remove_node(0));
+    net.lazy_update();
+
+    assert_eq!(None, net.get_object(0));
+
+    let edges = net.get_edges(1).unwrap();
+    for e in edges.clone() {
+        println!("{} -- {} ", e.u, e.v);
+    }
+
+    assert_eq!(1, edges.len());
+    
+    let edges = net.get_edges(NUM_NODES-1).unwrap();
+    assert_eq!(1, edges.len());
+
+    let removed = net.remove_outgoing_edges(3);
+    assert_eq!(removed.unwrap().len(), 2);
+    net.lazy_update();
+
+    
+
+    let edges = net.get_edges(3).unwrap();
+    assert_eq!(0, edges.len());
+
+    net.remove_all_edges();
+    net.lazy_update();
+
+    assert!(net.edges.borrow_mut().is_empty());
+
+
+}
+
+#[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
+#[test]
+fn network_remove_undirected(){
+    let mut net: Network<u16, String> = Network::new(false);    
+    
+    for i in 0..NUM_NODES{
+        net.add_node(i);
+    }
+
+    for i in 0..NUM_NODES{
+        net.add_edge(i, (i+1)%NUM_NODES, EdgeOptions::Simple);
     }
     net.lazy_update();
 

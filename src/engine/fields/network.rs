@@ -250,13 +250,13 @@ cfg_if! {
 
                     let mut rng = rand::thread_rng();
                     let mut dist: Vec<(O, i32, usize)> = Vec::with_capacity(n_nodes);
-                    let mut choice_pos: Vec<usize> = Vec::with_capacity(init_edges);
 
                     dist.push(((first_node.clone()), 1, 0));
                     dist.push(((second_node.clone()), 1, 1));
 
                     for i in 2..n_nodes {
                         let node = node_set[i].clone();
+                        let mut choice_pos: Vec<usize> = Vec::with_capacity(init_edges);
 
                         let amount: usize = if dist.len() < init_edges {
                             dist.len()
@@ -279,7 +279,7 @@ cfg_if! {
                         }
 
                         dist.push(((node.clone()), amount as i32, i));
-
+                        
                         // self.update();
                     }
                 }
@@ -317,13 +317,13 @@ cfg_if! {
                     let mut rng = Pcg64::seed_from_u64(my_seed);
                     //let mut rng = rand::thread_rng();
                     let mut dist: Vec<(O, i32, usize)> = Vec::with_capacity(n_nodes);
-                    let mut choice_pos: Vec<usize> = Vec::with_capacity(init_edges);
 
                     dist.push(((first_node.clone()), 1, 0));
                     dist.push(((second_node.clone()), 1, 1));
 
                     for i in 2..n_nodes {
                         let node = node_set[i].clone();
+                        let mut choice_pos: Vec<usize> = Vec::with_capacity(init_edges);
 
                         let amount: usize = if dist.len() < init_edges {
                             dist.len()
@@ -336,13 +336,14 @@ cfg_if! {
                             .unwrap()
                             .collect::<Vec<_>>();
 
+
                         for choice in choices_list {
                             self.add_edge(node.clone(), choice.0.clone(), EdgeOptions::Simple);
                             choice_pos.push(choice.2);
                         }
 
-                        for i in 0..choice_pos.len() {
-                            dist[choice_pos[i]].1 += 1;
+                        for j in 0..choice_pos.len() {
+                            dist[choice_pos[j]].1 += 1;
                         }
 
                         dist.push(((node.clone()), amount as i32, i));
@@ -505,7 +506,6 @@ cfg_if! {
 
                 let mut nodes2id = self.nodes2id.borrow_mut();
                 let d = self.id2nodes.remove(&uid);
-                println!("ASBREGA FIOI {}", d.unwrap().0);
                 nodes2id.remove(&u);
                 true
             }
@@ -754,7 +754,6 @@ cfg_if! {
 
                     let mut rng = rand::thread_rng();
                     let mut dist: Vec<(O, i32, usize)> = Vec::with_capacity(n_nodes);
-                    let mut choice_pos: Vec<usize> = Vec::with_capacity(init_edges);
 
                     // if self.direct {
                     //     dist.push((first_node, 0, 0));
@@ -768,6 +767,7 @@ cfg_if! {
 
                     // iterates on the node_set skipping the first two nodes
                     for i in 2..n_nodes {
+                        let mut choice_pos: Vec<usize> = Vec::with_capacity(init_edges);
 
                         let node = node_set[i].clone();
 
@@ -828,15 +828,17 @@ cfg_if! {
                     let mut rng = Pcg64::seed_from_u64(my_seed);
 
                     let mut dist: Vec<(O, i32, usize)> = Vec::with_capacity(n_nodes);
-                    let mut choice_pos: Vec<usize> = Vec::with_capacity(init_edges);
 
                     dist.push((first_node, 1, 0));
                     dist.push((second_node, 1, 1));
 
+
                     // iterates on the node_set skipping the first two nodes
                     for i in 2..n_nodes {
+                        let mut choice_pos: Vec<usize> = Vec::with_capacity(init_edges);
 
                         let node = node_set[i].clone();
+                        let mut choice_pos: Vec<usize> = Vec::with_capacity(init_edges);
 
                         let amount: usize = if dist.len() < init_edges {
                             dist.len()
@@ -859,6 +861,7 @@ cfg_if! {
                         }
 
                         dist.push(((node.clone()), amount as i32, i));
+
 
                     }
                 }
@@ -927,20 +930,12 @@ cfg_if! {
                         }
                     }
                 }
-                // for v in nodes {
-                //     if v != uid {
-                //         let vnode = id2nodes.get(v).unwrap();
-                //         if let Some(e) = self.remove_edge(vnode.clone(), u.clone()) {
-                //             ris.push(e)
-                //         }
-                //     }
-                // }
+
                 Some(ris)
             }
 
             pub fn remove_outgoing_edges(&self, u: O) -> Option<Vec<Edge<L>>> {
-                // let edges = self.edges.borrow();
-                // let nodes = edges.keys();
+
                 let mut ris = vec![];
                 let id2nodes = self.id2nodes.borrow();
                 let nodes2id = self.nodes2id.borrow();
@@ -958,14 +953,7 @@ cfg_if! {
                         }
                     }
                 }
-                // for v in nodes {
-                //     if v != uid {
-                //         let vnode = id2nodes.get(v).unwrap();
-                //         if let Some(e) = self.remove_edge(vnode.clone(), u.clone()) {
-                //             ris.push(e)
-                //         }
-                //     }
-                // }
+
                 Some(ris)
             }
 
