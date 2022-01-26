@@ -103,6 +103,7 @@ macro_rules! explore_ga_sequential {
         $selection:tt,
         $mutation:tt,
         $crossover:tt,
+        $cmp:tt,
         $state: ty,
         $desired_fitness: expr,
         $generation_num: expr,
@@ -122,7 +123,7 @@ macro_rules! explore_ga_sequential {
         $(reps = $reps;)?
 
         let mut generation = 0;
-        let mut best_fitness = 0.;
+        let mut best_fitness: Option<f32> = None;
         let mut best_generation = 0;
 
         let mut result: Vec<BufferGA> = Vec::new();
@@ -145,7 +146,7 @@ macro_rules! explore_ga_sequential {
             generation += 1;
             println!("Computing generation {}...", generation);
 
-            let mut best_fitness_gen = 0.;
+            let mut best_fitness_gen: Option<f32> = None;
             let mut best_individual_gen: String = String::new();
 
             // execute the simulation for each member of population
@@ -177,11 +178,18 @@ macro_rules! explore_ga_sequential {
                 pop_fitness.push((individual.clone(), fitness));
 
                 // saving the best fitness of this generation
-                if fitness >= best_fitness_gen {
-                    best_fitness_gen = fitness;
-                    best_individual_gen = individual.clone();
+                // if fitness >= best_fitness_gen {
+                match best_fitness_gen{   
+                    Some(_) => 
+                        if $cmp(&fitness, &best_fitness_gen.unwrap()) {
+                            best_fitness_gen = Some(fitness);
+                            best_individual_gen = individual.clone();
+                        },
+                    None => {
+                        best_fitness_gen = Some(fitness);
+                        best_individual_gen = individual.clone();
+                    }
                 }
-
                 // result is here
                 result.push(BufferGA::new(
                     generation,
@@ -192,7 +200,9 @@ macro_rules! explore_ga_sequential {
 
                 // if the desired fitness is reached break
                 // setting the flag at true
-                if fitness >= $desired_fitness{
+                // if fitness >= $desired_fitness{
+                if $cmp(&fitness, &$desired_fitness) {
+                    println!("Found individual with desired fitness! Exiting...");
                     flag = true;
                     break;
                 }
@@ -200,14 +210,24 @@ macro_rules! explore_ga_sequential {
             }
 
             // saving the best fitness of all generation computed until n
-            if best_fitness_gen > best_fitness {
-                best_fitness = best_fitness_gen;
-                best_individual = best_individual_gen.clone();
-                best_generation = generation;
+            // if best_fitness_gen > best_fitness {
+
+            match best_fitness{   
+                Some(_) => 
+                    if $cmp(&best_fitness_gen.unwrap(), &best_fitness.unwrap()) {
+                        best_fitness = best_fitness_gen;
+                        best_individual = best_individual_gen.clone();
+                        best_generation = generation;
+                    },
+                None => {
+                    best_fitness = best_fitness_gen;
+                    best_individual = best_individual_gen.clone();
+                    best_generation = generation;
+                }
             }
 
-            println!("- Best fitness in generation {} is {}", generation, best_fitness_gen);
-            println!("-- Overall best fitness is found in generation {} and is {}", best_generation, best_fitness);
+            println!("- Best fitness in generation {} is {:#?}", generation, best_fitness_gen.unwrap());
+            println!("-- Overall best fitness is found in generation {} and is {}", best_generation, best_fitness.unwrap());
 
             // if flag is true the desired fitness is found
             if flag {
@@ -235,7 +255,7 @@ macro_rules! explore_ga_sequential {
             $crossover(&mut population);
         }
 
-        println!("Resulting best fitness is {}", best_fitness);
+        println!("Resulting best fitness is {}", best_fitness.unwrap());
         println!("- The best individual is: \n\t{}", best_individual);
 
         result
@@ -261,6 +281,7 @@ macro_rules! explore_ga_parallel {
         $selection:tt,
         $mutation:tt,
         $crossover:tt,
+        $cmp: tt,
         $state: ty,
         $desired_fitness: expr,
         $generation_num: expr,
@@ -281,7 +302,7 @@ macro_rules! explore_ga_parallel {
         $( reps = $reps;)?
 
         let mut generation = 0;
-        let mut best_fitness = 0.;
+        let mut best_fitness: Option<f32> = None;
         let mut best_generation = 0;
 
         // use init_population custom function to create a vector of individual
@@ -306,7 +327,7 @@ macro_rules! explore_ga_parallel {
             generation += 1;
             println!("Computing generation {}...", generation);
 
-            let mut best_fitness_gen = 0.;
+            let mut best_fitness_gen: Option<f32> = None;
             let mut best_individual_gen: String = String::new();
 
             let len = population.lock().unwrap().len();
@@ -365,26 +386,45 @@ macro_rules! explore_ga_parallel {
                 pop_fitness.push((individual.clone(), fitness));
 
                 // saving the best fitness of this generation
-                if fitness >= best_fitness_gen {
-                    best_fitness_gen = fitness;
-                    best_individual_gen = individual.clone();
+                // if fitness >= best_fitness_gen {
+                match best_fitness_gen{   
+                    Some(_) => 
+                        if $cmp(&fitness, &best_fitness_gen.unwrap()) {
+                            best_fitness_gen = Some(fitness);
+                            best_individual_gen = individual.clone();
+                        },
+                    None => {
+                        best_fitness_gen = Some(fitness);
+                        best_individual_gen = individual.clone();
+                    }
                 }
 
                 // if the desired fitness set the flag at true
-                if fitness >= $desired_fitness {
+                // if fitness >= $desired_fitness {
+                if $cmp(&fitness, &$desired_fitness) {
+                    println!("Found individual with desired fitness! Exiting...");
                     flag = true;
                 }
             }
 
             // saving the best fitness of all generation computed until now
-            if best_fitness_gen > best_fitness {
-                best_fitness = best_fitness_gen;
-                best_individual = best_individual_gen.clone();
-                best_generation = generation;
+            // if best_fitness_gen > best_fitness {
+            match best_fitness{   
+                Some(_) => 
+                    if $cmp(&best_fitness_gen.unwrap(), &best_fitness.unwrap()) {
+                        best_fitness = best_fitness_gen.clone();
+                        best_individual = best_individual_gen.clone();
+                        best_generation = generation;
+                    },
+                None => {
+                    best_fitness = best_fitness_gen.clone();
+                    best_individual = best_individual_gen.clone();
+                    best_generation = generation;
+                }
             }
 
-            println!("- Best fitness in generation {} is {}", generation, best_fitness_gen);
-            println!("-- Overall best fitness is found in generation {} and is {}", best_generation, best_fitness);
+            println!("- Best fitness in generation {} is {:#?}", generation, best_fitness_gen.unwrap());
+            println!("-- Overall best fitness is found in generation {} and is {}", best_generation, best_fitness.unwrap());
 
             res.append(&mut result);
 
@@ -417,7 +457,7 @@ macro_rules! explore_ga_parallel {
             }
         }
 
-        println!("Resulting best fitness is {}", best_fitness);
+        println!("Resulting best fitness is {:#?}", best_fitness.unwrap());
         println!("- The best individual is:\n\t{}", best_individual);
 
         res
