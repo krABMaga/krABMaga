@@ -8,7 +8,6 @@ use rust_ab::rand;
 use rust_ab::rand::Rng;
 use std::any::Any;
 
-
 pub static WIDTH: f32 = 10.0;
 pub static HEIGHT: f32 = 10.0;
 pub static DISCRETIZATION: f32 = 0.5;

@@ -1,15 +1,21 @@
 #[cfg(test)]
-
-#[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
+#[cfg(not(any(
+    feature = "visualization",
+    feature = "visualization_wasm",
+    feature = "parallel"
+)))]
 use {
-    rust_ab::*,
-    crate::model::flockers::state::*,
-    rust_ab::engine::schedule::Schedule, rust_ab::engine::state::State,
+    crate::model::flockers::state::*, rust_ab::engine::schedule::Schedule,
+    rust_ab::engine::state::State, rust_ab::*,
 };
 
-#[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
+#[cfg(not(any(
+    feature = "visualization",
+    feature = "visualization_wasm",
+    feature = "parallel"
+)))]
 #[test]
-fn simulate(){
+fn simulate() {
     let step = 10;
 
     let dim = (200., 200.);
@@ -25,21 +31,24 @@ fn simulate(){
     assert_eq!(res.len(), 2);
 
     for r in res {
-        let ( duration, step_per_sec) = r;
+        let (duration, step_per_sec) = r;
         assert!(duration.as_secs_f32() > 0.);
         assert!(step_per_sec > 0.);
     }
 }
 
-#[cfg(not(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel")))]
+#[cfg(not(any(
+    feature = "visualization",
+    feature = "visualization_wasm",
+    feature = "parallel"
+)))]
 #[test]
-fn simulate_verbose(){
+fn simulate_verbose() {
     let step = 10;
 
     let dim = (200., 200.);
     let num_agents = 100;
-  
+
     let state = Flocker::new(dim, num_agents);
     simulate!(step, state, 1, Info::Verbose);
 }
-

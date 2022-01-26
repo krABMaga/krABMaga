@@ -279,7 +279,7 @@ cfg_if! {
                         }
 
                         dist.push(((node.clone()), amount as i32, i));
-                        
+
                         // self.update();
                     }
                 }
@@ -838,7 +838,6 @@ cfg_if! {
                         let mut choice_pos: Vec<usize> = Vec::with_capacity(init_edges);
 
                         let node = node_set[i].clone();
-                        let mut choice_pos: Vec<usize> = Vec::with_capacity(init_edges);
 
                         let amount: usize = if dist.len() < init_edges {
                             dist.len()
@@ -963,7 +962,7 @@ cfg_if! {
                     let nodes2id = self.nodes2id.borrow_mut();
 
                     uid = match nodes2id.get(&u) {
-                    Some(u) => u.clone(),
+                    Some(u) => *u,
                     None => return false,
                     };
                 }

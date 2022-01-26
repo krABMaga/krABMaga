@@ -1,24 +1,20 @@
 #[cfg(test)]
+#[cfg(any(feature = "parallel"))]
+static HEIGHT: i32 = 10;
+#[cfg(any(feature = "parallel"))]
+static WIDTH: i32 = 10;
 
 #[cfg(any(feature = "parallel"))]
-static HEIGHT:i32 = 10;
-#[cfg(any(feature = "parallel"))]
-static WIDTH:i32 = 10;
-
-#[cfg(any(feature = "parallel"))]
-use{
+use {
     rust_ab::engine::fields::dense_number_grid_2d::DenseNumberGrid2D,
-    rust_ab::engine::fields::field::Field,
-    rust_ab::engine::fields::grid_option::GridOption,
+    rust_ab::engine::fields::field::Field, rust_ab::engine::fields::grid_option::GridOption,
     rust_ab::engine::location::Int2D,
 };
 
 #[cfg(any(feature = "parallel"))]
 #[test]
-fn dense_number_grid_2d(){
+fn dense_number_grid_2d() {
     let mut grid: DenseNumberGrid2D<u16> = DenseNumberGrid2D::new(WIDTH, HEIGHT);
-
-
 
     for i in 0..10 {
         for j in 0..10 {
@@ -29,12 +25,7 @@ fn dense_number_grid_2d(){
 
     grid.update();
 
-    grid.apply_to_all_values(
-        |_value| {
-            1
-        },
-        GridOption::WRITE,
-    );
+    grid.apply_to_all_values(|_value| 1, GridOption::WRITE);
 
     grid.update();
 
@@ -49,7 +40,6 @@ fn dense_number_grid_2d(){
 
     grid.update();
 
-
     grid.apply_to_all_values(
         |value| {
             assert_eq!(*value, 2);
@@ -63,7 +53,7 @@ fn dense_number_grid_2d(){
             let loc = Int2D { x: i, y: j };
             let val = grid.get_value_unbuffered(&loc).unwrap();
             assert_eq!(val, 3);
-        }   
+        }
     }
 
     for i in 0..10 {
@@ -71,14 +61,14 @@ fn dense_number_grid_2d(){
             let loc = Int2D { x: i, y: j };
             let val = grid.get_value(&loc).unwrap();
             assert_eq!(val, 2);
-        }   
+        }
     }
 
     for i in 0..10 {
         for j in 0..10 {
             let loc = Int2D { x: i, y: j };
-            grid.set_value_location((i*j) as u16, &loc);
-        }   
+            grid.set_value_location((i * j) as u16, &loc);
+        }
     }
 
     grid.lazy_update();
@@ -87,8 +77,7 @@ fn dense_number_grid_2d(){
         for j in 0..10 {
             let loc = Int2D { x: i, y: j };
             let val = grid.get_value(&loc).unwrap();
-            assert_eq!(val,(i*j) as u16);
-        }   
+            assert_eq!(val, (i * j) as u16);
+        }
     }
-
 }

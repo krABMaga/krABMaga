@@ -6,48 +6,49 @@
 )))]
 use {rust_ab::engine::fields::field::Field, rust_ab::engine::fields::hnetwork::*};
 
-
-
 #[cfg(not(any(
     feature = "visualization",
     feature = "visualization_wasm",
     feature = "parallel"
 )))]
 #[test]
-fn hnetwork_hedge_types(){
+fn hnetwork_hedge_types() {
     let mut net: HNetwork<u32, String> = HNetwork::new();
     net.add_node(1);
     net.add_node(2);
     net.update();
 
-    net.add_edge(&[1 , 2], EdgeOptions::Labeled("Edge12".to_string()));
+    net.add_edge(&[1, 2], EdgeOptions::Labeled("Edge12".to_string()));
     net.update();
     let labeled = net.get_edge(&[1, 2]);
     assert!(labeled.is_some());
     let labeled = labeled.unwrap();
     assert!(labeled.label.is_some());
     assert_eq!(labeled.label.unwrap(), "Edge12");
-    let removed = net.remove_edge(&[1 , 2]);
+    let removed = net.remove_edge(&[1, 2]);
     assert!(removed.is_some());
     let removed = removed.unwrap();
     assert_eq!(removed.label.unwrap(), "Edge12");
 
     //----
 
-    net.add_edge(&[1 , 2], EdgeOptions::Weighted(0.123));
+    net.add_edge(&[1, 2], EdgeOptions::Weighted(0.123));
     net.update();
     let weighted = net.get_edge(&[1, 2]);
     assert!(weighted.is_some());
     let weighted = weighted.unwrap();
     assert!(weighted.weight.is_some());
     assert_eq!(weighted.weight.unwrap(), 0.123);
-    let removed = net.remove_edge(&[1 , 2]);
+    let removed = net.remove_edge(&[1, 2]);
     assert!(removed.is_some());
     let removed = removed.unwrap();
     assert_eq!(removed.weight.unwrap(), 0.123);
 
     //----
-    net.add_edge(&[1 , 2], EdgeOptions::WeightedLabeled("Edge12".to_string(), 0.123));
+    net.add_edge(
+        &[1, 2],
+        EdgeOptions::WeightedLabeled("Edge12".to_string(), 0.123),
+    );
     net.update();
     let wl = net.get_edge(&[1, 2]);
     assert!(wl.is_some());
@@ -56,12 +57,12 @@ fn hnetwork_hedge_types(){
     assert!(wl.label.is_some());
     assert_eq!(wl.clone().weight.unwrap(), 0.123);
     assert_eq!(wl.clone().label.unwrap(), "Edge12");
-    let removed = net.remove_edge(&[1 , 2]);
+    let removed = net.remove_edge(&[1, 2]);
     assert!(removed.is_some());
     let removed = removed.unwrap();
     assert_eq!(removed.clone().weight.unwrap(), 0.123);
     assert_eq!(removed.clone().label.unwrap(), "Edge12");
-}   
+}
 
 #[cfg(not(any(
     feature = "visualization",
@@ -69,13 +70,13 @@ fn hnetwork_hedge_types(){
     feature = "parallel"
 )))]
 #[test]
-fn hnetwork_update(){
+fn hnetwork_update() {
     use crate::utils::mynode::MyNode;
 
     let mut net: HNetwork<MyNode, String> = HNetwork::new();
-    net.update_node(MyNode{ id: 0, flag: false});
-    net.add_node(MyNode{ id: 0, flag: false});
-    let node = MyNode{ id: 0, flag: true};
+    net.update_node(MyNode { id: 0, flag: false });
+    net.add_node(MyNode { id: 0, flag: false });
+    let node = MyNode { id: 0, flag: true };
     net.update_node(node.clone());
     net.update();
     let get_node = net.get_object(node.id);
@@ -115,7 +116,7 @@ fn hnetwork_nodes() {
     assert!(net.get_object(4).is_none());
     assert!(net.get_edges(4).is_none());
     let n_edges_after = net.get_edges(1).unwrap().len();
-    assert!(n_edges_before > n_edges_after);    
+    assert!(n_edges_before > n_edges_after);
 }
 
 #[cfg(not(any(
@@ -172,7 +173,6 @@ fn hnetwork_edges() {
     assert_eq!(removed.as_ref().unwrap(), edge.as_ref().unwrap());
     let edge = net.get_edge(&[2, 4, 3, 1]);
     assert!(edge.is_none());
-
 
     //Remove all edges
     net.remove_all_edges();

@@ -29,6 +29,7 @@ pub use std::io::Write;
 pub use std::process::{Command, Stdio};
 pub use std::sync::{Arc, Mutex};
 pub use std::time::Duration;
+pub use::lazy_static::*;
 
 #[cfg(feature = "distributed_mpi")]
 pub use {
@@ -119,7 +120,13 @@ macro_rules! simulate {
             n_step,
             width = 15 - n_step.to_string().len() - $reps.to_string().len()
         );
-        println!("{esc}c", esc = 27 as char);
+
+        match option {
+            Info::Verbose => {}
+            Info::Normal => {
+                println!("{esc}c", esc = 27 as char);
+            }
+        }
 
         for r in 0..$reps {
             let mut schedule: Schedule = Schedule::new();

@@ -1,11 +1,8 @@
-
 #[cfg(test)]
-
 #[cfg(any(feature = "parallel"))]
 use {
- rust_ab::engine::fields::network::*,
- rust_ab::engine::fields::field::Field,
- std::borrow::BorrowMut,
+    rust_ab::engine::fields::field::Field, rust_ab::engine::fields::network::*,
+    std::borrow::BorrowMut,
 };
 
 #[cfg(any(feature = "parallel"))]
@@ -15,80 +12,77 @@ static INIT_EDGES: usize = 1;
 
 #[cfg(any(feature = "parallel"))]
 #[test]
-fn network_directed(){
+fn network_directed() {
     let mut net: Network<u16, String> = Network::new(true);
-    
-    for i in 0..NUM_NODES{
+
+    for i in 0..NUM_NODES {
         net.add_node(i);
     }
 
-    for i in 0..NUM_NODES{
-        net.add_edge(i, (i+1)%NUM_NODES, EdgeOptions::Simple);
+    for i in 0..NUM_NODES {
+        net.add_edge(i, (i + 1) % NUM_NODES, EdgeOptions::Simple);
     }
     net.lazy_update();
 
-    for i in 0..NUM_NODES{
+    for i in 0..NUM_NODES {
         let node = net.get_object(i as u32).unwrap();
         assert_eq!(node, i);
 
         let edges = net.get_edges(i).unwrap();
         assert_eq!(1, edges.len());
 
-        let e = net.get_edge(i, (i+1)%NUM_NODES).unwrap();
+        let e = net.get_edge(i, (i + 1) % NUM_NODES).unwrap();
         assert_eq!(e.u as u16, i);
-        assert_eq!(e.v as u16, (i+1)%NUM_NODES );
-
+        assert_eq!(e.v as u16, (i + 1) % NUM_NODES);
     }
 
-    for i in 0..NUM_NODES{
-        net.add_edge((i+1)%NUM_NODES,i,  EdgeOptions::Simple);
+    for i in 0..NUM_NODES {
+        net.add_edge((i + 1) % NUM_NODES, i, EdgeOptions::Simple);
     }
 
     net.lazy_update();
 
-    for i in 0..NUM_NODES{
+    for i in 0..NUM_NODES {
         let node = net.get_object(i as u32).unwrap();
         assert_eq!(node, i);
 
         let edges = net.get_edges(i).unwrap();
         assert_eq!(2, edges.len());
-        
     }
 }
 
 #[cfg(any(feature = "parallel"))]
 #[test]
-fn network_undirected(){
-
+fn network_undirected() {
     let mut net: Network<u16, String> = Network::new(false);
-    
-    for i in 0..NUM_NODES{
+
+    for i in 0..NUM_NODES {
         net.add_node(i);
     }
 
-    for i in 0..NUM_NODES{
-        net.add_edge(i, (i+1)%NUM_NODES, EdgeOptions::Simple);
+    for i in 0..NUM_NODES {
+        net.add_edge(i, (i + 1) % NUM_NODES, EdgeOptions::Simple);
     }
     net.lazy_update();
 
-    for i in 0..NUM_NODES{
+    for i in 0..NUM_NODES {
         let node = net.get_object(i as u32).unwrap();
         assert_eq!(node, i);
 
         let edges = net.get_edges(i).unwrap();
         assert_eq!(2, edges.len());
 
-        let e = net.get_edge(i, (i+1)%NUM_NODES).unwrap();
+        let e = net.get_edge(i, (i + 1) % NUM_NODES).unwrap();
         assert_eq!(e.u as u16, i);
-        assert_eq!(e.v as u16, (i+1)%NUM_NODES );
+        assert_eq!(e.v as u16, (i + 1) % NUM_NODES);
     }
 }
 
 // #[cfg(any(feature = "parallel"))]
 // #[test]
 // fn network_remove(){
-//     let mut net: Network<u16, String> = Network::new(true);    
-    
+//     let mut net: Network<u16, String> = Network::new(true);
+
 //     for i in 0..NUM_NODES{
 //         net.add_node(i);
 //     }
@@ -112,30 +106,29 @@ fn network_undirected(){
 
 //     assert_eq!(None, net.get_object(0));
 
-    // let edges = net.get_edges(1).unwrap();
-    // for e in edges.clone() {
-    //     println!("{} -- {} ", e.u, e.v);
-    // }
-
-    // assert_eq!(1, edges.len());
-    
-    // let edges = net.get_edges(NUM_NODES-1).unwrap();
-    // assert_eq!(1, edges.len());
-
-    // let removed = net.remove_outgoing_edges(3);
-    // assert_eq!(removed.unwrap().len(), 2);
-    // net.lazy_update();
-
-    // let edges = net.get_edges(3).unwrap();
-    // assert_eq!(0, edges.len());
-
-    // net.remove_all_edges();
-    // net.lazy_update();
-
-    // assert!(net.edges.borrow_mut().is_empty());
-
+// let edges = net.get_edges(1).unwrap();
+// for e in edges.clone() {
+//     println!("{} -- {} ", e.u, e.v);
 // }
 
+// assert_eq!(1, edges.len());
+
+// let edges = net.get_edges(NUM_NODES-1).unwrap();
+// assert_eq!(1, edges.len());
+
+// let removed = net.remove_outgoing_edges(3);
+// assert_eq!(removed.unwrap().len(), 2);
+// net.lazy_update();
+
+// let edges = net.get_edges(3).unwrap();
+// assert_eq!(0, edges.len());
+
+// net.remove_all_edges();
+// net.lazy_update();
+
+// assert!(net.edges.borrow_mut().is_empty());
+
+// }
 
 // #[cfg(any(feature = "parallel"))]
 // #[test]
@@ -182,8 +175,6 @@ fn network_undirected(){
 //         assert!(edges.len() >= INIT_EDGES);
 //     }
 
-
-    
 //     let mut net2: Network<u16, String> = Network::new(false);
 //     for i in 0..node_set.len(){
 //         net2.add_node(node_set[i]);
@@ -201,7 +192,7 @@ fn network_undirected(){
 //             Some(edges) => edges,
 //             None => Vec::new(),
 //         };
-        
+
 //         assert_eq!(edges.len(), edges2.len());
 
 //         for i in 0..edges.len(){
@@ -214,7 +205,6 @@ fn network_undirected(){
 
 //     }
 
-
 //     //----
 
 //     let mut net3: Network<u16, String> = Network::new(false);
@@ -223,7 +213,6 @@ fn network_undirected(){
 //     }
 //     net3.lazy_update();
 //     net3.preferential_attachment_BA_with_seed(node_set, INIT_EDGES, 1);
-
 
 //     let mut equals = true;
 //     for node in node_set{
@@ -237,7 +226,7 @@ fn network_undirected(){
 //             Some(edges) => edges,
 //             None => Vec::new(),
 //         };
-        
+
 //         if edges.len() != edges2.len(){
 //             equals = false;
 //             break;
