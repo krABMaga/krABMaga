@@ -441,23 +441,25 @@ macro_rules! explore_ga_parallel {
             $selection(&mut pop_fitness);
 
             // check if after selection the population size is too small
-            if pop_fitness.len() <= 1 {
-                println!("Population size <= 1, exiting...");
+            if pop_fitness.len() < 1 {
+                println!("Population size < 1, exiting...");
                 break;
             }
 
             {
-                // mutate the new population
                 let mut population = population.lock().unwrap();
                 population.clear();
                 for (individual, _) in pop_fitness.iter_mut() {
-                    $mutation(individual);
                     population.push(individual.clone())
                 }
                 pop_fitness.clear();
 
                 // crossover the new population
                 $crossover(&mut population);
+                // mutate the new population
+                for i in 0..population.len() {
+                    $mutation(&mut population[i]);
+                }
             }
         }
 
