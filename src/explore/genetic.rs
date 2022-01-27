@@ -179,8 +179,8 @@ macro_rules! explore_ga_sequential {
 
                 // saving the best fitness of this generation
                 // if fitness >= best_fitness_gen {
-                match best_fitness_gen{   
-                    Some(_) => 
+                match best_fitness_gen{
+                    Some(_) =>
                         if $cmp(&fitness, &best_fitness_gen.unwrap()) {
                             best_fitness_gen = Some(fitness);
                             best_individual_gen = individual.clone();
@@ -212,8 +212,8 @@ macro_rules! explore_ga_sequential {
             // saving the best fitness of all generation computed until n
             // if best_fitness_gen > best_fitness {
 
-            match best_fitness{   
-                Some(_) => 
+            match best_fitness{
+                Some(_) =>
                     if $cmp(&best_fitness_gen.unwrap(), &best_fitness.unwrap()) {
                         best_fitness = best_fitness_gen;
                         best_individual = best_individual_gen.clone();
@@ -391,8 +391,8 @@ macro_rules! explore_ga_parallel {
 
                 // saving the best fitness of this generation
                 // if fitness >= best_fitness_gen {
-                match best_fitness_gen{   
-                    Some(_) => 
+                match best_fitness_gen{
+                    Some(_) =>
                         if $cmp(&fitness, &best_fitness_gen.unwrap()) {
                             best_fitness_gen = Some(fitness);
                             best_individual_gen = individual.clone();
@@ -413,8 +413,8 @@ macro_rules! explore_ga_parallel {
 
             // saving the best fitness of all generation computed until now
             // if best_fitness_gen > best_fitness {
-            match best_fitness{   
-                Some(_) => 
+            match best_fitness{
+                Some(_) =>
                     if $cmp(&best_fitness_gen.unwrap(), &best_fitness.unwrap()) {
                         best_fitness = best_fitness_gen.clone();
                         best_individual = best_individual_gen.clone();
@@ -428,7 +428,7 @@ macro_rules! explore_ga_parallel {
             }
 
             println!("- Best fitness in generation {} is {:#?}", generation, best_fitness_gen.unwrap());
-            println!("-- Overall best fitness is found in generation {} and is {}", best_generation, best_fitness.unwrap());
+            println!("-- Overall best fitness is found in generation {} and is {:#?}", best_generation, best_fitness.unwrap());
 
             res.append(&mut result);
 

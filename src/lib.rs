@@ -19,6 +19,7 @@ pub use rand::{
     thread_rng, Rng,
 };
 
+pub use ::lazy_static::*;
 pub use csv::{Reader, Writer};
 pub use rayon::prelude::*;
 use std::error::Error;
@@ -29,7 +30,6 @@ pub use std::io::Write;
 pub use std::process::{Command, Stdio};
 pub use std::sync::{Arc, Mutex};
 pub use std::time::Duration;
-pub use::lazy_static::*;
 
 #[cfg(feature = "distributed_mpi")]
 pub use {
@@ -132,15 +132,15 @@ macro_rules! simulate {
             let mut schedule: Schedule = Schedule::new();
             state.init(&mut schedule);
             let start = std::time::Instant::now();
-            let pb = ProgressBar::new(n_step);
+            //let pb = ProgressBar::new(n_step);
             for i in 0..n_step {
                 schedule.step(state);
                 if state.end_condition(&mut schedule) {
                     break;
                 }
-                pb.inc(1);
+                //pb.inc(1);
             }
-            pb.finish_with_message("\u{1F980}");
+            //pb.finish_with_message("\u{1F980}");
 
             let run_duration = start.elapsed();
 
