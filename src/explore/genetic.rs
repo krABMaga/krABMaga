@@ -341,14 +341,14 @@ macro_rules! explore_ga_parallel {
                 let mut computed_ind: Vec<($state, Schedule)> = Vec::new();
 
                 let mut save_state: String = String::new();
-                for _ in 0..(reps as usize){
+                for r in 0..(reps as usize){
                     // initialize the state
                     let mut schedule: Schedule = Schedule::new();
                     let mut individual: $state;
                     {
                         let mut population = population.lock().unwrap();
                         // create the new state using the parameters
-                        individual = <$state>::new_with_parameters(&population[index]);
+                        individual = <$state>::new_with_parameters(r, &population[index]);
                     }
 
                     // state initilization
@@ -427,8 +427,8 @@ macro_rules! explore_ga_parallel {
                 }
             }
 
-            println!("- Best fitness in generation {} is {:#?}", generation, best_fitness_gen.unwrap());
-            println!("-- Overall best fitness is found in generation {} and is {:#?}", best_generation, best_fitness.unwrap());
+            println!("- Best fitness in generation {} is {:#?} using {:#?}", generation, best_fitness_gen.unwrap(), best_individual_gen);
+            println!("-- Overall best fitness is found in generation {} and is {:#?} using {:#?}", best_generation, best_fitness.unwrap(), best_individual);
 
             res.append(&mut result);
 
