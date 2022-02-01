@@ -34,7 +34,6 @@ downcast-rs = "1.*"
 csv = "1.*"
 indicatif = "0.*"
 crossbeam = "0.*"
-rand_pcg = "0.*"
 
 # Model exploration AWS features
 lambda_runtime = {version = "0.4", optional = true}

@@ -349,6 +349,7 @@ macro_rules! explore_ga_parallel {
                         let mut population = population.lock().unwrap();
                         // create the new state using the parameters
                         individual = <$state>::new_with_parameters(r, &population[index]);
+
                     }
 
                     // state initilization

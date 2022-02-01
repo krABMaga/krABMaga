@@ -6,7 +6,6 @@ pub use core::fmt;
 pub use hashbrown;
 pub use indicatif::ProgressBar;
 pub use rand;
-pub use rand_pcg;
 
 #[cfg(any(feature = "visualization", feature = "visualization_wasm", doc))]
 pub mod visualization;

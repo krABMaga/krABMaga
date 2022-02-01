@@ -2,10 +2,11 @@ use crate::engine::fields::field::Field;
 use cfg_if::cfg_if;
 use hashbrown::HashMap;
 use rand::prelude::*;
-use rand_pcg::Pcg64;
 use std::cell::RefCell;
 use std::fmt::Display;
 use std::hash::Hash;
+use rand::rngs::StdRng;
+
 
 cfg_if! {
     if #[cfg(any(feature = "parallel", feature = "visualization", feature = "visualization_wasm"))]{
@@ -141,7 +142,7 @@ cfg_if! {
 
             //part of "preferential attachment" process
             //in which new network members prefer to make a connection to the more popular existing members.
-            pub fn add_prob_edge(&self, u: O, n_sample: &usize) {
+            pub fn add_prob_edge(&self, u: O, n_sample: &usize, my_seed: u64) {
                 let id2nodes = &self.id2nodes;
                 let mut dist: Vec<(&O, i32)> = Vec::new();
                 let edges = &self.edges;
@@ -155,7 +156,7 @@ cfg_if! {
                     }
                 }
 
-                let mut rng = rand::thread_rng();
+                let mut rng = StdRng::seed_from_u64(my_seed);
                 let amount: usize = if edges.len() < *n_sample {
                     edges.len()
                 } else {
@@ -314,7 +315,7 @@ cfg_if! {
                     self.add_edge(first_node.clone(), second_node.clone(), EdgeOptions::Simple);
 
                     // self.update();
-                    let mut rng = Pcg64::seed_from_u64(my_seed);
+                    let mut rng = StdRng::seed_from_u64(my_seed);
                     //let mut rng = rand::thread_rng();
                     let mut dist: Vec<(O, i32, usize)> = Vec::with_capacity(n_nodes);
 
@@ -617,7 +618,7 @@ cfg_if! {
 
             //part of "preferential attachment" process
             //in which new network members prefer to make a connection to the more popular existing members.
-            pub fn add_prob_edge(&self, u: O, n_sample: &usize) {
+            pub fn add_prob_edge(&self, u: O, n_sample: &usize, my_seed: u64) {
                 let id2nodes = self.id2nodes.borrow();
                 let mut dist: Vec<(&O, i32)> = Vec::new();
                 let edges = self.edges.borrow();
@@ -628,7 +629,7 @@ cfg_if! {
                     }
                 }
 
-                let mut rng = rand::thread_rng();
+                let mut rng = StdRng::seed_from_u64(my_seed);
                 let amount: usize = if edges.len() < *n_sample {
                     edges.len()
                 } else {
@@ -825,7 +826,7 @@ cfg_if! {
                     let second_node = node_set[1].clone();
                     self.add_edge(first_node.clone(), second_node.clone(), EdgeOptions::Simple);
 
-                    let mut rng = Pcg64::seed_from_u64(my_seed);
+                    let mut rng = StdRng::seed_from_u64(my_seed);
 
                     let mut dist: Vec<(O, i32, usize)> = Vec::with_capacity(n_nodes);
 
