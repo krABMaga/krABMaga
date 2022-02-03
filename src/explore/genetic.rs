@@ -157,9 +157,9 @@ macro_rules! explore_ga_sequential {
 
                 let mut computed_ind: Vec<($state, Schedule)> = Vec::new();
 
-                for _ in 0..(reps as usize){
+                for r in 0..(reps as usize){
                     // initialize the state
-                    let mut individual_state = <$state>::new_with_parameters(individual);
+                    let mut individual_state = <$state>::new_with_parameters(r, individual);
                     let mut schedule: Schedule = Schedule::new();
                     individual_state.init(&mut schedule);
                     // compute the simulation
@@ -226,8 +226,8 @@ macro_rules! explore_ga_sequential {
                 }
             }
 
-            println!("- Best fitness in generation {} is {:#?}", generation, best_fitness_gen.unwrap());
-            println!("-- Overall best fitness is found in generation {} and is {}", best_generation, best_fitness.unwrap());
+            println!("- Best fitness in generation {} is {:#?} using {:#?}", generation, best_fitness_gen.unwrap(), best_individual_gen);
+            println!("-- Overall best fitness is found in generation {} and is {:#?} using {:#?}", best_generation, best_fitness.unwrap(), best_individual);
 
             // if flag is true the desired fitness is found
             if flag {
@@ -246,13 +246,16 @@ macro_rules! explore_ga_sequential {
             // mutate the new population
             population.clear();
             for (individual, _) in pop_fitness.iter_mut() {
-                $mutation(individual);
                 population.push(individual.clone());
             }
             pop_fitness.clear();
 
             // crossover the new population
             $crossover(&mut population);
+
+            for i in 0..population.len() {
+                $mutation(&mut population[i]);
+            }
         }
 
         println!("Resulting best fitness is {}", best_fitness.unwrap());
@@ -331,16 +334,19 @@ macro_rules! explore_ga_parallel {
             let mut best_fitness_gen: Option<f32> = None;
             let mut best_individual_gen: String = String::new();
 
-            let len = population.lock().unwrap().len();
+            let mut len = population.lock().unwrap().len();
 
             let mut result = Vec::new();
             // execute the simulation for each member of population
             // iterates through the population
 
+            //todo change 0..len into population.iter()
+            // to remove lock on population
             (0..len).into_par_iter().map( |index| {
                 let mut computed_ind: Vec<($state, Schedule)> = Vec::new();
 
                 let mut save_state: String = String::new();
+
                 for r in 0..(reps as usize){
                     // initialize the state
                     let mut schedule: Schedule = Schedule::new();
@@ -349,7 +355,6 @@ macro_rules! explore_ga_parallel {
                         let mut population = population.lock().unwrap();
                         // create the new state using the parameters
                         individual = <$state>::new_with_parameters(r, &population[index]);
-
                     }
 
                     // state initilization
@@ -392,7 +397,7 @@ macro_rules! explore_ga_parallel {
 
                 // saving the best fitness of this generation
                 // if fitness >= best_fitness_gen {
-                match best_fitness_gen{
+                match best_fitness_gen {
                     Some(_) =>
                         if $cmp(&fitness, &best_fitness_gen.unwrap()) {
                             best_fitness_gen = Some(fitness);
@@ -414,7 +419,7 @@ macro_rules! explore_ga_parallel {
 
             // saving the best fitness of all generation computed until now
             // if best_fitness_gen > best_fitness {
-            match best_fitness{
+            match best_fitness {
                 Some(_) =>
                     if $cmp(&best_fitness_gen.unwrap(), &best_fitness.unwrap()) {
                         best_fitness = best_fitness_gen.clone();

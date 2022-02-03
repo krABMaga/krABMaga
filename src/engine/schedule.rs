@@ -219,7 +219,8 @@ cfg_if! {
         pub struct Schedule{
             pub step: u64,
             pub time: f32,
-            pub events: PriorityQueue<AgentImpl,Priority>
+            pub events: PriorityQueue<AgentImpl,Priority>,
+            pub agent_ids_counting: u32,
         }
 
         #[derive(Clone)]
@@ -255,6 +256,7 @@ cfg_if! {
                     step: 0,
                     time: 0.0,
                     events: PriorityQueue::new(),
+                    agent_ids_counting: 0,
                 }
             }
 
@@ -262,11 +264,18 @@ cfg_if! {
                 self.events.push(agent, Priority{time: the_time, ordering: the_ordering});
             }
 
-            pub fn schedule_repeating(&mut self, agent: Box<dyn Agent>, the_time:f32, the_ordering:i32) {
-                let mut a = AgentImpl::new(agent);
+            // return false if the insertion in the priority queue fails
+            pub fn schedule_repeating(&mut self, agent: Box<dyn Agent>, the_time:f32, the_ordering:i32) -> bool {
+                let mut a = AgentImpl::new(agent, self.agent_ids_counting);
+                self.agent_ids_counting +=1;
                 a.repeating = true;
+
                 let pr = Priority::new(the_time, the_ordering);
-                self.events.push(a, pr);
+                let opt = self.events.push(a, pr);
+                match opt {
+                    Some(_) => false,
+                    None => true,
+                }
             }
 
             pub fn get_all_events(&self) -> Vec<Box<dyn Agent>>{
@@ -310,11 +319,11 @@ cfg_if! {
 
                     match events.pop() {
                         Some(item) => {
-                            let (_agent, priority) = item;
+                            let (agent, priority) = item;
                             if priority.time > self.time {
                                 break;
                             }
-                            cevents.push(Pair::new(_agent, priority));
+                            cevents.push(Pair::new(agent, priority));
                         },
                         None => panic!("Agent not found - inside loop"),
                     }
