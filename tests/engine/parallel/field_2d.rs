@@ -42,7 +42,7 @@ fn field_2d_neighbors() {
     let last_d = Real2D { x: 0.0, y: 0.0 };
 
     let mut bird1 = Bird::new(1, Real2D { x: 0.0, y: 0.0 }, last_d);
-    let mut bird2 = Bird::new(2, Real2D { x: 0.0, y: 0.0 }, last_d);
+    let bird2 = Bird::new(2, Real2D { x: 0.0, y: 0.0 }, last_d);
 
     state.field1.set_object_location(bird1, bird1.pos);
     state.field1.set_object_location(bird2, bird2.pos);

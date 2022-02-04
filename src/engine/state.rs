@@ -9,6 +9,7 @@ cfg_if! {
 
             fn init(&mut self, schedule: &mut Schedule);
             fn as_any(&self) -> &dyn Any;
+            fn as_any_mut(&mut self) -> &mut dyn Any;
             fn as_state_mut(&mut self) -> &mut dyn State;
             fn as_state(&self) -> &dyn State;
 

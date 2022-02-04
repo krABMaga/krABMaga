@@ -50,7 +50,8 @@ cfg_if! {
             pub step: usize,
             pub time: f32,
             pub events: Arc<Mutex<PriorityQueue<AgentImpl, Priority>>>,
-            pub thread_num:usize
+            pub thread_num:usize,
+            pub agent_ids_counting: Arc<Mutex<u32>>,
         }
 
         #[derive(Clone)]
@@ -81,7 +82,8 @@ cfg_if! {
                     step: 0,
                     time: 0.0,
                     events: Arc::new(Mutex::new(PriorityQueue::new())),
-                    thread_num: *THREAD_NUM
+                    thread_num: *THREAD_NUM,
+                    agent_ids_counting: Arc::new(Mutex::new(0)),
                 }
             }
 
@@ -91,6 +93,7 @@ cfg_if! {
                     time: 0.0,
                     events: Arc::new(Mutex::new(PriorityQueue::new())),
                     thread_num,
+                    agent_ids_counting: Arc::new(Mutex::new(0)),
                 }
             }
 
@@ -105,7 +108,9 @@ cfg_if! {
             }
 
             pub fn schedule_repeating(&mut self, agent: Box<dyn Agent>, the_time:f32, the_ordering:i32) {
-                let mut a = AgentImpl::new(agent);
+                let mut agent_ids_counting = self.agent_ids_counting.lock().unwrap();
+                let mut a = AgentImpl::new(agent, *agent_ids_counting); 
+                *agent_ids_counting +=1;
                 a.repeating = true;
                 let pr = Priority::new(the_time, the_ordering);
                 self.events.lock().unwrap().push(a, pr);
