@@ -53,6 +53,11 @@ futures = {version = "0.3", optional = true}
 mpi = { git = "https://github.com/bsteinb/rsmpi", optional = true }
 memoffset = { version = "0.6.4", optional = true}
 
+# Bayesian
+friedrich = { version = "0.4.1", optional = true }
+statrs = { version = "0.15.0", optional = true } 
+argmin = { version = "0.5.0", optional = true }
+
 # Visualization features
 bevy_canvas = {version="0.1", optional=true}
 image = {version="0.*",optional=true}
@@ -83,7 +88,14 @@ aws = [
     "aws-sdk-lambda",
     "futures"
 ]
+bayesian = [
+    "friedrich",
+    "statrs", 
+    "argmin"
+]
+
 parallel = []
+
 visualization = [
     "bevy_canvas",
     "bevy",

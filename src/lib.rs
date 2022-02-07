@@ -48,6 +48,9 @@ pub use {
 #[cfg(feature = "distributed_mpi")]
 pub extern crate mpi;
 
+#[cfg(any(feature = "bayesian"))]
+pub use {argmin, friedrich, statrs};
+
 #[cfg(feature = "aws")]
 pub use {
     aws_config,

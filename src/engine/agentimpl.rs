@@ -12,11 +12,11 @@ pub struct AgentImpl {
 
 impl AgentImpl {
     pub fn new(the_agent: Box<dyn Agent>, id: u32) -> AgentImpl {
-       AgentImpl {
-                id: id,
-                agent: the_agent,
-                repeating: false,
-        } 
+        AgentImpl {
+            id: id,
+            agent: the_agent,
+            repeating: false,
+        }
     }
 
     pub fn id(self) -> u32 {

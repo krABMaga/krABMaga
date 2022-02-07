@@ -561,17 +561,17 @@ cfg_if! {
             let id2nodes = self.id2nodes.borrow();
             let nodes = id2nodes.keys();
             let mut formatter = String::new();
-            
+
             for i in 0..nodes.len(){
                // formatter.push_str(format!("{} ", i.to_string()).as_str() );
                 for j in 0..nodes.len(){
-                    
+
 
                     let id1 = id2nodes.get(&(i as u32)).unwrap();
                     let id2 = id2nodes.get(&(j as u32)).unwrap();
 
                     match self.get_edge(id1.clone(), id2.clone()) {
-                        Some(_) => formatter.push('1'), 
+                        Some(_) => formatter.push('1'),
                         None => formatter.push('0'),
                     }
                 }
@@ -893,7 +893,7 @@ cfg_if! {
                             .choose_multiple_weighted(&mut rng, amount, |choice| choice.1)
                             .unwrap()
                             .collect::<Vec<_>>();
-                
+
                         for choice in choices_list {
                             self.add_edge(node.clone(), choice.0.clone(), EdgeOptions::Simple);
                             choice_pos.push(choice.2);
