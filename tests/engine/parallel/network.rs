@@ -2,13 +2,11 @@
 #[cfg(any(feature = "parallel"))]
 use {
     rust_ab::engine::fields::field::Field, rust_ab::engine::fields::network::*,
-    std::borrow::BorrowMut,
 };
 
 #[cfg(any(feature = "parallel"))]
 static NUM_NODES: u16 = 10;
-#[cfg(any(feature = "parallel"))]
-static INIT_EDGES: usize = 1;
+
 
 #[cfg(any(feature = "parallel"))]
 #[test]

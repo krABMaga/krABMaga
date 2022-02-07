@@ -74,19 +74,12 @@ jobs:
      - name: Cargo Clean
        run: |
         cargo clean
-
      - name: Setup
        run: |
-<<<<<<< HEAD
-        ./grcov . --binary-path ./target/debug/ -s . -t lcov --branch --ignore-not-existing --ignore "/*" -o lcov.info
-    
-     - name: Upload to Codecov
-=======
         rustup update
         cargo install cargo-tarpaulin
         
      - name: Run Tests
->>>>>>> ee3c945f2304f1dee81849bc5983c379b10c3ea0
        run: |
         cargo tarpaulin --implicit-test-threads  --out Xml --exclude-files src/utils/* src/visualization/*
       # mv cobertura.xml cobertura2.xml

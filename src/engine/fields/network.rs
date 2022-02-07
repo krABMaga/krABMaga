@@ -515,7 +515,7 @@ cfg_if! {
                 };
 
                 let mut nodes2id = self.nodes2id.borrow_mut();
-                let d = self.id2nodes.remove(&uid);
+                self.id2nodes.remove(&uid);
                 nodes2id.remove(&u);
                 true
             }
