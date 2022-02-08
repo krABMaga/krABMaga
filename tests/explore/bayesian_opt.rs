@@ -1,18 +1,20 @@
 #[cfg(test)]
+
 #[cfg(any(feature = "bayesian"))]
-use {
+use{
     argmin::prelude::*,
     argmin::solver::neldermead::NelderMead,
+    argmin::solver::linesearch::MoreThuenteLineSearch,
+    argmin::solver::quasinewton::LBFGS,
+    finitediff::FiniteDiff,
     friedrich::gaussian_process::GaussianProcess,
     friedrich::kernel::Gaussian,
     friedrich::prior::ConstantPrior,
     statrs::distribution::{Continuous, ContinuousCDF, Normal},
-};
-
-#[cfg(any(feature = "bayesian"))]
-use rust_ab::{
-    explore::bayesian_opt::*,
-    *, {rand, Rng},
+    statrs::statistics::Distribution,
+    rust_ab::explore::bayesian_opt::*,
+    rust_ab::*,
+    rust_ab::{rand, Rng},
 };
 
 #[cfg(any(feature = "bayesian"))]
@@ -41,7 +43,7 @@ fn bayesian_optimization() {
         acquisition_function,
         get_points,
         domain_check,
-        50,
+        20,
     );
 
     println!("---\nFinal res: Point {:?}, val {y}", x);
@@ -50,11 +52,16 @@ fn bayesian_optimization() {
 
 #[cfg(any(feature = "bayesian"))]
 fn init_population() -> (Vec<Vec<f64>>, Vec<f64>) {
-    let x_init: Vec<Vec<f64>> = vec![vec![-2., -2.], vec![1., 1.], vec![-1., 1.], vec![4., -2.]];
+    let x_init: Vec<Vec<f64>> = vec![vec![-2., -2.], vec![1., 1.], vec![-1., 0.5], vec![3., -2.]];
     let mut y_init: Vec<f64> = Vec::with_capacity(x_init.len());
 
     for x in &x_init {
-        y_init.push(costly_function(x));
+        
+        let y = costly_function(x);
+        println!("{:?} scores: {}", x, y);
+        y_init.push(y);
+        // y_init.push(costly_function(x));
+    
     }
 
     (x_init, y_init)
@@ -75,8 +82,11 @@ fn get_points(
     x: &Vec<Vec<f64>>,
     gauss_pr: &GaussianProcess<Gaussian, ConstantPrior>,
 ) -> Vec<Vec<f64>> {
-    let batch_size = 50;
+    let batch_size = 10;
     let scale = 10.;
+
+
+
     let trial_x: Vec<Vec<f64>> = (0..batch_size)
         .into_iter()
         .map(|i| {
@@ -126,7 +136,10 @@ pub fn acquisition_function(
     let normal = Normal::new(0.0, 1.0).unwrap();
     let z_cfd = normal.cdf(z);
     let z_pdf = normal.pdf(z);
-    (mean_y_new - mean_y_max) * z_cfd + sigma_y_new * z_pdf
+    let ei = (mean_y_new - mean_y_max) * z_cfd + sigma_y_new * z_pdf;
+    // x_new[0] * x_new[1]
+    // println!("EI {}");
+    ei
 }
 
 #[cfg(any(feature = "bayesian"))]

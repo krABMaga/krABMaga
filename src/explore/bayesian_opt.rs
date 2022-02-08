@@ -1,21 +1,34 @@
 #[cfg(any(feature = "bayesian"))]
-use {
-    argmin::prelude::*,
+use {argmin::prelude::*,
     argmin::solver::neldermead::NelderMead,
+    finitediff::FiniteDiff,
     friedrich::gaussian_process::GaussianProcess,
     friedrich::kernel::Gaussian,
     friedrich::prior::ConstantPrior,
     statrs::distribution::{Continuous, ContinuousCDF, Normal},
-    crate::{rand, rand::Rng},
+    statrs::statistics::Distribution,
 };
 
+#[cfg(any(feature = "bayesian"))]
+use crate::{rand, rand::Rng};
 
+#[cfg(any(feature = "bayesian"))]
 #[macro_export]
 macro_rules! build_optimizer {
     ($acquisition: tt) => {
-        struct Opt {
+        struct Opt{
             gauss_pr: GaussianProcess<Gaussian, ConstantPrior>,
             x: Vec<Vec<f64>>,
+        }
+
+        impl Opt {
+            pub fn new(x: &Vec<Vec<f64>>, y: &Vec<f64>) -> Opt{
+                Opt 
+                {
+                    gauss_pr: GaussianProcess::default(x.clone(), y.clone()),
+                    x: x.clone(),
+                }
+            }
         }
 
         impl ArgminOp for Opt {
@@ -23,7 +36,7 @@ macro_rules! build_optimizer {
             // Type of the return value computed by the cost function
             type Output = f64;
             // Type of the Hessian. Can be `()` if not needed.
-            type Hessian = Vec<Vec<f64>>;
+            type Hessian = Vec<f64>;
             // Type of the Jacobian. Can be `()` if not needed.
             type Jacobian = ();
             // Floating point precision
@@ -33,10 +46,17 @@ macro_rules! build_optimizer {
             fn apply(&self, p: &Self::Param) -> Result<Self::Output, Error> {
                 Ok($acquisition(&self.gauss_pr, &p.to_vec(), &self.x))
             }
+
+            fn gradient(&self, p: &Self::Param) -> Result<Self::Param, Error> {
+                Ok((*p).forward_diff(&|x| $acquisition(&self.gauss_pr, &x.to_vec(), &self.x)))
+            }
         }
     };
 }
 
+
+
+#[cfg(any(feature = "bayesian"))]
 #[macro_export]
 macro_rules! bayesian_opt {
     (
@@ -47,9 +67,9 @@ macro_rules! bayesian_opt {
         $check_domain: tt,
         $n_iter: expr,
     ) => {{
+
         build_optimizer!(acquisition_function);
 
-        println!("Init population");
         let (mut x_init, mut y_init) = $init_population();
 
         if x_init.len() != y_init.len() {
@@ -71,7 +91,7 @@ macro_rules! bayesian_opt {
 
         for i in 0..$n_iter {
             println!("-----\nIteration {i}");
-            let mut min_ei = f64::MAX;
+            let mut min_ei = f64::MAX/100.;
             let mut optimal: Vec<f64> = Vec::new();
 
             //check how to manage his wisi
@@ -79,33 +99,56 @@ macro_rules! bayesian_opt {
             let trial_x = $gen_new_points(&x_init, &gauss_pr);
             // let (mut x_next, ei) = $acquisition_function(&x_init, trial_x, gauss_pr);
 
-            let acquisition = Opt {
-                gauss_pr,
-                x: x_init.clone(),
-            };
+            let mut min = f64::MAX;
+            let mut x_next:Vec<f64> = Vec::new();
+            for i in 0..trial_x.len() {
+                let acquisition = Opt::new(&x_init, &y_init);
 
-            let solver = NelderMead::new().with_initial_params(trial_x);
-            let res = Executor::new(acquisition, solver, vec![])
-                //.add_observer(ArgminSlogLogger::term(), ObserverMode::Always)
-                .max_iters(100)
-                .run();
+                let linesearch:MoreThuenteLineSearch<Vec<f64>, f64> = MoreThuenteLineSearch::new().c(1e-4, 0.9).unwrap();
 
-            let res = res.expect("Something goes wrong with NelderMead algo");
-            let mut x_next = res.state().get_best_param();
-            let ei = res.state().get_best_cost();
+                // Set up solver
+                let solver: LBFGS<_,Vec<f64>,f64>= LBFGS::new(linesearch, 7);
+            
+                // Run solver
+                let res = Executor::new(acquisition, solver, trial_x[i].clone())
+                    // .add_observer(ArgminSlogLogger::term(), ObserverMode::Always)
+                    .max_iters(50)
+                    .run();
+            
+
+                let res = res.expect("Something goes wrong with NelderMead algo");
+                let ei = res.state().get_best_cost();
+                if ei < min {
+                    min = ei;
+                    x_next = res.state.get_best_param();
+                }
+            }
+
+            // let x_next = optimization(&gauss_pr, &x_init, &trial_x);
+
+            // let solver = NelderMead::new().with_initial_params(trial_x);
+            // let res = Executor::new(acquisition, solver, vec![])
+            //     //.add_observer(ArgminSlogLogger::term(), ObserverMode::Always)
+            //     .max_iters(100)
+            //     .run();
+
+            // let res = res.expect("Something goes wrong with NelderMead algo");
+            // let mut x_next = res.state().get_best_param();
+            // let ei = res.state().get_best_cost();
+            // println!("opt {:?}, value {}", &x_next, ei);
 
             //evaluation od new val
             $check_domain(&mut x_next);
             let y_next = $costly_function(&x_next);
             println!("New point {:?}", &x_next);
-            println!("f(x) = {y_next}, ei(x) = {ei}");
+            println!("f(x) = {y_next}");
             x_init.push(x_next.clone());
             y_init.push(y_next);
 
             if y_next < y_min {
                 y_min = y_next;
                 x_min = x_next;
-                optimal_ei = ei;
+                optimal_ei = min;
             }
         }
 
@@ -113,6 +156,7 @@ macro_rules! bayesian_opt {
     }};
 }
 
+#[cfg(any(feature = "bayesian"))]
 #[macro_export]
 macro_rules! bayesian_opt_base {
     (
@@ -164,7 +208,6 @@ macro_rules! bayesian_opt_base {
         (x_min, y_min)
     }};
 }
-
 #[cfg(any(feature = "bayesian"))]
 struct OptAcquisition {
     gauss_pr: GaussianProcess<Gaussian, ConstantPrior>,
@@ -205,7 +248,7 @@ pub fn acquisition_function_base(
     let mut sigma_y_new: f64;
 
     mean_y_new = gauss_pr.predict(x_new);
-    sigma_y_new = gauss_pr.predict_variance(x_new);
+    sigma_y_new = gauss_pr.predict_variance(x_new); //standard deviation
     sigma_y_new = sigma_y_new.sqrt();
     if sigma_y_new == 0. {
         return 0.;
@@ -273,6 +316,5 @@ pub fn get_next_point_base(
 
     optimal = res.state().get_best_param();
     min_ei = res.state().get_best_cost();
-
     (optimal, min_ei)
 }
