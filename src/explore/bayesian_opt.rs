@@ -1,34 +1,64 @@
 #[cfg(any(feature = "bayesian"))]
-use {argmin::prelude::*,
-    argmin::solver::neldermead::NelderMead,
+use {
+    argmin::prelude::*,
+    argmin::solver::linesearch::MoreThuenteLineSearch,
+    argmin::solver::quasinewton::LBFGS,
     finitediff::FiniteDiff,
     friedrich::gaussian_process::GaussianProcess,
     friedrich::kernel::Gaussian,
     friedrich::prior::ConstantPrior,
+    lazy_static::lazy_static,
     statrs::distribution::{Continuous, ContinuousCDF, Normal},
-    statrs::statistics::Distribution,
 };
 
 #[cfg(any(feature = "bayesian"))]
 use crate::{rand, rand::Rng};
 
 #[cfg(any(feature = "bayesian"))]
+use std::{
+    mem::MaybeUninit,
+    sync::{Mutex, Once},
+};
+
+#[cfg(any(feature = "bayesian"))]
+pub struct SingletonGP {
+    pub gauss_pr: Mutex<GaussianProcess<Gaussian, ConstantPrior>>,
+}
+
+#[cfg(any(feature = "bayesian"))]
+impl SingletonGP {
+    pub fn new(x: &Vec<Vec<f64>>, y: &Vec<f64>) -> Self {
+        SingletonGP {
+            gauss_pr: Mutex::new(GaussianProcess::default(x.clone(), y.clone())),
+        }
+    }
+}
+
+#[cfg(any(feature = "bayesian"))]
+pub fn get_instance(x: &Vec<Vec<f64>>, y: &Vec<f64>) -> &'static SingletonGP {
+    static mut SINGLETON: MaybeUninit<SingletonGP> = MaybeUninit::uninit();
+    static ONCE: Once = Once::new();
+
+    unsafe {
+        ONCE.call_once(|| {
+            // Make it
+            let singleton = SingletonGP::new(x, y);
+            // Store it to the static var, i.e. initialize it
+            SINGLETON.write(singleton);
+        });
+
+        // Now we give out a shared reference to the data, which is safe to use
+        // concurrently.
+        SINGLETON.assume_init_ref()
+    }
+}
+
+#[cfg(any(feature = "bayesian"))]
 #[macro_export]
 macro_rules! build_optimizer {
     ($acquisition: tt) => {
-        struct Opt{
-            gauss_pr: GaussianProcess<Gaussian, ConstantPrior>,
+        struct Opt {
             x: Vec<Vec<f64>>,
-        }
-
-        impl Opt {
-            pub fn new(x: &Vec<Vec<f64>>, y: &Vec<f64>) -> Opt{
-                Opt 
-                {
-                    gauss_pr: GaussianProcess::default(x.clone(), y.clone()),
-                    x: x.clone(),
-                }
-            }
         }
 
         impl ArgminOp for Opt {
@@ -44,17 +74,31 @@ macro_rules! build_optimizer {
 
             // Apply the cost function to a parameter `p`
             fn apply(&self, p: &Self::Param) -> Result<Self::Output, Error> {
-                Ok($acquisition(&self.gauss_pr, &p.to_vec(), &self.x))
+                Ok($acquisition(
+                    &get_instance(&vec![vec![0.]], &vec![0.])
+                        .gauss_pr
+                        .lock()
+                        .unwrap(),
+                    &p.to_vec(),
+                    &self.x,
+                ))
             }
 
             fn gradient(&self, p: &Self::Param) -> Result<Self::Param, Error> {
-                Ok((*p).forward_diff(&|x| $acquisition(&self.gauss_pr, &x.to_vec(), &self.x)))
+                Ok((*p).forward_diff(&|x| {
+                    $acquisition(
+                        &get_instance(&vec![vec![0.]], &vec![0.])
+                            .gauss_pr
+                            .lock()
+                            .unwrap(),
+                        &x.to_vec(),
+                        &self.x,
+                    )
+                }))
             }
         }
     };
 }
-
-
 
 #[cfg(any(feature = "bayesian"))]
 #[macro_export]
@@ -67,7 +111,6 @@ macro_rules! bayesian_opt {
         $check_domain: tt,
         $n_iter: expr,
     ) => {{
-
         build_optimizer!(acquisition_function);
 
         let (mut x_init, mut y_init) = $init_population();
@@ -89,53 +132,53 @@ macro_rules! bayesian_opt {
         let mut x_min = x_init[y_index].clone();
         let mut optimal_ei = 0.;
 
+        get_instance(&x_init, &y_init);
         for i in 0..$n_iter {
             println!("-----\nIteration {i}");
-            let mut min_ei = f64::MAX/100.;
+            let mut min_ei = f64::MAX / 100.;
             let mut optimal: Vec<f64> = Vec::new();
 
             //check how to manage his wisi
-            let gauss_pr = GaussianProcess::default(x_init.clone(), y_init.clone());
-            let trial_x = $gen_new_points(&x_init, &gauss_pr);
+            // let gauss_pr = GaussianProcess::default(x_init.clone(), y_init.clone());
+            let trial_x = $gen_new_points(&x_init);
             // let (mut x_next, ei) = $acquisition_function(&x_init, trial_x, gauss_pr);
 
             let mut min = f64::MAX;
-            let mut x_next:Vec<f64> = Vec::new();
+            let mut x_next: Vec<f64> = Vec::new();
             for i in 0..trial_x.len() {
-                let acquisition = Opt::new(&x_init, &y_init);
+                let acquisition = Opt { x: x_init.clone() };
 
-                let linesearch:MoreThuenteLineSearch<Vec<f64>, f64> = MoreThuenteLineSearch::new().c(1e-4, 0.9).unwrap();
+                let mut linesearch: MoreThuenteLineSearch<Vec<f64>, f64> =
+                    MoreThuenteLineSearch::new().c(1e-4, 0.9).unwrap();
+                
 
                 // Set up solver
-                let solver: LBFGS<_,Vec<f64>,f64>= LBFGS::new(linesearch, 7);
-            
-                // Run solver
-                let res = Executor::new(acquisition, solver, trial_x[i].clone())
-                    // .add_observer(ArgminSlogLogger::term(), ObserverMode::Always)
-                    .max_iters(50)
-                    .run();
-            
+                let solver: LBFGS<_, Vec<f64>, f64> =
+                    LBFGS::new(linesearch, 7);
 
-                let res = res.expect("Something goes wrong with NelderMead algo");
-                let ei = res.state().get_best_cost();
-                if ei < min {
-                    min = ei;
-                    x_next = res.state.get_best_param();
+                // Run solver
+                let execution = || -> Result<ArgminResult<_>, Error> {
+                    let res = Executor::new(acquisition, solver, trial_x[i].clone())
+                        // .add_observer(ArgminSlogLogger::term(), ObserverMode::Always)
+                        .max_iters(100)
+                        .run()?;
+                    Ok(res)
+                };
+
+                let res = execution();
+
+                match res {
+                    Ok(res) => {
+                        let ei = res.state().get_best_cost();
+                        // x_next = res.state().get_best_param();
+                        if ei < min {
+                            min = ei;
+                            x_next = res.state.get_best_param();
+                        }
+                    }
+                    Err(_) => continue,
                 }
             }
-
-            // let x_next = optimization(&gauss_pr, &x_init, &trial_x);
-
-            // let solver = NelderMead::new().with_initial_params(trial_x);
-            // let res = Executor::new(acquisition, solver, vec![])
-            //     //.add_observer(ArgminSlogLogger::term(), ObserverMode::Always)
-            //     .max_iters(100)
-            //     .run();
-
-            // let res = res.expect("Something goes wrong with NelderMead algo");
-            // let mut x_next = res.state().get_best_param();
-            // let ei = res.state().get_best_cost();
-            // println!("opt {:?}, value {}", &x_next, ei);
 
             //evaluation od new val
             $check_domain(&mut x_next);
@@ -144,6 +187,26 @@ macro_rules! bayesian_opt {
             println!("f(x) = {y_next}");
             x_init.push(x_next.clone());
             y_init.push(y_next);
+
+            {
+                let mut gauss_pr = get_instance(&vec![vec![0.]], &vec![0.])
+                    .gauss_pr
+                    .lock()
+                    .unwrap();
+                // let fit_prior = true;
+                // let fit_kernel = true;
+                // let max_iter = 100;
+                // let convergence_fraction = 0.05;
+                // let max_time = std::time::Duration::from_secs(3600);
+                gauss_pr.add_samples(&vec![x_next.clone()], &vec![y_next]);
+                // gauss_pr.fit_parameters(
+                //     fit_prior,
+                //     fit_kernel,
+                //     max_iter,
+                //     convergence_fraction,
+                //     max_time,
+                // );
+            }
 
             if y_next < y_min {
                 y_min = y_next;
@@ -215,6 +278,16 @@ struct OptAcquisition {
 }
 
 #[cfg(any(feature = "bayesian"))]
+impl OptAcquisition {
+    pub fn new(x: &Vec<Vec<f64>>, y: &Vec<f64>) -> Self {
+        OptAcquisition {
+            gauss_pr: GaussianProcess::default(x.clone(), y.clone()),
+            x: x.clone(),
+        }
+    }
+}
+
+#[cfg(any(feature = "bayesian"))]
 impl ArgminOp for OptAcquisition {
     type Param = Vec<f64>;
     // Type of the return value computed by the cost function
@@ -233,6 +306,10 @@ impl ArgminOp for OptAcquisition {
             &p.to_vec(),
             &self.x,
         ))
+    }
+
+    fn gradient(&self, p: &Self::Param) -> Result<Self::Param, Error> {
+        Ok((*p).forward_diff(&|x| acquisition_function_base(&self.gauss_pr, &x.to_vec(), &self.x)))
     }
 }
 
@@ -282,14 +359,9 @@ pub fn get_next_point_base(
     batch_size: usize,
     scale: f64,
 ) -> (Vec<f64>, f64) {
-    let mut min_ei = f64::MAX;
-    let mut optimal: Vec<f64> = Vec::new();
-
-    let gauss_pr = GaussianProcess::default(x.clone(), y.clone());
-
     let trial_x: Vec<Vec<f64>> = (0..batch_size)
         .into_iter()
-        .map(|i| {
+        .map(|_| {
             let mut t_x = Vec::with_capacity(x[0].len());
             let mut rng = rand::thread_rng();
             for _ in 0..x[0].len() {
@@ -299,22 +371,29 @@ pub fn get_next_point_base(
         })
         .collect();
 
-    let acquisition = OptAcquisition {
-        // gauss_pr: GaussianProcess::default(x.clone(), y.clone()),
-        gauss_pr,
-        x: x.clone(),
-    };
+    let mut min = f64::MAX;
+    let mut x_next: Vec<f64> = Vec::new();
+    for i in 0..trial_x.len() {
+        let acquisition = OptAcquisition::new(&x, &y);
 
-    let solver = NelderMead::new().with_initial_params(trial_x);
+        let linesearch: MoreThuenteLineSearch<Vec<f64>, f64> =
+            MoreThuenteLineSearch::new().c(1e-4, 0.9).unwrap();
 
-    let res = Executor::new(acquisition, solver, vec![])
-        //.add_observer(ArgminSlogLogger::term(), ObserverMode::Always)
-        .max_iters(100)
-        .run();
+        // Set up solver
+        let solver: LBFGS<_, Vec<f64>, f64> = LBFGS::new(linesearch, 7);
 
-    let res = res.expect("Something goes wrong with NelderMead algo");
+        // Run solver
+        let res = Executor::new(acquisition, solver, trial_x[i].clone())
+            // .add_observer(ArgminSlogLogger::term(), ObserverMode::Always)
+            .max_iters(50)
+            .run();
 
-    optimal = res.state().get_best_param();
-    min_ei = res.state().get_best_cost();
-    (optimal, min_ei)
+        let res = res.expect("Something goes wrong with algorithm");
+        let ei = res.state().get_best_cost();
+        if ei < min {
+            min = ei;
+            x_next = res.state.get_best_param();
+        }
+    }
+    (x_next, min)
 }

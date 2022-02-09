@@ -1,24 +1,30 @@
-#[cfg(test)]
 
+#[cfg(test)]
 #[cfg(any(feature = "bayesian"))]
-use{
+use {
     argmin::prelude::*,
-    argmin::solver::neldermead::NelderMead,
     argmin::solver::linesearch::MoreThuenteLineSearch,
     argmin::solver::quasinewton::LBFGS,
     finitediff::FiniteDiff,
     friedrich::gaussian_process::GaussianProcess,
     friedrich::kernel::Gaussian,
     friedrich::prior::ConstantPrior,
-    statrs::distribution::{Continuous, ContinuousCDF, Normal},
-    statrs::statistics::Distribution,
     rust_ab::explore::bayesian_opt::*,
     rust_ab::*,
     rust_ab::{rand, Rng},
+    statrs::distribution::{Continuous, ContinuousCDF, Normal},
+};
+#[cfg(any(feature = "bayesian"))]
+use std::{
+    mem::MaybeUninit,
+    sync::{Mutex, Once},
 };
 
+
+
+
 #[cfg(any(feature = "bayesian"))]
-#[test]
+// #[test]
 fn bayesian_base() {
     //init popultation method
     let x_init: Vec<Vec<f64>> = vec![vec![-2., -2.], vec![1., 1.], vec![-1., 1.], vec![4., -2.]];
@@ -28,7 +34,7 @@ fn bayesian_base() {
         y_init.push(costly_function(x));
     }
 
-    let (x, y) = bayesian_opt_base!(x_init, y_init, costly_function, 50, 10, 10.);
+    let (x, y) = bayesian_opt_base!(x_init, y_init, costly_function, 10, 30, 10.);
 
     println!("---\nFinal res: Point {:?}, val {y}", x);
     assert!(x[0].abs() < 1. && x[1].abs() < 1.);
@@ -56,12 +62,10 @@ fn init_population() -> (Vec<Vec<f64>>, Vec<f64>) {
     let mut y_init: Vec<f64> = Vec::with_capacity(x_init.len());
 
     for x in &x_init {
-        
         let y = costly_function(x);
         println!("{:?} scores: {}", x, y);
         y_init.push(y);
         // y_init.push(costly_function(x));
-    
     }
 
     (x_init, y_init)
@@ -80,16 +84,16 @@ fn costly_function(x: &Vec<f64>) -> f64 {
 #[cfg(any(feature = "bayesian"))]
 fn get_points(
     x: &Vec<Vec<f64>>,
-    gauss_pr: &GaussianProcess<Gaussian, ConstantPrior>,
 ) -> Vec<Vec<f64>> {
-    let batch_size = 10;
+    let batch_size = 30;
     let scale = 10.;
 
+    let _gauss_pr = get_instance(&vec![vec![0.0_f64]], &vec![0.0_f64]).gauss_pr.lock().unwrap();
 
 
     let trial_x: Vec<Vec<f64>> = (0..batch_size)
         .into_iter()
-        .map(|i| {
+        .map(|_| {
             let mut t_x = Vec::with_capacity(x[0].len());
             let mut rng = rand::thread_rng();
             for _ in 0..x[0].len() {
@@ -143,4 +147,4 @@ pub fn acquisition_function(
 }
 
 #[cfg(any(feature = "bayesian"))]
-pub fn domain_check(new_x: &mut Vec<f64>) {}
+pub fn domain_check(_new_x: &mut Vec<f64>) {}

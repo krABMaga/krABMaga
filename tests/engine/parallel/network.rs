@@ -1,12 +1,9 @@
 #[cfg(test)]
 #[cfg(any(feature = "parallel"))]
-use {
-    rust_ab::engine::fields::field::Field, rust_ab::engine::fields::network::*,
-};
+use {rust_ab::engine::fields::field::Field, rust_ab::engine::fields::network::*};
 
 #[cfg(any(feature = "parallel"))]
 static NUM_NODES: u16 = 10;
-
 
 #[cfg(any(feature = "parallel"))]
 #[test]
