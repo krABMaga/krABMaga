@@ -147,14 +147,11 @@ macro_rules! bayesian_opt {
             let mut x_next: Vec<f64> = Vec::new();
             for i in 0..trial_x.len() {
                 let acquisition = Opt { x: x_init.clone() };
-
                 let mut linesearch: MoreThuenteLineSearch<Vec<f64>, f64> =
                     MoreThuenteLineSearch::new().c(1e-4, 0.9).unwrap();
-                
 
                 // Set up solver
-                let solver: LBFGS<_, Vec<f64>, f64> =
-                    LBFGS::new(linesearch, 7);
+                let solver: LBFGS<_, Vec<f64>, f64> = LBFGS::new(linesearch, 7);
 
                 // Run solver
                 let execution = || -> Result<ArgminResult<_>, Error> {

@@ -1,4 +1,8 @@
-
+#[cfg(any(feature = "bayesian"))]
+use std::{
+    mem::MaybeUninit,
+    sync::{Mutex, Once},
+};
 #[cfg(test)]
 #[cfg(any(feature = "bayesian"))]
 use {
@@ -14,17 +18,9 @@ use {
     rust_ab::{rand, Rng},
     statrs::distribution::{Continuous, ContinuousCDF, Normal},
 };
-#[cfg(any(feature = "bayesian"))]
-use std::{
-    mem::MaybeUninit,
-    sync::{Mutex, Once},
-};
-
-
-
 
 #[cfg(any(feature = "bayesian"))]
-// #[test]
+#[test]
 fn bayesian_base() {
     //init popultation method
     let x_init: Vec<Vec<f64>> = vec![vec![-2., -2.], vec![1., 1.], vec![-1., 1.], vec![4., -2.]];
@@ -82,14 +78,14 @@ fn costly_function(x: &Vec<f64>) -> f64 {
 }
 
 #[cfg(any(feature = "bayesian"))]
-fn get_points(
-    x: &Vec<Vec<f64>>,
-) -> Vec<Vec<f64>> {
+fn get_points(x: &Vec<Vec<f64>>) -> Vec<Vec<f64>> {
     let batch_size = 30;
     let scale = 10.;
 
-    let _gauss_pr = get_instance(&vec![vec![0.0_f64]], &vec![0.0_f64]).gauss_pr.lock().unwrap();
-
+    let _gauss_pr = get_instance(&vec![vec![0.0_f64]], &vec![0.0_f64])
+        .gauss_pr
+        .lock()
+        .unwrap();
 
     let trial_x: Vec<Vec<f64>> = (0..batch_size)
         .into_iter()

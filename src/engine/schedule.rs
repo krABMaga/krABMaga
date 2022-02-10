@@ -109,7 +109,7 @@ cfg_if! {
 
             pub fn schedule_repeating(&mut self, agent: Box<dyn Agent>, the_time:f32, the_ordering:i32) {
                 let mut agent_ids_counting = self.agent_ids_counting.lock().unwrap();
-                let mut a = AgentImpl::new(agent, *agent_ids_counting); 
+                let mut a = AgentImpl::new(agent, *agent_ids_counting);
                 *agent_ids_counting +=1;
                 a.repeating = true;
                 let pr = Priority::new(the_time, the_ordering);
