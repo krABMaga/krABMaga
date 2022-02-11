@@ -49,7 +49,7 @@ pub use {
 pub extern crate mpi;
 
 #[cfg(any(feature = "bayesian"))]
-pub use {argmin, friedrich, statrs, finitediff};
+pub use {argmin, finitediff, friedrich, statrs};
 
 #[cfg(feature = "aws")]
 pub use {
