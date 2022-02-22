@@ -372,7 +372,7 @@ cfg_if! {
                     }
                 }
 
-
+                
             }
 
             impl<O: Eq + Hash + Clone + Copy> Field for DenseGrid2D<O> {
@@ -402,3 +402,17 @@ cfg_if! {
             }
         }
     }
+
+#[allow(dead_code)]
+fn calculate_indexes_bag(index: i32, width: i32, height: i32) -> Option<Int2D> {
+    for i in 0..height {
+        //check if the index parameter is in the row
+        if index < (width * i) + width && index >= width * i {
+            return Some(Int2D {
+                x: index - width * i,
+                y: i,
+            });
+        }
+    }
+    None
+}
