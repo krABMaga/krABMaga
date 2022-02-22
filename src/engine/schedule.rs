@@ -291,6 +291,20 @@ cfg_if! {
                 tor
             }
 
+            pub fn dequeue(&mut self, agent: Box<dyn Agent>, my_id: u32) -> bool {
+                let a = AgentImpl::new(agent, my_id);
+                let removed = self.events.remove(&a);
+                match removed {
+                    //some if finded and removed
+                    Some(_) => {
+
+                        // println!("Agent {} -- {} removed from the queue",a, my_id);
+                        true
+                    },
+                    None => false,
+                }
+            }
+
             pub fn step(&mut self, state: &mut dyn State){
 
                 if self.step == 0{
