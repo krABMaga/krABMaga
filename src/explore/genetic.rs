@@ -111,6 +111,7 @@ macro_rules! explore_ga_sequential {
         $($reps: expr,)?
     ) => {{
         println!("Running sequential GA exploration...");
+        let start = Instant::now();
 
         build_dataframe_explore!(BufferGA, input {
             generation: u32
@@ -226,6 +227,8 @@ macro_rules! explore_ga_sequential {
                 }
             }
 
+            let elapsed_time = start.elapsed();
+            println!("Completed generation {} after {} seconds", generation, elapsed_time.as_secs_f32());
             println!("- Best fitness in generation {} is {:#?} using {:#?}", generation, best_fitness_gen.unwrap(), best_individual_gen);
             println!("-- Overall best fitness is found in generation {} and is {:#?} using {:#?}", best_generation, best_fitness.unwrap(), best_individual);
 
@@ -291,8 +294,8 @@ macro_rules! explore_ga_parallel {
         $step: expr,
         $($reps: expr,)?
     ) => {{
-
         println!("Running parallel GA exploration...");
+        let start = Instant::now();
 
         build_dataframe_explore!(BufferGA, input {
             generation: u32
@@ -433,6 +436,8 @@ macro_rules! explore_ga_parallel {
                 }
             }
 
+            let elapsed_time = start.elapsed();
+            println!("Completed generation {} after {} seconds", generation, elapsed_time.as_secs_f32());
             println!("- Best fitness in generation {} is {:#?} using {:#?}", generation, best_fitness_gen.unwrap(), best_individual_gen);
             println!("-- Overall best fitness is found in generation {} and is {:#?} using {:#?}", best_generation, best_fitness.unwrap(), best_individual);
 
