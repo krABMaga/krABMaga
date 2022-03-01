@@ -126,10 +126,14 @@ macro_rules! explore_ga_distributed_mpi {
             population_size = population.len();
 
             // dummy initilization
+
+            /*
+                if fitness desired has to be minimum, set fitness to a very high value
+            */
             best_individual = Some(BufferGA::new(
                 0,
                 0,
-                0.
+                1000.
             ));
         }
 
@@ -162,10 +166,10 @@ macro_rules! explore_ga_distributed_mpi {
                 //create the whole population and send it to the other processes
                 let mut population_size_per_process = population_size / num_procs;
                 let mut remainder = population_size % num_procs;
-
+                let mut index = 0;
+                let mut send_index = 0;
                 // for each processor
                 for i in 0..num_procs {
-
                     let mut sub_population_size = 0;
 
                     // calculate the workload subdivision
@@ -175,7 +179,6 @@ macro_rules! explore_ga_distributed_mpi {
                     } else {
                         sub_population_size = population_size_per_process;
                     }
-
                     samples_count.push(sub_population_size as Count);
 
                     // save my_pop_size for master
@@ -185,16 +188,26 @@ macro_rules! explore_ga_distributed_mpi {
 
                     // fulfill the parameters arrays
                     for j in 0..sub_population_size {
-                        population_params.push(population[i * population_size_per_process + j].clone());  //remove clone
+                        //let index = i * population_size_per_process + j;
+                        //println!("i: {} - popsize {} - j {}", i, population_size_per_process, j);
+                        population_params.push(population[index].clone());
+                        index += 1;
                     }
+                    //println!("for rank {} population_params: {:?}",i, population_params);
 
                     // send the arrays
                     world.process_at_rank(i as i32).send(&sub_population_size);
                     let mut to_send: Vec<BufferGA> = Vec::new();
 
+                    // for p in 0..sub_population_size {
+                    //     world.process_at_rank(i as i32).send(&population_params[i * population_size_per_process + p].clone().as_bytes()[..]);
+                    // }
                     for p in 0..sub_population_size {
-                        world.process_at_rank(i as i32).send(&population_params[i * population_size_per_process + p].clone().as_bytes()[..]);
+                        world.process_at_rank(i as i32).send(&population_params[send_index].clone().as_bytes()[..]);
+                        send_index += 1;
                     }
+                  
+                    //population_params.clear();
                 }
             } else {
                 // every other processor receive the parameter
@@ -205,14 +218,26 @@ macro_rules! explore_ga_distributed_mpi {
                     let (param, _) = world.any_process().receive_vec::<u8>();
                     let my_param = String::from_utf8(param).unwrap();
                     population_params.push(my_param);
+
                 }
             }
 
-            let mut my_population: Vec<String>  = Vec::new();
 
-            //init local sub-population
-            for i in 0..my_pop_size {
-                my_population.push(population_params[i].clone());
+            let mut my_population: Vec<String>  = Vec::new();
+            
+            if world.rank() == root_rank {
+
+                for i in 0..my_pop_size {
+                    my_population.push(population[i].clone());
+                }
+
+                //println!("master pop: {:?}", my_population);
+            } else {
+                //init local sub-population
+                for i in 0..my_pop_size {
+
+                    my_population.push(population_params[i].clone());
+                }
             }
 
             let mut best_fitness_gen: Option<f32> = None;
@@ -223,8 +248,7 @@ macro_rules! explore_ga_distributed_mpi {
             // counter for master to stop at population size
             let mut master_counter = 0;
 
-            for individual_params in population_params.iter_mut() {
-
+            for individual_params in my_population.iter_mut() {
                 if my_rank == 0 && (master_counter == my_pop_size) {
                     break;
                 }
@@ -251,10 +275,10 @@ macro_rules! explore_ga_distributed_mpi {
                 let fitness = $fitness(&mut computed_ind);
 
                 // if fitness > my_best_fitness {
-
+                //println!("rank {} --- {}", my_rank, fitness);
+                
                 match my_best_fitness {
                     Some(_) =>
-                        
                         if $cmp(&fitness, &my_best_fitness.expect("265")){
                             my_best_fitness = Some(fitness);
                             my_best_index = local_index;
@@ -266,10 +290,6 @@ macro_rules! explore_ga_distributed_mpi {
                         my_best_individual = individual_params.clone();                   
                     }
                 }
-                //     my_best_fitness = fitness;
-                //     my_best_index = local_index;
-                //     my_best_individual = individual_params.clone();
-                // }
 
                 let result = BufferGA::new(
                     generation,
@@ -279,9 +299,6 @@ macro_rules! explore_ga_distributed_mpi {
 
                 my_results.push(result);
 
-                // if the desired fitness is reached break
-                // setting the flag at true
-                // if fitness >= $desired_fitness{
                 if $cmp(&fitness, &$desired_fitness) {
                     flag = true;
                 }
@@ -301,7 +318,6 @@ macro_rules! explore_ga_distributed_mpi {
                 // gather_into remap mpi_gather so we memorize values in rank order
                 root_process.gather_into_root(&my_best_fitness.expect("309"), &mut master_fitness[..]);
                 root_process.gather_into_root(&my_best_index, &mut master_index[..]);
-
                 for i in 0..num_procs {
                     if i == 0 {
                         master_individual.push(my_best_individual.clone());
@@ -311,20 +327,16 @@ macro_rules! explore_ga_distributed_mpi {
                         master_individual.push(my_param);
                     }
                 }
-
                 // get the index of max fitness from all_bests_fitness
                 let mut max_fitness_index = 0;
-                for i in 0..num_procs {
-                //     // if all_bests_fitness[i] > all_bests_fitness[max_fitness_index] {
-                //     //     max_fitness_index = i;
-                //     // }
+                for i in 1..num_procs {
                     if $cmp(&master_fitness[i], &master_fitness[max_fitness_index]) {
-                           max_fitness_index = i;
+                        max_fitness_index = i;
                     }
                 }
 
                 best_individual_string = master_individual[max_fitness_index].clone();
-
+                //master_fitness.clear();
             } else {
                 root_process.gather_into(&my_best_fitness.expect("336"));
                 root_process.gather_into(&my_best_index);
@@ -338,7 +350,7 @@ macro_rules! explore_ga_distributed_mpi {
                 let dummy = BufferGA::new(
                     generation,
                     0,
-                    -999.,
+                    1000.,
                 );
 
                 let displs: Vec<Count> = samples_count
@@ -355,7 +367,7 @@ macro_rules! explore_ga_distributed_mpi {
                 // root receives all results from other processors
                 root_process.gather_varcount_into_root(&my_results[..], &mut partition);
 
-                // best_fitness_gen = None;
+                best_fitness_gen = None;
                 // save the best individual of this generation
                 let mut i = 0;
                 let mut j = 0;
@@ -378,11 +390,10 @@ macro_rules! explore_ga_distributed_mpi {
                         }
                     }
 
-                    
-
-                    match best_individual.clone() {
-                        Some(x) => {
-                            if elem.fitness > x.fitness {
+                    match best_individual {
+                        Some(_) => {
+                            if $cmp(&elem.fitness, &best_individual.clone().unwrap().fitness) {
+                                //println!("----- {}", elem.fitness);
                                 best_individual = Some(elem.clone());
                             }
                         },
@@ -395,6 +406,13 @@ macro_rules! explore_ga_distributed_mpi {
                     if j == samples_count[i]{
                         i += 1;
                         j = 0;
+                    }
+                }
+
+                
+                for elem in partial_results.iter() {
+                    if elem.fitness == 1000. {
+                        panic!("partial_results contains dummy");
                     }
                 }
 
@@ -411,22 +429,32 @@ macro_rules! explore_ga_distributed_mpi {
             //     best_generation = generation;
             // }
 
-            match best_fitness {
-                Some(mut x) => {
-                    if $cmp(&best_fitness_gen.expect("416111"), &best_fitness.expect("416")) {
-                        x = best_fitness_gen.expect("417");
+            if world.rank() == root_rank {
+
+                match best_fitness {
+                    Some(mut x) => {
+                        // println!("best fitness before: {}", x);
+                        if $cmp(&best_fitness_gen.expect("416111"), &best_fitness.expect("416")) {
+                            best_fitness = Some(best_fitness_gen.expect("417"));
+                            best_generation = generation;
+                            // println!("here 1");
+                        }
+                        // println!("best fitness after: {}", x);
+
+                    },
+                    None => {
+                        best_fitness = Some(best_fitness_gen.expect("422"));
                         best_generation = generation;
+                        // println!("here 2");
+
                     }
-                },
-                None => {
-                    best_fitness = Some(best_fitness_gen.expect("422"));
-                    best_generation = generation;
                 }
+        
             }
 
             if world.rank() == root_rank{
                 let elapsed_time = start_time.elapsed();
-                println!("Completed generation {} after {} seconds", generation, elapsed_time.as_secs_f32());
+                //println!("Completed generation {} after {} seconds", generation, elapsed_time.as_secs_f32());
                 println!("- Best fitness in generation {} is {}", generation, best_fitness_gen.unwrap());
                 println!("-- Overall best fitness is found in generation {} and is {}", best_generation, best_fitness.unwrap());
             }
@@ -449,6 +477,7 @@ macro_rules! explore_ga_distributed_mpi {
             // if the flag is true all process will exit
             root_process.broadcast_into(&mut flag);
             if flag {
+                //print!("flag true");
                 break;
             }
 
@@ -458,10 +487,11 @@ macro_rules! explore_ga_distributed_mpi {
                 // set the population parameters owned by the master
                 // using the ones received from other processors
                 for i in 0..population_size {
-                    let fitness = all_results[(generation as usize -1)*population_size + i].fitness;
+                    let index = (generation as usize -1)*population_size + i;
+                    let fitness = all_results[index].fitness;
                     let individual = population_params[i].clone();
                     let tup = (individual, fitness);
-                    pop_fitness.insert(i, tup);
+                    pop_fitness.push(tup);
                 }
 
                 // compute selection
@@ -477,13 +507,16 @@ macro_rules! explore_ga_distributed_mpi {
 
                 // mutate the new population
                 for (individual, _) in pop_fitness.iter_mut() {
-                    $mutation(individual);
                     population.push(individual.clone());
                 }
                 pop_fitness.clear();
 
                 // crossover the new population
                 $crossover(&mut population);
+
+                for i in 0..population.len() {
+                    $mutation(&mut population[i]);
+                }
             }
 
         population_params.clear();

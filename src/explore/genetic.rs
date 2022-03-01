@@ -139,6 +139,7 @@ macro_rules! explore_ga_sequential {
 
         // calculate the fitness for the first population
         loop {
+
             // if generation_num is passed as 0, we have infinite generations
             if $generation_num != 0 && generation == $generation_num {
                 println!("Reached {} generations, exiting...", $generation_num);
@@ -228,7 +229,7 @@ macro_rules! explore_ga_sequential {
             }
 
             let elapsed_time = start.elapsed();
-            println!("Completed generation {} after {} seconds", generation, elapsed_time.as_secs_f32());
+            //println!("Completed generation {} after {} seconds", generation, elapsed_time.as_secs_f32());
             println!("- Best fitness in generation {} is {:#?} using {:#?}", generation, best_fitness_gen.unwrap(), best_individual_gen);
             println!("-- Overall best fitness is found in generation {} and is {:#?} using {:#?}", best_generation, best_fitness.unwrap(), best_individual);
 
@@ -326,6 +327,7 @@ macro_rules! explore_ga_parallel {
 
         // calculate the fitness for the first population
         loop {
+
             // if generation_num is passed as 0, we have infinite generations
             if $generation_num != 0 && generation == $generation_num {
                 println!("Reached {} generations, exiting...", $generation_num);
@@ -437,7 +439,7 @@ macro_rules! explore_ga_parallel {
             }
 
             let elapsed_time = start.elapsed();
-            println!("Completed generation {} after {} seconds", generation, elapsed_time.as_secs_f32());
+            //println!("Completed generation {} after {} seconds", generation, elapsed_time.as_secs_f32());
             println!("- Best fitness in generation {} is {:#?} using {:#?}", generation, best_fitness_gen.unwrap(), best_individual_gen);
             println!("-- Overall best fitness is found in generation {} and is {:#?} using {:#?}", best_generation, best_fitness.unwrap(), best_individual);
 
