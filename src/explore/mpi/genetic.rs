@@ -454,7 +454,7 @@ macro_rules! explore_ga_distributed_mpi {
 
             if world.rank() == root_rank{
                 let elapsed_time = start_time.elapsed();
-                //println!("Completed generation {} after {} seconds", generation, elapsed_time.as_secs_f32());
+                println!("*** Completed generation {} after {} seconds ***", generation, elapsed_time.as_secs_f32());
                 println!("- Best fitness in generation {} is {}", generation, best_fitness_gen.unwrap());
                 println!("-- Overall best fitness is found in generation {} and is {}", best_generation, best_fitness.unwrap());
             }
