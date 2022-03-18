@@ -1,100 +1,114 @@
-// use std::f32::consts::PI;
-// use std::fmt::Display;
-// use std::hash::Hash;
+use std::f32::consts::PI;
+use std::fmt::Display;
+use std::hash::Hash;
 
-// use crate::bevy::prelude::{Res, ResMut, Vec2};
+use crate::bevy::prelude::{Res, Vec2};
 
-// use crate::visualization::{utils::arrow::Arrow, wrappers::ActiveState};
+use crate::visualization::wrappers::ActiveState;
 
-// use crate::engine::{
-//     fields::network::{Edge, Network},
-//     location::Real2D,
-//     state::State,
-// };
+use crate::engine::{
+    fields::network::{Edge, Network},
+    location::Real2D,
+    state::State,
+};
 
-// pub use bevy::prelude::Color;
-// pub use bevy_canvas::{Canvas, DrawMode};
+pub use bevy::prelude::Color;
+use bevy::prelude::{Commands, Component, Query, Transform};
+use bevy_prototype_lyon::draw::{DrawMode, FillMode, StrokeMode};
+use bevy_prototype_lyon::path::ShapePath;
+use bevy_prototype_lyon::prelude::{GeometryBuilder, Path};
+use bevy_prototype_lyon::shapes::Line;
 
-// pub extern crate bevy_canvas;
+pub extern crate bevy_prototype_lyon;
 
-// // Allows customization of the arrow geometry used to render edges.
-// pub struct ArrowOptions {
-//     pub length: f32,
-//     pub angle: f32,
-// }
+// Allows customization of the arrow geometry used to render edges.
+pub struct ArrowOptions {
+    pub length: f32,
+    pub angle: f32,
+}
 
-// impl Default for ArrowOptions {
-//     fn default() -> Self {
-//         ArrowOptions {
-//             length: 10.,
-//             angle: PI / 12.,
-//         }
-//     }
-// }
+impl Default for ArrowOptions {
+    fn default() -> Self {
+        ArrowOptions {
+            length: 10.,
+            angle: PI / 12.,
+        }
+    }
+}
 
-// // Specifies the type of geometry to use to represent the edge, along with drawing directives if needed.
-// pub enum LineType {
-//     Line,
-//     // An arrow will be drawn with the arrow head placed on the second point. You can specify the length
-//     // of the vectors representing the arrow head segments, and the angle in radians.
-//     Arrow(ArrowOptions),
-// }
+// Specifies the type of geometry to use to represent the edge, along with drawing directives if needed.
+pub enum LineType {
+    Line,
+    // An arrow will be drawn with the arrow head placed on the second point. You can specify the length
+    // of the vectors representing the arrow head segments, and the angle in radians.
+    Arrow(ArrowOptions),
+}
 
-// // All the data we need to properly visualize an edge.
-// pub struct EdgeRenderInfo {
-//     pub line_color: Color,
-//     pub draw_mode: DrawMode,
-//     pub source_loc: Real2D,
-//     pub target_loc: Real2D,
-//     pub line_type: LineType,
-// }
+// All the data we need to properly visualize an edge.
+#[derive(Component)]
+pub struct EdgeRenderInfo {
+    pub line_color: Color,
+    pub line_width: f32,
+    pub source_loc: Real2D,
+    pub target_loc: Real2D,
+    pub is_static: bool // If true, render() won't loop on this edge
+}
 
-// /// Allows rendering the edges of a graph as customizable lines through the Bevy Canvas plugin.
-// pub trait NetworkRender<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display, S: State> {
-//     // Specify how to fetch a reference to the network from the state.
-//     fn get_network(state: &S) -> &Network<O, L>;
+#[derive(Component)]
+pub struct EdgeRender(u32, u32, Real2D, Real2D);
 
-//     // Called for each edge to let the user specify how it should be rendered
-//     fn get_edge_info(edge: &Edge<L>, network: &Network<O, L>) -> EdgeRenderInfo;
+/// Allows rendering the edges of a graph as customizable lines through the Bevy Canvas plugin.
+pub trait NetworkRender<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display, S: State> {
+    // Specify how to fetch a reference to the network from the state.
+    fn get_network(state: &S) -> &Network<O, L>;
 
-//     fn render(state_wrapper: Res<ActiveState<S>>, mut canvas: ResMut<Canvas>) {
-//         if cfg!(target_arch = "wasm32") {
-//             panic!("Currently network visualization does not support WebGL shaders. https://github.com/Nilirad/bevy_canvas/blob/main/src/render/mod.rs#L257");
-//         }
+    // Called for each edge to let the user specify how it should be rendered
+    fn get_edge_info(edge: &Edge<L>, network: &Network<O, L>) -> EdgeRenderInfo;
 
-//         let state = state_wrapper.0.lock().unwrap();
-//         let network = Self::get_network(&*state);
-//         // let network = Self::get_network(&((*state_wrapper.lock().unwrap()).0));
-//         for node_edges in network.edges.values() {
-//             for edge in node_edges {
-//                 let EdgeRenderInfo {
-//                     line_color,
-//                     draw_mode,
-//                     source_loc,
-//                     target_loc,
-//                     line_type,
-//                 } = Self::get_edge_info(edge, network);
-//                 // We could just use the correct geometry based on whether the network is directed or not,
-//                 // but that way we couldn't allow the user to configure the arrow's options.
-//                 match line_type {
-//                     LineType::Line => {
-//                         let line = bevy_canvas::common_shapes::Line(
-//                             Vec2::new(source_loc.x as f32, source_loc.y as f32),
-//                             Vec2::new(target_loc.x as f32, target_loc.y as f32),
-//                         );
-//                         canvas.draw(&line, draw_mode, line_color);
-//                     }
-//                     LineType::Arrow(ArrowOptions { length, angle }) => {
-//                         let arrow = Arrow(
-//                             Vec2::new(source_loc.x as f32, source_loc.y as f32),
-//                             Vec2::new(target_loc.x as f32, target_loc.y as f32),
-//                             length,
-//                             angle,
-//                         );
-//                         canvas.draw(&arrow, draw_mode, line_color);
-//                     }
-//                 };
-//             }
-//         }
-//     }
-// }
+    fn get_loc(network: &Network<O, L>, node: u32) -> Real2D;
+
+    fn init_network_graphics(state: &S, commands: &mut Commands) {
+        let network = Self::get_network(&*state);
+        for node_edges in network.edges.values() {
+            for edge in node_edges {
+                let EdgeRenderInfo {
+                    source_loc,
+                    target_loc,
+                    line_color,
+                    line_width,
+                    is_static
+                } = Self::get_edge_info(edge, network);
+
+                let mut spawn_command = commands
+                    .spawn_bundle(GeometryBuilder::build_as(
+                        &Line(Vec2::new(source_loc.x, source_loc.y), Vec2::new(target_loc.x, target_loc.y)),
+                        DrawMode::Outlined {
+                            fill_mode: FillMode::color(Color::BLACK), // ignored
+                            outline_mode: StrokeMode::new(line_color, line_width),
+                        },
+                        Transform::default()
+                    ));
+                if !is_static {
+                    spawn_command.insert(EdgeRender(edge.u, edge.v, source_loc, target_loc));
+                }
+            }
+        }
+    }
+
+    /// If the nodes connected by the edge have moved, we regenerate the path mesh related to the edge.
+    fn render(state_wrapper: Res<ActiveState<S>>, mut query: Query<(&mut Path, &EdgeRender)>) {
+        let state = state_wrapper.0.lock().unwrap();
+        let network = Self::get_network(&*state);
+        for (mut path, edge_render) in query.iter_mut() {
+            let source_loc = Self::get_loc(network, edge_render.0);
+            let target_loc = Self::get_loc(network, edge_render.1);
+            if source_loc != edge_render.2 || target_loc != edge_render.3 {
+                *path = ShapePath::build_as(
+                    &Line(
+                        Vec2::new(source_loc.x, source_loc.y), Vec2::new(target_loc.x, target_loc.y)
+                    )
+                );
+            }
+        }
+    }
+}

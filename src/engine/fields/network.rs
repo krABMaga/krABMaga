@@ -279,7 +279,7 @@ cfg_if! {
                         }
 
                         dist.push(((node.clone()), amount as i32, i));
-                        
+
                         // self.update();
                     }
                 }
