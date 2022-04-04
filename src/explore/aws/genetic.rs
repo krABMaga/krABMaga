@@ -116,7 +116,7 @@ fi
 
         // configuration of the different aws clients
         let mut aws_config: Option<aws_config::Config> = None;
-        let mut client_sqs: aws_sdk_sqs::Client = aws_sdk_sqs::Client::new();
+        let mut client_sqs;
         let mut queue_url: String = String::new();
 
         // wait until all the async operations completes
@@ -145,7 +145,7 @@ fi
                 .queue_name("rab_queue")
                 .send().await;
 
-                queue_url = create_queue.as_ref().expect("Cannot create the get queue request1!")
+                queue_url = create_queue
                 .queue_url.as_ref().expect("Cannot create the get queue request2!")
                 .to_string();
                 println!("SQS queue creation {:?}", create_queue);
