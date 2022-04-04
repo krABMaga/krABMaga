@@ -129,14 +129,14 @@ fi
                 let mut sqs_config_builder = aws_sdk_sqs::config::Builder::from(&aws_config.unwrap());
                 // .retry_config(RetryConfig::disabled())
                 // .build();;
-
+               
                 sqs_config_builder = sqs_config_builder.endpoint_resolver(
                     aws_smithy_http::endpoint::Endpoint::immutable(http::Uri::from_static("http://localhost:4566/"))
                 );
-
+                
                 let client_sqs = aws_sdk_sqs::Client::from_conf(sqs_config_builder.build());
 
-
+                
 
                 // create the sqs client
                 //client_sqs = Some(aws_sdk_sqs::Client::new(&aws_config.expect("Cannot create SQS client!")));
