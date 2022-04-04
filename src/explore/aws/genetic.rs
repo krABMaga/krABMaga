@@ -122,20 +122,33 @@ fi
         // wait until all the async operations completes
         let _result = Runtime::new().expect("Cannot create Runtime!").block_on({
             async {
+
                 aws_config = Some(aws_config::load_from_env().await);
+                //aws_config = aws_config::from_env().load().await();
+                // let shared_config = aws_config::from_env().load().await;
+                let mut sqs_config_builder = aws_sdk_sqs::config::Builder::from(&aws_config.unwrap());
+                // .retry_config(RetryConfig::disabled())
+                // .build();;
+               
+                sqs_config_builder = sqs_config_builder.endpoint_resolver(
+                    aws_smithy_http::endpoint::Endpoint::immutable(http::Uri::from_static("http://localhost:4566/"))
+                );
+                
+                let client_sqs = aws_sdk_sqs::Client::from_conf(sqs_config_builder.build());
+
+                
 
                 // create the sqs client
-                client_sqs = Some(aws_sdk_sqs::Client::new(&aws_config.expect("Cannot create SQS client!")));
-
+                //client_sqs = Some(aws_sdk_sqs::Client::new(&aws_config.expect("Cannot create SQS client!")));
+                // client_sqs = Some(aws_sdk_sqs::Client::from_conf(sqs_config_builder.build()));
                 println!("Creating the SQS queue rab_queue...");
                 // create the sqs queue
-                let create_queue = client_sqs.as_ref().expect("Cannot create the create queue request!")
-                .create_queue()
+                let create_queue = client_sqs.create_queue()
                 .queue_name("rab_queue")
                 .send().await;
 
-                queue_url = create_queue.as_ref().expect("Cannot create the get queue request!")
-                .queue_url.as_ref().expect("Cannot create the get queue request!")
+                queue_url = create_queue.as_ref().expect("Cannot create the get queue request1!")
+                .queue_url.as_ref().expect("Cannot create the get queue request2!")
                 .to_string();
                 println!("SQS queue creation {:?}", create_queue);
             }
@@ -158,6 +171,8 @@ use rust_ab::{{
     lambda_runtime,
     aws_sdk_sqs,
     aws_config,
+    aws_smithy_http,
+    http,
     tokio
 }};
 
@@ -176,14 +191,15 @@ async fn func(event: Value, _: lambda_runtime::Context) -> Result<(), lambda_run
     // prepare the result json to send on the queue
     let mut results: String = format!("{{{{\n\t\"function\":[");
 
-    let reps = {}; // $reps
+    // test without reps
+    // let reps = {}; // $reps
     
     for (index, ind) in my_population_params.iter().enumerate(){{
         let individual = ind.as_str().expect("Cannot cast individual!").to_string();
         
         let mut computed_ind: Vec<({}, Schedule)> = Vec::new(); // $state
 
-        for _ in 0..(reps as usize){{
+        //for _ in 0..(reps as usize){{
             // initialize the state
             let mut individual_state = <{}>::new_with_parameters(&individual); // <$state>::new_with_parameters(&individual);
             let mut schedule: Schedule = Schedule::new();
@@ -200,7 +216,7 @@ async fn func(event: Value, _: lambda_runtime::Context) -> Result<(), lambda_run
             computed_ind.push((individual_state, schedule));
 
 
-        }}
+        //}}
 
         // compute the fitness value
         let fitness = {}(&mut computed_ind); //$fitness(&mut computed_ind);
@@ -292,11 +308,11 @@ echo '{
 }' > rab_aws/rolePolicy.json
 
 echo "Creation of IAM Role rab_role..."
-role_arn=$(aws iam create-role --role-name rab_role --assume-role-policy-document file://rab_aws/rolePolicy.json --query 'Role.Arn')
+role_arn=$(aws iam create-role --role-name rab_role --assume-role-policy-document file://rab_aws/rolePolicy.json --query 'Role.Arn' --endpoint-url=http://localhost:4566)
 echo "IAM Role rab_role created at ARN "${role_arn//\"}
 
 echo "Attacching policy to IAM Role..."	
-aws iam put-role-policy --role-name rab_role --policy-name rab_policy --policy-document file://rab_aws/policy.json
+aws iam put-role-policy --role-name rab_role --policy-name rab_policy --policy-document file://rab_aws/policy.json --endpoint-url=http://localhost:4566
 
 echo "Function building..."
 cross build --release --features aws --bin function --target x86_64-unknown-linux-gnu
@@ -304,7 +320,7 @@ echo "Zipping the target for the upload..."
 cp ./target/x86_64-unknown-linux-gnu/release/function ./bootstrap && zip rab_aws/rab_lambda.zip bootstrap && rm bootstrap 
 
 echo "Creation of the lambda function..."
-aws lambda create-function --function-name rab_lambda --handler main --zip-file fileb://rab_aws/rab_lambda.zip --runtime provided.al2 --role ${role_arn//\"} --timeout 900 --memory-size 10240 --environment Variables={RUST_BACKTRACE=1} --tracing-config Mode=Active 
+aws lambda create-function --function-name rab_lambda --handler main --zip-file fileb://rab_aws/rab_lambda.zip --runtime provided.al2 --role ${role_arn//\"} --timeout 900 --memory-size 10240 --environment Variables={RUST_BACKTRACE=1} --tracing-config Mode=Active --endpoint-url=http://localhost:4566
 "#;
 
         // write the deploy_script in function.rs file
@@ -365,12 +381,16 @@ aws lambda create-function --function-name rab_lambda --handler main --zip-file 
             println!("Running Generation {}...", generation);
 
             // population size for each function
-            let mut population_size_per_function = population.len() / $num_func;
-            let mut remainder = population.len() % $num_func;
+            let mut total_functions = (population.len() * reps);
+            let mut population_size_per_function = total_functions / $num_func;
+            let mut remainder = total_functions % $num_func;
 
             let mut best_fitness_gen = 0.;
             let mut best_individual_gen: String = String::new();
 
+            //counter for functions without additional reps from remainder
+            let mut remained_funcs = 0;
+            let mut update = false;
             // for each function prepare the population to compute and
             // invoke the function with that population
             for i in 0..$num_func {
@@ -387,7 +407,28 @@ aws lambda create-function --function-name rab_lambda --handler main --zip-file 
                 // fulfill the parameters arrays
                 // we got sub_population_size arrays each one with parameters for individual to compute
                 for j in 0..sub_population_size {
-                    population_params.push(population[i * population_size_per_function + j].clone());  //remove clone
+                    //added the % operation to balance if # of functions is bigger then rep
+                    // if there is remainder, we calculate the index in different way
+                    if (total_functions % $num_func == 0) {
+                        population_params.push(population[(i * sub_population_size + j)%population.len()].clone());
+                    } else {
+                        if (i < (total_functions % $num_func)) {
+                            population_params.push(population[(i * sub_population_size + j)%population.len()].clone());
+                        } else {
+                            let base_func = total_functions % $num_func;
+                            let initial_offset = base_func * (population_size_per_function + 1); 
+                            let additional_offset = remained_funcs * (population_size_per_function);
+                            let final_index = initial_offset + additional_offset + j;
+                            population_params.push(population[(final_index)%population.len()].clone());  //remove clone
+                            update = true;
+                        }
+                    }
+                }
+
+                // update the counter of the functions for the offset
+                if (update) {
+                    remained_funcs += 1;
+                    update = false;
                 }
 
                 // create the json file with the parameters required to run the lambda function
@@ -538,15 +579,15 @@ aws lambda create-function --function-name rab_lambda --handler main --zip-file 
 echo "Deleting resources created on AWS for the execution..."
 
 echo "Deleting the lambda function rab_lambda..."
-aws lambda delete-function --function-name rab_lambda
+aws lambda delete-function --function-name rab_lambda --endpoint-url=http://localhost:4566
 
 echo "Deleting the SQS queue rab_queue..."
-queue_url=$(aws sqs get-queue-url --queue-name rab_queue --query "QueueUrl")
-aws sqs delete-queue --queue-url ${queue_url//\"}
+queue_url=$(aws sqs get-queue-url --queue-name rab_queue --query "QueueUrl" --endpoint-url=http://localhost:4566)
+aws sqs delete-queue --queue-url ${queue_url//\"} --endpoint-url=http://localhost:4566
 
 echo "Deleting the IAM role rab_role..."
-aws iam delete-role-policy --role-name rab_role --policy-name rab_policy
-aws iam delete-role --role-name rab_role
+aws iam delete-role-policy --role-name rab_role --policy-name rab_policy --endpoint-url=http://localhost:4566
+aws iam delete-role --role-name rab_role --endpoint-url=http://localhost:4566
 
 rm -r rab_aws
 rm src/function.rs

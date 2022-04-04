@@ -45,6 +45,8 @@ tokio = { version = "1.*", features = ["full"], optional = true }
 aws-config = {version = "0.4", optional = true}
 aws-sdk-sqs = {version = "0.4", optional = true}
 aws-sdk-lambda = {version = "0.4", optional = true}
+aws-smithy-http = {version = "0.*", optional = true}
+http = {version = "0.2.6", optional = true}
 futures = {version = "0.3", optional = true}
 
 # Model exploration MPI features
@@ -87,7 +89,9 @@ aws = [
     "aws-config",
     "aws-sdk-sqs",
     "aws-sdk-lambda",
-    "futures"
+    "futures",
+    "aws-smithy-http",
+    "http"
 ]
 bayesian = [
     "friedrich",
