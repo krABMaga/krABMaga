@@ -116,7 +116,7 @@ fi
 
         // configuration of the different aws clients
         let mut aws_config: Option<aws_config::Config> = None;
-        let mut client_sqs: Option<aws_sdk_sqs::Client> = None;
+        let mut client_sqs: aws_sdk_sqs::Client = aws_sdk_sqs::Client::new();
         let mut queue_url: String = String::new();
 
         // wait until all the async operations completes
@@ -134,14 +134,14 @@ fi
                     aws_smithy_http::endpoint::Endpoint::immutable(http::Uri::from_static("http://localhost:4566/"))
                 );
                 
-                client_sqs = Some(aws_sdk_sqs::Client::from_conf(sqs_config_builder.build()));
+                client_sqs = aws_sdk_sqs::Client::from_conf(sqs_config_builder.build());
 
                 // create the sqs client
                 //client_sqs = Some(aws_sdk_sqs::Client::new(&aws_config.expect("Cannot create SQS client!")));
                 // client_sqs = Some(aws_sdk_sqs::Client::from_conf(sqs_config_builder.build()));
                 println!("Creating the SQS queue rab_queue...");
                 // create the sqs queue
-                let create_queue = client_sqs.unwrap().create_queue()
+                let create_queue = client_sqs.create_queue()
                 .queue_name("rab_queue")
                 .send().await;
 
