@@ -66,6 +66,7 @@ pub use {
     tokio,
     tokio::runtime::Runtime, // 0.3.5
     aws_smithy_http,
+    aws_smithy_types,
     http
 };
 
