@@ -446,8 +446,8 @@ aws lambda create-function --function-name rab_lambda --handler main --zip-file 
 
                     let mut params = String::new();
 
-                    params.push_str(&format!("{{\n\t\"individuals\": {}\n}}", pop_params_json));
-
+                    // params.push_str(&format!("{{\n\t\"individuals\": {}\n}}", pop_params_json));
+                    params.push_str(&format!("individuals {}", pop_params_json));
                     // wait until all the async operations completes
                     let _result = Runtime::new().expect("Cannot create Runtime!").block_on({
                         async {
