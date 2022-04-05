@@ -115,15 +115,16 @@ fi
         println!("{}", mkdir_output);
 
         // configuration of the different aws clients
-        let mut aws_config: Option<aws_config::Config> = None;
+        //let mut aws_config: Option<aws_config::Config> = None;
         let mut client_sqs: Option<aws_sdk_sqs::Client> = None;
+        //let mut aws_config = aws_config::load_from_env().await;
         let mut queue_url: String = String::new();
 
         // wait until all the async operations completes
         let _result = Runtime::new().expect("Cannot create Runtime!").block_on({
             async {
 
-                aws_config = Some(aws_config::load_from_env().await);
+                let mut aws_config = Some(aws_config::load_from_env().await);
                 //aws_config = aws_config::from_env().load().await();
                 // let shared_config = aws_config::from_env().load().await;
                 let mut sqs_config_builder = aws_sdk_sqs::config::Builder::from(&aws_config.unwrap());
@@ -475,7 +476,8 @@ aws lambda create-function --function-name rab_lambda --handler main --zip-file 
                             .invoke_async()
                             .function_name("rab_lambda")
                             .invoke_args(
-                                aws_sdk_lambda::ByteStream::from(params.as_bytes().to_vec())
+                                //aws_sdk_lambda::ByteStream::from(params.as_bytes().to_vec())
+                                aws_smithy_http::byte_stream::ByteStream::from(params.as_bytes().to_vec())
                             )
                             .send().await;
                             println!("Result of the invocation: {:?}", invoke_lambda);
