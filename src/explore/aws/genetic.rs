@@ -243,7 +243,7 @@ async fn send_on_sqs(results: String) -> Result<(), aws_sdk_sqs::Error> {{
 
     // create the SQS client
 	//let client_sqs = aws_sdk_sqs::Client::new(&config);
-    let aws_config = aws_config::from_env().load().await();
+    let aws_config = aws_config::from_env().load().await;
     let mut sqs_config_builder = aws_sdk_sqs::config::Builder::from(&aws_config);
     sqs_config_builder = sqs_config_builder.endpoint_resolver(
         aws_smithy_http::endpoint::Endpoint::immutable(http::Uri::from_static("http://localhost:4566/"))
