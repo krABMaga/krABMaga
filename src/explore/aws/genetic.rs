@@ -478,8 +478,7 @@ aws lambda create-function --function-name rab_lambda --handler main --zip-file 
                             .invoke_async()
                             .function_name("rab_lambda")
                             .invoke_args(
-                                //aws_sdk_lambda::ByteStream::from(params.as_bytes().to_vec())
-                                aws_smithy_http::byte_stream::ByteStream::from(params.as_bytes().to_vec())
+                                aws_sdk_lambda::types::ByteStream::from(params.as_bytes().to_vec())
                             )
                             .send().await;
                             println!("Result of the invocation: {:?}", invoke_lambda);
