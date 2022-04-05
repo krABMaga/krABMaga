@@ -134,7 +134,7 @@ fi
                     aws_smithy_http::endpoint::Endpoint::immutable(http::Uri::from_static("http://localhost:4566/"))
                 );
                 
-                let client_sqs = aws_sdk_sqs::Client::from_conf(sqs_config_builder.build());
+                client_sqs = Some(aws_sdk_sqs::Client::from_conf(sqs_config_builder.build()));
 
                 
 
@@ -143,7 +143,7 @@ fi
                 // client_sqs = Some(aws_sdk_sqs::Client::from_conf(sqs_config_builder.build()));
                 println!("Creating the SQS queue rab_queue...");
                 // create the sqs queue
-                let create_queue = client_sqs.create_queue()
+                let create_queue = client_sqs.clone().unwrap().create_queue()
                 .queue_name("rab_queue")
                 .send().await;
 
@@ -443,7 +443,7 @@ aws lambda create-function --function-name rab_lambda --handler main --zip-file 
                     let _result = Runtime::new().expect("Cannot create Runtime!").block_on({
                         async {
                             // create the lambda client
-                            // let config = aws_config::load_from_env().await;
+                            //let config = aws_config::load_from_env().await;
                             // let client_lambda = aws_sdk_lambda::Client::new(&config);
 
                             let config = aws_config::load_from_env().await;
