@@ -124,7 +124,7 @@ fi
         let _result = Runtime::new().expect("Cannot create Runtime!").block_on({
             async {
 
-                let mut aws_config = Some(aws_config::load_from_env().await);
+                let mut aws_config = Some(aws_config::from_env().region("us-east-2").load().await);
                 //aws_config = aws_config::from_env().load().await();
                 // let shared_config = aws_config::from_env().load().await;
                 let mut sqs_config_builder = aws_sdk_sqs::config::Builder::from(&aws_config.unwrap());
@@ -239,11 +239,11 @@ async fn func(event: Value, _: lambda_runtime::Context) -> Result<(), lambda_run
 async fn send_on_sqs(results: String) -> Result<(), aws_sdk_sqs::Error> {{
     // configuration of the aws client
 	//let region_provider = aws_config::meta::region::RegionProviderChain::default_provider();
-	//let config = aws_config::from_env().region(region_provider).load().await;
+	//let aws_config = aws_config::from_env().region(region_provider).load().await;
 
     // create the SQS client
 	//let client_sqs = aws_sdk_sqs::Client::new(&config);
-    let aws_config = aws_config::from_env().load().await;
+    let aws_config = aws_config::from_env().region("us-east-2").load().await;
     let mut sqs_config_builder = aws_sdk_sqs::config::Builder::from(&aws_config);
     sqs_config_builder = sqs_config_builder.endpoint_resolver(
         aws_smithy_http::endpoint::Endpoint::immutable(http::Uri::from_static("http://localhost:4566/"))
@@ -453,7 +453,7 @@ aws lambda create-function --function-name rab_lambda --handler main --zip-file 
                             //let config = aws_config::load_from_env().await;
                             // let client_lambda = aws_sdk_lambda::Client::new(&config);
 
-                            let config = aws_config::load_from_env().await;
+                            let config = aws_config::from_env().region("us-east-2").load().await;
                             //aws_config = aws_config::from_env().load().await();
                             // let shared_config = aws_config::from_env().load().await;
                             let mut lambda_config_builder = aws_sdk_lambda::config::Builder::from(&config);
