@@ -254,7 +254,8 @@ async fn send_on_sqs(results: String) -> Result<(), aws_sdk_sqs::Error> {{
     // get the queue_url of the queue
     let queue = client_sqs.get_queue_url().queue_name("rab_queue".to_string()).send().await?;
     let queue_url = queue.queue_url.expect("Cannot get the queue url!");
-
+    
+    println!("queue url ---- {:?}", queue_url);
     let send_request = client_sqs
         .send_message()
         .queue_url(queue_url)
