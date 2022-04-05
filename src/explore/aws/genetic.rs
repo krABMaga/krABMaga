@@ -443,8 +443,25 @@ aws lambda create-function --function-name rab_lambda --handler main --zip-file 
                     let _result = Runtime::new().expect("Cannot create Runtime!").block_on({
                         async {
                             // create the lambda client
+                            // let config = aws_config::load_from_env().await;
+                            // let client_lambda = aws_sdk_lambda::Client::new(&config);
+
                             let config = aws_config::load_from_env().await;
-                            let client_lambda = aws_sdk_lambda::Client::new(&config);
+                            //aws_config = aws_config::from_env().load().await();
+                            // let shared_config = aws_config::from_env().load().await;
+                            let mut lambda_config_builder = aws_sdk_lambda::config::Builder::from(&config);
+                            // .retry_config(RetryConfig::disabled())
+                            // .build();;
+                        
+                            lambda_config_builder = lambda_config_builder.endpoint_resolver(
+                                aws_smithy_http::endpoint::Endpoint::immutable(http::Uri::from_static("http://localhost:4566/"))
+                            );
+                            
+                            let client_lambda = aws_sdk_lambda::Client::from_conf(lambda_config_builder.build());
+
+
+
+
 
                             println!("Invoking lambda function {}...", i);
                             // invoke the function
