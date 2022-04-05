@@ -446,8 +446,7 @@ aws lambda create-function --function-name rab_lambda --handler main --zip-file 
 
                     let mut params = String::new();
 
-                    // params.push_str(&format!("{{\n\t\"individuals\": {}\n}}", pop_params_json));
-                    params.push_str(&format!("individuals {}", pop_params_json));
+                    params.push_str(&format!("{{\n\t\"individuals\": {}\n}}", pop_params_json));
                     // wait until all the async operations completes
                     let _result = Runtime::new().expect("Cannot create Runtime!").block_on({
                         async {
@@ -468,17 +467,13 @@ aws lambda create-function --function-name rab_lambda --handler main --zip-file 
                             
                             let client_lambda = aws_sdk_lambda::Client::from_conf(lambda_config_builder.build());
 
-
-
-
-
                             println!("Invoking lambda function {}...", i);
                             // invoke the function
                             let invoke_lambda = client_lambda
                             .invoke_async()
                             .function_name("rab_lambda")
                             .invoke_args(
-                                aws_sdk_lambda::types::ByteStream::from(params.as_bytes().to_vec())
+                                aws_smithy_http::byte_stream::ByteStream::from(params.as_bytes().to_vec())
                             )
                             .send().await;
                             println!("Result of the invocation: {:?}", invoke_lambda);
