@@ -466,7 +466,7 @@ aws lambda create-function --function-name rab_lambda --handler main --zip-file 
                             );
                             
                             let client_lambda = aws_sdk_lambda::Client::from_conf(lambda_config_builder.build());
-                            let params = "ciao";
+                            println!("client ----- {:?}", client_lambda);
                             println!("Invoking lambda function {}...", i);
                             // invoke the function
                             let invoke_lambda = client_lambda
