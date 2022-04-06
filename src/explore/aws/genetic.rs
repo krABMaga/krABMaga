@@ -125,19 +125,9 @@ fi
             async {
 
                 let mut aws_config = Some(aws_config::from_env().region("us-east-1").load().await);
-                //aws_config = aws_config::from_env().load().await();
-                // let shared_config = aws_config::from_env().load().await;
                 let mut sqs_config_builder = aws_sdk_sqs::config::Builder::from(&aws_config.unwrap());
-                // .retry_config(RetryConfig::disabled())
-                // .build();;
-               
-                sqs_config_builder = sqs_config_builder.endpoint_resolver(
-                    aws_smithy_http::endpoint::Endpoint::immutable(http::Uri::from_static("http://localhost:4566"))
-                );
                 
                 client_sqs = Some(aws_sdk_sqs::Client::from_conf(sqs_config_builder.build()));
-
-                
 
                 // create the sqs client
                 //client_sqs = Some(aws_sdk_sqs::Client::new(&aws_config.expect("Cannot create SQS client!")));
@@ -318,11 +308,11 @@ echo '{
 }' > rab_aws/rolePolicy.json
 
 echo "Creation of IAM Role rab_role..."
-role_arn=$(aws iam create-role --role-name rab_role --assume-role-policy-document file://rab_aws/rolePolicy.json --query 'Role.Arn' --endpoint-url=http://localhost:4566)
+role_arn=$(aws iam create-role --role-name rab_role --assume-role-policy-document file://rab_aws/rolePolicy.json --query 'Role.Arn'
 echo "IAM Role rab_role created at ARN "${role_arn//\"}
 
 echo "Attacching policy to IAM Role..."	
-aws iam put-role-policy --role-name rab_role --policy-name rab_policy --policy-document file://rab_aws/policy.json --endpoint-url=http://localhost:4566
+aws iam put-role-policy --role-name rab_role --policy-name rab_policy --policy-document file://rab_aws/policy.json
 
 echo "Function building..."
 cross build --release --features aws --bin function --target x86_64-unknown-linux-gnu
@@ -330,7 +320,7 @@ echo "Zipping the target for the upload..."
 cp ./target/x86_64-unknown-linux-gnu/release/function ./bootstrap && zip rab_aws/rab_lambda.zip bootstrap && rm bootstrap 
 
 echo "Creation of the lambda function..."
-aws lambda create-function --function-name rab_lambda --handler main --zip-file fileb://rab_aws/rab_lambda.zip --runtime provided.al2 --role ${role_arn//\"} --timeout 900 --memory-size 10240 --environment Variables={RUST_BACKTRACE=1} --tracing-config Mode=Active --endpoint-url=http://localhost:4566
+aws lambda create-function --function-name rab_lambda --handler main --zip-file fileb://rab_aws/rab_lambda.zip --runtime provided.al2 --role ${role_arn//\"} --timeout 900 --memory-size 10240 --environment Variables={RUST_BACKTRACE=1} --tracing-config Mode=Active
 "#;
 
         // write the deploy_script in function.rs file
@@ -459,15 +449,8 @@ aws lambda create-function --function-name rab_lambda --handler main --zip-file 
                             //aws_config = aws_config::from_env().load().await();
                             // let shared_config = aws_config::from_env().load().await;
                             let mut lambda_config_builder = aws_sdk_lambda::config::Builder::from(&config);
-                            // .retry_config(RetryConfig::disabled())
-                            // .build();;
-                        
-                            lambda_config_builder = lambda_config_builder.endpoint_resolver(
-                                aws_smithy_http::endpoint::Endpoint::immutable(http::Uri::from_static("http://localhost:4566"))
-                            );
                             
                             let client_lambda = aws_sdk_lambda::Client::from_conf(lambda_config_builder.build());
-                            println!("client ----- {:?}", client_lambda);
                             println!("Invoking lambda function {}...", i);
                             // invoke the function
                             let invoke_lambda = client_lambda
@@ -601,15 +584,15 @@ aws lambda create-function --function-name rab_lambda --handler main --zip-file 
 echo "Deleting resources created on AWS for the execution..."
 
 echo "Deleting the lambda function rab_lambda..."
-aws lambda delete-function --function-name rab_lambda --endpoint-url=http://localhost:4566
+aws lambda delete-function --function-name rab_lambda
 
 echo "Deleting the SQS queue rab_queue..."
-queue_url=$(aws sqs get-queue-url --queue-name rab_queue --query "QueueUrl" --endpoint-url=http://localhost:4566)
-aws sqs delete-queue --queue-url ${queue_url//\"} --endpoint-url=http://localhost:4566
+queue_url=$(aws sqs get-queue-url --queue-name rab_queue --query "QueueUrl")
+aws sqs delete-queue --queue-url ${queue_url//\"}
 
 echo "Deleting the IAM role rab_role..."
-aws iam delete-role-policy --role-name rab_role --policy-name rab_policy --endpoint-url=http://localhost:4566
-aws iam delete-role --role-name rab_role --endpoint-url=http://localhost:4566
+aws iam delete-role-policy --role-name rab_role --policy-name rab_policy
+aws iam delete-role --role-name rab_role
 
 rm -r rab_aws
 rm src/function.rs
