@@ -132,7 +132,7 @@ fi
                 // .build();;
                
                 sqs_config_builder = sqs_config_builder.endpoint_resolver(
-                    aws_smithy_http::endpoint::Endpoint::immutable(http::Uri::from_static("http://localhost:4566/"))
+                    aws_smithy_http::endpoint::Endpoint::immutable(http::Uri::from_static("http://localhost:4566"))
                 );
                 
                 client_sqs = Some(aws_sdk_sqs::Client::from_conf(sqs_config_builder.build()));
@@ -247,7 +247,7 @@ async fn send_on_sqs(results: String) -> Result<(), aws_sdk_sqs::Error> {{
     let aws_config = aws_config::from_env().region("us-east-1").load().await;
     let mut sqs_config_builder = aws_sdk_sqs::config::Builder::from(&aws_config);
     sqs_config_builder = sqs_config_builder.endpoint_resolver(
-        aws_smithy_http::endpoint::Endpoint::immutable(http::Uri::from_static("http://localhost:4566/"))
+        aws_smithy_http::endpoint::Endpoint::immutable(http::Uri::from_static("http://localhost:4566"))
     );
     
     let client_sqs = aws_sdk_sqs::Client::from_conf(sqs_config_builder.build());
@@ -463,7 +463,7 @@ aws lambda create-function --function-name rab_lambda --handler main --zip-file 
                             // .build();;
                         
                             lambda_config_builder = lambda_config_builder.endpoint_resolver(
-                                aws_smithy_http::endpoint::Endpoint::immutable(http::Uri::from_static("http://localhost:4566/"))
+                                aws_smithy_http::endpoint::Endpoint::immutable(http::Uri::from_static("http://localhost:4566"))
                             );
                             
                             let client_lambda = aws_sdk_lambda::Client::from_conf(lambda_config_builder.build());
