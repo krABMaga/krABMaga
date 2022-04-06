@@ -65,9 +65,6 @@ pub use {
     std::io::BufReader,
     tokio,
     tokio::runtime::Runtime, // 0.3.5
-    aws_smithy_http,
-    aws_smithy_types,
-    http
 };
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]

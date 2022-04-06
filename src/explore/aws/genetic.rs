@@ -115,35 +115,29 @@ fi
         println!("{}", mkdir_output);
 
         // configuration of the different aws clients
-        //let mut aws_config: Option<aws_config::Config> = None;
+        let mut aws_config: Option<aws_config::Config> = None;
         let mut client_sqs: Option<aws_sdk_sqs::Client> = None;
-        //let mut aws_config = aws_config::load_from_env().await;
         let mut queue_url: String = String::new();
 
         // wait until all the async operations completes
         let _result = Runtime::new().expect("Cannot create Runtime!").block_on({
             async {
-
-                //let mut aws_config = Some(aws_config::from_env().region("us-east-2").load().await);
-                let mut aws_config = Some(aws_config::load_from_env().await);
-                let mut sqs_config_builder = aws_sdk_sqs::config::Builder::from(&aws_config.unwrap());
-                
-                client_sqs = Some(aws_sdk_sqs::Client::from_conf(sqs_config_builder.build()));
+                aws_config = Some(aws_config::load_from_env().await);
 
                 // create the sqs client
-                //client_sqs = Some(aws_sdk_sqs::Client::new(&aws_config.expect("Cannot create SQS client!")));
-                // client_sqs = Some(aws_sdk_sqs::Client::from_conf(sqs_config_builder.build()));
+                client_sqs = Some(aws_sdk_sqs::Client::new(&aws_config.expect("Cannot create SQS client!")));
+
                 println!("Creating the SQS queue rab_queue...");
                 // create the sqs queue
-                let create_queue = client_sqs.clone().unwrap().create_queue()
+                let create_queue = client_sqs.as_ref().expect("Cannot create the create queue request!")
+                .create_queue()
                 .queue_name("rab_queue")
                 .send().await;
 
-                queue_url = create_queue.as_ref().expect("Cannot create the get queue request1!")
-                .queue_url.as_ref().expect("Cannot create the get queue request2!")
+                queue_url = create_queue.as_ref().expect("Cannot create the get queue request!")
+                .queue_url.as_ref().expect("Cannot create the get queue request!")
                 .to_string();
                 println!("SQS queue creation {:?}", create_queue);
-                println!("queue url {}", queue_url);
             }
         });
 
@@ -164,8 +158,6 @@ use rust_ab::{{
     lambda_runtime,
     aws_sdk_sqs,
     aws_config,
-    aws_smithy_http,
-    http,
     tokio
 }};
 
@@ -184,8 +176,7 @@ async fn func(event: Value, _: lambda_runtime::Context) -> Result<(), lambda_run
     // prepare the result json to send on the queue
     let mut results: String = format!("{{{{\n\t\"function\":[");
 
-    // test without reps
-    // let reps = {}; // $reps
+    //let reps = {}; // $reps
     
     for (index, ind) in my_population_params.iter().enumerate(){{
         let individual = ind.as_str().expect("Cannot cast individual!").to_string();
@@ -209,7 +200,7 @@ async fn func(event: Value, _: lambda_runtime::Context) -> Result<(), lambda_run
             computed_ind.push((individual_state, schedule));
 
 
-        //}}
+       // }}
 
         // compute the fitness value
         let fitness = {}(&mut computed_ind); //$fitness(&mut computed_ind);
@@ -230,26 +221,17 @@ async fn func(event: Value, _: lambda_runtime::Context) -> Result<(), lambda_run
 
 async fn send_on_sqs(results: String) -> Result<(), aws_sdk_sqs::Error> {{
     // configuration of the aws client
-	//let region_provider = aws_config::meta::region::RegionProviderChain::default_provider();
-	//let aws_config = aws_config::from_env().region(region_provider).load().await;
+	let region_provider = aws_config::meta::region::RegionProviderChain::default_provider();
+	let config = aws_config::from_env().region(region_provider).load().await;
 
     // create the SQS client
-	//let client_sqs = aws_sdk_sqs::Client::new(&config);
-    let aws_config = Some(aws_config::load_from_env().await);
-    //let aws_config = aws_config::from_env().region("us-east-2").load().await;
-    let mut sqs_config_builder = aws_sdk_sqs::config::Builder::from(&aws_config);
-    sqs_config_builder = sqs_config_builder.endpoint_resolver(
-        aws_smithy_http::endpoint::Endpoint::immutable(http::Uri::from_static("http://localhost:4566"))
-    );
+	let client_sqs = aws_sdk_sqs::Client::new(&config);
     
-    let client_sqs = aws_sdk_sqs::Client::from_conf(sqs_config_builder.build());
 
     // get the queue_url of the queue
     let queue = client_sqs.get_queue_url().queue_name("rab_queue".to_string()).send().await?;
     let queue_url = queue.queue_url.expect("Cannot get the queue url!");
-    
-    println!("hello --- {{:?}}", queue_url);
-    
+
     let send_request = client_sqs
         .send_message()
         .queue_url(queue_url)
@@ -310,7 +292,7 @@ echo '{
 }' > rab_aws/rolePolicy.json
 
 echo "Creation of IAM Role rab_role..."
-role_arn=$(aws iam create-role --role-name rab_role --assume-role-policy-document file://rab_aws/rolePolicy.json --query 'Role.Arn'
+role_arn=$(aws iam create-role --role-name rab_role --assume-role-policy-document file://rab_aws/rolePolicy.json --query 'Role.Arn')
 echo "IAM Role rab_role created at ARN "${role_arn//\"}
 
 echo "Attacching policy to IAM Role..."	
@@ -322,7 +304,7 @@ echo "Zipping the target for the upload..."
 cp ./target/x86_64-unknown-linux-gnu/release/function ./bootstrap && zip rab_aws/rab_lambda.zip bootstrap && rm bootstrap 
 
 echo "Creation of the lambda function..."
-aws lambda create-function --function-name rab_lambda --handler main --zip-file fileb://rab_aws/rab_lambda.zip --runtime provided.al2 --role ${role_arn//\"} --timeout 900 --memory-size 10240 --environment Variables={RUST_BACKTRACE=1} --tracing-config Mode=Active
+aws lambda create-function --function-name rab_lambda --handler main --zip-file fileb://rab_aws/rab_lambda.zip --runtime provided.al2 --role ${role_arn//\"} --timeout 900 --memory-size 10240 --environment Variables={RUST_BACKTRACE=1} --tracing-config Mode=Active 
 "#;
 
         // write the deploy_script in function.rs file
@@ -440,26 +422,21 @@ aws lambda create-function --function-name rab_lambda --handler main --zip-file 
                     let mut params = String::new();
 
                     params.push_str(&format!("{{\n\t\"individuals\": {}\n}}", pop_params_json));
+
                     // wait until all the async operations completes
                     let _result = Runtime::new().expect("Cannot create Runtime!").block_on({
                         async {
                             // create the lambda client
-                            //let config = aws_config::load_from_env().await;
-                            // let client_lambda = aws_sdk_lambda::Client::new(&config);
+                            let config = aws_config::load_from_env().await;
+                            let client_lambda = aws_sdk_lambda::Client::new(&config);
 
-                            //let config = aws_config::from_env().region("us-east-2").load().await;
-                            let aws_config = aws_config::from_env().load().await();
-                            // let shared_config = aws_config::from_env().load().await;
-                            let mut lambda_config_builder = aws_sdk_lambda::config::Builder::from(&config);
-                            
-                            let client_lambda = aws_sdk_lambda::Client::from_conf(lambda_config_builder.build());
                             println!("Invoking lambda function {}...", i);
                             // invoke the function
                             let invoke_lambda = client_lambda
                             .invoke_async()
                             .function_name("rab_lambda")
                             .invoke_args(
-                                aws_smithy_http::byte_stream::ByteStream::from(params.as_bytes().to_vec())
+                                aws_sdk_lambda::ByteStream::from(params.as_bytes().to_vec())
                             )
                             .send().await;
                             println!("Result of the invocation: {:?}", invoke_lambda);
