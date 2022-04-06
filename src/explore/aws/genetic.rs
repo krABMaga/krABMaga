@@ -152,6 +152,7 @@ fi
                 .queue_url.as_ref().expect("Cannot create the get queue request2!")
                 .to_string();
                 println!("SQS queue creation {:?}", create_queue);
+                println!("queue url {}", queue_url);
             }
         });
 
