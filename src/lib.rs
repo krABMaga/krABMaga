@@ -7,7 +7,8 @@ pub use hashbrown;
 pub use indicatif::ProgressBar;
 pub use rand;
 pub use rand_pcg;
-
+pub use rayon;
+pub use std::time::Instant;
 #[cfg(any(feature = "visualization", feature = "visualization_wasm", doc))]
 pub mod visualization;
 
@@ -19,6 +20,7 @@ pub use rand::{
     thread_rng, Rng,
 };
 
+pub use ::lazy_static::*;
 pub use csv::{Reader, Writer};
 pub use rayon::prelude::*;
 use std::error::Error;
@@ -46,6 +48,9 @@ pub use {
 
 #[cfg(feature = "distributed_mpi")]
 pub extern crate mpi;
+
+#[cfg(any(feature = "bayesian"))]
+pub use {argmin, finitediff, friedrich, statrs};
 
 #[cfg(feature = "aws")]
 pub use {
@@ -96,12 +101,12 @@ macro_rules! simulate {
 
         match option {
             Info::Verbose => {
-                println!("\u{1F980} Rust-AB v1.0\n");
-                println!(
-                    "{0: >10}|{1: >9}|    {2: >11}|{3: >10}|",
-                    "#Rep", "Steps", "Steps/Seconds", "Time"
-                );
-                println!("--------------------------------------------------");
+                // println!("\u{1F980} Rust-AB v1.0\n");
+                // println!(
+                //     "{0: >10}|{1: >9}|    {2: >11}|{3: >10}|",
+                //     "#Rep", "Steps", "Steps/Seconds", "Time"
+                // );
+                // println!("--------------------------------------------------");
             }
             Info::Normal => {
                 println!("{esc}c", esc = 27 as char);
@@ -113,27 +118,33 @@ macro_rules! simulate {
                 println!("----------------------------------------------------------------");
             }
         }
-        print!("{:width$}|", 1, width = 14 - $reps.to_string().len());
-        println!(
-            "{:width$}|",
-            n_step,
-            width = 15 - n_step.to_string().len() - $reps.to_string().len()
-        );
-        println!("{esc}c", esc = 27 as char);
+        // print!("{:width$}|", 1, width = 14 - $reps.to_string().len());
+        // println!(
+        //     "{:width$}|",
+        //     n_step,
+        //     width = 15 - n_step.to_string().len() - $reps.to_string().len()
+        // );
+
+        match option {
+            Info::Verbose => {}
+            Info::Normal => {
+                println!("{esc}c", esc = 27 as char);
+            }
+        }
 
         for r in 0..$reps {
             let mut schedule: Schedule = Schedule::new();
             state.init(&mut schedule);
             let start = std::time::Instant::now();
-            let pb = ProgressBar::new(n_step);
+            //let pb = ProgressBar::new(n_step);
             for i in 0..n_step {
                 schedule.step(state);
                 if state.end_condition(&mut schedule) {
                     break;
                 }
-                pb.inc(1);
+                //pb.inc(1);
             }
-            pb.finish_with_message("\u{1F980}");
+            //pb.finish_with_message("\u{1F980}");
 
             let run_duration = start.elapsed();
 
@@ -150,16 +161,16 @@ macro_rules! simulate {
                 }
             }
 
-            let step_seconds =
-                format!("{:.0}", schedule.step as f32 / (run_duration.as_secs_f32()));
-            let time = format!("{:.4}", run_duration.as_secs_f32());
-            print!("{:width$}|", (r + 1), width = 14 - $reps.to_string().len());
-            print!(
-                "{:width$}|",
-                schedule.step,
-                width = 15 - n_step.to_string().len() - $reps.to_string().len()
-            );
-            print!("{:width$}", "", width = 13 - step_seconds.len());
+            // let step_seconds =
+            //     format!("{:.0}", schedule.step as f32 / (run_duration.as_secs_f32()));
+            // let time = format!("{:.4}", run_duration.as_secs_f32());
+            // print!("{:width$}|", (r + 1), width = 14 - $reps.to_string().len());
+            // print!(
+            //     "{:width$}|",
+            //     schedule.step,
+            //     width = 15 - n_step.to_string().len() - $reps.to_string().len()
+            // );
+            // print!("{:width$}", "", width = 13 - step_seconds.len());
 
             results.push((
                 run_duration,
@@ -168,9 +179,9 @@ macro_rules! simulate {
 
             match option {
                 Info::Verbose => {
-                    print!("{}|", step_seconds);
-                    print!("{:width$}", "", width = 9 - time.len());
-                    println!("{}s|", time);
+                    // print!("{}|", step_seconds);
+                    // print!("{:width$}", "", width = 9 - time.len());
+                    // println!("{}s|", time);
                 }
                 Info::Normal => {
                     let mut avg_time = 0.0;

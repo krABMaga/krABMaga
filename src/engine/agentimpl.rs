@@ -3,7 +3,6 @@ use std::fmt;
 use std::hash::Hash;
 use std::hash::Hasher;
 
-static mut COUNTER: u32 = 1;
 #[derive(Clone)]
 pub struct AgentImpl {
     pub id: u32,
@@ -12,15 +11,11 @@ pub struct AgentImpl {
 }
 
 impl AgentImpl {
-    pub fn new(the_agent: Box<dyn Agent>) -> AgentImpl {
-        unsafe {
-            COUNTER += 1;
-
-            AgentImpl {
-                id: COUNTER,
-                agent: the_agent,
-                repeating: false,
-            }
+    pub fn new(the_agent: Box<dyn Agent>, id: u32) -> AgentImpl {
+        AgentImpl {
+            id: id,
+            agent: the_agent,
+            repeating: false,
         }
     }
 

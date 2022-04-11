@@ -8,7 +8,6 @@ use rust_ab::rand;
 use rust_ab::rand::Rng;
 use std::any::Any;
 
-
 pub static WIDTH: f32 = 10.0;
 pub static HEIGHT: f32 = 10.0;
 pub static DISCRETIZATION: f32 = 0.5;
@@ -58,6 +57,10 @@ impl State for Flocker {
 
     fn update(&mut self, _step: u64) {
         self.field1.lazy_update();
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
     }
 
     fn as_any(&self) -> &dyn Any {

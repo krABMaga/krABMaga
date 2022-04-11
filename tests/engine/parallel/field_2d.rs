@@ -8,10 +8,10 @@ static _NUM_AGENT: u32 = 10;
 #[cfg(any(feature = "parallel"))]
 use {
     crate::model::flockers::{bird::*, state::*},
+    rand::Rng,
     rust_ab::engine::location::Real2D,
     // rust_ab::engine::schedule::Schedule,
     rust_ab::engine::state::State,
-    rand::Rng
 };
 
 // #[cfg(any(feature = "parallel"))]
@@ -19,7 +19,7 @@ use {
 // pub fn field_2d_single_step() {
 //     let mut state = Flocker::new((WIDTH, HEIGHT), NUM_AGENT);
 //     let mut schedule: Schedule = Schedule::with_threads(2);
-    
+
 //     state.init(&mut schedule);
 //     schedule.step(&mut state);
 //     state.update(1);
@@ -42,7 +42,7 @@ fn field_2d_neighbors() {
     let last_d = Real2D { x: 0.0, y: 0.0 };
 
     let mut bird1 = Bird::new(1, Real2D { x: 0.0, y: 0.0 }, last_d);
-    let mut bird2 = Bird::new(2, Real2D { x: 0.0, y: 0.0 }, last_d);
+    let bird2 = Bird::new(2, Real2D { x: 0.0, y: 0.0 }, last_d);
 
     state.field1.set_object_location(bird1, bird1.pos);
     state.field1.set_object_location(bird2, bird2.pos);
@@ -69,7 +69,7 @@ fn field_2d_neighbors() {
         x: bird1.pos.x + fly,
         y: bird1.pos.y + fly,
     };
-    
+
     state.field1.set_object_location(bird1, bird1.pos);
     state.field1.set_object_location(bird2, bird2.pos);
 
@@ -99,7 +99,7 @@ fn field_2d_neighbors() {
 
 #[cfg(any(feature = "parallel"))]
 #[test]
-fn field_2d_gets(){
+fn field_2d_gets() {
     let mut state = Flocker::new((WIDTH, HEIGHT), 2);
 
     let last_d = Real2D { x: 0.0, y: 0.0 };
@@ -124,19 +124,22 @@ fn field_2d_gets(){
 
     let no_birds = state.field1.get_objects(Real2D { x: 10.0, y: 0.0 });
     assert_eq!(0, no_birds.len());
-    
-    let mut num_birds = state.field1.num_objects_at_location(Real2D { x: 5.0, y: 5.0 });
+
+    let mut num_birds = state
+        .field1
+        .num_objects_at_location(Real2D { x: 5.0, y: 5.0 });
     assert_eq!(2, num_birds);
 
-    num_birds = state.field1.num_objects_at_location(Real2D { x: 0.0, y: 0.0});
+    num_birds = state
+        .field1
+        .num_objects_at_location(Real2D { x: 0.0, y: 0.0 });
     assert_eq!(1, num_birds);
 
-    
     let bird = state.field1.get(&bird1);
     assert!(None != bird);
     assert_eq!(bird.unwrap().id, 1);
 
-    let loc = Real2D { x: 1.0, y: 2.0};
+    let loc = Real2D { x: 1.0, y: 2.0 };
     state.field1.set_object_location(bird1, loc);
     state.update(1);
 
@@ -146,13 +149,13 @@ fn field_2d_gets(){
     assert_eq!(get_loc.x, loc.x);
     assert_eq!(get_loc.y, loc.y);
 
-
     let bird4 = Bird::new(3, Real2D { x: 6.0, y: 6.0 }, last_d);
-    state.field1.set_object_location(bird4, Real2D { x: 6.0, y: 6.0 });
+    state
+        .field1
+        .set_object_location(bird4, Real2D { x: 6.0, y: 6.0 });
     let get_loc = state.field1.get_location_unbuffered(bird4.clone());
     assert!(None != get_loc);
     let get_loc = get_loc.unwrap();
     assert_eq!(get_loc.x, 6.);
-    assert_eq!(get_loc.y,  6.);
-
+    assert_eq!(get_loc.y, 6.);
 }

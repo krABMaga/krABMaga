@@ -50,7 +50,8 @@ cfg_if! {
             pub step: usize,
             pub time: f32,
             pub events: Arc<Mutex<PriorityQueue<AgentImpl, Priority>>>,
-            pub thread_num:usize
+            pub thread_num:usize,
+            pub agent_ids_counting: Arc<Mutex<u32>>,
         }
 
         #[derive(Clone)]
@@ -81,7 +82,8 @@ cfg_if! {
                     step: 0,
                     time: 0.0,
                     events: Arc::new(Mutex::new(PriorityQueue::new())),
-                    thread_num: *THREAD_NUM
+                    thread_num: *THREAD_NUM,
+                    agent_ids_counting: Arc::new(Mutex::new(0)),
                 }
             }
 
@@ -91,6 +93,7 @@ cfg_if! {
                     time: 0.0,
                     events: Arc::new(Mutex::new(PriorityQueue::new())),
                     thread_num,
+                    agent_ids_counting: Arc::new(Mutex::new(0)),
                 }
             }
 
@@ -105,7 +108,9 @@ cfg_if! {
             }
 
             pub fn schedule_repeating(&mut self, agent: Box<dyn Agent>, the_time:f32, the_ordering:i32) {
-                let mut a = AgentImpl::new(agent);
+                let mut agent_ids_counting = self.agent_ids_counting.lock().unwrap();
+                let mut a = AgentImpl::new(agent, *agent_ids_counting);
+                *agent_ids_counting +=1;
                 a.repeating = true;
                 let pr = Priority::new(the_time, the_ordering);
                 self.events.lock().unwrap().push(a, pr);
@@ -219,7 +224,8 @@ cfg_if! {
         pub struct Schedule{
             pub step: u64,
             pub time: f32,
-            pub events: PriorityQueue<AgentImpl,Priority>
+            pub events: PriorityQueue<AgentImpl,Priority>,
+            pub agent_ids_counting: u32,
         }
 
         #[derive(Clone)]
@@ -255,6 +261,7 @@ cfg_if! {
                     step: 0,
                     time: 0.0,
                     events: PriorityQueue::new(),
+                    agent_ids_counting: 0,
                 }
             }
 
@@ -262,11 +269,18 @@ cfg_if! {
                 self.events.push(agent, Priority{time: the_time, ordering: the_ordering});
             }
 
-            pub fn schedule_repeating(&mut self, agent: Box<dyn Agent>, the_time:f32, the_ordering:i32) {
-                let mut a = AgentImpl::new(agent);
+            // return false if the insertion in the priority queue fails
+            pub fn schedule_repeating(&mut self, agent: Box<dyn Agent>, the_time:f32, the_ordering:i32) -> bool {
+                let mut a = AgentImpl::new(agent, self.agent_ids_counting);
+                self.agent_ids_counting +=1;
                 a.repeating = true;
+
                 let pr = Priority::new(the_time, the_ordering);
-                self.events.push(a, pr);
+                let opt = self.events.push(a, pr);
+                match opt {
+                    Some(_) => false,
+                    None => true,
+                }
             }
 
             pub fn get_all_events(&self) -> Vec<Box<dyn Agent>>{
@@ -275,6 +289,20 @@ cfg_if! {
                     tor.push(e.0.agent.clone());
                 }
                 tor
+            }
+
+            pub fn dequeue(&mut self, agent: Box<dyn Agent>, my_id: u32) -> bool {
+                let a = AgentImpl::new(agent, my_id);
+                let removed = self.events.remove(&a);
+                match removed {
+                    //some if finded and removed
+                    Some(_) => {
+
+                        // println!("Agent {} -- {} removed from the queue",a, my_id);
+                        true
+                    },
+                    None => false,
+                }
             }
 
             pub fn step(&mut self, state: &mut dyn State){
@@ -310,11 +338,11 @@ cfg_if! {
 
                     match events.pop() {
                         Some(item) => {
-                            let (_agent, priority) = item;
+                            let (agent, priority) = item;
                             if priority.time > self.time {
                                 break;
                             }
-                            cevents.push(Pair::new(_agent, priority));
+                            cevents.push(Pair::new(agent, priority));
                         },
                         None => panic!("Agent not found - inside loop"),
                     }

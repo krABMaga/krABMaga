@@ -363,7 +363,16 @@ cfg_if! {
                     locs[index].push(object);
                 }
 
+                pub fn remove_object_location(&self, object: O, loc: &Int2D) {
+                    let index = ((loc.x * self.height) + loc.y) as usize;
+                    let mut locs = self.locs.borrow_mut();
 
+                    if !locs[index].is_empty() {
+                        locs[index].retain(|&obj| obj != object);
+                    }
+                }
+
+                
             }
 
             impl<O: Eq + Hash + Clone + Copy> Field for DenseGrid2D<O> {

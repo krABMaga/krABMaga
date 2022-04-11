@@ -118,7 +118,7 @@ fi
         let mut aws_config: Option<aws_config::Config> = None;
         let mut client_sqs: Option<aws_sdk_sqs::Client> = None;
         let mut queue_url: String = String::new();
-        
+
         // wait until all the async operations completes
         let _result = Runtime::new().expect("Cannot create Runtime!").block_on({
             async {
@@ -176,14 +176,14 @@ async fn func(event: Value, _: lambda_runtime::Context) -> Result<(), lambda_run
     // prepare the result json to send on the queue
     let mut results: String = format!("{{{{\n\t\"function\":[");
 
-    let reps = {}; // $reps
+    //let reps = {}; // $reps
     
     for (index, ind) in my_population_params.iter().enumerate(){{
         let individual = ind.as_str().expect("Cannot cast individual!").to_string();
         
         let mut computed_ind: Vec<({}, Schedule)> = Vec::new(); // $state
 
-        for _ in 0..(reps as usize){{
+        //for _ in 0..(reps as usize){{
             // initialize the state
             let mut individual_state = <{}>::new_with_parameters(&individual); // <$state>::new_with_parameters(&individual);
             let mut schedule: Schedule = Schedule::new();
@@ -200,7 +200,7 @@ async fn func(event: Value, _: lambda_runtime::Context) -> Result<(), lambda_run
             computed_ind.push((individual_state, schedule));
 
 
-        }}
+       // }}
 
         // compute the fitness value
         let fitness = {}(&mut computed_ind); //$fitness(&mut computed_ind);
@@ -365,12 +365,16 @@ aws lambda create-function --function-name rab_lambda --handler main --zip-file 
             println!("Running Generation {}...", generation);
 
             // population size for each function
-            let mut population_size_per_function = population.len() / $num_func;
-            let mut remainder = population.len() % $num_func;
+            let mut total_functions = (population.len() * reps);
+            let mut population_size_per_function = total_functions / $num_func;
+            let mut remainder = total_functions % $num_func;
 
             let mut best_fitness_gen = 0.;
             let mut best_individual_gen: String = String::new();
 
+            //counter for functions without additional reps from remainder
+            let mut remained_funcs = 0;
+            let mut update = false;
             // for each function prepare the population to compute and
             // invoke the function with that population
             for i in 0..$num_func {
@@ -387,7 +391,28 @@ aws lambda create-function --function-name rab_lambda --handler main --zip-file 
                 // fulfill the parameters arrays
                 // we got sub_population_size arrays each one with parameters for individual to compute
                 for j in 0..sub_population_size {
-                    population_params.push(population[i * population_size_per_function + j].clone());  //remove clone
+                    //added the % operation to balance if # of functions is bigger then rep
+                    // if there is remainder, we calculate the index in different way
+                    if (total_functions % $num_func == 0) {
+                        population_params.push(population[(i * sub_population_size + j)%population.len()].clone());
+                    } else {
+                        if (i < (total_functions % $num_func)) {
+                            population_params.push(population[(i * sub_population_size + j)%population.len()].clone());
+                        } else {
+                            let base_func = total_functions % $num_func;
+                            let initial_offset = base_func * (population_size_per_function + 1); 
+                            let additional_offset = remained_funcs * (population_size_per_function);
+                            let final_index = initial_offset + additional_offset + j;
+                            population_params.push(population[(final_index)%population.len()].clone());  //remove clone
+                            update = true;
+                        }
+                    }
+                }
+
+                // update the counter of the functions for the offset
+                if (update) {
+                    remained_funcs += 1;
+                    update = false;
                 }
 
                 // create the json file with the parameters required to run the lambda function

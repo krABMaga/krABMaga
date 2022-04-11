@@ -74,7 +74,6 @@ jobs:
      - name: Cargo Clean
        run: |
         cargo clean
-
      - name: Setup
        run: |
         rustup update

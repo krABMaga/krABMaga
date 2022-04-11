@@ -21,7 +21,7 @@ impl Display for MyNode {
     }
 }
 
-impl Hash for MyNode{
+impl Hash for MyNode {
     fn hash<H>(&self, state: &mut H)
     where
         H: Hasher,

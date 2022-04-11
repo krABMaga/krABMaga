@@ -46,7 +46,7 @@ impl<L: Clone + Hash + Display> HEdge<L> {
             },
         };
 
-        for n in list_nodes{
+        for n in list_nodes {
             hedge.nodes.insert(*n);
         }
 
@@ -54,14 +54,16 @@ impl<L: Clone + Hash + Display> HEdge<L> {
     }
 }
 
-impl<L> PartialEq for HEdge<L> where L: Clone + Hash + Display {
+impl<L> PartialEq for HEdge<L>
+where
+    L: Clone + Hash + Display,
+{
     fn eq(&self, other: &Self) -> bool {
         self.nodes == other.nodes
     }
 }
 
-impl<L: Clone + Hash + Display> Eq for HEdge<L>{} 
-
+impl<L: Clone + Hash + Display> Eq for HEdge<L> {}
 
 pub struct HNetwork<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> {
     pub edges: RefCell<HashMap<u32, Vec<HEdge<L>>>>,
@@ -82,13 +84,19 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> HNetwork<O, L> {
         }
     }
 
-    pub fn add_edge(&self, nodes: &[O], edge_options: EdgeOptions<L>) -> bool{
-        if nodes.len() < 1 { return false; }
+    // fn default() -> Self {
+    //     Self::new()
+    // }
+
+    pub fn add_edge(&self, nodes: &[O], edge_options: EdgeOptions<L>) -> bool {
+        if nodes.is_empty() {
+            return false;
+        }
 
         let nodes2id = self.nodes2id.borrow_mut();
-        
+
         let mut ids = Vec::with_capacity(nodes.len());
-        for n in nodes{
+        for n in nodes {
             match nodes2id.get(n) {
                 Some(val) => ids.push(*val),
                 None => return false,
@@ -97,9 +105,8 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> HNetwork<O, L> {
         let ids = ids.as_slice();
 
         let mut edges = self.edges.borrow_mut();
-        
-       
-        for id in ids{
+
+        for id in ids {
             match edges.get_mut(id) {
                 Some(uedges) => {
                     uedges.push(HEdge::new(ids, edge_options.clone()));
@@ -108,9 +115,9 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> HNetwork<O, L> {
                     let vec = vec![HEdge::new(ids, edge_options.clone())];
                     edges.insert(*id, vec);
                 }
-            }    
+            }
         }
-    
+
         true
     }
 
@@ -132,12 +139,14 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> HNetwork<O, L> {
     }
 
     pub fn get_edge(&self, nodes: &[O]) -> Option<HEdge<L>> {
-        if nodes.len() < 1 { return None; }
+        if nodes.is_empty() {
+            return None;
+        }
 
         let nodes2id = self.nodes2id.borrow();
 
         let mut ids = Vec::with_capacity(nodes.len());
-        for n in nodes{
+        for n in nodes {
             match nodes2id.get(n) {
                 Some(val) => ids.push(*val),
                 None => return None,
@@ -184,12 +193,14 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> HNetwork<O, L> {
         edges.clear();
     }
 
-    pub fn remove_edge(&self, nodes: &[O]) -> Option<HEdge<L>> {        
-        if nodes.len() < 1 { return None; }
+    pub fn remove_edge(&self, nodes: &[O]) -> Option<HEdge<L>> {
+        if nodes.is_empty() {
+            return None;
+        }
         let nodes2id = self.nodes2id.borrow();
 
         let mut ids = Vec::with_capacity(nodes.len());
-        for n in nodes{
+        for n in nodes {
             match nodes2id.get(n) {
                 Some(val) => ids.push(*val),
                 None => return None,
@@ -199,43 +210,36 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> HNetwork<O, L> {
         let mut removed: Option<HEdge<L>> = None;
         let mut all_edges = self.edges.borrow_mut();
         let to_remove: HEdge<L> = HEdge::new(ids.as_slice(), EdgeOptions::Simple);
-        
-        for id in ids{
-            let edges  = all_edges.get_mut(&id).unwrap();
-        
-            let index = match edges.iter().position(|entry| {
-            *entry == to_remove
-            }) {
+
+        for id in ids {
+            let edges = all_edges.get_mut(&id).unwrap();
+
+            let index = match edges.iter().position(|entry| *entry == to_remove) {
                 Some(i) => i as i32,
                 None => -1,
             };
 
-            if index != -1 { 
+            if index != -1 {
                 removed = Some(edges.remove(index as usize))
             }
-
         }
 
         removed
     }
 
-
     fn remove_edge_with_hedge(&self, to_remove: &HEdge<L>) -> Option<HEdge<L>> {
-        
         let mut removed: Option<HEdge<L>> = None;
         let mut all_edges = self.edges.borrow_mut();
-        
-        for id in to_remove.nodes.iter(){
-            let edges  = all_edges.get_mut(&id).unwrap();
-        
-            let index = match edges.iter().position(|entry| {
-            *entry == *to_remove
-            }) {
+
+        for id in to_remove.nodes.iter() {
+            let edges = all_edges.get_mut(id).unwrap();
+
+            let index = match edges.iter().position(|entry| *entry == *to_remove) {
                 Some(i) => i as i32,
                 None => -1,
             };
 
-            if index != -1 { 
+            if index != -1 {
                 removed = Some(edges.remove(index as usize))
             }
         }
@@ -248,21 +252,17 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> HNetwork<O, L> {
         {
             let nodes2id = self.nodes2id.borrow_mut();
             uid = match nodes2id.get(&u) {
-                Some(u) => u.clone(),
+                Some(u) => *u,
                 None => return false,
             };
         }
-        
-        match self.get_edges(u.clone()) {
-            Some(to_remove) => {
-                for hedge in to_remove{
+
+        if let Some(to_remove) = self.get_edges(u.clone()) {
+            for hedge in to_remove {
                 self.remove_edge_with_hedge(&hedge);
-                }
-            },
-            None => (),
+            }
         }
-        
-     
+
         let mut id2nodes = self.id2nodes.borrow_mut();
         let mut nodes2id = self.nodes2id.borrow_mut();
 
@@ -270,7 +270,6 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> HNetwork<O, L> {
         nodes2id.remove(&u);
         true
     }
-
 
     pub fn update_node(&self, u: O) {
         let nodes2id = self.nodes2id.borrow_mut();
@@ -282,6 +281,12 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> HNetwork<O, L> {
         if let Some(value) = id2nodes.get_mut(uid) {
             *value = u
         }
+    }
+}
+
+impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> Default for HNetwork<O, L> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

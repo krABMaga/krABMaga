@@ -1,11 +1,15 @@
 use crate::engine::fields::field::Field;
 use cfg_if::cfg_if;
+use core::fmt::Debug;
+use core::fmt::Error;
 use hashbrown::HashMap;
 use rand::prelude::*;
-use rand_pcg::Pcg64;
 use std::cell::RefCell;
 use std::fmt::Display;
+use std::fmt::Formatter;
 use std::hash::Hash;
+
+use rand::rngs::StdRng;
 
 cfg_if! {
     if #[cfg(any(feature = "parallel", feature = "visualization", feature = "visualization_wasm"))]{
@@ -22,7 +26,7 @@ pub enum EdgeOptions<L: Clone + Hash + Display> {
     WeightedLabeled(L, f32),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Edge<L: Clone + Hash + Display> {
     pub u: u32,
     pub v: u32,
@@ -141,7 +145,7 @@ cfg_if! {
 
             //part of "preferential attachment" process
             //in which new network members prefer to make a connection to the more popular existing members.
-            pub fn add_prob_edge(&self, u: O, n_sample: &usize) {
+            pub fn add_prob_edge(&self, u: O, n_sample: &usize, my_seed: u64) {
                 let id2nodes = &self.id2nodes;
                 let mut dist: Vec<(&O, i32)> = Vec::new();
                 let edges = &self.edges;
@@ -155,7 +159,8 @@ cfg_if! {
                     }
                 }
 
-                let mut rng = rand::thread_rng();
+                //let mut rng = Pcg64::seed_from_u64(my_seed);
+                let mut rng = StdRng::seed_from_u64(my_seed);
                 let amount: usize = if edges.len() < *n_sample {
                     edges.len()
                 } else {
@@ -314,8 +319,8 @@ cfg_if! {
                     self.add_edge(first_node.clone(), second_node.clone(), EdgeOptions::Simple);
 
                     // self.update();
-                    let mut rng = Pcg64::seed_from_u64(my_seed);
-                    //let mut rng = rand::thread_rng();
+                    // let mut rng = Pcg64::seed_from_u64(my_seed);
+                    let mut rng = StdRng::seed_from_u64(my_seed);
                     let mut dist: Vec<(O, i32, usize)> = Vec::with_capacity(n_nodes);
 
                     dist.push(((first_node.clone()), 1, 0));
@@ -335,6 +340,11 @@ cfg_if! {
                             .choose_multiple_weighted(&mut rng, amount, |choice| choice.1)
                             .unwrap()
                             .collect::<Vec<_>>();
+
+
+                        // let mut choices_list: Vec<(O, i32, usize)> = Vec::new();
+
+                        // choices_list.push(dist[i % 2].clone());
 
 
                         for choice in choices_list {
@@ -505,7 +515,7 @@ cfg_if! {
                 };
 
                 let mut nodes2id = self.nodes2id.borrow_mut();
-                let d = self.id2nodes.remove(&uid);
+                self.id2nodes.remove(&uid);
                 nodes2id.remove(&u);
                 true
             }
@@ -544,6 +554,39 @@ cfg_if! {
             pub direct: bool,
         }
 
+
+        impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display + Debug> Display for Network<O, L> {
+        fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error>
+        {
+            let id2nodes = self.id2nodes.borrow();
+            let nodes = id2nodes.keys();
+            let mut formatter = String::new();
+
+            for i in 0..nodes.len(){
+               // formatter.push_str(format!("{} ", i.to_string()).as_str() );
+                for j in 0..nodes.len(){
+
+
+                    let id1 = id2nodes.get(&(i as u32)).unwrap();
+                    let id2 = id2nodes.get(&(j as u32)).unwrap();
+
+                    match self.get_edge(id1.clone(), id2.clone()) {
+                        Some(_) => formatter.push('1'),
+                        None => formatter.push('0'),
+                    }
+                }
+               formatter.push_str("-");
+            }
+            // for neighbor in matrix.clone() {
+            //     for edge in neighbor {
+            //         formatter.push_str(format!("{},{}     ", edge.u.to_string(),edge.v.to_string()).as_str());
+            //     }
+            //     formatter.push_str(" - ");
+            // }
+            write!(f, "MATRIX:\n{:?}", formatter)
+        }
+
+        }
         impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> Network<O, L> {
             pub fn new(d: bool) -> Network<O, L> {
                 Network {
@@ -617,7 +660,7 @@ cfg_if! {
 
             //part of "preferential attachment" process
             //in which new network members prefer to make a connection to the more popular existing members.
-            pub fn add_prob_edge(&self, u: O, n_sample: &usize) {
+            pub fn add_prob_edge(&self, u: O, n_sample: &usize, my_seed: u64) {
                 let id2nodes = self.id2nodes.borrow();
                 let mut dist: Vec<(&O, i32)> = Vec::new();
                 let edges = self.edges.borrow();
@@ -628,7 +671,8 @@ cfg_if! {
                     }
                 }
 
-                let mut rng = rand::thread_rng();
+                // let mut rng = Pcg64::seed_from_u64(my_seed);
+                let mut rng = StdRng::seed_from_u64(my_seed);
                 let amount: usize = if edges.len() < *n_sample {
                     edges.len()
                 } else {
@@ -825,8 +869,8 @@ cfg_if! {
                     let second_node = node_set[1].clone();
                     self.add_edge(first_node.clone(), second_node.clone(), EdgeOptions::Simple);
 
-                    let mut rng = Pcg64::seed_from_u64(my_seed);
-
+                    // let mut rng = Pcg64::seed_from_u64(my_seed);
+                    let mut rng = StdRng::seed_from_u64(my_seed);
                     let mut dist: Vec<(O, i32, usize)> = Vec::with_capacity(n_nodes);
 
                     dist.push((first_node, 1, 0));
@@ -838,7 +882,6 @@ cfg_if! {
                         let mut choice_pos: Vec<usize> = Vec::with_capacity(init_edges);
 
                         let node = node_set[i].clone();
-                        let mut choice_pos: Vec<usize> = Vec::with_capacity(init_edges);
 
                         let amount: usize = if dist.len() < init_edges {
                             dist.len()
@@ -963,7 +1006,7 @@ cfg_if! {
                     let nodes2id = self.nodes2id.borrow_mut();
 
                     uid = match nodes2id.get(&u) {
-                    Some(u) => u.clone(),
+                    Some(u) => *u,
                     None => return false,
                     };
                 }

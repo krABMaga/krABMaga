@@ -288,7 +288,7 @@ cfg_if! {
                             Some(_bag) =>{},
                             None => {
                                 empty_bags.push(Int2D{x: i, y: j});
-                            }    
+                            }
                         }
                     }
                 }
