@@ -1,4 +1,4 @@
-use bevy::prelude::{ColorMaterial, Handle, Query, Res, Transform, Visible};
+use bevy::prelude::{Handle, Image, Query, Res, Transform, Visibility};
 
 use crate::bevy::prelude::{Commands, ResMut};
 
@@ -17,8 +17,8 @@ pub fn renderer_system<I: VisualizationState<S> + Clone + 'static, S: State>(
     mut query: Query<(
         &mut Box<dyn AgentRender>,
         &mut Transform,
-        &mut Visible,
-        &mut Handle<ColorMaterial>,
+        &mut Visibility,
+        &mut Handle<Image>,
     )>,
     state_wrapper: ResMut<ActiveState<S>>,
     schedule_wrapper: Res<ActiveSchedule>,

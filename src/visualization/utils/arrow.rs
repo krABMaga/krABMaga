@@ -1,14 +1,14 @@
+use bevy_prototype_lyon::prelude::Geometry;
+use bevy_prototype_lyon::prelude::tess::geom::point;
+use bevy_prototype_lyon::prelude::tess::path::path::Builder;
 use crate::bevy::prelude::Vec2;
-pub use bevy_canvas::{Geometry, Path, PathBuilder};
 
 // An arrow segment consisting of a main line, along with two small lines starting at the end point.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Arrow(pub Vec2, pub Vec2, pub f32, pub f32);
 
 impl Geometry for Arrow {
-    fn generate_path(&self) -> Path {
-        let mut b = PathBuilder::new();
-
+    fn add_geometry(&self, b: &mut Builder) {
         let start = self.0;
         let end = self.1;
 
@@ -25,15 +25,15 @@ impl Geometry for Arrow {
         let y1 = end.y - head_length * first_head_angle.sin();
         let y2 = end.y - head_length * second_head_angle.sin();
 
-        let head_point_one = Vec2::new(x1, y1);
-        let head_point_two = Vec2::new(x2, y2);
+        let start_point = point(start.x, start.y);
+        let end_point = point(end.x, end.y);
+        let head_point_one = point(x1, y1);
+        let head_point_two = point(x2, y2);
 
-        b.move_to(start);
-        b.line_to(end);
+        b.begin(start_point);
+        b.line_to(end_point);
         b.line_to(head_point_one);
-        b.move_to(end);
+        b.line_to(end_point);
         b.line_to(head_point_two);
-
-        b.build()
     }
 }

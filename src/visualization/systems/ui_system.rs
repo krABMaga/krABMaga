@@ -1,5 +1,5 @@
 use bevy::prelude::{Entity, Query, Without};
-use bevy_egui::egui::Color32;
+use bevy_egui::egui::{Color32, RichText};
 use bevy_egui::{egui, EguiContext};
 
 use crate::bevy::diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin};
@@ -14,6 +14,7 @@ use crate::visualization::{
     visualization_state::VisualizationState,
     wrappers::{ActiveSchedule, ActiveState},
 };
+use crate::visualization::utils::updated_time::Time;
 
 pub fn ui_system<I: VisualizationState<S> + Clone + 'static, S: State>(
     egui_context: ResMut<EguiContext>,
@@ -25,6 +26,7 @@ pub fn ui_system<I: VisualizationState<S> + Clone + 'static, S: State>(
     query: Query<Entity, Without<Camera>>,
     diagnostics: Res<Diagnostics>,
     mut commands: Commands,
+    mut time: ResMut<Time>
 ) {
     egui::SidePanel::left("main").show(egui_context.ctx(), |ui| {
         ui.vertical_centered(|ui| {
@@ -43,14 +45,20 @@ pub fn ui_system<I: VisualizationState<S> + Clone + 'static, S: State>(
             };
             ui.label(format!("FPS: {:.0}", fps));
 
+            // A slider that allows the user to set the speed of the simulation.
+            let mut value = 1.0 / time.fixed_delta().as_secs_f32();
+            ui.add(egui::Slider::new(&mut value, 0.1..=4000.0).text("Steps per second")
+                .clamp_to_range(true));
+            time.set_steps_per_second(value);
+
             ui.horizontal_wrapped(|ui| {
                 ui.centered_and_justified(|ui| {
-                    let start_button = egui::Button::new("▶ Start").text_color(Color32::GREEN);
+                    let start_button = egui::Button::new(RichText::new("▶ Start").color(Color32::GREEN));
                     if ui.add(start_button).clicked() {
                         sim_data.paused = false;
                     }
 
-                    let stop_button = egui::Button::new("⏹ Stop").text_color(Color32::RED);
+                    let stop_button = egui::Button::new(RichText::new("⏹ Stop").color(Color32::RED));
                     if ui.add(stop_button).clicked() {
                         sim_data.paused = true;
 

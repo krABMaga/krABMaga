@@ -27,7 +27,7 @@ cfg_if! {
             }
         }
     } else if #[cfg(any(feature = "visualization", feature = "visualization_wasm"))] {
-        pub trait State: Sync + Send + 'static {
+        pub trait State: Send + 'static {
 
             fn init(&mut self, schedule: &mut Schedule);
             fn as_any(&self) -> &dyn Any;
