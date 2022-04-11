@@ -89,7 +89,7 @@ impl Visualization {
         window_constraints.min_height = 300.;
 
         let window_descriptor = WindowDescriptor {
-            title: self.window_name.parse().unwrap(),
+            title: self.window_name.parse().expect("Error: can't parse window name"),
             width: self.width,
             height: self.height,
             vsync: true,
@@ -110,7 +110,7 @@ impl Visualization {
         app.add_plugin(ShapePlugin);
 
         app.insert_resource(SimulationDescriptor {
-            title: self.window_name.parse().unwrap(),
+            title: self.window_name.parse().expect("Error: can't parse window name"),
             width: self.sim_width,
             height: self.sim_height,
             center_x: (self.width * 0.5) - (self.width - self.sim_width as f32) / 2.,

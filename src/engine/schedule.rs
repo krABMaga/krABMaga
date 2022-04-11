@@ -98,7 +98,7 @@ cfg_if! {
             }
 
             pub fn schedule_once(&mut self, agent: AgentImpl, the_time:f32, the_ordering:i32) {
-                self.events.lock().unwrap().push(
+                self.events.lock().expect("error on lock").push(
                     agent,
                     Priority {
                         time: the_time,
@@ -108,17 +108,17 @@ cfg_if! {
             }
 
             pub fn schedule_repeating(&mut self, agent: Box<dyn Agent>, the_time:f32, the_ordering:i32) {
-                let mut agent_ids_counting = self.agent_ids_counting.lock().unwrap();
+                let mut agent_ids_counting = self.agent_ids_counting.lock().expect("error on lock");
                 let mut a = AgentImpl::new(agent, *agent_ids_counting);
                 *agent_ids_counting +=1;
                 a.repeating = true;
                 let pr = Priority::new(the_time, the_ordering);
-                self.events.lock().unwrap().push(a, pr);
+                self.events.lock().expect("error on lock").push(a, pr);
             }
 
             pub fn get_all_events(&self) -> Vec<Box<dyn Agent>>{
                 let mut tor: Vec<Box<dyn Agent>> = Vec::new();
-                for e in self.events.lock().unwrap().iter(){
+                for e in self.events.lock().expect("error on lock").iter(){
                     tor.push(e.0.agent.clone());
                 }
                 tor
@@ -127,16 +127,16 @@ cfg_if! {
             pub fn step(&mut self, state: &mut dyn State) {
 
                 let thread_num = self.thread_num;
-                let thread_division = (self.events.lock().unwrap().len() as f64 / thread_num as f64).ceil() as usize;
+                let thread_division = (self.events.lock()..expect("error on lock").len() as f64 / thread_num as f64).ceil() as usize;
                 let mut state = Arc::new(Mutex::new(state));
 
                 if self.step == 0{
-                    Arc::get_mut(&mut state).unwrap().lock().unwrap().update(self.step.clone() as u64);
+                    Arc::get_mut(&mut state)..expect("error on get_mut").lock().expect("error on lock").update(self.step.clone() as u64);
                 }
 
-                Arc::get_mut(&mut state).unwrap().lock().unwrap().before_step(self);
+                Arc::get_mut(&mut state).expect("error on get_mut").lock().expect("error on lock").before_step(self);
 
-                if self.events.lock().unwrap().is_empty() {
+                if self.events.lock().expect("error on lock").is_empty() {
                     println!("No agent in the queue to schedule. Terminating.");
                     //TODO check if we need to exit on 0 agents or we have to continue until new agents are spawned
                     std::process::exit(0);
@@ -144,7 +144,7 @@ cfg_if! {
 
                 let mut cevents: Vec<Vec<Pair>> = vec![Vec::with_capacity(thread_division); thread_num];
 
-                match self.events.lock().unwrap().peek() {
+                match self.events.lock().expect("error on lock").peek() {
                     Some(item) => {
                         let (_agent, priority) = item;
                         self.time = priority.time;
@@ -154,11 +154,11 @@ cfg_if! {
 
                 let mut i = 0;
                 loop {
-                    if self.events.lock().unwrap().is_empty() {
+                    if self.events.lock().expect("error on lock").is_empty() {
                         break;
                     }
 
-                    let item = self.events.lock().unwrap().pop();
+                    let item = self.events.lock().expect("error on lock").pop();
                     match item {
                         Some(item) => {
                             let (agent, priority) = item;
@@ -178,13 +178,13 @@ cfg_if! {
                         let events = Arc::clone(&self.events);
                         let state = Arc::clone(&state);
 
-                        let mut batch = cevents.pop().unwrap();
+                        let mut batch = cevents.pop()..expect("error on pop");
 
                         scope.spawn(move |_| {
 
                             for item in batch.iter_mut(){
                                 // take the lock from the state
-                                let mut state = state.lock().unwrap();
+                                let mut state = state.lock().expect("error on lock");
                                 let state = state.as_state_mut();
 
                                 // compute the agent
@@ -195,7 +195,7 @@ cfg_if! {
                                 // after computation check if repeating and not stopped
                                 if item.agentimpl.repeating && !item.agentimpl.agent.is_stopped(state) {
                                     // take the lock from the queue
-                                    let mut q = events.lock().unwrap();
+                                    let mut q = events.lock()..expect("error on lock");
                                     // schedule_once transposition
                                     q.push(
                                         item.agentimpl.clone(),
@@ -213,9 +213,11 @@ cfg_if! {
                     }
                 });
 
-                Arc::get_mut(&mut state).unwrap().lock().unwrap().after_step(self);
+                Arc::get_mut(&mut state).expect("error on get_mut")
+                    .lock().expect("error on lock").after_step(self);
                 self.step += 1;
-                Arc::get_mut(&mut state).unwrap().lock().unwrap().update(self.step.clone() as u64);
+                Arc::get_mut(&mut state).expect("error on get_mut")
+                    .lock().expect("error on lock").update(self.step.clone() as u64);
             }
         }
     }

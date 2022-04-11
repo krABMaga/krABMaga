@@ -183,7 +183,7 @@ macro_rules! explore_ga_sequential {
                 // if fitness >= best_fitness_gen {
                 match best_fitness_gen{
                     Some(_) =>
-                        if $cmp(&fitness, &best_fitness_gen.unwrap()) {
+                        if $cmp(&fitness, &best_fitness_gen.expect("Error reading best fitness gen")) {
                             best_fitness_gen = Some(fitness);
                             best_individual_gen = individual.clone();
                         },
@@ -216,7 +216,7 @@ macro_rules! explore_ga_sequential {
 
             match best_fitness{
                 Some(_) =>
-                    if $cmp(&best_fitness_gen.unwrap(), &best_fitness.unwrap()) {
+                    if $cmp(&best_fitness_gen.expect("Error reading best fitness gen"), &best_fitness.expect("Error reading best fitness")) {
                         best_fitness = best_fitness_gen;
                         best_individual = best_individual_gen.clone();
                         best_generation = generation;
@@ -230,8 +230,8 @@ macro_rules! explore_ga_sequential {
 
             let elapsed_time = start.elapsed();
             println!("*** Completed generation {} after {} seconds ***", generation, elapsed_time.as_secs_f32());
-            println!("- Best fitness in generation {} is {:#?} using {:#?}", generation, best_fitness_gen.unwrap(), best_individual_gen);
-            println!("-- Overall best fitness is found in generation {} and is {:#?} using {:#?}", best_generation, best_fitness.unwrap(), best_individual);
+            println!("- Best fitness in generation {} is {:#?} using {:#?}", generation, best_fitness_gen.expect("Error reading best fitness gen"), best_individual_gen);
+            println!("-- Overall best fitness is found in generation {} and is {:#?} using {:#?}", best_generation, best_fitness.expect("Error reading best fitness"), best_individual);
 
             // if flag is true the desired fitness is found
             if flag {
@@ -262,7 +262,7 @@ macro_rules! explore_ga_sequential {
             }
         }
 
-        println!("Resulting best fitness is {}", best_fitness.unwrap());
+        println!("Resulting best fitness is {}", best_fitness.expect("Error reading best fitness"));
         println!("- The best individual is: \n\t{}", best_individual);
 
         result
@@ -339,7 +339,7 @@ macro_rules! explore_ga_parallel {
             let mut best_fitness_gen: Option<f32> = None;
             let mut best_individual_gen: String = String::new();
 
-            let mut len = population.lock().unwrap().len();
+            let mut len = population.lock().expect("Error in population lock acquisition").len();
 
             let mut result = Vec::new();
             // execute the simulation for each member of population
@@ -357,7 +357,7 @@ macro_rules! explore_ga_parallel {
                     let mut schedule: Schedule = Schedule::new();
                     let mut individual: $state;
                     {
-                        let mut population = population.lock().unwrap();
+                        let mut population = population.lock().expect("Error in population lock acquisition");
                         // create the new state using the parameters
                         individual = <$state>::new_with_parameters(r, &population[index]);
                     }
@@ -379,7 +379,7 @@ macro_rules! explore_ga_parallel {
                 // compute the fitness value
                 let fitness = $fitness(&mut computed_ind);
 
-                let mut population = population.lock().unwrap();
+                let mut population = population.lock().expect("Error in population lock acquisition");
 
                 BufferGA::new(
                     generation,
@@ -404,7 +404,7 @@ macro_rules! explore_ga_parallel {
                 // if fitness >= best_fitness_gen {
                 match best_fitness_gen {
                     Some(_) =>
-                        if $cmp(&fitness, &best_fitness_gen.unwrap()) {
+                        if $cmp(&fitness, &best_fitness_gen.expect("Error reading best fitness gen")) {
                             best_fitness_gen = Some(fitness);
                             best_individual_gen = individual.clone();
                         },
@@ -426,7 +426,7 @@ macro_rules! explore_ga_parallel {
             // if best_fitness_gen > best_fitness {
             match best_fitness {
                 Some(_) =>
-                    if $cmp(&best_fitness_gen.unwrap(), &best_fitness.unwrap()) {
+                    if $cmp(&best_fitness_gen.expect("Error reading best fitness gen"), &best_fitness.expect("Error reading best fitness")) {
                         best_fitness = best_fitness_gen.clone();
                         best_individual = best_individual_gen.clone();
                         best_generation = generation;
@@ -440,8 +440,8 @@ macro_rules! explore_ga_parallel {
 
             let elapsed_time = start.elapsed();
             println!("*** Completed generation {} after {} seconds ***", generation, elapsed_time.as_secs_f32());
-            println!("- Best fitness in generation {} is {:#?} using {:#?}", generation, best_fitness_gen.unwrap(), best_individual_gen);
-            println!("-- Overall best fitness is found in generation {} and is {:#?} using {:#?}", best_generation, best_fitness.unwrap(), best_individual);
+            println!("- Best fitness in generation {} is {:#?} using {:#?}", generation, best_fitness_gen.expect("Error reading best fitness gen"), best_individual_gen);
+            println!("-- Overall best fitness is found in generation {} and is {:#?} using {:#?}", best_generation, best_fitness.expect("Error reading best fitness"), best_individual);
 
             res.append(&mut result);
 
@@ -460,7 +460,7 @@ macro_rules! explore_ga_parallel {
             }
 
             {
-                let mut population = population.lock().unwrap();
+                let mut population = population.lock().expect("Error in population lock acquisition");
                 population.clear();
                 for (individual, _) in pop_fitness.iter_mut() {
                     population.push(individual.clone())
@@ -476,7 +476,7 @@ macro_rules! explore_ga_parallel {
             }
         }
 
-        println!("Resulting best fitness is {:#?}", best_fitness.unwrap());
+        println!("Resulting best fitness is {:#?}", best_fitness.expect("Error reading best fitness"));
         println!("- The best individual is:\n\t{}", best_individual);
 
         res

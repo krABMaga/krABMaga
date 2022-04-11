@@ -97,7 +97,7 @@ pub trait NetworkRender<O: Hash + Eq + Clone + Display, L: Clone + Hash + Displa
 
     /// If the nodes connected by the edge have moved, we regenerate the path mesh related to the edge.
     fn render(state_wrapper: Res<ActiveState<S>>, mut query: Query<(&mut Path, &EdgeRender)>) {
-        let state = state_wrapper.0.lock().unwrap();
+        let state = state_wrapper.0.lock().expect("error on lock");
         let network = Self::get_network(&*state);
         for (mut path, edge_render) in query.iter_mut() {
             let source_loc = Self::get_loc(network, edge_render.0);

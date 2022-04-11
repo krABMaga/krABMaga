@@ -94,7 +94,7 @@ impl<'a, K: 'a + Eq + Hash, V: 'a, S: BuildHasher + Clone + Default> DBDashMap<K
 
         let idx = self.determine_shard(hash);
 
-        let mut shard = self.shards[idx].lock().unwrap();
+        let mut shard = self.shards[idx].lock().expect("error on lock");
 
         shard.remove(&key);
         shard.insert(key, value)
@@ -105,7 +105,7 @@ impl<'a, K: 'a + Eq + Hash, V: 'a, S: BuildHasher + Clone + Default> DBDashMap<K
 
         let idx = self.determine_shard(hash);
 
-        let mut shard = self.shards[idx].lock().unwrap();
+        let mut shard = self.shards[idx].lock().expect("error on lock");
 
         shard.remove_entry(key)
     }
@@ -135,7 +135,7 @@ impl<'a, K: 'a + Eq + Hash, V: 'a, S: BuildHasher + Clone + Default> DBDashMap<K
 
         let idx = self.determine_shard(hash);
 
-        let mut shard = self.shards[idx].lock().unwrap();
+        let mut shard = self.shards[idx].lock().expect("error on lock");
 
         match shard.get_mut(key) {
             Some(r) => unsafe {
@@ -151,18 +151,18 @@ impl<'a, K: 'a + Eq + Hash, V: 'a, S: BuildHasher + Clone + Default> DBDashMap<K
         for i in 0..shard_amount {
             unsafe {
                 std::ptr::swap(
-                    self.shards[i].get_mut().unwrap() as *mut HashMap<K, V, S>,
+                    self.shards[i].get_mut().expect("error on get_mut") as *mut HashMap<K, V, S>,
                     &mut self.r_shards[i] as *mut HashMap<K, V, S>,
                 )
             }
-            self.shards[i].get_mut().unwrap().clear();
+            self.shards[i].get_mut().expect("error on get_mut").clear();
         }
     }
 
     pub fn merge_r_shards(&mut self) -> HashMap<K, V, S> {
         let mut ris = HashMap::with_hasher(self.hasher.clone());
         for i in 0..shard_amount() {
-            ris.extend(self.shards[i].get_mut().unwrap().drain());
+            ris.extend(self.shards[i].get_mut().expect("error on get_mut").drain());
         }
         ris
     }
@@ -170,7 +170,7 @@ impl<'a, K: 'a + Eq + Hash, V: 'a, S: BuildHasher + Clone + Default> DBDashMap<K
     pub fn len(&self) -> usize {
         self.shards
             .iter()
-            .map(|shard| shard.lock().unwrap().len())
+            .map(|shard| shard.lock().expect("error on lock").len())
             .sum()
     }
 
@@ -200,7 +200,7 @@ impl<'a, K: 'a + Eq + Hash, V: 'a, S: BuildHasher + Clone + Default> DBDashMap<K
 
     pub fn clear(&self) {
         for shard in self.shards.iter() {
-            shard.lock().unwrap().clear();
+            shard.lock().expect("error on lock").clear();
         }
     }
 
@@ -217,7 +217,7 @@ impl<'a, K: 'a + Eq + Hash + Clone, V: Clone + 'a> DBDashMap<K, V, RandomState> 
     pub fn update(&mut self) {
         let n = shard_amount();
         for i in 0..n {
-            for (key, value) in self.shards[i].lock().unwrap().iter() {
+            for (key, value) in self.shards[i].lock().expect("error on lock").iter() {
                 self.r_shards[i].remove(&key.clone());
                 self.r_shards[i].insert(key.clone(), value.clone());
             }
@@ -239,7 +239,7 @@ impl<'a, K: 'a + Eq + Hash + Clone, V: Clone + 'a> DBDashMap<K, V, RandomState> 
         F: Fn(&V) -> V,
     {
         for shard in self.shards.iter() {
-            for (_key, value) in shard.lock().unwrap().iter_mut() {
+            for (_key, value) in shard.lock().expect("error on lock").iter_mut() {
                 // let hash = self.hash_usize(&key);
                 // let idx = self.determine_shard(hash);
                 *value = closure(value);
@@ -254,7 +254,7 @@ impl<'a, K: 'a + Eq + Hash + Clone, V: Clone + 'a> DBDashMap<K, V, RandomState> 
             for (key, value) in self.r_shards[shard_id].iter() {
                 // let hash = self.hash_usize(&key);
                 // let idx = self.determine_shard(hash);
-                let mut locs = self.shards[shard_id].lock().unwrap();
+                let mut locs = self.shards[shard_id].lock().expect("error on lock");
                 if let Some(write_value) = locs.get_mut(key) {
                     *write_value = closure(write_value);
                 } else {
@@ -282,7 +282,7 @@ impl<'a, K: 'a + Eq + Hash + Clone, V: Clone + 'a> DBDashMap<K, V, RandomState> 
     pub fn w_keys(&self) -> Vec<K> {
         let mut ris: Vec<K> = Vec::with_capacity(self.len());
         for shard in self.shards.iter() {
-            for key in shard.lock().unwrap().keys() {
+            for key in shard.lock().expect("error on lock").keys() {
                 let k = key.to_owned();
                 ris.push(k);
             }

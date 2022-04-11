@@ -57,14 +57,14 @@ pub fn init_system<I: VisualizationState<S> + 'static, S: State>(
     on_init.on_init(
         &mut commands,
         &mut sprite_factory,
-        &mut state_resource.0.lock().unwrap(),
-        &mut schedule_resource.0.lock().unwrap(),
+        &mut state_resource.0.lock().expect("error on lock"),
+        &mut schedule_resource.0.lock().expect("error on lock"),
         &mut *sim,
     );
     on_init.setup_graphics(
-        &mut schedule_resource.0.lock().unwrap(),
+        &mut schedule_resource.0.lock().expect("error on lock"),
         &mut commands,
-        &mut state_resource.0.lock().unwrap(),
+        &mut state_resource.0.lock().expect("error on lock"),
         sprite_factory,
     )
 }

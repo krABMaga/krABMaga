@@ -19,7 +19,7 @@ pub fn simulation_system<S: State>(
         schedule_wrapper
             .0
             .lock()
-            .unwrap()
-            .step(&mut *(*state_wrapper).0.lock().unwrap());
+            .expect("error on lock")
+            .step(&mut *(*state_wrapper).0.lock().expect("error on lock"));
     }
 }

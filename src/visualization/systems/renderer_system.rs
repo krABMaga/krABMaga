@@ -29,14 +29,14 @@ pub fn renderer_system<I: VisualizationState<S> + Clone + 'static, S: State>(
 ) {
     if !sim_data.paused {
         vis_state.before_render(
-            &mut state_wrapper.0.lock().unwrap(),
-            &schedule_wrapper.0.lock().unwrap(),
+            &mut state_wrapper.0.lock().expect("error on lock"),
+            &schedule_wrapper.0.lock().expect("error on lock"),
             &mut commands,
             &mut sprite_factory,
         );
 
         for (mut agent_render, mut transform, mut visible, mut material) in query.iter_mut() {
-            let state = state_wrapper.0.lock().unwrap();
+            let state = state_wrapper.0.lock().expect("error on lock");
             if let Some(agent) = vis_state.get_agent(&agent_render, &Box::new(state.as_state())) {
                 agent_render.update(
                     &agent,
@@ -51,7 +51,7 @@ pub fn renderer_system<I: VisualizationState<S> + Clone + 'static, S: State>(
                     *material = new_material;
                 }
             } else {
-                let schedule = schedule_wrapper.0.lock().unwrap();
+                let schedule = schedule_wrapper.0.lock().expect("error on lock");
                 let step = schedule.step;
                 if step != 0 {
                     visible.is_visible = false;

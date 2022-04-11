@@ -35,10 +35,10 @@ pub trait RenderObjectGrid2D<S: State, O: 'static + Sync + Send + Hash + Copy + 
         let dense_grid: Option<&DenseGrid2D<O>> = Self::fetch_dense_grid(state);
 
         if sparse_grid.is_some() {
-            for obj in sparse_grid.unwrap().obj2loc.keys() {
+            for obj in sparse_grid.expect("error on unwrapping sparse grid").obj2loc.keys() {
                 let emoji = Self::fetch_emoji(state, obj);
                 let mut sprite_bundle = sprite_render_factory.get_emoji_loader(emoji);
-                let loc = Self::fetch_loc(state, obj).unwrap();
+                let loc = Self::fetch_loc(state, obj).expect("error on fetch_loc");
                 let rotation = Quat::from_rotation_z(Self::fetch_rotation(state, obj));
                 sprite_bundle.transform = Transform::from_xyz(loc.x as f32, loc.y as f32, 0.);
                 sprite_bundle.transform.rotation = rotation;
@@ -55,10 +55,10 @@ pub trait RenderObjectGrid2D<S: State, O: 'static + Sync + Send + Hash + Copy + 
                     .insert_bundle(sprite_bundle);
             }
         } else if dense_grid.is_some() {
-            for obj in dense_grid.unwrap().obj2loc.keys() {
+            for obj in dense_grid.expect("error on unwrapping dense_grid").obj2loc.keys() {
                 let emoji = Self::fetch_emoji(state, obj);
                 let mut sprite_bundle = sprite_render_factory.get_emoji_loader(emoji);
-                let loc = Self::fetch_loc(state, obj).unwrap();
+                let loc = Self::fetch_loc(state, obj).expect("error on fetch_lock");
                 let rotation = Quat::from_rotation_z(Self::fetch_rotation(state, obj));
                 sprite_bundle.transform = Transform::from_xyz(loc.x as f32, loc.y as f32, 0.);
                 sprite_bundle.transform.rotation = rotation;
@@ -98,7 +98,7 @@ pub trait RenderObjectGrid2D<S: State, O: 'static + Sync + Send + Hash + Copy + 
     ) where
         Self: 'static + Sized + Sync + Send,
     {
-        let state = &*state_wrapper.0.lock().unwrap();
+        let state = &*state_wrapper.0.lock().expect("error on lock");
         for (_marker, obj, mut transform, mut material) in query.iter_mut() {
             //update location
             let loc = match Self::fetch_loc(state, obj) {

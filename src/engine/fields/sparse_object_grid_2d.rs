@@ -114,7 +114,7 @@ cfg_if! {
             pub fn get_unbuffered(&self, object: &O) -> Option<O> {
                 match self.obj2loc.get_write(object){
                     Some(loc) =>{
-                    for obj in self.loc2objs.get_write(&*loc).unwrap().value_mut(){
+                    for obj in self.loc2objs.get_write(&*loc).expect("error on get_write").value_mut(){
                         if obj == object {
                             return Some(*obj);
                         }
@@ -166,7 +166,7 @@ cfg_if! {
                 if let Some(old_loc) = self.obj2loc.get_read(object) {
                     self.loc2objs
                         .get_write(old_loc)
-                        .unwrap()
+                        .expect("error on get_write")
                         .value_mut()
                         .retain(|&x| x != *object);
                 }
@@ -225,7 +225,7 @@ cfg_if! {
                         let mut rlocs = self.rlocs.borrow_mut();
                         for (key,value) in rlocs.iter_mut() {
                             for obj in value{
-                                *obj = closure(key, obj).unwrap();
+                                *obj = closure(key, obj).expect("error on closure");
                             }
                         }
                     },
@@ -233,7 +233,7 @@ cfg_if! {
                         let mut locs = self.locs.borrow_mut();
                         for (key,value) in locs.iter_mut() {
                             for obj in value{
-                                *obj = closure(key, obj).unwrap();
+                                *obj = closure(key, obj).expect("error on closure");
                             }
                         }
                     }
@@ -247,11 +247,11 @@ cfg_if! {
                         for (key, value) in rlocs.iter() {
                             if let Some(write_value) = locs.get_mut(key){
                                 for obj in write_value{
-                                    *obj = closure(key, obj).unwrap();
+                                    *obj = closure(key, obj).expect("error on closure");
                                 }
                             }else{
                                 for obj in value{
-                                    let new_bag = vec![closure(key, obj).unwrap()];
+                                    let new_bag = vec![closure(key, obj).expect("error on closure")];
                                     locs.insert(*key, new_bag);
                                 }
                             }

@@ -126,7 +126,7 @@ cfg_if! {
             if let Some(old_loc) = self.obj2loc.get_read(object) {
                 self.loc2objs
                     .get_write(old_loc)
-                    .unwrap()
+                    .expect("error in remove object")
                     .value_mut()
                     .retain(|&x| x != *object);
             }
@@ -187,7 +187,7 @@ cfg_if! {
                         GridOption::READ => {
                             let mut rlocs = self.rlocs.borrow_mut();
                             for i in 0 .. rlocs.len() {
-                                let bag_id = calculate_indexes_bag(i as i32, self.width, self.height).unwrap();
+                                let bag_id = calculate_indexes_bag(i as i32, self.width, self.height).expect("error in calculate_indexes_bag");
                                 let mut vec = Vec::new();
                                 if rlocs[i].is_empty() {continue};
                                 for elem in rlocs[i].iter() {
@@ -203,7 +203,7 @@ cfg_if! {
                             let mut locs = self.locs.borrow_mut();
                             let rlocs = self.rlocs.borrow();
                             for i in 0 .. rlocs.len() {
-                                let bag_id = calculate_indexes_bag(i as i32, self.width, self.height).unwrap();
+                                let bag_id = calculate_indexes_bag(i as i32, self.width, self.height).expect("error in calculate_indexes_bag");
                                 if rlocs[i].is_empty() {continue};
                                 for elem in rlocs[i].iter() {
                                     let result = closure(&bag_id, elem);
@@ -220,7 +220,7 @@ cfg_if! {
                             // for each bag in read
                             for i in 0..rlocs.len() {
                                 // calculate the bag_id
-                                let bag_id = calculate_indexes_bag(i as i32, self.width, self.height).unwrap();
+                                let bag_id = calculate_indexes_bag(i as i32, self.width, self.height).expect("error in calculate_indexes_bag");
                                 // if the corresponding write bag is not empty
                                 if !locs[i].is_empty() {
                                     // for each element in the write bag

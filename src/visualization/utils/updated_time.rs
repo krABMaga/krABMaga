@@ -472,7 +472,7 @@ mod tests {
 
         // Confirm that the fixed clock lags behind the normal clock by a specific amount.
         let diff = time.elapsed_since_startup() - time.fixed_elapsed_since_startup();
-        let expected = time.first_update().unwrap() - time.startup() + accumulator.time();
+        let expected = time.first_update().expect("error on first_update") - time.startup() + accumulator.time();
         assert_eq!(diff, expected);
     }
 }

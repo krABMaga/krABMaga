@@ -62,7 +62,7 @@ macro_rules! explore_ga_distributed_mpi {
     ) => {{
 
         // MPI initialization
-        let mut universe = mpi::initialize().unwrap();
+        let mut universe = mpi::initialize().expect("Error initialing mpi enviroment");
         let world = universe.world();
         let root_rank = 0;
         let root_process = world.process_at_rank(root_rank);
@@ -216,7 +216,7 @@ macro_rules! explore_ga_distributed_mpi {
 
                 for i in 0..my_pop_size {
                     let (param, _) = world.any_process().receive_vec::<u8>();
-                    let my_param = String::from_utf8(param).unwrap();
+                    let my_param = String::from_utf8(param).expect("Error: can't convert parameter as string");
                     population_params.push(my_param);
 
                 }
@@ -323,7 +323,7 @@ macro_rules! explore_ga_distributed_mpi {
                         master_individual.push(my_best_individual.clone());
                     } else {
                         let (param, _) = world.process_at_rank(i as i32).receive_vec::<u8>();
-                        let my_param = String::from_utf8(param).unwrap();
+                        let my_param = String::from_utf8(param).expect("Error: can't convert parameter as string");
                         master_individual.push(my_param);
                     }
                 }
@@ -392,7 +392,7 @@ macro_rules! explore_ga_distributed_mpi {
 
                     match best_individual {
                         Some(_) => {
-                            if $cmp(&elem.fitness, &best_individual.clone().unwrap().fitness) {
+                            if $cmp(&elem.fitness, &best_individual.clone().expect("Error: can't read best individual").fitness) {
                                 //println!("----- {}", elem.fitness);
                                 best_individual = Some(elem.clone());
                             }
@@ -455,8 +455,8 @@ macro_rules! explore_ga_distributed_mpi {
             if world.rank() == root_rank{
                 let elapsed_time = start_time.elapsed();
                 println!("*** Completed generation {} after {} seconds ***", generation, elapsed_time.as_secs_f32());
-                println!("- Best fitness in generation {} is {}", generation, best_fitness_gen.unwrap());
-                println!("-- Overall best fitness is found in generation {} and is {}", best_generation, best_fitness.unwrap());
+                println!("- Best fitness in generation {} is {}", generation, best_fitness_gen.expect("Error: can't read best fitness gen"));
+                println!("-- Overall best fitness is found in generation {} and is {}", best_generation, best_fitness.expect("Error: can't read best fitness"));
             }
 
             // if flag is true the desired fitness is found
@@ -523,15 +523,15 @@ macro_rules! explore_ga_distributed_mpi {
 
         } // END OF LOOP
         if world.rank() == root_rank{
-            println!("\n\n- Overall best fitness is {}", best_fitness.unwrap());
+            println!("\n\n- Overall best fitness is {}", best_fitness.expect("Error: can't read best fitness"));
             println!("- The best individual is:
                 generation:\t{}
                 index:\t\t{}
                 fitness:\t{}
                 string:\t{}\n",
-                best_individual.as_ref().unwrap().generation,
-                best_individual.as_ref().unwrap().index,
-                best_individual.as_ref().unwrap().fitness,
+                best_individual.as_ref().expect("Error: can't read best individual").generation,
+                best_individual.as_ref().expect("Error: can't read best individual").index,
+                best_individual.as_ref().expect("Error: can't read best individual").fitness,
                 best_individual_string);
         }
         // return arrays containing all the results of each simulation

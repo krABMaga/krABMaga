@@ -190,7 +190,7 @@ cfg_if! {
 
             // take an object and return the corresponding location from the write state
             pub fn get_location_unbuffered(&self, object: O) -> Option<Real2D> {
-                let mut loc = self.floc.get_write(&object).unwrap();
+                let mut loc = self.floc.get_write(&object).expect("error on get_write");
                 Some(*loc.value_mut())
             }
 
@@ -202,7 +202,7 @@ cfg_if! {
                 match self.floc.get_write(object){
                     Some(loc) =>{
                         let real_loc = self.discretize(&loc);
-                        for obj in self.fbag.get_write(&real_loc).unwrap().value_mut(){
+                        for obj in self.fbag.get_write(&real_loc).expect("error on get_write").value_mut(){
                          if obj == object {
                              return Some(*obj);
                          }

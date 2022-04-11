@@ -253,7 +253,7 @@ mod no_exported {
 ///params list + output list for each configuration runned
 pub fn write_csv<A: DataFrame>(name: &str, dataframe: &[A]) -> Result<(), Box<dyn Error>> {
     let csv_name = format!("{}.csv", name);
-    let mut wtr = Writer::from_path(csv_name).unwrap();
+    let mut wtr = Writer::from_path(csv_name).expect("error on open the file path");
     //define column name
     wtr.write_record(A::field_names())?;
 
@@ -313,15 +313,15 @@ macro_rules! gen_param {
 macro_rules! load_csv {
 
     ($input_file: expr, $( $x:ident: $x_ty: ty ),*) =>{{
-        let mut rdr = Reader::from_path($input_file).unwrap();
+        let mut rdr = Reader::from_path($input_file).expect("error on read a file from path");
         $(
             let mut $x: Vec<$x_ty> = Vec::new();
         )*
         for result in rdr.records() {
-            let record = result.unwrap();
+            let record = result.expect("error on unwrap the record in csv file");
             let mut i = 0;
             $(
-                let x : $x_ty = record[i].parse().unwrap();
+                let x : $x_ty = record[i].parse().expect("error on parsing the record");
                 $x.push(x);
                 i += 1;
             )*

@@ -35,7 +35,7 @@ pub fn ui_system<I: VisualizationState<S> + Clone + 'static, S: State>(
             ui.label("Press start to let the simulation begin!");
             ui.label(format!(
                 "Step: {}",
-                active_schedule_wrapper.0.lock().unwrap().step
+                active_schedule_wrapper.0.lock().expect("error on lock").step
             ));
             ui.label(format!("Number of entities: {}", query.iter().count()));
 
@@ -68,26 +68,26 @@ pub fn ui_system<I: VisualizationState<S> + Clone + 'static, S: State>(
                         }
                         // Reset schedule and state and call the initializer method
                         let mut new_schedule = Schedule::new();
-                        active_state_wrapper.0.lock().unwrap().reset();
+                        active_state_wrapper.0.lock().expect("error on lock").reset();
                         active_state_wrapper
                             .0
                             .lock()
-                            .unwrap()
+                            .expect("error on lock")
                             .init(&mut new_schedule);
                         on_init.on_init(
                             &mut commands,
                             &mut sprite_factory,
-                            &mut active_state_wrapper.0.lock().unwrap(),
+                            &mut active_state_wrapper.0.lock().expect("error on lock"),
                             &mut new_schedule,
                             &mut *sim_data,
                         );
                         on_init.setup_graphics(
                             &mut new_schedule,
                             &mut commands,
-                            &mut active_state_wrapper.0.lock().unwrap(),
+                            &mut active_state_wrapper.0.lock().expect("error on lock"),
                             sprite_factory,
                         );
-                        *(*active_schedule_wrapper).0.lock().unwrap() = new_schedule;
+                        *(*active_schedule_wrapper).0.lock().expect("error on lock") = new_schedule;
                         //(*active_state_wrapper).0 = new_state;
                     }
 

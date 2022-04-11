@@ -151,9 +151,9 @@ cfg_if! {
                 let edges = &self.edges;
 
                 for k in edges.keys() {
-                    match self.get_edges(id2nodes.get_read(k).unwrap().clone()) {
+                    match self.get_edges(id2nodes.get_read(k).expect("error on get_read").clone()) {
                         Some(es) => {
-                            dist.push((&*id2nodes.get_read(k).unwrap(), es.len() as i32));
+                            dist.push((&*id2nodes.get_read(k).expect("error on get_read"), es.len() as i32));
                         }
                         None => {}
                     }
@@ -169,7 +169,7 @@ cfg_if! {
 
                 let choices_list = dist
                     .choose_multiple_weighted(&mut rng, amount, |dist| dist.1)
-                    .unwrap()
+                    .expect("error on choose_multiple_weighted")
                     .collect::<Vec<_>>();
 
                 for choice in choices_list {
@@ -193,7 +193,8 @@ cfg_if! {
 
                         for e in uedges {
 
-                            let vid_edge = nodes2id.get(self.id2nodes.get_read(&e.v).unwrap()).unwrap();
+                            let vid_edge = nodes2id.get(self.id2nodes.get_read(&e.v).expect("error on get_read"))
+                                .expect("error on get");
                             if self.direct && e.u == *uid && *vid == *vid_edge {
                                 return Some(e.clone());
                             } else if !self.direct && ((e.u == *uid && *vid_edge == *vid) || (*vid_edge == *uid && e.u == *vid))
@@ -271,7 +272,7 @@ cfg_if! {
 
                         let choices_list = dist
                             .choose_multiple_weighted(&mut rng, amount, |choice| choice.1)
-                            .unwrap()
+                            .expect("error on choose_multiple_weighted")
                             .collect::<Vec<_>>();
 
                         for choice in choices_list {
@@ -338,7 +339,7 @@ cfg_if! {
 
                         let choices_list = dist
                             .choose_multiple_weighted(&mut rng, amount, |choice| choice.1)
-                            .unwrap()
+                            .expect("error on choose_multiple_weighted")
                             .collect::<Vec<_>>();
 
 
@@ -416,7 +417,7 @@ cfg_if! {
                     None => return None
                 };
 
-                let mut u_edges = self.edges.get_write(uid).unwrap();
+                let mut u_edges = self.edges.get_write(uid).expect("error on get_write");
 
                 let index = match u_edges
                     .iter()
@@ -433,7 +434,7 @@ cfg_if! {
                 if self.direct {
                     return Some(u_edge.clone());
                 } else {
-                    let mut v_edges = self.edges.get_write(vid).unwrap();
+                    let mut v_edges = self.edges.get_write(vid).expect("error on get_write");
                     v_edges.retain(|entry| {
                         !((entry.u == *uid && entry.v == *vid) ||
                         (entry.u == *vid && entry.v == *uid))
@@ -454,7 +455,7 @@ cfg_if! {
 
                 for v in nodes {
                     if v != uid {
-                        let vnode = self.id2nodes.get_read(v).unwrap();
+                        let vnode = self.id2nodes.get_read(v).expect("error on get_read");
                         match self.remove_edge(vnode.clone(), u.clone()) {
                             Some(e) => ris.push(e),
                             None => (),
@@ -477,7 +478,7 @@ cfg_if! {
 
                 for v in nodes {
                     if v != uid {
-                        let vnode = self.id2nodes.get_read(v).unwrap();
+                        let vnode = self.id2nodes.get_read(v).expect("error on get_read");
                         match self.remove_edge(u.clone(), vnode.clone()) {
                             Some(e) => ris.push(e),
                             None => (),
@@ -567,8 +568,8 @@ cfg_if! {
                 for j in 0..nodes.len(){
 
 
-                    let id1 = id2nodes.get(&(i as u32)).unwrap();
-                    let id2 = id2nodes.get(&(j as u32)).unwrap();
+                    let id1 = id2nodes.get(&(i as u32)).expect("error on get");
+                    let id2 = id2nodes.get(&(j as u32)).expect("error on get");
 
                     match self.get_edge(id1.clone(), id2.clone()) {
                         Some(_) => formatter.push('1'),
@@ -666,8 +667,8 @@ cfg_if! {
                 let edges = self.edges.borrow();
 
                 for k in edges.keys() {
-                    if let Some(es) = self.get_edges(id2nodes.get(k).unwrap().clone()) {
-                        dist.push((&*id2nodes.get(k).unwrap(), es.len() as i32));
+                    if let Some(es) = self.get_edges(id2nodes.get(k).expect("error on get").clone()) {
+                        dist.push((&*id2nodes.get(k).expect("error on get"), es.len() as i32));
                     }
                 }
 
@@ -681,7 +682,7 @@ cfg_if! {
 
                 let choices_list = dist
                     .choose_multiple_weighted(&mut rng, amount, |dist| dist.1)
-                    .unwrap()
+                    .expect("error on choose_multiple_weighted")
                     .collect::<Vec<_>>();
 
                 for choice in choices_list {
@@ -739,7 +740,7 @@ cfg_if! {
                         };
 
                         for e in uedges {
-                            let vid_edge = nodes2id.get(id2nodes.get(&e.v).unwrap()).unwrap();
+                            let vid_edge = nodes2id.get(id2nodes.get(&e.v).expect("error on get")).expect("error on get");
                             if e.u == *uid && *vid_edge == *vid || !self.direct && *vid_edge == *uid && e.u == *vid {
                                 return Some(e.clone());
                             }
@@ -823,7 +824,7 @@ cfg_if! {
 
                         let choices_list = dist
                             .choose_multiple_weighted(&mut rng, amount, |choice| choice.1)
-                            .unwrap()
+                            .expect("error onchoose_multiple_weighted")
                             .collect::<Vec<_>>();
 
                         for choice in choices_list {
@@ -891,7 +892,7 @@ cfg_if! {
 
                         let choices_list = dist
                             .choose_multiple_weighted(&mut rng, amount, |choice| choice.1)
-                            .unwrap()
+                            .expect("error on choose_multiple_weighted")
                             .collect::<Vec<_>>();
 
                         for choice in choices_list {
@@ -931,7 +932,7 @@ cfg_if! {
                 };
 
                 let mut edges = self.edges.borrow_mut();
-                let u_edges = edges.get_mut(uid).unwrap();
+                let u_edges = edges.get_mut(uid).expect("error on get_mut");
 
                 let index = match u_edges.iter().position(|entry| {
                     (entry.u == *uid && entry.v == *vid) || (entry.u == *vid && entry.v == *uid)
@@ -943,7 +944,7 @@ cfg_if! {
                 let u_edge = u_edges.remove(index);
 
                 if !self.direct {
-                    let v_edges = edges.get_mut(vid).unwrap();
+                    let v_edges = edges.get_mut(vid).expect("error on get_mut");
                     v_edges.retain(|entry| {
                         !((entry.u == *uid && entry.v == *vid) || (entry.u == *vid && entry.v == *uid))
                     });
@@ -967,7 +968,7 @@ cfg_if! {
 
                 for v in id2nodes.keys(){
                     if v != uid {
-                            let vnode = id2nodes.get(v).unwrap();
+                            let vnode = id2nodes.get(v).expect("error on get");
                             if let Some(e) = self.remove_edge(vnode.clone(), u.clone()) {
                                 ris.push(e)
                         }
@@ -990,7 +991,7 @@ cfg_if! {
 
                 for v in id2nodes.keys(){
                     if v != uid {
-                            let vnode = id2nodes.get(v).unwrap();
+                            let vnode = id2nodes.get(v).expect("error on get");
                             if let Some(e) = self.remove_edge(u.clone(), vnode.clone()) {
                                 ris.push(e)
                         }
