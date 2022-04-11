@@ -47,7 +47,7 @@ pub fn ui_system<I: VisualizationState<S> + Clone + 'static, S: State>(
 
             // A slider that allows the user to set the speed of the simulation.
             let mut value = 1.0 / time.fixed_delta().as_secs_f32();
-            ui.add(egui::Slider::new(&mut value, 0.1..=4000.0).text("Steps per second")
+            ui.add(egui::Slider::new(&mut value, 0.1..=250.0).text("Steps per second")
                 .clamp_to_range(true));
             time.set_steps_per_second(value);
 
