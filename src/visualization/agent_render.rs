@@ -5,7 +5,9 @@ use crate::engine::{agent::Agent, state::State};
 
 use downcast_rs::{impl_downcast, Downcast};
 
-pub trait AgentRender: Downcast + Send + Sync + 'static + Component<Storage=TableStorage> {
+pub trait AgentRender:
+    Downcast + Send + Sync + 'static + Component<Storage = TableStorage>
+{
     // Specifies the asset to use when visualizing the agent.
     // This should be overwritten to return a string which can point to two things:
     // 1) An emoji code, a list of compatible ones can be found here: https://www.webfx.com/tools/emoji-cheat-sheet/
@@ -54,4 +56,6 @@ pub enum SpriteType {
     // File(String), TODO
 }
 
-impl Component for Box<dyn AgentRender> { type Storage = TableStorage; }
+impl Component for Box<dyn AgentRender> {
+    type Storage = TableStorage;
+}

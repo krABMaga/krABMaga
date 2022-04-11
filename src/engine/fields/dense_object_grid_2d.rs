@@ -372,7 +372,7 @@ cfg_if! {
                     }
                 }
 
-                
+
             }
 
             impl<O: Eq + Hash + Clone + Copy> Field for DenseGrid2D<O> {

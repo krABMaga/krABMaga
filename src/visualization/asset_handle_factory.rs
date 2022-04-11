@@ -3,7 +3,7 @@ use std::path::Path;
 
 use bevy::ecs::system::SystemParam;
 
-use bevy::prelude::{AssetServer, Assets, Handle, Res, ResMut, SpriteBundle, Image};
+use bevy::prelude::{AssetServer, Assets, Handle, Image, Res, ResMut, SpriteBundle};
 
 use hashbrown::HashMap;
 
@@ -64,7 +64,7 @@ impl AssetHandleFactory {
 
 // A bundle of resources related to sprite assets, commonly used to edit the graphical representation of an agent.
 #[derive(SystemParam)]
-pub struct AssetHandleFactoryResource<'w,'s> {
+pub struct AssetHandleFactoryResource<'w, 's> {
     pub sprite_factory: ResMut<'w, AssetHandleFactory>,
     pub asset_server: Res<'w, AssetServer>,
     pub assets: ResMut<'w, Assets<Image>>,
@@ -72,20 +72,16 @@ pub struct AssetHandleFactoryResource<'w,'s> {
     marker: PhantomData<&'s usize>,
 }
 
-impl<'w,'s> AssetHandleFactoryResource<'w,'s> {
+impl<'w, 's> AssetHandleFactoryResource<'w, 's> {
     // A proxy method that exposes [AssetHandleFactory get_emoji_loader](AssetHandleFactory#get_emoji_loader)
     pub fn get_emoji_loader(&mut self, emoji_code: String) -> SpriteBundle {
-        self.sprite_factory.get_emoji_loader(
-            emoji_code,
-            &mut self.asset_server,
-        )
+        self.sprite_factory
+            .get_emoji_loader(emoji_code, &mut self.asset_server)
     }
 
     // A proxy method that exposes [AssetHandleFactory get_material_handle](AssetHandleFactory#get_material_handle)
     pub fn get_material_handle(&mut self, emoji_code: String) -> Handle<Image> {
-        self.sprite_factory.get_material_handle(
-            emoji_code,
-            &mut self.asset_server,
-        )
+        self.sprite_factory
+            .get_material_handle(emoji_code, &mut self.asset_server)
     }
 }

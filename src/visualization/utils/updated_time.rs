@@ -1,11 +1,9 @@
+use crate::visualization::utils::fixed_timestep::FixedTimestepState;
+use bevy::prelude::ResMut;
 /// This module is mostly taken from this PR: https://github.com/bevyengine/bevy/pull/3002
 /// with slight fixes to add compatibility with Bevy 0.5, as well as a safety check in the time system
 /// to prevent the app from freezing when the steps per second value is too high.
-
-use bevy::utils::{Instant, Duration};
-use bevy::prelude::ResMut;
-use crate::visualization::utils::fixed_timestep::FixedTimestepState;
-
+use bevy::utils::{Duration, Instant};
 
 /// Tracks time elapsed since the previous update and since the app was started.
 #[derive(Debug, Clone)]
@@ -293,11 +291,11 @@ pub(crate) fn time_system(mut time: ResMut<Time>, mut accumulator: ResMut<FixedT
 #[cfg(test)]
 #[allow(clippy::float_cmp)]
 mod tests {
-    use std::time::{Duration, Instant};
     use super::Time;
+    use crate::visualization::utils::fixed_timestep::FixedTimestepState;
     use crate::FixedTimestepState;
     use bevy_utils::{Duration, Instant};
-    use crate::visualization::utils::fixed_timestep::FixedTimestepState;
+    use std::time::{Duration, Instant};
 
     #[test]
     fn update_test() {
@@ -472,7 +470,8 @@ mod tests {
 
         // Confirm that the fixed clock lags behind the normal clock by a specific amount.
         let diff = time.elapsed_since_startup() - time.fixed_elapsed_since_startup();
-        let expected = time.first_update().expect("error on first_update") - time.startup() + accumulator.time();
+        let expected = time.first_update().expect("error on first_update") - time.startup()
+            + accumulator.time();
         assert_eq!(diff, expected);
     }
 }

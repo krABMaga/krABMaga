@@ -16,10 +16,10 @@ use crate::visualization::{
 use bevy::{prelude::*, window::WindowResizeConstraints, DefaultPlugins};
 use bevy_egui::EguiPlugin;
 
-use std::sync::{Arc, Mutex};
-use bevy_prototype_lyon::prelude::ShapePlugin;
 use crate::visualization::utils::fixed_timestep::{FixedTimestep, FixedTimestepState};
-use crate::visualization::utils::updated_time::{Time, time_system};
+use crate::visualization::utils::updated_time::{time_system, Time};
+use bevy_prototype_lyon::prelude::ShapePlugin;
+use std::sync::{Arc, Mutex};
 
 // The application main struct, used to build and start the event loop. Offers several methods in a builder-pattern style
 // to allow for basic customization, such as background color, asset path and custom systems. Right now the framework
@@ -89,7 +89,10 @@ impl Visualization {
         window_constraints.min_height = 300.;
 
         let window_descriptor = WindowDescriptor {
-            title: self.window_name.parse().expect("Error: can't parse window name"),
+            title: self
+                .window_name
+                .parse()
+                .expect("Error: can't parse window name"),
             width: self.width,
             height: self.height,
             vsync: true,
@@ -110,7 +113,10 @@ impl Visualization {
         app.add_plugin(ShapePlugin);
 
         app.insert_resource(SimulationDescriptor {
-            title: self.window_name.parse().expect("Error: can't parse window name"),
+            title: self
+                .window_name
+                .parse()
+                .expect("Error: can't parse window name"),
             width: self.sim_width,
             height: self.sim_height,
             center_x: (self.width * 0.5) - (self.width - self.sim_width as f32) / 2.,
@@ -124,22 +130,20 @@ impl Visualization {
         .insert_resource(ActiveState(Arc::new(Mutex::new(state))))
         .insert_resource(ActiveSchedule(Arc::new(Mutex::new(schedule))))
         .insert_resource(Initializer(cloned_init_call, Default::default()))
-            .init_resource::<Time>()
-            .init_resource::<FixedTimestepState>()
+        .init_resource::<Time>()
+        .init_resource::<FixedTimestepState>()
         .add_startup_system(init_system::<I, S>.system())
-            .add_startup_system(set_initial_timestep.system())
+        .add_startup_system(set_initial_timestep.system())
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
-            .add_system_set(SystemSet::new()
+        .add_system_set(
+            SystemSet::new()
                 .with_run_criteria(FixedTimestep::step.system())
                 .with_system(renderer_system::<I, S>.system().label("render"))
-                .with_system(simulation_system::<S>.system().before("render"))
-            )
+                .with_system(simulation_system::<S>.system().before("render")),
+        )
         .add_system(ui_system::<I, S>.system().before("render"))
         .add_system(camera_system.system())
-            .add_system_to_stage(
-                CoreStage::First,
-                time_system.exclusive_system(),
-            );
+        .add_system_to_stage(CoreStage::First, time_system.exclusive_system());
 
         app
     }

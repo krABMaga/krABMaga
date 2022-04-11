@@ -400,7 +400,7 @@ aws lambda create-function --function-name rab_lambda --handler main --zip-file 
                             population_params.push(population[(i * sub_population_size + j)%population.len()].clone());
                         } else {
                             let base_func = total_functions % $num_func;
-                            let initial_offset = base_func * (population_size_per_function + 1); 
+                            let initial_offset = base_func * (population_size_per_function + 1);
                             let additional_offset = remained_funcs * (population_size_per_function);
                             let final_index = initial_offset + additional_offset + j;
                             population_params.push(population[(final_index)%population.len()].clone());  //remove clone

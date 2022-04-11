@@ -51,7 +51,7 @@ pub struct EdgeRenderInfo {
     pub line_width: f32,
     pub source_loc: Real2D,
     pub target_loc: Real2D,
-    pub is_static: bool // If true, render() won't loop on this edge
+    pub is_static: bool, // If true, render() won't loop on this edge
 }
 
 #[derive(Component)]
@@ -76,18 +76,20 @@ pub trait NetworkRender<O: Hash + Eq + Clone + Display, L: Clone + Hash + Displa
                     target_loc,
                     line_color,
                     line_width,
-                    is_static
+                    is_static,
                 } = Self::get_edge_info(edge, network);
 
-                let mut spawn_command = commands
-                    .spawn_bundle(GeometryBuilder::build_as(
-                        &Line(Vec2::new(source_loc.x, source_loc.y), Vec2::new(target_loc.x, target_loc.y)),
-                        DrawMode::Outlined {
-                            fill_mode: FillMode::color(Color::BLACK), // ignored
-                            outline_mode: StrokeMode::new(line_color, line_width),
-                        },
-                        Transform::default()
-                    ));
+                let mut spawn_command = commands.spawn_bundle(GeometryBuilder::build_as(
+                    &Line(
+                        Vec2::new(source_loc.x, source_loc.y),
+                        Vec2::new(target_loc.x, target_loc.y),
+                    ),
+                    DrawMode::Outlined {
+                        fill_mode: FillMode::color(Color::BLACK), // ignored
+                        outline_mode: StrokeMode::new(line_color, line_width),
+                    },
+                    Transform::default(),
+                ));
                 if !is_static {
                     spawn_command.insert(EdgeRender(edge.u, edge.v, source_loc, target_loc));
                 }
@@ -103,11 +105,10 @@ pub trait NetworkRender<O: Hash + Eq + Clone + Display, L: Clone + Hash + Displa
             let source_loc = Self::get_loc(network, edge_render.0);
             let target_loc = Self::get_loc(network, edge_render.1);
             if source_loc != edge_render.2 || target_loc != edge_render.3 {
-                *path = ShapePath::build_as(
-                    &Line(
-                        Vec2::new(source_loc.x, source_loc.y), Vec2::new(target_loc.x, target_loc.y)
-                    )
-                );
+                *path = ShapePath::build_as(&Line(
+                    Vec2::new(source_loc.x, source_loc.y),
+                    Vec2::new(target_loc.x, target_loc.y),
+                ));
             }
         }
     }

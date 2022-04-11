@@ -90,8 +90,10 @@ macro_rules! build_optimizer {
                         &get_instance(&vec![vec![0.]], &vec![0.])
                             .gauss_pr
                             .lock()
-                            .expect("error getting reference to GaussianPR in Gradient Calculation"),
-                            &x.to_vec(),
+                            .expect(
+                                "error getting reference to GaussianPR in Gradient Calculation",
+                            ),
+                        &x.to_vec(),
                         &self.x,
                     )
                 }))
@@ -148,7 +150,9 @@ macro_rules! bayesian_opt {
             for i in 0..trial_x.len() {
                 let acquisition = Opt { x: x_init.clone() };
                 let mut linesearch: MoreThuenteLineSearch<Vec<f64>, f64> =
-                    MoreThuenteLineSearch::new().c(1e-4, 0.9).expect("Error in building linesearch");
+                    MoreThuenteLineSearch::new()
+                        .c(1e-4, 0.9)
+                        .expect("Error in building linesearch");
 
                 // Set up solver
                 let solver: LBFGS<_, Vec<f64>, f64> = LBFGS::new(linesearch, 7);
@@ -342,7 +346,8 @@ pub fn acquisition_function_base(
     }
 
     let z = (mean_y_new - mean_y_max) / sigma_y_new;
-    let normal = Normal::new(0.0, 1.0).expect("Error building normal distribution inside acquisition function");
+    let normal = Normal::new(0.0, 1.0)
+        .expect("Error building normal distribution inside acquisition function");
     let z_cfd = normal.cdf(z);
     let z_pdf = normal.pdf(z);
     (mean_y_new - mean_y_max) * z_cfd + sigma_y_new * z_pdf
@@ -373,8 +378,9 @@ pub fn get_next_point_base(
     for i in 0..trial_x.len() {
         let acquisition = OptAcquisition::new(&x, &y);
 
-        let linesearch: MoreThuenteLineSearch<Vec<f64>, f64> =
-            MoreThuenteLineSearch::new().c(1e-4, 0.9).expect("Error building linesearch");
+        let linesearch: MoreThuenteLineSearch<Vec<f64>, f64> = MoreThuenteLineSearch::new()
+            .c(1e-4, 0.9)
+            .expect("Error building linesearch");
 
         // Set up solver
         let solver: LBFGS<_, Vec<f64>, f64> = LBFGS::new(linesearch, 7);

@@ -212,7 +212,9 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> HNetwork<O, L> {
         let to_remove: HEdge<L> = HEdge::new(ids.as_slice(), EdgeOptions::Simple);
 
         for id in ids {
-            let edges = all_edges.get_mut(&id).expect("error on get_mut of all_edges");
+            let edges = all_edges
+                .get_mut(&id)
+                .expect("error on get_mut of all_edges");
 
             let index = match edges.iter().position(|entry| *entry == to_remove) {
                 Some(i) => i as i32,
@@ -232,7 +234,9 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> HNetwork<O, L> {
         let mut all_edges = self.edges.borrow_mut();
 
         for id in to_remove.nodes.iter() {
-            let edges = all_edges.get_mut(id).expect("error on get_mut of all_edges");
+            let edges = all_edges
+                .get_mut(id)
+                .expect("error on get_mut of all_edges");
 
             let index = match edges.iter().position(|entry| *entry == *to_remove) {
                 Some(i) => i as i32,

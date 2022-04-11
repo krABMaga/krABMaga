@@ -206,7 +206,7 @@ macro_rules! explore_ga_distributed_mpi {
                         world.process_at_rank(i as i32).send(&population_params[send_index].clone().as_bytes()[..]);
                         send_index += 1;
                     }
-                  
+
                     //population_params.clear();
                 }
             } else {
@@ -224,7 +224,7 @@ macro_rules! explore_ga_distributed_mpi {
 
 
             let mut my_population: Vec<String>  = Vec::new();
-            
+
             if world.rank() == root_rank {
 
                 for i in 0..my_pop_size {
@@ -276,7 +276,7 @@ macro_rules! explore_ga_distributed_mpi {
 
                 // if fitness > my_best_fitness {
                 //println!("rank {} --- {}", my_rank, fitness);
-                
+
                 match my_best_fitness {
                     Some(_) =>
                         if $cmp(&fitness, &my_best_fitness.expect("265")){
@@ -284,10 +284,10 @@ macro_rules! explore_ga_distributed_mpi {
                             my_best_index = local_index;
                             my_best_individual = individual_params.clone();
                         },
-                    None => {                            
+                    None => {
                         my_best_fitness = Some(fitness);
                         my_best_index = local_index;
-                        my_best_individual = individual_params.clone();                   
+                        my_best_individual = individual_params.clone();
                     }
                 }
 
@@ -409,7 +409,7 @@ macro_rules! explore_ga_distributed_mpi {
                     }
                 }
 
-                
+
                 for elem in partial_results.iter() {
                     if elem.fitness == 1000. {
                         panic!("partial_results contains dummy");
@@ -449,7 +449,7 @@ macro_rules! explore_ga_distributed_mpi {
 
                     }
                 }
-        
+
             }
 
             if world.rank() == root_rank{

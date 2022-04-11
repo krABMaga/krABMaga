@@ -5,8 +5,8 @@ use bevy::prelude::{
     Assets, Commands, Component, Handle, Image, Query, Res, ResMut, SpriteBundle, Transform,
 };
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
-use image::ImageBuffer;
 use image::imageops::{flip_horizontal, rotate180};
+use image::ImageBuffer;
 
 use crate::engine::{location::Int2D, state::State};
 use crate::visualization::{
@@ -44,7 +44,11 @@ pub trait BatchRender<S: State> {
         let image_buffer = rotate180(&image_buffer);
 
         Image::new(
-            Extent3d { width, height, ..Default::default() },
+            Extent3d {
+                width,
+                height,
+                ..Default::default()
+            },
             TextureDimension::D2,
             image_buffer.into_raw(),
             TextureFormat::Rgba8UnormSrgb,
@@ -89,7 +93,8 @@ pub trait BatchRender<S: State> {
         Self: 'static + Sized + Sync + Send,
     {
         let (_marker, mut image) = query.single_mut();
-        let new_image = Self::get_texture_from_state(&(*state_wrapper).0.lock().expect("error on lock"));
+        let new_image =
+            Self::get_texture_from_state(&(*state_wrapper).0.lock().expect("error on lock"));
 
         let new_asset = assets.set(&*image, new_image);
         *image = new_asset;

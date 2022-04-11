@@ -127,11 +127,11 @@ cfg_if! {
             pub fn step(&mut self, state: &mut dyn State) {
 
                 let thread_num = self.thread_num;
-                let thread_division = (self.events.lock()..expect("error on lock").len() as f64 / thread_num as f64).ceil() as usize;
+                let thread_division = (self.events.lock().expect("error on lock").len() as f64 / thread_num as f64).ceil() as usize;
                 let mut state = Arc::new(Mutex::new(state));
 
                 if self.step == 0{
-                    Arc::get_mut(&mut state)..expect("error on get_mut").lock().expect("error on lock").update(self.step.clone() as u64);
+                    Arc::get_mut(&mut state).expect("error on get_mut").lock().expect("error on lock").update(self.step.clone() as u64);
                 }
 
                 Arc::get_mut(&mut state).expect("error on get_mut").lock().expect("error on lock").before_step(self);
@@ -178,7 +178,7 @@ cfg_if! {
                         let events = Arc::clone(&self.events);
                         let state = Arc::clone(&state);
 
-                        let mut batch = cevents.pop()..expect("error on pop");
+                        let mut batch = cevents.pop().expect("error on pop");
 
                         scope.spawn(move |_| {
 
@@ -195,7 +195,7 @@ cfg_if! {
                                 // after computation check if repeating and not stopped
                                 if item.agentimpl.repeating && !item.agentimpl.agent.is_stopped(state) {
                                     // take the lock from the queue
-                                    let mut q = events.lock()..expect("error on lock");
+                                    let mut q = events.lock().expect("error on lock");
                                     // schedule_once transposition
                                     q.push(
                                         item.agentimpl.clone(),

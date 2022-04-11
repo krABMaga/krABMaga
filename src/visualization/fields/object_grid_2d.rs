@@ -35,7 +35,11 @@ pub trait RenderObjectGrid2D<S: State, O: 'static + Sync + Send + Hash + Copy + 
         let dense_grid: Option<&DenseGrid2D<O>> = Self::fetch_dense_grid(state);
 
         if sparse_grid.is_some() {
-            for obj in sparse_grid.expect("error on unwrapping sparse grid").obj2loc.keys() {
+            for obj in sparse_grid
+                .expect("error on unwrapping sparse grid")
+                .obj2loc
+                .keys()
+            {
                 let emoji = Self::fetch_emoji(state, obj);
                 let mut sprite_bundle = sprite_render_factory.get_emoji_loader(emoji);
                 let loc = Self::fetch_loc(state, obj).expect("error on fetch_loc");
@@ -55,7 +59,11 @@ pub trait RenderObjectGrid2D<S: State, O: 'static + Sync + Send + Hash + Copy + 
                     .insert_bundle(sprite_bundle);
             }
         } else if dense_grid.is_some() {
-            for obj in dense_grid.expect("error on unwrapping dense_grid").obj2loc.keys() {
+            for obj in dense_grid
+                .expect("error on unwrapping dense_grid")
+                .obj2loc
+                .keys()
+            {
                 let emoji = Self::fetch_emoji(state, obj);
                 let mut sprite_bundle = sprite_render_factory.get_emoji_loader(emoji);
                 let loc = Self::fetch_loc(state, obj).expect("error on fetch_lock");
@@ -87,12 +95,7 @@ pub trait RenderObjectGrid2D<S: State, O: 'static + Sync + Send + Hash + Copy + 
 
     // The system that will handle batch rendering self. You must insert this system in the [AppBuilder].
     fn render(
-        mut query: Query<(
-            &Marker<Self>,
-            &O,
-            &mut Transform,
-            &mut Handle<Image>,
-        )>,
+        mut query: Query<(&Marker<Self>, &O, &mut Transform, &mut Handle<Image>)>,
         mut sprite_render_factory: AssetHandleFactoryResource,
         state_wrapper: Res<ActiveState<S>>,
     ) where
