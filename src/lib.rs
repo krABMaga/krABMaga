@@ -90,6 +90,19 @@ pub enum ExploreMode {
 //states
 //# of repetitions
 //type of info
+macro_rules! simulate_with_ui {
+    // ($step:expr, $s:expr, $reps:expr, $info:expr) => {{
+    () => {{
+        let tick_rate = Duration::from_millis(250);
+        rust_ab::utils::monitoring::crossterm::run(tick_rate);
+    }};
+}
+
+#[macro_export]
+//step = simulation step number
+//states
+//# of repetitions
+//type of info
 macro_rules! simulate {
     ($step:expr, $s:expr, $reps:expr, $info:expr) => {{
         let mut s = $s;
