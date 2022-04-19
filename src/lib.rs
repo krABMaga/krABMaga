@@ -9,6 +9,9 @@ pub use rand;
 pub use rand_pcg;
 pub use rayon;
 pub use std::time::Instant;
+pub use crossterm;
+pub use sysinfo;
+
 #[cfg(any(feature = "visualization", feature = "visualization_wasm", doc))]
 pub mod visualization;
 
@@ -30,8 +33,27 @@ pub use std::io::prelude::*;
 pub use std::io::Write;
 pub use std::process::{Command, Stdio};
 pub use std::sync::{Arc, Mutex};
-pub use std::time::Duration;
+pub use std::time::{Duration};
 
+pub use std::collections::HashMap;
+
+pub use crossterm::{
+    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
+    execute,
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+};
+
+pub use std::{
+    io,
+};
+
+pub use tui::{
+    backend::{Backend, CrosstermBackend},
+    Terminal,
+};
+
+pub use crate::utils::monitoring::ui::UI;
+pub use crossterm::event::poll;
 #[cfg(feature = "distributed_mpi")]
 pub use {
     memoffset::{offset_of, span_of},
@@ -85,16 +107,162 @@ pub enum ExploreMode {
     Matched,
 }
 
-#[macro_export]
+#[derive(Copy, Clone, Debug)]
+pub enum PlotDataType {
+    BarChart,
+    ScatterChart
+}
+
+#[derive(Clone)]
+pub struct PlotData {
+    pub name: String,
+    pub ptype: PlotDataType,
+    pub series: HashMap<String, Vec<(f64,f64)>>,
+    pub min_x: f64,
+    pub max_x: f64,
+    pub min_y: f64,
+    pub max_y: f64,
+
+
+}
+
+impl PlotData {
+    pub fn new(name: String, ptype: PlotDataType ) -> PlotData {
+            PlotData { name, ptype, series: HashMap::new(),
+                min_x: f64::MAX, max_x: f64::MIN,
+                min_y: f64::MAX, max_y: f64::MIN,
+            }
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum LogType {
+    Info,
+    Warning,
+    Error,
+    Critical
+
+}
+
+impl fmt::Display for LogType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            LogType::Info => write!(f, "Info: "),
+            LogType::Warning => write!(f, "Warning: "),
+            LogType::Error => write!(f, "Error: "),
+            LogType::Critical => write!(f, "Critical: "),
+        }
+    }
+}
+pub struct Log {
+    pub ltype: LogType,
+    pub body: String
+}
+
+lazy_static! {
+    pub static ref DATA: Mutex<HashMap<String, PlotData>> = Mutex::new(HashMap::new());
+    pub static ref LOGS: Mutex<Vec<Log>> = Mutex::new(Vec::new());
+}
+
 //step = simulation step number
 //states
 //# of repetitions
 //type of info
+#[macro_export]
 macro_rules! simulate_with_ui {
-    // ($step:expr, $s:expr, $reps:expr, $info:expr) => {{
-    () => {{
+    ($step:expr, $s:expr, $reps:expr, $info:expr) => {{
+
         let tick_rate = Duration::from_millis(250);
-        rust_ab::utils::monitoring::crossterm::run(tick_rate);
+     
+
+        enable_raw_mode();
+        let mut stdout = io::stdout();
+        execute!(stdout, EnterAlternateScreen, EnableMouseCapture);
+        
+        let backend = CrosstermBackend::new(stdout);
+        let mut terminal = Terminal::new(backend).unwrap();
+
+        let mut last_tick = Instant::now();
+        let mut ui = UI::new();
+      
+
+        let mut s = $s;
+        let mut state = s.as_state_mut();
+        let n_step: u64 = $step;
+        
+        for r in 0..$reps {
+            let mut schedule: Schedule = Schedule::new();
+            state.init(&mut schedule);
+            let start = std::time::Instant::now();
+            for i in 0..n_step {
+
+                terminal.draw(|f| ui.draw(f));
+                let timeout = tick_rate
+                .checked_sub(last_tick.elapsed())
+                .unwrap_or_else(|| Duration::from_secs(0));
+                if crossterm::event::poll(timeout).unwrap() { //?
+                    if let Event::Key(key) = event::read().unwrap() { //?
+                        match key.code {
+                            KeyCode::Char(c) => ui.on_key(c),
+                            KeyCode::Left => ui.on_left(),
+                            KeyCode::Up => ui.on_up(),
+                            KeyCode::Right => ui.on_right(),
+                            KeyCode::Down => ui.on_down(),
+                            _ => {}
+                        }
+                    }
+                }
+               
+                schedule.step(state);
+                
+                if state.end_condition(&mut schedule) { 
+                    break;
+                }
+                ui.on_tick(i, (i + 1) as f64 / n_step as f64);
+                if ui.should_quit {
+                    disable_raw_mode();
+                    execute!(terminal.backend_mut(),LeaveAlternateScreen,DisableMouseCapture);
+                    terminal.show_cursor();
+                    return;
+                 }
+                        
+             }//end for single simulation
+        } //end of repetitions
+        
+        // disable_raw_mode();
+        // execute!(terminal.backend_mut(),LeaveAlternateScreen,DisableMouseCapture);
+        // terminal.show_cursor();              
+    }};
+}
+
+#[macro_export]
+macro_rules! plot {
+    // ($step:expr, $s:expr, $reps:expr, $info:expr) => {{
+    ($name:expr, $ptype:expr, $serie:expr, $x:expr, $y:expr) => {{
+        let mut data = DATA.lock().unwrap();
+        if !data.contains_key(&$name) {
+            data.insert($name, PlotData::new($name, $ptype));
+        } 
+        let mut pdata = data.get_mut(&$name).unwrap();
+        if !pdata.series.contains_key(&$serie) {
+            pdata.series.insert($serie.clone(), Vec::new());
+        } 
+        let serie = pdata.series.get_mut(&$serie).unwrap();
+        serie.push(($x,$y));
+        
+        if $x < pdata.min_x { pdata.min_x = $x};
+        if $x > pdata.max_x { pdata.max_x = $x};
+        if $y < pdata.min_y { pdata.min_y = $y};
+        if $y > pdata.max_y { pdata.max_y = $y};
+    }};
+}
+
+#[macro_export]
+macro_rules! log {
+    // ($step:expr, $s:expr, $reps:expr, $info:expr) => {{
+    ($ltype:expr, $message:expr) => {{
+        let mut logs = LOGS.lock().unwrap();
+        logs.insert(0, Log{ltype: $ltype, body: $message});
     }};
 }
 
