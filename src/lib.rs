@@ -196,7 +196,10 @@ macro_rules! simulate_with_ui {
             let start = std::time::Instant::now();
             for i in 0..n_step {
 
+                log!(LogType::Warning, format!("i {} nstep {} prog {}", i, n_step, (i + 1) as f64 / n_step as f64));
+
                 terminal.draw(|f| ui.draw(f));
+
                 let timeout = tick_rate
                 .checked_sub(last_tick.elapsed())
                 .unwrap_or_else(|| Duration::from_secs(0));
@@ -208,7 +211,9 @@ macro_rules! simulate_with_ui {
                             KeyCode::Up => ui.on_up(),
                             KeyCode::Right => ui.on_right(),
                             KeyCode::Down => ui.on_down(),
-                            _ => {}
+                            _ => {
+                                log!(LogType::Info, format!("invalid keycode"));
+                            }
                         }
                     }
                 }
@@ -218,20 +223,54 @@ macro_rules! simulate_with_ui {
                 if state.end_condition(&mut schedule) { 
                     break;
                 }
-                ui.on_tick(i, (i + 1) as f64 / n_step as f64);
+                
                 if ui.should_quit {
                     disable_raw_mode();
                     execute!(terminal.backend_mut(),LeaveAlternateScreen,DisableMouseCapture);
                     terminal.show_cursor();
-                    return;
-                 }
-                        
-             }//end for single simulation
+                    break;
+                }
+
+                ui.on_tick(i, (i + 1) as f64 / n_step as f64);
+            }//end for single simulation
+            
+            if ui.should_quit {
+                break;
+            }
+            terminal.draw(|f| ui.draw(f));
+
         } //end of repetitions
         
-        // disable_raw_mode();
-        // execute!(terminal.backend_mut(),LeaveAlternateScreen,DisableMouseCapture);
-        // terminal.show_cursor();              
+        // Simulations are end, let usr explore menu
+        // End program with 'q' or 'Q'
+        loop {
+            terminal.draw(|f| ui.draw(f));
+
+            let timeout = tick_rate
+                .checked_sub(last_tick.elapsed())
+                .unwrap_or_else(|| Duration::from_secs(0));
+            if crossterm::event::poll(timeout).unwrap() { //?
+                if let Event::Key(key) = event::read().unwrap() { //?
+                    match key.code {
+                        KeyCode::Char(c) => ui.on_key(c),
+                        KeyCode::Left => ui.on_left(),
+                        KeyCode::Up => ui.on_up(),
+                        KeyCode::Right => ui.on_right(),
+                        KeyCode::Down => ui.on_down(),
+                        _ => {
+                            log!(LogType::Info, format!("invalid keycode"));
+                        }
+                    }
+                }
+            }
+            
+            if ui.should_quit {
+                disable_raw_mode();
+                execute!(terminal.backend_mut(),LeaveAlternateScreen,DisableMouseCapture);
+                terminal.show_cursor();
+                break;
+            }
+        }           
     }};
 }
 

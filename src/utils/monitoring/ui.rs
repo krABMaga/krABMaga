@@ -1,6 +1,7 @@
 use crate::utils::monitoring::app::App;
 use crate::{DATA, LOGS};
 use crate::Log;
+use crate::log;
 use crate::LogType;
 use sysinfo::{NetworkExt, NetworksExt, ProcessExt, System, SystemExt, PidExt};
 
@@ -122,6 +123,11 @@ impl UI {
 
     pub fn on_tick(&mut self, step: u64, progress: f64) {
         
+        // Update progress
+        self.progress = progress;
+        // if self.progress > 1.0 {
+        //     self.progress = 0.0;
+        // }
         let mut sys = System::new_all();
         sys.refresh_all();
 
@@ -153,11 +159,7 @@ impl UI {
         self.memory_data.push( (step as f64, mem_used as f64));
 
 
-        // Update progress
-         self.progress = progress;
-        // if self.progress > 1.0 {
-        //     self.progress = 0.0;
-        // }
+        
 
         // self.sparkline.on_tick();
         // self.signals.on_tick();
@@ -168,17 +170,18 @@ impl UI {
         // let event = self.barchart.pop().unwrap();
         // self.barchart.insert(0, event);
     }
+
     pub fn draw<B: Backend>(&mut self, f: &mut Frame<B>) {
         let chunks = Layout::default()
             .constraints([Constraint::Length(3), Constraint::Min(0)].as_ref())
             .split(f.size());
 
-        for (pname, pdata) in DATA.lock().unwrap().iter() {
+        for (pname, _pdata) in DATA.lock().unwrap().iter() {
             if !self.tabs.titles.contains( pname ) {
                 self.tabs.titles.push( String::from(pname));
-            }
-            
+            }    
         }
+
         let titles = self
             .tabs
             .titles
@@ -186,18 +189,23 @@ impl UI {
             .map(|t| Spans::from(Span::styled(t, Style::default().fg(Color::Green))))
             .collect();
      
-        {
-            let data = DATA.lock().unwrap();
-            let title = format!("Rust-ab 🦀");
-            let tabs = Tabs::new(titles)
-                .block(Block::default().borders(Borders::ALL).title(title))
-                .highlight_style(Style::default().fg(Color::Yellow))
-                .select(self.tabs.index);
-            f.render_widget(tabs, chunks[0]);
-        }   //end del lock scope
+
+        // let data = DATA.lock().unwrap();
+        let title = format!("Rust-ab 🦀");
+        let tabs = Tabs::new(titles)
+            .block(Block::default().borders(Borders::ALL).title(title))
+            .highlight_style(Style::default().fg(Color::Yellow))
+            .select(self.tabs.index);
+        f.render_widget(tabs, chunks[0]);
+       
         // id di ogni tab
         match self.tabs.index {
-            0 => self.draw_first_tab(f, chunks[1]),
+            0 => {
+
+                self.draw_first_tab(f, chunks[1]);
+
+
+            },
             id => self.draw_tab(id, f, chunks[1])
         };
        
@@ -277,9 +285,18 @@ impl UI {
                 .as_ref(),
             )
             .split(area);
+            
+        log!(LogType::Info, format!("before the draws"));
+
         self.draw_gauges(f, chunks[0]);
-        self.draw_charts(f, chunks[1]);
+        log!(LogType::Info, format!("after gauges"));
+
         self.draw_text(f, chunks[2]);
+        log!(LogType::Info, format!("after the text"));
+
+        self.draw_charts(f, chunks[1]);
+        log!(LogType::Info, format!("after charts"));
+
     }
 
     fn draw_gauges<B>(&self, f: &mut Frame<B>, area: Rect)
@@ -298,6 +315,8 @@ impl UI {
             .split(area);
         let block = Block::default().borders(Borders::ALL).title("Simulation progress");
         f.render_widget(block, area);
+
+        log!(LogType::Warning, format!("prog: {}", self.progress));
 
         let label = format!("{:.2}%",  self.progress * 100.);
         let gauge = Gauge::default()
