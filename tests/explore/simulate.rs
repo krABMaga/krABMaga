@@ -21,13 +21,13 @@ fn simulate() {
     let dim = (200., 200.);
     let num_agents = 100;
 
-    let res = simulate!(step, Flocker::new(dim, num_agents), 0, Info::Normal);
+    let res = simulate_old!(step, Flocker::new(dim, num_agents), 0, Info::Normal);
     assert_eq!(res.len(), 0);
 
-    let res = simulate!(step, Flocker::new(dim, num_agents), 1, Info::Normal);
+    let res = simulate_old!(step, Flocker::new(dim, num_agents), 1, Info::Normal);
     assert_eq!(res.len(), 1);
 
-    let res = simulate!(step, Flocker::new(dim, num_agents), 2, Info::Normal);
+    let res = simulate_old!(step, Flocker::new(dim, num_agents), 2, Info::Normal);
     assert_eq!(res.len(), 2);
 
     for r in res {
@@ -50,5 +50,5 @@ fn simulate_verbose() {
     let num_agents = 100;
 
     let state = Flocker::new(dim, num_agents);
-    simulate!(step, state, 1, Info::Verbose);
+    simulate_old!(step, state, 1, Info::Verbose);
 }

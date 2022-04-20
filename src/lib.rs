@@ -34,7 +34,7 @@ pub use std::io::Write;
 pub use std::process::{Command, Stdio};
 pub use std::sync::{Arc, Mutex};
 pub use std::time::{Duration};
-
+pub use std::thread;
 pub use std::collections::HashMap;
 
 pub use crossterm::{
@@ -107,30 +107,26 @@ pub enum ExploreMode {
     Matched,
 }
 
-#[derive(Copy, Clone, Debug)]
-pub enum PlotDataType {
-    BarChart,
-    ScatterChart
-}
 
 #[derive(Clone)]
 pub struct PlotData {
     pub name: String,
-    pub ptype: PlotDataType,
     pub series: HashMap<String, Vec<(f64,f64)>>,
     pub min_x: f64,
     pub max_x: f64,
     pub min_y: f64,
     pub max_y: f64,
-
-
+    pub xlabel: String,
+    pub ylabel: String
 }
 
 impl PlotData {
-    pub fn new(name: String, ptype: PlotDataType ) -> PlotData {
-            PlotData { name, ptype, series: HashMap::new(),
+    pub fn new(name: String,  xlabel: String, ylabel:String) -> PlotData {
+            PlotData { name, series: HashMap::new(),
                 min_x: f64::MAX, max_x: f64::MIN,
                 min_y: f64::MAX, max_y: f64::MIN,
+                xlabel,
+                ylabel,
             }
     }
 }
@@ -162,6 +158,7 @@ pub struct Log {
 lazy_static! {
     pub static ref DATA: Mutex<HashMap<String, PlotData>> = Mutex::new(HashMap::new());
     pub static ref LOGS: Mutex<Vec<Log>> = Mutex::new(Vec::new());
+    pub static ref DESCR: Mutex<String> = Mutex::new(String::new());
 }
 
 //step = simulation step number
@@ -169,12 +166,11 @@ lazy_static! {
 //# of repetitions
 //type of info
 #[macro_export]
-macro_rules! simulate_with_ui {
-    ($step:expr, $s:expr, $reps:expr, $info:expr) => {{
+macro_rules! simulate {
+    ($s:expr, $step:expr, $reps:expr) => {{
 
         let tick_rate = Duration::from_millis(250);
      
-
         enable_raw_mode();
         let mut stdout = io::stdout();
         execute!(stdout, EnterAlternateScreen, EnableMouseCapture);
@@ -183,72 +179,19 @@ macro_rules! simulate_with_ui {
         let mut terminal = Terminal::new(backend).unwrap();
 
         let mut last_tick = Instant::now();
-        let mut ui = UI::new();
-      
+        let mut ui = UI::new($step, $reps);
+        
 
         let mut s = $s;
         let mut state = s.as_state_mut();
         let n_step: u64 = $step;
         
         for r in 0..$reps {
-            let mut schedule: Schedule = Schedule::new();
-            state.init(&mut schedule);
-            let start = std::time::Instant::now();
-            for i in 0..n_step {
-
-                log!(LogType::Warning, format!("i {} nstep {} prog {}", i, n_step, (i + 1) as f64 / n_step as f64));
-
-                terminal.draw(|f| ui.draw(f));
-
-                let timeout = tick_rate
-                .checked_sub(last_tick.elapsed())
-                .unwrap_or_else(|| Duration::from_secs(0));
-                if crossterm::event::poll(timeout).unwrap() { //?
-                    if let Event::Key(key) = event::read().unwrap() { //?
-                        match key.code {
-                            KeyCode::Char(c) => ui.on_key(c),
-                            KeyCode::Left => ui.on_left(),
-                            KeyCode::Up => ui.on_up(),
-                            KeyCode::Right => ui.on_right(),
-                            KeyCode::Down => ui.on_down(),
-                            _ => {
-                                log!(LogType::Info, format!("invalid keycode"));
-                            }
-                        }
-                    }
-                }
-               
-                schedule.step(state);
-                
-                if state.end_condition(&mut schedule) { 
-                    break;
-                }
-                
-                if ui.should_quit {
-                    disable_raw_mode();
-                    execute!(terminal.backend_mut(),LeaveAlternateScreen,DisableMouseCapture);
-                    terminal.show_cursor();
-                    break;
-                }
-
-                ui.on_tick(i, (i + 1) as f64 / n_step as f64);
-            }//end for single simulation
-            
-            if ui.should_quit {
-                break;
-            }
-            terminal.draw(|f| ui.draw(f));
-
-        } //end of repetitions
-        
-        // Simulations are end, let usr explore menu
-        // End program with 'q' or 'Q'
-        loop {
-            terminal.draw(|f| ui.draw(f));
 
             let timeout = tick_rate
-                .checked_sub(last_tick.elapsed())
-                .unwrap_or_else(|| Duration::from_secs(0));
+            .checked_sub(last_tick.elapsed())
+            .unwrap_or_else(|| Duration::from_secs(0));
+           
             if crossterm::event::poll(timeout).unwrap() { //?
                 if let Event::Key(key) = event::read().unwrap() { //?
                     match key.code {
@@ -258,10 +201,33 @@ macro_rules! simulate_with_ui {
                         KeyCode::Right => ui.on_right(),
                         KeyCode::Down => ui.on_down(),
                         _ => {
-                            log!(LogType::Info, format!("invalid keycode"));
+                            log!(LogType::Critical, format!("Invalid key pressed!"));
                         }
                     }
                 }
+            }
+            //clean data structure for UI    
+            DATA.lock().unwrap().clear();
+            terminal.clear();
+
+            let start = std::time::Instant::now();
+            let mut schedule: Schedule = Schedule::new();
+            state.init(&mut schedule);
+            //simulation loop
+            for i in 0..n_step {
+                terminal.draw(|f| ui.draw(f));
+                schedule.step(state);
+                if state.end_condition(&mut schedule) { 
+                    break;
+                }
+                ui.on_tick(i, (i + 1) as f64 / n_step as f64);
+            }//end simulation loop
+            let run_duration = start.elapsed();
+            ui.on_rep(r, ((schedule.step as f32 / (run_duration.as_nanos() as f32 * 1e-9)) as u64));
+            terminal.draw(|f| ui.draw(f));
+           
+            if last_tick.elapsed() >= tick_rate {
+                last_tick = Instant::now();
             }
             
             if ui.should_quit {
@@ -270,36 +236,89 @@ macro_rules! simulate_with_ui {
                 terminal.show_cursor();
                 break;
             }
-        }           
+        } //end of repetitions
+        
+        
+        loop {
+            
+            terminal.draw(|f| ui.draw(f));
+
+            let timeout = tick_rate
+            .checked_sub(last_tick.elapsed())
+            .unwrap_or_else(|| Duration::from_secs(0));
+           
+            if crossterm::event::poll(timeout).unwrap() { //?
+                if let Event::Key(key) = event::read().unwrap() { //?
+                    match key.code {
+                        KeyCode::Char(c) => ui.on_key(c),
+                        KeyCode::Left => ui.on_left(),
+                        KeyCode::Up => ui.on_up(),
+                        KeyCode::Right => ui.on_right(),
+                        KeyCode::Down => ui.on_down(),
+                        _ => {
+                            log!(LogType::Critical, format!("Invalid key pressed!"));
+                        }
+                    }
+                }
+            }
+            
+
+            if last_tick.elapsed() >= tick_rate {
+                last_tick = Instant::now();
+            }
+            if ui.should_quit {
+                disable_raw_mode();
+                execute!(terminal.backend_mut(),LeaveAlternateScreen,DisableMouseCapture);
+                terminal.show_cursor();
+                break;
+            }
+        }
+
+    }};
+
+    
+}
+#[macro_export]
+macro_rules! description {
+    ($description:expr) => {{
+       *DESCR.lock().unwrap() = $description.clone();
     }};
 }
 
 #[macro_export]
 macro_rules! plot {
-    // ($step:expr, $s:expr, $reps:expr, $info:expr) => {{
-    ($name:expr, $ptype:expr, $serie:expr, $x:expr, $y:expr) => {{
+    ($name:expr, $serie:expr, $x:expr, $y:expr) => {{
+        let mut data = DATA.lock().unwrap();
+        if data.contains_key(&$name) { 
+            let mut pdata = data.get_mut(&$name).unwrap();
+            if !pdata.series.contains_key(&$serie) {
+                pdata.series.insert($serie.clone(), Vec::new());
+            } 
+            let serie = pdata.series.get_mut(&$serie).unwrap();
+            serie.push(($x,$y));
+            
+            if $x < pdata.min_x { pdata.min_x = $x};
+            if $x > pdata.max_x { pdata.max_x = $x};
+            if $y < pdata.min_y { pdata.min_y = $y};
+            if $y > pdata.max_y { pdata.max_y = $y};
+        }
+    }};
+}
+
+#[macro_export]
+macro_rules! addplot {
+    ($name:expr, $xlabel:expr, $ylabel:expr) => {{
         let mut data = DATA.lock().unwrap();
         if !data.contains_key(&$name) {
-            data.insert($name, PlotData::new($name, $ptype));
+            data.insert($name, PlotData::new($name, $xlabel, $ylabel));
         } 
-        let mut pdata = data.get_mut(&$name).unwrap();
-        if !pdata.series.contains_key(&$serie) {
-            pdata.series.insert($serie.clone(), Vec::new());
-        } 
-        let serie = pdata.series.get_mut(&$serie).unwrap();
-        serie.push(($x,$y));
-        
-        if $x < pdata.min_x { pdata.min_x = $x};
-        if $x > pdata.max_x { pdata.max_x = $x};
-        if $y < pdata.min_y { pdata.min_y = $y};
-        if $y > pdata.max_y { pdata.max_y = $y};
     }};
 }
 
 #[macro_export]
 macro_rules! log {
-    // ($step:expr, $s:expr, $reps:expr, $info:expr) => {{
     ($ltype:expr, $message:expr) => {{
+        //TODO: Avoid From String
         let mut logs = LOGS.lock().unwrap();
         logs.insert(0, Log{ltype: $ltype, body: $message});
     }};
@@ -310,7 +329,7 @@ macro_rules! log {
 //states
 //# of repetitions
 //type of info
-macro_rules! simulate {
+macro_rules! simulate_old {
     ($step:expr, $s:expr, $reps:expr, $info:expr) => {{
         let mut s = $s;
         let mut state = s.as_state_mut();
