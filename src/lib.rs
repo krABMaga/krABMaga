@@ -185,10 +185,7 @@ macro_rules! simulate {
         let n_step: u64 = $step;
 
         for r in 0..$reps {
-            let timeout = tick_rate
-                .checked_sub(last_tick.elapsed())
-                .unwrap_or_else(|| Duration::from_secs(0));
-
+        
             //clean data structure for UI
             DATA.lock().unwrap().clear();
             terminal.clear();
@@ -202,6 +199,9 @@ macro_rules! simulate {
                 terminal.draw(|f| ui.draw(f));
                 schedule.step(state);
 
+                let timeout = tick_rate
+                .checked_sub(last_tick.elapsed())
+                .unwrap_or_else(|| Duration::from_secs(0));
                 //check for keyboard input
                 if crossterm::event::poll(timeout).unwrap() {
                     //?
