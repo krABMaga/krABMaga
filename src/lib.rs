@@ -164,48 +164,116 @@ lazy_static! {
 //step = simulation step number
 //states
 //# of repetitions
-//type of info
+//type of info -- flag boolean for abilitate TUI (optional, default true)
 #[macro_export]
 macro_rules! simulate {
-    ($s:expr, $step:expr, $reps:expr) => {{
-        let tick_rate = Duration::from_millis(250);
+    ($s:expr, $step:expr, $reps:expr $(, $flag:expr)?) => {{
 
-        let _ = enable_raw_mode();
-        let mut stdout = io::stdout();
-        let _ = execute!(stdout, EnterAlternateScreen, EnableMouseCapture);
+        let mut flag = true;
+        $(
+            flag = $flag;
+        )?
 
-        let backend = CrosstermBackend::new(stdout);
-        let mut terminal = Terminal::new(backend).unwrap();
+        if flag {
+            let tick_rate = Duration::from_millis(250);
 
-        let mut last_tick = Instant::now();
-        let mut ui = UI::new($step, $reps);
+            let _ = enable_raw_mode();
+            let mut stdout = io::stdout();
+            let _ = execute!(stdout, EnterAlternateScreen, EnableMouseCapture);
 
-        let mut s = $s;
-        let mut state = s.as_state_mut();
-        let n_step: u64 = $step;
+            let backend = CrosstermBackend::new(stdout);
+            let mut terminal = Terminal::new(backend).unwrap();
 
-        for r in 0..$reps {
-        
-            //clean data structure for UI
-            DATA.lock().unwrap().clear();
-            terminal.clear();
+            let mut last_tick = Instant::now();
+            let mut ui = UI::new($step, $reps);
 
-            let start = std::time::Instant::now();
-            let mut schedule: Schedule = Schedule::new();
-            state.init(&mut schedule);
-            //simulation loop
-            for i in 0..n_step {
-                
+            let mut s = $s;
+            let mut state = s.as_state_mut();
+            let n_step: u64 = $step;
+
+            for r in 0..$reps {
+            
+                //clean data structure for UI
+                DATA.lock().unwrap().clear();
+                terminal.clear();
+
+                let start = std::time::Instant::now();
+                let mut schedule: Schedule = Schedule::new();
+                state.init(&mut schedule);
+                //simulation loop
+                for i in 0..n_step {
+                    
+                    terminal.draw(|f| ui.draw(f));
+                    schedule.step(state);
+
+                    let timeout = tick_rate
+                    .checked_sub(last_tick.elapsed())
+                    .unwrap_or_else(|| Duration::from_secs(0));
+                    //check for keyboard input
+                    if crossterm::event::poll(timeout).unwrap() {
+                        //?
+                        if let Event::Key(key) = event::read().unwrap(){
+                            //?
+                            match key.code {
+                                KeyCode::Char(c) => ui.on_key(c),
+                                KeyCode::Left => ui.on_left(),
+                                KeyCode::Up => ui.on_up(),
+                                KeyCode::Right => ui.on_right(),
+                                KeyCode::Down => ui.on_down(),
+                                _ => {
+                                    log!(LogType::Critical, format!("Invalid key pressed!"));
+                                }
+                            }
+                        }
+                    }
+                    if ui.should_quit {
+                        disable_raw_mode();
+                        execute!(
+                            terminal.backend_mut(),
+                            LeaveAlternateScreen,
+                            DisableMouseCapture
+                        );
+                        terminal.show_cursor();
+                        break;
+                    }
+                    if state.end_condition(&mut schedule) {
+                        break;
+                    }
+                    ui.on_tick(i, (i + 1) as f64 / n_step as f64);
+                } //end simulation loop
+                let run_duration = start.elapsed();
+                ui.on_rep(
+                    r,
+                    ((schedule.step as f32 / (run_duration.as_nanos() as f32 * 1e-9)) as u64),
+                );
                 terminal.draw(|f| ui.draw(f));
-                schedule.step(state);
+
+                if last_tick.elapsed() >= tick_rate {
+                    last_tick = Instant::now();
+                }
+
+                if ui.should_quit {
+                    disable_raw_mode();
+                    execute!(
+                        terminal.backend_mut(),
+                        LeaveAlternateScreen,
+                        DisableMouseCapture
+                    );
+                    terminal.show_cursor();
+                    break;
+                }
+            } //end of repetitions
+
+            loop {
+                terminal.draw(|f| ui.draw(f));
 
                 let timeout = tick_rate
-                .checked_sub(last_tick.elapsed())
-                .unwrap_or_else(|| Duration::from_secs(0));
-                //check for keyboard input
+                    .checked_sub(last_tick.elapsed())
+                    .unwrap_or_else(|| Duration::from_secs(0));
+
                 if crossterm::event::poll(timeout).unwrap() {
                     //?
-                    if let Event::Key(key) = event::read().unwrap(){
+                    if let Event::Key(key) = event::read().unwrap() {
                         //?
                         match key.code {
                             KeyCode::Char(c) => ui.on_key(c),
@@ -219,6 +287,10 @@ macro_rules! simulate {
                         }
                     }
                 }
+
+                if last_tick.elapsed() >= tick_rate {
+                    last_tick = Instant::now();
+                }
                 if ui.should_quit {
                     disable_raw_mode();
                     execute!(
@@ -229,74 +301,30 @@ macro_rules! simulate {
                     terminal.show_cursor();
                     break;
                 }
-                if state.end_condition(&mut schedule) {
-                    break;
-                }
-                ui.on_tick(i, (i + 1) as f64 / n_step as f64);
-            } //end simulation loop
-            let run_duration = start.elapsed();
-            ui.on_rep(
-                r,
-                ((schedule.step as f32 / (run_duration.as_nanos() as f32 * 1e-9)) as u64),
-            );
-            terminal.draw(|f| ui.draw(f));
-
-            if last_tick.elapsed() >= tick_rate {
-                last_tick = Instant::now();
             }
+        } else {
 
-            if ui.should_quit {
-                disable_raw_mode();
-                execute!(
-                    terminal.backend_mut(),
-                    LeaveAlternateScreen,
-                    DisableMouseCapture
-                );
-                terminal.show_cursor();
-                break;
-            }
-        } //end of repetitions
-
-        loop {
-            terminal.draw(|f| ui.draw(f));
-
-            let timeout = tick_rate
-                .checked_sub(last_tick.elapsed())
-                .unwrap_or_else(|| Duration::from_secs(0));
-
-            if crossterm::event::poll(timeout).unwrap() {
-                //?
-                if let Event::Key(key) = event::read().unwrap() {
-                    //?
-                    match key.code {
-                        KeyCode::Char(c) => ui.on_key(c),
-                        KeyCode::Left => ui.on_left(),
-                        KeyCode::Up => ui.on_up(),
-                        KeyCode::Right => ui.on_right(),
-                        KeyCode::Down => ui.on_down(),
-                        _ => {
-                            log!(LogType::Critical, format!("Invalid key pressed!"));
-                        }
+            let mut s = $s;
+            let mut state = s.as_state_mut();
+            let n_step: u64 = $step;
+            //basic simulation without UI
+            for r in 0..$reps {
+                let mut schedule: Schedule = Schedule::new();
+                state.init(&mut schedule);
+                //simulation loop
+                for i in 0..n_step {
+                    schedule.step(state);
+                    if state.end_condition(&mut schedule) {
+                        break;
                     }
-                }
-            }
+                } //end simulation loop
+            } //end of repetitions
+            println!("Simulation finished!");
+        } //enf if/else flag
+        
+    }}; // end pattern macro
+} //end macro
 
-            if last_tick.elapsed() >= tick_rate {
-                last_tick = Instant::now();
-            }
-            if ui.should_quit {
-                disable_raw_mode();
-                execute!(
-                    terminal.backend_mut(),
-                    LeaveAlternateScreen,
-                    DisableMouseCapture
-                );
-                terminal.show_cursor();
-                break;
-            }
-        }
-    }};
-}
 #[macro_export]
 macro_rules! description {
     ($description:expr) => {{
