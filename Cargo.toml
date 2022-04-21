@@ -35,6 +35,9 @@ csv = "1.*"
 indicatif = "0.*"
 crossbeam = "0.*"
 rand_pcg = "0.*"
+tui = "0.17.0"
+crossterm = "0.23.2"
+sysinfo = "0.23.10"
 
 
 # Model exploration AWS features
