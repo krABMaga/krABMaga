@@ -189,22 +189,6 @@ macro_rules! simulate {
                 .checked_sub(last_tick.elapsed())
                 .unwrap_or_else(|| Duration::from_secs(0));
 
-            if crossterm::event::poll(timeout).unwrap() {
-                //?
-                if let Event::Key(key) = event::read().unwrap() {
-                    //?
-                    match key.code {
-                        KeyCode::Char(c) => ui.on_key(c),
-                        KeyCode::Left => ui.on_left(),
-                        KeyCode::Up => ui.on_up(),
-                        KeyCode::Right => ui.on_right(),
-                        KeyCode::Down => ui.on_down(),
-                        _ => {
-                            log!(LogType::Critical, format!("Invalid key pressed!"));
-                        }
-                    }
-                }
-            }
             //clean data structure for UI
             DATA.lock().unwrap().clear();
             terminal.clear();
@@ -214,8 +198,37 @@ macro_rules! simulate {
             state.init(&mut schedule);
             //simulation loop
             for i in 0..n_step {
+                
                 terminal.draw(|f| ui.draw(f));
                 schedule.step(state);
+
+                //check for keyboard input
+                if crossterm::event::poll(timeout).unwrap() {
+                    //?
+                    if let Event::Key(key) = event::read().unwrap(){
+                        //?
+                        match key.code {
+                            KeyCode::Char(c) => ui.on_key(c),
+                            KeyCode::Left => ui.on_left(),
+                            KeyCode::Up => ui.on_up(),
+                            KeyCode::Right => ui.on_right(),
+                            KeyCode::Down => ui.on_down(),
+                            _ => {
+                                log!(LogType::Critical, format!("Invalid key pressed!"));
+                            }
+                        }
+                    }
+                }
+                if ui.should_quit {
+                    disable_raw_mode();
+                    execute!(
+                        terminal.backend_mut(),
+                        LeaveAlternateScreen,
+                        DisableMouseCapture
+                    );
+                    terminal.show_cursor();
+                    break;
+                }
                 if state.end_condition(&mut schedule) {
                     break;
                 }
