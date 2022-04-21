@@ -1,9 +1,9 @@
-use crate::{DATA, LOGS, DESCR};
-use crate::{PlotData };
-use crate::Log;
 use crate::log;
+use crate::Log;
 use crate::LogType;
-use sysinfo::{NetworkExt, NetworksExt, ProcessExt, System, SystemExt, PidExt};
+use crate::PlotData;
+use crate::{DATA, DESCR, LOGS};
+use sysinfo::{NetworkExt, NetworksExt, PidExt, ProcessExt, System, SystemExt};
 
 use tui::{
     backend::Backend,
@@ -12,12 +12,12 @@ use tui::{
     symbols,
     text::{Span, Spans},
     widgets::canvas::{Canvas, Line, Map, MapResolution, Rectangle},
+    widgets::ListState,
     widgets::{
-        Axis, BarChart, Clear, Block, Borders, Cell, Chart, Dataset, Gauge, LineGauge, List, ListItem,
-        Paragraph, Row, Sparkline, Table, Tabs, Wrap,
+        Axis, BarChart, Block, Borders, Cell, Chart, Clear, Dataset, Gauge, LineGauge, List,
+        ListItem, Paragraph, Row, Sparkline, Table, Tabs, Wrap,
     },
     Frame,
-    widgets::ListState,
 };
 
 pub struct TabsState {
@@ -47,8 +47,8 @@ pub struct UI {
     pub should_quit: bool,
     pub show_chart: bool,
     pub logs_state: ListState,
-    pub processor_data: Vec<(f64,f64)>,
-    pub memory_data: Vec<(f64,f64)>,
+    pub processor_data: Vec<(f64, f64)>,
+    pub memory_data: Vec<(f64, f64)>,
     pub data_window: (u64, u64),
     pub progress: f64,
     pub reps: Vec<(String, u64)>,
@@ -56,26 +56,26 @@ pub struct UI {
     pub rep: u64,
     pub tot_reps: u64,
     pub tot_steps: u64,
-    pub show_description: bool
+    pub show_description: bool,
 }
 impl UI {
-    pub fn new(tsteps:u64, treps:u64) -> UI {
-       UI {
-        tabs: TabsState::new(vec![String::from("Home")]),
-        should_quit: false,
-        show_chart: true,
-        logs_state: ListState::default(),
-        processor_data: Vec::new(),
-        memory_data: Vec::new(),
-        data_window: (0, 100),
-        progress: 0.0,
-        reps: Vec::new(),
-        step: 0,
-        rep: 0,
-        tot_reps: treps,
-        tot_steps: tsteps,
-        show_description: false
-       }
+    pub fn new(tsteps: u64, treps: u64) -> UI {
+        UI {
+            tabs: TabsState::new(vec![String::from("Home")]),
+            should_quit: false,
+            show_chart: true,
+            logs_state: ListState::default(),
+            processor_data: Vec::new(),
+            memory_data: Vec::new(),
+            data_window: (0, 100),
+            progress: 0.0,
+            reps: Vec::new(),
+            step: 0,
+            rep: 0,
+            tot_reps: treps,
+            tot_steps: tsteps,
+            show_description: false,
+        }
     }
     pub fn on_up(&mut self) {
         let logs = LOGS.lock().unwrap();
@@ -140,16 +140,11 @@ impl UI {
             }
         }
     }
-    
-   
 
     pub fn on_tick(&mut self, step: u64, progress: f64) {
-        
-        
         // Update progress
         self.progress = progress;
         self.step = step;
-
 
         // System info - Monitoring CPU and Memory used
         let mut sys = System::new_all();
@@ -157,38 +152,39 @@ impl UI {
 
         let mut cpu_used: f64 = 0.0;
         let mut mem_used: f64 = 0.0;
-        let total_mem =  sys.total_memory();
+        let total_mem = sys.total_memory();
         for (pid, process) in sys.processes() {
-            if std::process::id() == pid.as_u32(){
-               cpu_used = (process.cpu_usage() / num_cpus::get() as f32) as f64;
-               mem_used = (process.memory() / total_mem ) as f64 * 100.;
-               break;
+            if std::process::id() == pid.as_u32() {
+                cpu_used = (process.cpu_usage() / num_cpus::get() as f32) as f64;
+                mem_used = (process.memory() / total_mem) as f64 * 100.;
+                break;
             }
         }
 
-        if self.processor_data.len() > 100 
-        {
+        if self.processor_data.len() > 100 {
             self.processor_data.remove(0);
             self.data_window.0 = self.data_window.0 + 1;
         }
-        let position = self.processor_data.last().unwrap_or(&(0. as f64, 0. as f64)).0;
-        self.processor_data.push( (position + 1., cpu_used as f64));
-        
-        if self.memory_data.len() > 100
-        {   
-            self.memory_data.remove(0);
-        }        
-    
-        self.memory_data.push( (position + 1., mem_used as f64));
-    }
-    
-    pub fn on_rep(&mut self,   rep: u64, step_second_for_rep: u64) {
-        
-        self.reps.insert(0, ((rep +1).to_string(),step_second_for_rep));
-        self.rep = rep;
+        let position = self
+            .processor_data
+            .last()
+            .unwrap_or(&(0. as f64, 0. as f64))
+            .0;
+        self.processor_data.push((position + 1., cpu_used as f64));
 
+        if self.memory_data.len() > 100 {
+            self.memory_data.remove(0);
+        }
+
+        self.memory_data.push((position + 1., mem_used as f64));
     }
-    
+
+    pub fn on_rep(&mut self, rep: u64, step_second_for_rep: u64) {
+        self.reps
+            .insert(0, ((rep + 1).to_string(), step_second_for_rep));
+        self.rep = rep;
+    }
+
     pub fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
         let popup_layout = Layout::default()
             .direction(Direction::Vertical)
@@ -201,7 +197,7 @@ impl UI {
                 .as_ref(),
             )
             .split(r);
-    
+
         Layout::default()
             .direction(Direction::Horizontal)
             .constraints(
@@ -214,37 +210,44 @@ impl UI {
             )
             .split(popup_layout[1])[1]
     }
-    
-    pub fn show_popup<B: Backend>(&mut self, f: &mut Frame<B>, s: String){
-        
-        let size = f.size();
 
-        let block = Block::default().title("Message").borders(Borders::ALL).style(Style::default().bg(Color::Blue));
+    pub fn show_popup<B: Backend>(&mut self, f: &mut Frame<B>, s: String) {
+        let size = f.size();
         let area = UI::centered_rect(60, 20, size);
-      
-        let paragraph = Paragraph::new(Span::styled(
-            s,
-            Style::default().add_modifier(Modifier::SLOW_BLINK),
-        ))
-        .alignment(Alignment::Left)
-        .wrap(Wrap { trim: true });
+
+        let text = vec![
+            // Spans::from("Commands:"),
+            Spans::from(vec![Span::styled(s, Style::default().fg(Color::Black))]),
+            // Spans::from(vec![  Span::styled("(C)lose CPU and Memory performance monitor.", Style::default().fg(Color::Black))]),
+            // Spans::from(vec![Span::styled("(← →) Arrows left/right moves between charts tabs.", Style::default().fg(Color::Black))])
+        ];
+        let block = Block::default()
+            .borders(Borders::ALL)
+            .title(Span::styled(
+                "Simulation Info",
+                Style::default()
+                    .fg(Color::White)
+                    .add_modifier(Modifier::BOLD),
+            ))
+            .style(Style::default().bg(Color::Blue));
+        let paragraph = Paragraph::new(text)
+            .block(block)
+            .alignment(Alignment::Center)
+            .wrap(Wrap { trim: true });
 
         f.render_widget(Clear, area); //this clears out the background
-        f.render_widget(block, area);
         f.render_widget(paragraph, area);
-
     }
 
     pub fn draw<B: Backend>(&mut self, f: &mut Frame<B>) {
-
         let chunks = Layout::default()
             .constraints([Constraint::Length(3), Constraint::Min(0)].as_ref())
             .split(f.size());
 
         for (pname, _pdata) in DATA.lock().unwrap().iter() {
-            if !self.tabs.titles.contains( pname ) {
-                self.tabs.titles.push( String::from(pname));
-            }    
+            if !self.tabs.titles.contains(pname) {
+                self.tabs.titles.push(String::from(pname));
+            }
         }
         let titles = self
             .tabs
@@ -262,95 +265,113 @@ impl UI {
 
         match self.tabs.index {
             0 => {
-
                 self.draw_first_tab(f, chunks[1]);
-               
-            },
+            }
             id => {
                 self.draw_tab(id, f, chunks[1]);
-                
             }
         };
 
-        if self.show_description{
-
+        if self.show_description {
             let d = DESCR.lock().unwrap().clone();
-            if d.len() != 0{
+            if d.len() != 0 {
                 self.show_popup(f, d);
             }
         }
-       
     }
-    fn draw_tab<B>(&self, id:usize,  f: &mut Frame<B>,  area: Rect) where
-    B: Backend,
+    fn draw_tab<B>(&self, id: usize, f: &mut Frame<B>, area: Rect)
+    where
+        B: Backend,
     {
         let data = DATA.lock().unwrap();
-        
+
         let mut datasets = Vec::new();
         let chart_name = self.tabs.titles[id].clone();
         let pdata = data.get(&chart_name).unwrap();
 
-        let markers = [symbols::Marker::Dot, symbols::Marker::Braille, symbols::Marker::Block];
-        let colors = [Color::Red, Color::Yellow, Color::Green, Color::Magenta, Color::Blue, Color::Yellow, Color::Green, Color::Cyan];
+        let markers = [
+            symbols::Marker::Dot,
+            symbols::Marker::Braille,
+            symbols::Marker::Block,
+        ];
+        let colors = [
+            Color::Red,
+            Color::Yellow,
+            Color::Green,
+            Color::Magenta,
+            Color::Blue,
+            Color::Yellow,
+            Color::Green,
+            Color::Cyan,
+        ];
 
-        let mut marker_id = 0; 
+        let mut marker_id = 0;
         let mut color_id = 0;
-        for (sname, points) in pdata.series.iter(){
+        for (sname, points) in pdata.series.iter() {
             datasets.push(
                 Dataset::default()
                     .name(sname)
                     .marker(markers[marker_id])
                     .style(Style::default().fg(colors[color_id]).clone())
-                    .data(points)
+                    .data(points),
             );
-            marker_id = (marker_id + 1 ) % markers.len();
-            color_id = (color_id + 1 ) % colors.len();
+            marker_id = (marker_id + 1) % markers.len();
+            color_id = (color_id + 1) % colors.len();
         }
-        
+
         let chart = Chart::new(datasets)
-                .block(
-                    Block::default()
-                        .title(Span::styled(
-                            chart_name,
-                            Style::default()
-                                .fg(Color::Cyan)
-                                .add_modifier(Modifier::BOLD),
-                        ))
-                        .borders(Borders::ALL),
-                )
-                .x_axis(
-                    Axis::default()
-                        .title(pdata.xlabel.clone())
-                        .style(Style::default().fg(Color::Gray))
-                        //TODO inchiovato con le puntine
-                        .bounds([pdata.min_x, pdata.max_x + 10.0])
-                        .labels(vec![
-                            Span::styled(pdata.min_x.to_string(), Style::default().add_modifier(Modifier::BOLD)),
-                            Span::styled(pdata.max_x.to_string(), Style::default().add_modifier(Modifier::BOLD)),
-                        ]),
-                )
-                .y_axis(
-                    Axis::default()
-                        .title(pdata.ylabel.clone())
-                        .style(Style::default().fg(Color::Gray))
-                        //TODO inchiovato con le puntine
-                        .bounds([pdata.min_y, pdata.max_y + 10.0])
-                        .labels(vec![
-                            Span::styled(pdata.min_y.to_string(), Style::default().add_modifier(Modifier::BOLD)),
-                            Span::styled(pdata.max_y.to_string(), Style::default().add_modifier(Modifier::BOLD)),
-                        ]),
-                );
-        if self.step == 1{
-            log!(LogType::Info, String::from("acc chiammattt clear"));
-    
-            f.render_widget(Clear, area);
-            
-        }
-        
+            .block(
+                Block::default()
+                    .title(Span::styled(
+                        chart_name,
+                        Style::default()
+                            .fg(Color::Cyan)
+                            .add_modifier(Modifier::BOLD),
+                    ))
+                    .borders(Borders::ALL),
+            )
+            .x_axis(
+                Axis::default()
+                    .title(pdata.xlabel.clone())
+                    .style(Style::default().fg(Color::Gray))
+                    //TODO +10 is a temporary fix for plot range
+                    .bounds([pdata.min_x, pdata.max_x + 10.0])
+                    .labels(vec![
+                        Span::styled(
+                            pdata.min_x.to_string(),
+                            Style::default().add_modifier(Modifier::BOLD),
+                        ),
+                        Span::styled(
+                            pdata.max_x.to_string(),
+                            Style::default().add_modifier(Modifier::BOLD),
+                        ),
+                    ]),
+            )
+            .y_axis(
+                Axis::default()
+                    .title(pdata.ylabel.clone())
+                    .style(Style::default().fg(Color::Gray))
+                    //TODO +10 is a temporary fix for plot range
+                    .bounds([pdata.min_y, pdata.max_y + 10.0])
+                    .labels(vec![
+                        Span::styled(
+                            pdata.min_y.to_string(),
+                            Style::default().add_modifier(Modifier::BOLD),
+                        ),
+                        Span::styled(
+                            pdata.max_y.to_string(),
+                            Style::default().add_modifier(Modifier::BOLD),
+                        ),
+                    ]),
+            );
+        // TODO check if needed to reclear the area before drawing a repetition
+        // if self.step == 1{
+        //     f.render_widget(Clear, area);
+        // }
         f.render_widget(chart, area);
     }
 
-    fn draw_first_tab<B>(&mut self, f: &mut Frame<B>,  area: Rect)
+    fn draw_first_tab<B>(&mut self, f: &mut Frame<B>, area: Rect)
     where
         B: Backend,
     {
@@ -364,7 +385,6 @@ impl UI {
                 .as_ref(),
             )
             .split(area);
-            
 
         self.draw_gauges(f, chunks[0]);
         self.draw_text(f, chunks[2]);
@@ -376,27 +396,20 @@ impl UI {
         B: Backend,
     {
         let chunks = Layout::default()
-            .constraints(
-                [
-                    Constraint::Length(3),
-                    Constraint::Length(3)
-                ]
-                .as_ref(),
-            )
+            .constraints([Constraint::Length(3), Constraint::Length(3)].as_ref())
             .margin(1)
             .split(area);
         let block = Block::default().borders(Borders::ALL).title("Simulation");
         f.render_widget(block, area);
         let title = format!("Repetitions {}/{}:", self.rep + 1, self.tot_reps);
         let line_gauge = LineGauge::default()
-        .block(Block::default().title(title))
-        .gauge_style(Style::default().fg(Color::Blue))
-        .line_set(symbols::line::THICK)
-        .ratio( (self.rep + 1) as f64 / (self.tot_reps) as f64);
+            .block(Block::default().title(title))
+            .gauge_style(Style::default().fg(Color::Blue))
+            .line_set(symbols::line::THICK)
+            .ratio((self.rep + 1) as f64 / (self.tot_reps) as f64);
         f.render_widget(line_gauge, chunks[0]);
-      
 
-        let label = format!("{:.2}%",  self.progress * 100.);
+        let label = format!("{:.2}%", self.progress * 100.);
         let gauge = Gauge::default()
             .block(Block::default().title("Repetition Progress:"))
             .gauge_style(
@@ -408,7 +421,6 @@ impl UI {
             .label(label)
             .ratio(self.progress);
         f.render_widget(gauge, chunks[1]);
-
     }
 
     fn draw_charts<B>(&mut self, f: &mut Frame<B>, area: Rect)
@@ -425,14 +437,12 @@ impl UI {
             .direction(Direction::Horizontal)
             .split(area);
         {
-
             let chunks_pane_one = Layout::default()
-            .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
-            .direction(Direction::Horizontal)
-            .split(chunks[0]);
+                .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
+                .direction(Direction::Horizontal)
+                .split(chunks[0]);
 
-
-              // Draw tasks
+            // Draw tasks
             let logs = LOGS.lock().unwrap();
 
             let info_style = Style::default().fg(Color::Blue);
@@ -443,8 +453,6 @@ impl UI {
             let logs: Vec<ListItem> = logs
                 .iter()
                 .map(|x| {
-
-                    
                     let s = match x.ltype {
                         LogType::Warning => warning_style,
                         LogType::Error => error_style,
@@ -456,23 +464,28 @@ impl UI {
                         Span::styled(format!("{:<9}", x.ltype), s),
                         Span::raw(x.body.clone()),
                     ])];
-                    
+
                     ListItem::new(content)
                 })
                 .collect();
-                let logs = List::new(logs)
-                  .block(Block::default().borders(Borders::ALL).title("Logs"))
-                  .highlight_style(Style::default().add_modifier(Modifier::BOLD))
-                  .highlight_symbol("> ");
-               f.render_stateful_widget(logs, chunks_pane_one[0], &mut self.logs_state);
+            let logs = List::new(logs)
+                .block(Block::default().borders(Borders::ALL).title("Logs"))
+                .highlight_style(Style::default().add_modifier(Modifier::BOLD))
+                .highlight_symbol("> ");
+            f.render_stateful_widget(logs, chunks_pane_one[0], &mut self.logs_state);
 
-               let new: Vec<(&str, u64)> = self.reps.iter().map(|(string, val) | {
-                   (string.as_str(), *val)
-               }).collect();
-               
+            let new: Vec<(&str, u64)> = self
+                .reps
+                .iter()
+                .map(|(string, val)| (string.as_str(), *val))
+                .collect();
 
-               let barchart = BarChart::default()
-                .block(Block::default().borders(Borders::ALL).title("Step/Seconds for Repetitions"))
+            let barchart = BarChart::default()
+                .block(
+                    Block::default()
+                        .borders(Borders::ALL)
+                        .title("Step/Seconds for Repetitions"),
+                )
                 .data(&new[..])
                 .bar_width(3)
                 .bar_gap(2)
@@ -488,14 +501,13 @@ impl UI {
             f.render_widget(barchart, chunks_pane_one[1]);
         }
         if self.show_chart {
-
             let x_labels = vec![
                 Span::styled(
-                    format!("{}",  self.data_window.0),
+                    format!("{}", self.data_window.0),
                     Style::default().add_modifier(Modifier::BOLD),
                 ),
                 Span::styled(
-                    format!("{}",  (self.data_window.0 + 100)),
+                    format!("{}", (self.data_window.0 + 100)),
                     Style::default().add_modifier(Modifier::BOLD),
                 ),
             ];
@@ -549,9 +561,22 @@ impl UI {
     {
         let text = vec![
             Spans::from("Commands:"),
-            Spans::from(vec![Span::styled("(Q)uit", Style::default().fg(Color::Red))]),
-            Spans::from(vec![  Span::styled("(C)lose CPU and Memory performance monitor.", Style::default().fg(Color::Green))]),
-            Spans::from(vec![Span::styled("(← →) Arrows left/right moves between charts tabs.", Style::default().fg(Color::Blue))])
+            Spans::from(vec![Span::styled(
+                "(Q)uit",
+                Style::default().fg(Color::Red),
+            )]),
+            Spans::from(vec![Span::styled(
+                "(C)lose CPU and Memory performance monitor.",
+                Style::default().fg(Color::Green),
+            )]),
+            Spans::from(vec![Span::styled(
+                "(← →) Arrows left/right moves between charts tabs.",
+                Style::default().fg(Color::Blue),
+            )]),
+            Spans::from(vec![Span::styled(
+                "(S)how model info.",
+                Style::default().fg(Color::White),
+            )]),
         ];
         let block = Block::default().borders(Borders::ALL).title(Span::styled(
             "Help",
@@ -559,8 +584,7 @@ impl UI {
                 .fg(Color::Magenta)
                 .add_modifier(Modifier::BOLD),
         ));
-        let paragraph = Paragraph::new(text)
-            .block(block).wrap(Wrap { trim: true });
+        let paragraph = Paragraph::new(text).block(block).wrap(Wrap { trim: true });
         f.render_widget(paragraph, area);
     }
 }
