@@ -149,37 +149,15 @@ cfg_if! {
                 // Update progress
                 self.progress = progress;
                 self.step = step;
-        
-                // System info - Monitoring CPU and Memory used
-                
-                // OLD SYSTEMINFO
-                // let mut sys = System::new_all();
-                // sys.refresh_all();
-        
-                // let mut cpu_used: f64 = 50.0;
-                // let mut mem_used: f64 = 40.0;
-                // let total_mem = sys.total_memory();
-                // for (pid, process) in sys.processes() {
-                //     if std::process::id() == pid.as_u32() {
-                //         cpu_used = (process.cpu_usage() / num_cpus::get() as f32) as f64;
-                //         mem_used = (process.memory() / total_mem) as f64 * 100.;
-                //         break;
-                //     }
-                // }
+    
                 let cpu;
                 let mem;
-                let len;
-
+    
                 {
                     let monitor = MONITOR.lock().unwrap();
                     cpu = *monitor.cpu_used.last().unwrap_or(&-1.);
                     mem = *monitor.mem_used.last().unwrap_or(&-1.);
-                    len = monitor.cpu_used.len();
-                }
-                    
-                log!(LogType::Info, format!("CPU: {:.2}%", cpu));
-                log!(LogType::Info, format!("MEM: {:.2}%", mem));
-                log!(LogType::Info, format!("LEN: {:.2}%", len));
+                }                
                 
                 if self.processor_data.len() > 100 {
                     self.processor_data.remove(0);
