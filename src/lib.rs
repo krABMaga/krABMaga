@@ -3,14 +3,17 @@ pub mod explore;
 pub mod utils;
 
 pub use core::fmt;
+
+#[cfg(not(feature = "visualization_wasm"))]
 pub use crossterm;
+
 pub use hashbrown;
 pub use indicatif::ProgressBar;
 pub use rand;
 pub use rand_pcg;
 pub use rayon;
 pub use std::time::Instant;
-pub use sysinfo;
+pub use systemstat::{System, Platform, saturating_sub_bytes};
 
 #[cfg(any(feature = "visualization", feature = "visualization_wasm", doc))]
 pub mod visualization;
@@ -37,6 +40,7 @@ pub use std::sync::{Arc, Mutex};
 pub use std::thread;
 pub use std::time::Duration;
 
+#[cfg(not(feature = "visualization_wasm"))]
 pub use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
     execute,
@@ -45,13 +49,18 @@ pub use crossterm::{
 
 pub use std::io;
 
+#[cfg(not(feature = "visualization_wasm"))]
 pub use tui::{
     backend::{Backend, CrosstermBackend},
     Terminal,
 };
 
+#[cfg(not(feature = "visualization_wasm"))]
 pub use crate::utils::monitoring::ui::UI;
+
+#[cfg(not(feature = "visualization_wasm"))]
 pub use crossterm::event::poll;
+
 #[cfg(feature = "distributed_mpi")]
 pub use {
     memoffset::{offset_of, span_of},
@@ -161,6 +170,27 @@ lazy_static! {
     pub static ref DESCR: Mutex<String> = Mutex::new(String::new());
 }
 
+pub struct Monitoring {
+    pub mem_used: Vec<f64>,
+    pub cpu_used: Vec<f64>,
+}
+
+impl Monitoring {
+    pub fn new()-> Self {
+        Monitoring{
+            mem_used: Vec::new(),
+            cpu_used: Vec::new(),
+        }
+    }
+}
+
+lazy_static! { 
+    pub static ref MONITOR: Arc<Mutex<Monitoring>> = Arc::new(Mutex::new(Monitoring::new()));
+}
+
+pub use std::sync::mpsc::{self, TryRecvError};
+
+
 //step = simulation step number
 //states
 //# of repetitions
@@ -191,6 +221,58 @@ macro_rules! simulate {
             let mut state = s.as_state_mut();
             let n_step: u64 = $step;
 
+            let mut monitor = Arc::clone(&MONITOR);
+            let (tx, rx) = mpsc::channel();
+
+            thread::spawn(move || 
+            loop {
+                let sys = System::new();
+                
+                
+                let mem_used = match sys.memory() {
+                    Ok(mem) => {
+                        log!(LogType::Critical, format!("{}", mem.total.as_u64()));
+                        (mem.total.as_u64() as f64 / mem.free.as_u64() as f64)  * 100. 
+                    },
+                    Err(x) =>{
+                        log!(LogType::Critical, format!("{}", "Errore")); 
+                        0.0_f64
+                    }
+                };
+
+                let cpu_used = match sys.cpu_load_aggregate() {
+                    Ok(cpu)=> {
+
+                        thread::sleep(Duration::from_secs(1));
+                        let cpu = cpu.done().unwrap();
+                        log!(LogType::Critical, format!("{}", cpu.user as f64 * 100.0));
+                        cpu.user as f64 * 100.0
+                    },
+                    Err(x) => 0.0_f64
+                };
+
+                {
+                    let mut monitor = monitor.lock().unwrap();
+                    
+                    if monitor.mem_used.len()>100 {
+                        monitor.mem_used.remove(0);
+                        monitor.cpu_used.remove(0);
+                    }
+
+                    monitor.mem_used.push(mem_used);
+                    monitor.cpu_used.push(cpu_used);
+
+                }
+
+
+                match rx.try_recv() {
+                    Ok(_) | Err(TryRecvError::Disconnected) => {
+                        break;
+                    }
+                    Err(TryRecvError::Empty) => {}
+                }
+            });
+            
             for r in 0..$reps {
             
                 //clean data structure for UI
@@ -237,6 +319,13 @@ macro_rules! simulate {
                         break;
                     }
                     if state.end_condition(&mut schedule) {
+                        disable_raw_mode();
+                        execute!(
+                            terminal.backend_mut(),
+                            LeaveAlternateScreen,
+                            DisableMouseCapture
+                        );
+                        terminal.show_cursor();
                         break;
                     }
                     ui.on_tick(i, (i + 1) as f64 / n_step as f64);
@@ -263,6 +352,8 @@ macro_rules! simulate {
                     break;
                 }
             } //end of repetitions
+
+            let _ = tx.send(());
 
             loop {
                 terminal.draw(|f| ui.draw(f));

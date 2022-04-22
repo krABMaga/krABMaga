@@ -16,8 +16,8 @@ license = "MIT"
 keywords = ["discrete", "simulation", "agent based model", "agent based simulation"]
 categories = ["science", "simulation", "agent based model"]
 readme = "README.md"
-homepage = "https://github.com/spagnuolocarmine/rust-ab"
-repository = "https://github.com/spagnuolocarmine/rust-ab"
+homepage = "https://rust-ab.github.io/"
+repository = "https://github.com/rust-ab/rust-ab"
 
 [dependencies]
 hashbrown = "0.*"
@@ -35,9 +35,8 @@ csv = "1.*"
 indicatif = "0.*"
 crossbeam = "0.*"
 rand_pcg = "0.*"
-tui = "0.17.0"
-crossterm = "0.23.2"
-sysinfo = "0.23.10"
+# sysinfo = "0.23.10"
+systemstat = "0.*"
 
 
 # Model exploration AWS features
@@ -63,16 +62,21 @@ argmin = { version = "0.5.0", optional = true }
 finitediff = { version = "0.*", optional = true }
 
 # Visualization features
-bevy_prototype_lyon = {version="0.4.0", optional=true}
-image = {version="0.*",optional=true}
-bevy_egui = {version="0.10",optional=true}
+bevy_prototype_lyon = {version="0.4.0", optional=true, default-features = false}
+image = {version="0.*", optional=true, default-features = false}
+bevy_egui = {version="0.10",optional=true, default-features = false}
 [dependencies.bevy]
 version= "0.6"
 default-features = false
 optional=true
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-getrandom = {version="0.*", features=["wasm-bindgen"]}
+getrandom = {version="0.*", features=["wasm-bindgen"], default-features = false}
+
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+tui = "0.17.0"
+crossterm = "0.23.2"
 
 # Must be kept separate and asked to the user due to missing support for conditional compilation of features
 # https://github.com/rust-lang/cargo/issues/7914
