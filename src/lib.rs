@@ -232,7 +232,7 @@ macro_rules! simulate {
                 let mem_used = match sys.memory() {
                     Ok(mem) => {
                         log!(LogType::Critical, format!("{}", mem.total.as_u64()));
-                        (mem.total.as_u64() as f64 / mem.free.as_u64() as f64)  * 100. 
+                        (mem.free.as_u64() as f64 / mem.total.as_u64() as f64)  * 100. 
                     },
                     Err(x) =>{
                         log!(LogType::Critical, format!("{}", "Errore")); 
@@ -242,8 +242,7 @@ macro_rules! simulate {
 
                 let cpu_used = match sys.cpu_load_aggregate() {
                     Ok(cpu)=> {
-
-                        thread::sleep(Duration::from_secs(1));
+                        thread::sleep(Duration::from_millis(100));
                         let cpu = cpu.done().unwrap();
                         log!(LogType::Critical, format!("{}", cpu.user as f64 * 100.0));
                         cpu.user as f64 * 100.0
