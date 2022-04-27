@@ -1,25 +1,32 @@
-use bevy::prelude::ResMut;
+use cfg_if::cfg_if;
+cfg_if! {
+    if #[cfg(any(feature = "visualization", feature = "visualization_wasm"))] {
 
-use crate::bevy::prelude::Res;
+        use bevy::prelude::ResMut;
 
-use crate::engine::state::State;
+        use crate::bevy::prelude::Res;
 
-use crate::visualization::{
-    simulation_descriptor::SimulationDescriptor,
-    wrappers::{ActiveSchedule, ActiveState},
-};
+        use crate::engine::state::State;
 
-/// The simulation system steps the schedule once per frame, effectively synchronizing frames and schedule steps.
-pub fn simulation_system<S: State>(
-    schedule_wrapper: ResMut<ActiveSchedule>,
-    state_wrapper: ResMut<ActiveState<S>>,
-    sim_data: Res<SimulationDescriptor>,
-) {
-    if !sim_data.paused {
-        schedule_wrapper
-            .0
-            .lock()
-            .expect("error on lock")
-            .step(&mut *(*state_wrapper).0.lock().expect("error on lock"));
+        use crate::visualization::{
+            simulation_descriptor::SimulationDescriptor,
+            wrappers::{ActiveSchedule, ActiveState},
+        };
+
+        /// The simulation system steps the schedule once per frame, effectively synchronizing frames and schedule steps.
+        pub fn simulation_system<S: State>(
+            schedule_wrapper: ResMut<ActiveSchedule>,
+            state_wrapper: ResMut<ActiveState<S>>,
+            sim_data: Res<SimulationDescriptor>,
+        ) {
+            if !sim_data.paused {
+                schedule_wrapper
+                    .0
+                    .lock()
+                    .expect("error on lock")
+                    .step(&mut *(*state_wrapper).0.lock().expect("error on lock"));
+            }
+        }
+
     }
 }

@@ -17,159 +17,166 @@ cfg_if! {
 
 cfg_if! {
     if #[cfg(any(feature = "parallel", feature = "visualization", feature = "visualization_wasm"))]{
-    pub struct DenseGrid2D<O: Eq + Hash + Clone + Copy> {
-        pub obj2loc: DBDashMap<O, Int2D>, // old locs
-        pub loc2objs: DBDashMap<Int2D, Vec<O>>, // old locs_inversed
-        pub width: i32,
-        pub height: i32,
-    }
-
-    impl<O: Eq + Hash + Clone + Copy> DenseGrid2D<O> {
-        pub fn new(width: i32, height: i32) -> DenseGrid2D<O> {
-            DenseGrid2D {
-                obj2loc: DBDashMap::with_capacity((width * height) as usize),
-                loc2objs: DBDashMap::with_capacity((width * height) as usize),
-                width: width.abs(),
-                height: height.abs(),
-            }
+        pub struct DenseGrid2D<O: Eq + Hash + Clone + Copy> {
+            pub obj2loc: DBDashMap<O, Int2D>, // old locs
+            pub loc2objs: DBDashMap<Int2D, Vec<O>>, // old locs_inversed
+            pub width: i32,
+            pub height: i32,
         }
 
-        pub fn apply_to_all_values<F>(&self, closure: F, option: GridOption)
-        where
-            F: Fn(&Int2D, &O) -> Option<O>,
-        {
-            match option {
-                GridOption::READ => {
-                    self.obj2loc.apply_to_all_keys(closure);
-                },
-                GridOption::WRITE => {
-                    self.obj2loc.apply_to_all_keys(closure);
-                },
-                GridOption::READWRITE =>{
-                    self.obj2loc.apply_to_all_keys(closure);
-
+        impl<O: Eq + Hash + Clone + Copy> DenseGrid2D<O> {
+            pub fn new(width: i32, height: i32) -> DenseGrid2D<O> {
+                DenseGrid2D {
+                    obj2loc: DBDashMap::with_capacity((width * height) as usize),
+                    loc2objs: DBDashMap::with_capacity((width * height) as usize),
+                    width: width.abs(),
+                    height: height.abs(),
                 }
             }
-        }
 
-        pub fn get(&self, object: &O) -> Option<O> {
-            match self.obj2loc.get_key_value(object) {
-                Some((updated_object, _loc)) => Some(*updated_object),
-                None => None,
-            }
-        }
+            pub fn apply_to_all_values<F>(&self, closure: F, option: GridOption)
+            where
+                F: Fn(&Int2D, &O) -> Option<O>,
+            {
+                match option {
+                    GridOption::READ => {
+                        self.obj2loc.apply_to_all_keys(closure);
+                    },
+                    GridOption::WRITE => {
+                        self.obj2loc.apply_to_all_keys(closure);
+                    },
+                    GridOption::READWRITE =>{
+                        self.obj2loc.apply_to_all_keys(closure);
 
-        pub fn get_objects(&self, loc: &Int2D) -> Option<Vec<O>> {
-            match self.loc2objs.get_read(loc) {
-                Some(vec) => {
-                    if vec.is_empty() {
-                        None
-                    } else {
-                        Some(vec.to_vec())
-                    }
-                }
-                None => None,
-            }
-        }
-
-        pub fn get_objects_unbuffered(&self, loc: &Int2D) -> Option<Vec<O>> {
-            match self.loc2objs.get_write(loc) {
-                Some(vec) => {
-                    if vec.is_empty() {
-                        None
-                    } else {
-                        Some(vec.to_vec())
-                    }
-                }
-                None => None,
-            }
-        }
-
-        pub fn get_location(&self, object: O) -> Option<Int2D> {
-            match self.obj2loc.get_read(&object) {
-                Some(updated_object) => Some(*updated_object),
-                None => None,
-            }
-        }
-
-        pub fn get_location_unbuffered(&self, object: O) -> Option<Int2D> {
-            match self.obj2loc.get_write(&object) {
-                Some(updated_object) => Some(*updated_object),
-                None => None,
-            }
-        }
-
-        pub fn iter_objects<F>(&self, closure: F)
-        where
-            F: Fn(
-                &Int2D, //location
-                &O //value
-            )
-        {
-            for i in 0 ..  self.width{
-                for j in 0 .. self.height{
-                    let loc = Int2D{x: i, y: j};
-                    let bag = self.loc2objs.get_read(&loc);
-                    match bag {
-                        Some(bag) =>{
-                            for obj in bag{
-                                closure(&loc, &obj);
-                            }
-                        },
-                        None => {}
                     }
                 }
             }
-        }
 
-        pub fn remove_object(&self, object: &O) {
-            if let Some(old_loc) = self.obj2loc.get_read(object) {
-                self.loc2objs
-                    .get_write(old_loc)
-                    .expect("error in remove object")
-                    .value_mut()
-                    .retain(|&x| x != *object);
-            }
-            self.obj2loc.remove(object);
-        }
-
-        pub fn set_object_location(&self, object: O, loc: &Int2D) {
-            match self.loc2objs.get_write(loc) {
-                Some(mut vec) => {
-                    if !vec.is_empty() {
-                        vec.retain(|&x| x != object);
-                    }
-                    vec.push(object);
+            pub fn get(&self, object: &O) -> Option<O> {
+                match self.obj2loc.get_key_value(object) {
+                    Some((updated_object, _loc)) => Some(*updated_object),
+                    None => None,
                 }
-                None => { self.loc2objs.insert(*loc, vec![object]);},
             }
-            self.obj2loc.insert(object, *loc);
-        }
-    }
 
-    impl<O: Eq + Hash + Clone + Copy> Field for DenseGrid2D<O> {
+            pub fn get_objects(&self, loc: &Int2D) -> Option<Vec<O>> {
+                match self.loc2objs.get_read(loc) {
+                    Some(vec) => {
+                        if vec.is_empty() {
+                            None
+                        } else {
+                            Some(vec.to_vec())
+                        }
+                    }
+                    None => None,
+                }
+            }
 
-        fn lazy_update(&mut self){
-            self.obj2loc.lazy_update();
-            self.loc2objs.lazy_update();
+            pub fn get_objects_unbuffered(&self, loc: &Int2D) -> Option<Vec<O>> {
+                match self.loc2objs.get_write(loc) {
+                    Some(vec) => {
+                        if vec.is_empty() {
+                            None
+                        } else {
+                            Some(vec.to_vec())
+                        }
+                    }
+                    None => None,
+                }
+            }
+
+            pub fn get_location(&self, object: O) -> Option<Int2D> {
+                match self.obj2loc.get_read(&object) {
+                    Some(updated_object) => Some(*updated_object),
+                    None => None,
+                }
+            }
+
+            pub fn get_location_unbuffered(&self, object: O) -> Option<Int2D> {
+                match self.obj2loc.get_write(&object) {
+                    Some(updated_object) => Some(*updated_object),
+                    None => None,
+                }
+            }
+
+            pub fn iter_objects<F>(&self, closure: F)
+            where
+                F: Fn(
+                    &Int2D, //location
+                    &O //value
+                )
+            {
+                for i in 0 ..  self.width{
+                    for j in 0 .. self.height{
+                        let loc = Int2D{x: i, y: j};
+                        let bag = self.loc2objs.get_read(&loc);
+                        match bag {
+                            Some(bag) =>{
+                                for obj in bag{
+                                    closure(&loc, &obj);
+                                }
+                            },
+                            None => {}
+                        }
+                    }
+                }
+            }
+
+            pub fn remove_object(&self, object: &O) {
+                if let Some(old_loc) = self.obj2loc.get_read(object) {
+                    self.loc2objs
+                        .get_write(old_loc)
+                        .expect("error in remove object")
+                        .value_mut()
+                        .retain(|&x| x != *object);
+                }
+                self.obj2loc.remove(object);
+            }
+
+            pub fn set_object_location(&self, object: O, loc: &Int2D) {
+                match self.loc2objs.get_write(loc) {
+                    Some(mut vec) => {
+                        if !vec.is_empty() {
+                            vec.retain(|&x| x != object);
+                        }
+                        vec.push(object);
+                    }
+                    None => { self.loc2objs.insert(*loc, vec![object]);},
+                }
+                self.obj2loc.insert(object, *loc);
+            }
         }
 
-        fn update(&mut self) {
-            self.obj2loc.update();
-            self.loc2objs.update();
+        impl<O: Eq + Hash + Clone + Copy> Field for DenseGrid2D<O> {
+
+            fn lazy_update(&mut self){
+                self.obj2loc.lazy_update();
+                self.loc2objs.lazy_update();
+            }
+
+            fn update(&mut self) {
+                self.obj2loc.update();
+                self.loc2objs.update();
+            }
         }
-    }
 
 
 }else{
+            /// Matrix with double buffering 
             pub struct DenseGrid2D<O: Eq + Hash + Clone + Copy> {
+                /// Matrix to write data. Vector of vectors that have a generic Object O inside
                 pub locs: RefCell<Vec<Vec<O>>>,
+                /// Matrix to read data. Vector of vectors that have a generic Object O inside
                 pub rlocs: RefCell<Vec<Vec<O>>>,
+                /// First dimension of the field
                 pub width: i32,
+                /// Second dimension of the field
                 pub height: i32,
             }
 
             impl<O: Eq + Hash + Clone + Copy> DenseGrid2D<O> {
+
+                /// create a new instance of DenseGrid2D
                 pub fn new(width: i32, height: i32) -> DenseGrid2D<O> {
                     DenseGrid2D {
                         locs: RefCell::new(std::iter::repeat_with(Vec::new).take((width * height) as usize).collect()),
@@ -179,6 +186,13 @@ cfg_if! {
                     }
                 }
 
+                /// Use a closure to manipulate items inside the matrix
+                ///
+                /// READ - update the values from rlocs
+                ///
+                /// WRITE - update the values from locs
+                ///
+                /// READWRITE - check locs and rlocs simultaneously to apply the closure
                 pub fn apply_to_all_values<F>(&self, closure: F, option: GridOption)
                 where
                     F: Fn(&Int2D, &O) -> Option<O>,
@@ -252,6 +266,7 @@ cfg_if! {
                     }
                 }
 
+                /// Return all the empty bags in rlocs
                 pub fn get_empty_bags(&self) -> Vec<Int2D>{
                     let mut empty_bags = Vec::new();
                     for i in 0 ..  self.width{
@@ -265,6 +280,7 @@ cfg_if! {
                     empty_bags
                 }
 
+                /// Return a vector of objects at loc from rlocs
                 pub fn get_objects(&self, loc: &Int2D) -> Option<Vec<O>> {
                     let mut obj = Vec::new();
                     let index = ((loc.x * self.height) + loc.y) as usize;
@@ -280,6 +296,7 @@ cfg_if! {
                     }
                 }
 
+                /// Return a vector of objects at loc from locs
                 pub fn get_objects_unbuffered(&self, loc: &Int2D) -> Option<Vec<O>> {
 
                     let mut obj = Vec::new();
@@ -296,6 +313,7 @@ cfg_if! {
                     }
                 }
 
+                /// Return a random empty bag from rlocs
                 pub fn get_random_empty_bag(&self) -> Option<Int2D>{
                     let mut rng = rand::thread_rng();
                     loop {
@@ -309,6 +327,7 @@ cfg_if! {
                     }
                 }
 
+                /// Iterate over the locs matrix and apply the closure
                 pub fn iter_objects<F>(&self, closure: F)
                 where
                     F: Fn(
@@ -329,6 +348,7 @@ cfg_if! {
                     }
                 }
 
+                /// Iterate over the rlocs matrix and apply the closure
                 pub fn iter_objects_unbuffered<F>(&self, closure: F)
                 where
                     F: Fn(
@@ -351,7 +371,7 @@ cfg_if! {
                 }
 
 
-
+                /// Insert an object at loc inside the locs matrix
                 pub fn set_object_location(&self, object: O, loc: &Int2D) {
                     let index = ((loc.x * self.height) + loc.y) as usize;
                     let mut locs = self.locs.borrow_mut();
@@ -363,6 +383,7 @@ cfg_if! {
                     locs[index].push(object);
                 }
 
+                /// Remove an object at loc inside the locs matrix
                 pub fn remove_object_location(&self, object: O, loc: &Int2D) {
                     let index = ((loc.x * self.height) + loc.y) as usize;
                     let mut locs = self.locs.borrow_mut();
@@ -376,6 +397,7 @@ cfg_if! {
             }
 
             impl<O: Eq + Hash + Clone + Copy> Field for DenseGrid2D<O> {
+                /// Swap the state of the field and clear locs
                 fn lazy_update(&mut self){
                     unsafe {
                         std::ptr::swap(
@@ -389,6 +411,7 @@ cfg_if! {
                     }
                 }
 
+                /// Swap the state of the field and updates the rlocs matrix
                 fn update(&mut self) {
                     for i in 0 ..  self.width{
                         for j in 0 .. self.height{

@@ -223,6 +223,12 @@ cfg_if! {
     }
     // SEQUENTIAL IF
     else{
+        /// Struct to manage all the agents in the simulation
+        /// 
+        /// step: current step of the simulation
+        /// time: current time of the simulation
+        /// events: priority queue filled with a pair of AgentImpl and his Priority
+        /// agents_ids_counting: unique ids
         pub struct Schedule{
             pub step: u64,
             pub time: f32,
@@ -230,8 +236,9 @@ cfg_if! {
             pub agent_ids_counting: u32,
         }
 
+        /// internal struct to manage the AgentImpl in a more convenient way
         #[derive(Clone)]
-        pub struct Pair{
+        struct Pair{
             agentimpl: AgentImpl,
             priority: Priority,
         }
@@ -258,6 +265,7 @@ cfg_if! {
         }
 
         impl Schedule {
+            ///create a new instance for Schedule
             pub fn new() -> Schedule {
                 Schedule {
                     step: 0,
@@ -267,11 +275,14 @@ cfg_if! {
                 }
             }
 
+            ///insert an agent in the PriorityQueue for one step
             pub fn schedule_once(&mut self, agent: AgentImpl,the_time:f32, the_ordering:i32) {
                 self.events.push(agent, Priority{time: the_time, ordering: the_ordering});
             }
 
-            // return false if the insertion in the priority queue fails
+            /// insert an agent in the PriorityQueue with the repeating field set at true
+            /// 
+            /// return false if the insertion in the priority queue fails
             pub fn schedule_repeating(&mut self, agent: Box<dyn Agent>, the_time:f32, the_ordering:i32) -> bool {
                 let mut a = AgentImpl::new(agent, self.agent_ids_counting);
                 self.agent_ids_counting +=1;
@@ -285,6 +296,7 @@ cfg_if! {
                 }
             }
 
+            /// return a vector of all the objects contained in the PriorityQueue
             pub fn get_all_events(&self) -> Vec<Box<dyn Agent>>{
                 let mut tor: Vec<Box<dyn Agent>> = Vec::new();
                 for e in self.events.iter(){
@@ -293,6 +305,7 @@ cfg_if! {
                 tor
             }
 
+            /// remove an agent, if exist, from the PriorityQueue
             pub fn dequeue(&mut self, agent: Box<dyn Agent>, my_id: u32) -> bool {
                 let a = AgentImpl::new(agent, my_id);
                 let removed = self.events.remove(&a);
@@ -307,6 +320,7 @@ cfg_if! {
                 }
             }
 
+            /// Compute the step for each agent in the PriorityQueue
             pub fn step(&mut self, state: &mut dyn State){
 
                 if self.step == 0{

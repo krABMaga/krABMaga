@@ -1,4 +1,8 @@
-use bevy::prelude::{Handle, Image, Query, Res, Transform, Visibility};
+use cfg_if::cfg_if;
+cfg_if! {
+    if #[cfg(any(feature = "visualization", feature = "visualization_wasm"))] {
+
+        use bevy::prelude::{Handle, Image, Query, Res, Transform, Visibility};
 
 use crate::bevy::prelude::{Commands, ResMut};
 
@@ -58,5 +62,9 @@ pub fn renderer_system<I: VisualizationState<S> + Clone + 'static, S: State>(
                 }
             }
         }
+    }
+}
+
+
     }
 }

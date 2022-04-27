@@ -3,11 +3,11 @@ use crate::engine::{
     location::{Int2D, Location2D, Real2D},
 };
 
-use cfg_if::cfg_if;
 use core::fmt::Display;
 use std::cmp;
 use std::hash::Hash;
 
+use cfg_if::cfg_if;
 cfg_if! {
     if #[cfg(any(feature = "visualization", feature = "visualization_wasm", feature = "parallel"))] {
         use crate::utils::dbdashmap::DBDashMap;
@@ -263,21 +263,34 @@ cfg_if! {
             }
         }
     } else {
+        ///  Sparse matrix structure modelling agent interactions on a 2D real space with coordinates represented by 2D f64 tuples
         pub struct Field2D<O: Location2D<Real2D> + Clone + Hash + Eq + Copy + Display> {
+            /// Matrix to write data. Vector of vectors that have a generic Object O inside
             pub bags: RefCell<Vec<Vec<O>>>,
+            /// Matrix to read data. Vector of vectors that have a generic Object O inside
             pub rbags: RefCell<Vec<Vec<O>>>,
+            /// Number of agents inside the field
             pub nagents: RefCell<usize>,
+            /// First dimension of the field
             pub width: f32,
+            /// Second dimension of the field
             pub heigth: f32,
+            /// Value to discretize `Real2D` positions to our Matrix 
             pub discretization: f32,
+            /// `true` if you want a Toroidal field, `false` otherwise
             pub toroidal: bool,
+            /// Discretized height of the field
             pub dh: i32,
+            /// Discretized width of the field
             pub dw: i32,
+            /// Field density
             pub density_estimation:usize,
+            /// `true` if you want calculate field density, `false` otherwise
             pub density_estimation_check:bool,
         }
         impl<O: Location2D<Real2D> + Clone + Hash + Eq + Copy + Display> Field2D<O>  {
 
+            /// Create a new `Field2D`
             pub fn new(w: f32, h: f32, d: f32, t: bool) -> Field2D<O> {
                 Field2D {
                     bags: RefCell::new(std::iter::repeat_with(Vec::new).take((((w/d).ceil()+1.0) * ((h/d).ceil() +1.0))as usize).collect()),
@@ -294,6 +307,7 @@ cfg_if! {
                 }
             }
 
+            /// Map coordinates of an object into matrix indexes
             fn discretize(&self, loc: &Real2D) -> Int2D {
                 let x_floor = (loc.x/self.discretization).floor();
                 let x_floor = x_floor as i32;
@@ -307,6 +321,7 @@ cfg_if! {
                 }
             }
 
+            /// Return the set of objects within a certain distance
             pub fn get_neighbors_within_distance(&self, loc: Real2D, dist: f32) -> Vec<O> {
                 let mut neighbors: Vec<O>;
 
@@ -362,6 +377,7 @@ cfg_if! {
                 neighbors
             }
 
+            /// Return the set of objects within a certain distance. No circle check.
             pub fn get_neighbors_within_relax_distance(&self, loc: Real2D, dist: f32) -> Vec<O> {
                 let mut neighbors;
 
@@ -408,6 +424,7 @@ cfg_if! {
                 neighbors
             }
 
+            /// Return objects at a specific location 
             pub fn get_objects(&self, loc: Real2D) -> Vec<O>{
                 let bag = self.discretize(&loc);
                 let index = ((bag.x * self.dh) + bag.y) as usize;
@@ -415,6 +432,7 @@ cfg_if! {
                 rbags[index].clone()
             }
 
+            /// Return number of object at a specific location
             pub fn num_objects_at_location(&self, loc: Real2D) -> usize {
                 let bag = self.discretize(&loc);
                 let index = ((bag.x * self.dh) + bag.y) as usize;
@@ -422,6 +440,7 @@ cfg_if! {
                 rbags[index].len()
             }
 
+            /// Insert an object into a specific position
             pub fn set_object_location(&self, object: O, loc: Real2D) {
                 let bag = self.discretize(&loc);
                 let index = ((bag.x * self.dh) + bag.y) as usize;
@@ -436,6 +455,7 @@ cfg_if! {
         impl<'a, O: Location2D<Real2D> + Clone + Hash + Eq + Copy + Display> Field for Field2D<O>{
             fn update(&mut self){}
 
+            /// Swap read and write buffer
             fn lazy_update(&mut self){
                 unsafe {
                     std::ptr::swap(

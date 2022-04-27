@@ -27,6 +27,13 @@ cfg_if! {
             }
         }
     } else if #[cfg(any(feature = "visualization", feature = "visualization_wasm"))] {
+        // Trait do define basic function for a simulation state
+        // 
+        // init : should initialize all the starting values of a simulation
+        // 
+        // as_any/as_any_mut/as_state/as_state_mut : support functions to return a Dyn values
+        // 
+        // reset : reset all the values of the simulation
         pub trait State: Send + 'static {
 
             fn init(&mut self, schedule: &mut Schedule);
@@ -49,6 +56,11 @@ cfg_if! {
             }
         }
     } else{
+        /// Trait do define basic function for a simulation state
+        /// 
+        /// init : should initialize all the starting values of a simulation
+        /// 
+        /// as_any/as_any_mut/as_state/as_state_mut : support functions to return a Dyn values 
         pub trait State: Send + 'static {
 
             fn init(&mut self, schedule: &mut Schedule);

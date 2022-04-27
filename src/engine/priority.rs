@@ -2,12 +2,14 @@ use std::cmp::{Eq, Ordering};
 use std::fmt;
 
 #[derive(Clone)]
+/// Struct to define the priority inside the schedule, two fields of f32
 pub struct Priority {
     pub time: f32,
     pub ordering: i32,
 }
 
 impl Priority {
+    /// create a new istance of Priority
     pub fn new(the_time: f32, the_ordering: i32) -> Priority {
         Priority {
             time: the_time,
@@ -17,6 +19,7 @@ impl Priority {
 }
 
 impl Ord for Priority {
+    /// compare two Priority objects and return an Ordering
     fn cmp(&self, other: &Priority) -> Ordering {
         if self.time < other.time {
             return Ordering::Greater;

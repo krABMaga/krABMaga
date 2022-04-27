@@ -79,6 +79,16 @@ cfg_if! {
 
     } else {
 
+        /// Field with double buffering for sparse matrix
+        ///
+        /// locs - hashmap to write data. HashMap<location, number>
+        ///
+        /// rlocs - hashmap to read data. HashMap<location, number>
+        ///
+        /// width - first dimension of the field
+        ///
+        /// height - second dimension of the field
+        ///
         pub struct SparseNumberGrid2D<T: Copy + Clone> {
             pub locs: RefCell<HashMap<Int2D, T>>,
             pub rlocs: RefCell<HashMap<Int2D, T>>,
@@ -87,6 +97,7 @@ cfg_if! {
         }
 
         impl<T: Copy + Clone> SparseNumberGrid2D<T> {
+            /// create a new instance of SparseNumberenseGrid2D
             pub fn new(width: i32, height: i32) -> SparseNumberGrid2D<T> {
                 SparseNumberGrid2D {
                     locs: RefCell::new(HashMap::new()),
@@ -96,6 +107,13 @@ cfg_if! {
                 }
             }
 
+            /// use a closure to manipulate items inside the matrix
+            ///
+            /// READ - update the values from rlocs
+            ///
+            /// WRITE - update the values from locs
+            ///
+            /// READWRITE - check locs and rlocs simultaneously to apply the closure
             pub fn apply_to_all_values<F>(&self, closure: F, option: GridOption)
             where
                 F: Fn(&T) -> T,
@@ -132,6 +150,7 @@ cfg_if! {
                 }
             }
 
+            /// get the value at loc from rlocs
             pub fn get_value(&self, loc: &Int2D) -> Option<T> {
                 let rlocs = self.rlocs.borrow();
                 match rlocs.get(loc){
@@ -140,6 +159,7 @@ cfg_if! {
                 }
             }
 
+            /// get the value at loc from locs
             pub fn get_value_unbuffered(&self, loc: &Int2D) -> Option<T> {
                 let locs = self.locs.borrow();
                 match locs.get(loc){
@@ -148,6 +168,7 @@ cfg_if! {
                 }
             }
 
+            /// set the value at loc on locs
             pub fn set_value_location(&self, value: T, loc: &Int2D) {
                 let mut locs = self.locs.borrow_mut();
                 locs.insert(*loc, value);
@@ -155,6 +176,7 @@ cfg_if! {
         }
 
         impl<T: Copy + Clone> Field for SparseNumberGrid2D<T> {
+            /// Swap the state of the field and clear locs
             fn lazy_update(&mut self) {
                 unsafe {
                     std::ptr::swap(
@@ -165,6 +187,7 @@ cfg_if! {
                 self.locs.borrow_mut().clear();
             }
 
+            /// Swap the state of the field and updates the rlocs matrix
             fn update(&mut self) {
                 let mut rlocs = self.rlocs.borrow_mut();
                 for (key, value) in self.locs.borrow().iter() {

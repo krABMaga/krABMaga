@@ -18,23 +18,32 @@ cfg_if! {
     }
 }
 
+/// Available types of an edge/hedge
 #[derive(Clone)]
 pub enum EdgeOptions<L: Clone + Hash + Display> {
+    /// A simple edge, without additional info
     Simple,
+    /// An edge with a label
     Labeled(L),
+    /// Weighted edge
     Weighted(f32),
+    /// Weighted edge with a label
     WeightedLabeled(L, f32),
 }
 
+/// An edge of a `Network` struct
 #[derive(Clone, Debug)]
 pub struct Edge<L: Clone + Hash + Display> {
+    /// id of source node
     pub u: u32,
+    /// id of destination node
     pub v: u32,
     pub label: Option<L>,
     pub weight: Option<f32>,
 }
 
 impl<L: Clone + Hash + Display> Edge<L> {
+    // Create a new edge
     pub fn new(u_node: u32, v_node: u32, edge_options: EdgeOptions<L>) -> Edge<L> {
         match edge_options {
             EdgeOptions::Simple => Edge {
@@ -546,6 +555,7 @@ cfg_if! {
         }
 
     } else { // not for visualization or parallel feature
+        /// Connect nodes using `Edge` struct
         pub struct Network<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> {
             pub edges: RefCell<HashMap<u32, Vec<Edge<L>>>>,
             pub redges: RefCell<HashMap<u32, Vec<Edge<L>>>>,
@@ -589,6 +599,7 @@ cfg_if! {
 
         }
         impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> Network<O, L> {
+            /// Create a new Network. Network can directed or not
             pub fn new(d: bool) -> Network<O, L> {
                 Network {
                     edges: RefCell::new(HashMap::new()),
@@ -600,6 +611,7 @@ cfg_if! {
                 }
             }
 
+            /// Add new edge. Add also reverse edge if `direct` is true
             pub fn add_edge(&self, u: O, v: O, edge_options: EdgeOptions<L>) -> (bool, bool) {
                 let nodes2id = self.nodes2id.borrow_mut();
                 let mut vbool = false;
@@ -642,6 +654,7 @@ cfg_if! {
                 (ubool, vbool)
             }
 
+            /// Add a new node to the network
             pub fn add_node(&self, u: O) {
                 let mut nodes2id = self.nodes2id.borrow_mut();
                 let mut id2nodes = self.id2nodes.borrow_mut();
@@ -659,8 +672,8 @@ cfg_if! {
                 }
             }
 
-            //part of "preferential attachment" process
-            //in which new network members prefer to make a connection to the more popular existing members.
+            /// Part of "preferential attachment" process.
+            /// Add a edges to a new node. New network members prefer to make a connection to the more popular existing members.
             pub fn add_prob_edge(&self, u: O, n_sample: &usize, my_seed: u64) {
                 let id2nodes = self.id2nodes.borrow();
                 let mut dist: Vec<(&O, i32)> = Vec::new();
@@ -722,6 +735,7 @@ cfg_if! {
             //     self.redges.borrow().keys().collect()
             // }
 
+            /// Get an `Edge` from the network
             pub fn get_edge(&self, u: O, v: O) -> Option<Edge<L>> {
                 let nodes2id = self.nodes2id.borrow();
                 let id2nodes = self.id2nodes.borrow();
@@ -751,6 +765,7 @@ cfg_if! {
                 }
             }
 
+            /// Get all edges of a node
             pub fn get_edges(&self, u: O) -> Option<Vec<Edge<L>>> {
                 let nodes2id = self.nodes2id.borrow();
                 let uid = match nodes2id.get(&u) {
@@ -764,16 +779,17 @@ cfg_if! {
                 }
             }
 
+
+            /// get a node from an id
             pub fn get_object(&self, uid: u32) -> Option<O> {
                 match self.rid2nodes.borrow_mut().get(&uid) {
                     Some(u) => Some(u.clone()),
                     None => None,
                 }
             }
-/**
-            Generate an undirected network based on
-            Barabási-Albert’s preferential attachment model
-            */
+
+            ///Generate an undirected network based on
+            ///Barabási-Albert’s preferential attachment model.
             #[allow(non_snake_case)]
             pub fn preferential_attachment_BA(
                 &mut self,
@@ -842,11 +858,10 @@ cfg_if! {
                 self.update();
             }
 
-            /**
-            Generate an undirected network based on
-            Barabási-Albert’s preferential attachment model
-            with defined seed
-            */
+            ///Generate an undirected network based on
+            ///Barabási-Albert’s preferential attachment model
+            ///with defined seed
+            
             #[allow(non_snake_case)]
             pub fn preferential_attachment_BA_with_seed(
                 &mut self,
@@ -913,11 +928,13 @@ cfg_if! {
             }
 
 
+            /// Remove all Network edges
             pub fn remove_all_edges(&self) {
                 let mut edges = self.edges.borrow_mut();
                 edges.clear();
             }
 
+            /// Remove a specific edge. Remove also reverse edge if `direct` is true
             pub fn remove_edge(&self, u: O, v: O) -> Option<Edge<L>> {
                 let nodes2id = self.nodes2id.borrow();
 
@@ -954,6 +971,7 @@ cfg_if! {
             }
 
 
+            /// Remove all incoming edges of a node
             pub fn remove_incoming_edges(&self, u: O) -> Option<Vec<Edge<L>>> {
                 // let edges = self.edges.borrow();
                 // let nodes = edges.keys();
@@ -978,6 +996,7 @@ cfg_if! {
                 Some(ris)
             }
 
+            /// Remove all outgoing edges of a node
             pub fn remove_outgoing_edges(&self, u: O) -> Option<Vec<Edge<L>>> {
 
                 let mut ris = vec![];
@@ -1001,6 +1020,8 @@ cfg_if! {
                 Some(ris)
             }
 
+
+            /// Remove a specific node
             pub fn remove_node(&self, u: O) -> bool {
                 let uid: u32;
                 {
@@ -1070,6 +1091,8 @@ cfg_if! {
             //     self.update();
             // }
 
+
+            /// Update node info
             pub fn update_node(&self, u: O) {
                 let nodes2id = self.nodes2id.borrow_mut();
                 let mut id2nodes = self.id2nodes.borrow_mut();

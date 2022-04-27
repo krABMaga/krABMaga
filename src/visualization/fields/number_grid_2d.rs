@@ -1,4 +1,7 @@
-use std::default::Default;
+use cfg_if::cfg_if;
+cfg_if! {
+    if #[cfg(any(feature = "visualization", feature = "visualization_wasm"))] {
+        use std::default::Default;
 use std::marker::PhantomData;
 
 use bevy::prelude::{
@@ -105,4 +108,7 @@ pub trait BatchRender<S: State> {
 #[derive(Component)]
 pub struct Marker<T> {
     marker: PhantomData<T>,
+}
+
+    }
 }

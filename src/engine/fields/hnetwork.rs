@@ -5,22 +5,30 @@ use std::collections::HashSet;
 use std::fmt::Display;
 use std::hash::Hash;
 
+/// Available types of an edge/hedge
 #[derive(Clone)]
 pub enum EdgeOptions<L: Clone + Hash + Display> {
+    /// A simple edge, without additional info
     Simple,
+    /// An edge with a label
     Labeled(L),
+    /// Weighted edge
     Weighted(f32),
+    /// Weighted edge with a label
     WeightedLabeled(L, f32),
 }
 
+/// An hyper-edge that can be used inside an `HNetwork`
 #[derive(Clone, Debug)]
 pub struct HEdge<L: Clone + Hash + Display> {
+    /// id nodes of an hyper-edge. Using `HashSet` we have much more control on duplicated nodes/edges
     pub nodes: HashSet<u32>,
     pub label: Option<L>,
     pub weight: Option<f32>,
 }
 
 impl<L: Clone + Hash + Display> HEdge<L> {
+    /// Create a new hyper-edge
     pub fn new(list_nodes: &[u32], edge_options: EdgeOptions<L>) -> HEdge<L> {
         let max_len = list_nodes.len();
         let mut hedge = match edge_options {
@@ -58,6 +66,7 @@ impl<L> PartialEq for HEdge<L>
 where
     L: Clone + Hash + Display,
 {
+    /// Two Hyper-edges are equals if the sets of nodes are equal
     fn eq(&self, other: &Self) -> bool {
         self.nodes == other.nodes
     }
@@ -65,15 +74,22 @@ where
 
 impl<L: Clone + Hash + Display> Eq for HEdge<L> {}
 
+/// A generalization of a `Network`, to connect with an edge multiple nodes
 pub struct HNetwork<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> {
+    /// Write state of hyper-edges
     pub edges: RefCell<HashMap<u32, Vec<HEdge<L>>>>,
+    /// Read state of hyper-edges
     pub redges: RefCell<HashMap<u32, Vec<HEdge<L>>>>,
+    /// Write state to manage ids using Nodes
     pub nodes2id: RefCell<HashMap<O, u32>>,
+    /// Write state to manage Nodes using ids
     pub id2nodes: RefCell<HashMap<u32, O>>,
+    /// Read state to manage Nodes using ids
     pub rid2nodes: RefCell<HashMap<u32, O>>,
 }
 
 impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> HNetwork<O, L> {
+    /// Create a new HNetwork
     pub fn new() -> HNetwork<O, L> {
         HNetwork {
             edges: RefCell::new(HashMap::new()),
@@ -88,6 +104,7 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> HNetwork<O, L> {
     //     Self::new()
     // }
 
+    /// Add a new hyper-edge
     pub fn add_edge(&self, nodes: &[O], edge_options: EdgeOptions<L>) -> bool {
         if nodes.is_empty() {
             return false;
@@ -121,6 +138,7 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> HNetwork<O, L> {
         true
     }
 
+    /// Add a new node
     pub fn add_node(&self, u: O) {
         let mut nodes2id = self.nodes2id.borrow_mut();
         let mut id2nodes = self.id2nodes.borrow_mut();
@@ -138,6 +156,7 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> HNetwork<O, L> {
         }
     }
 
+    /// Get an hyper-edge from a list of nodes
     pub fn get_edge(&self, nodes: &[O]) -> Option<HEdge<L>> {
         if nodes.is_empty() {
             return None;
@@ -168,6 +187,7 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> HNetwork<O, L> {
         }
     }
 
+    /// Get all edges of a node
     pub fn get_edges(&self, u: O) -> Option<Vec<HEdge<L>>> {
         let nodes2id = self.nodes2id.borrow();
         let uid = match nodes2id.get(&u) {
@@ -181,6 +201,7 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> HNetwork<O, L> {
         }
     }
 
+    /// get a node from its id
     pub fn get_object(&self, uid: u32) -> Option<O> {
         match self.rid2nodes.borrow_mut().get(&uid) {
             Some(u) => Some(u.clone()),
@@ -188,11 +209,13 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> HNetwork<O, L> {
         }
     }
 
+    /// Remove all the edges of the network
     pub fn remove_all_edges(&self) {
         let mut edges = self.edges.borrow_mut();
         edges.clear();
     }
 
+    /// Remove a specific edge using a list of nodes
     pub fn remove_edge(&self, nodes: &[O]) -> Option<HEdge<L>> {
         if nodes.is_empty() {
             return None;
@@ -229,6 +252,7 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> HNetwork<O, L> {
         removed
     }
 
+    /// Remove an edge passing an `HEdge` object
     fn remove_edge_with_hedge(&self, to_remove: &HEdge<L>) -> Option<HEdge<L>> {
         let mut removed: Option<HEdge<L>> = None;
         let mut all_edges = self.edges.borrow_mut();
@@ -251,6 +275,7 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> HNetwork<O, L> {
         removed
     }
 
+    /// Remove a specific node and all the edges that involve it
     pub fn remove_object(&self, u: O) -> bool {
         let uid: u32;
         {
@@ -275,6 +300,7 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> HNetwork<O, L> {
         true
     }
 
+    /// Update a node
     pub fn update_node(&self, u: O) {
         let nodes2id = self.nodes2id.borrow_mut();
         let mut id2nodes = self.id2nodes.borrow_mut();

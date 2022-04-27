@@ -2,7 +2,7 @@ use crate::log;
 use crate::Log;
 use crate::LogType;
 use crate::PlotData;
-use crate::{DATA, DESCR, LOGS, MONITOR, Monitoring};
+use crate::{Monitoring, DATA, DESCR, LOGS, MONITOR};
 use cfg_if::cfg_if;
 
 cfg_if! {
@@ -22,21 +22,26 @@ cfg_if! {
             },
             Frame,
         };
-        
 
+
+        /// Struct to memorize the informations about the top tabs
         pub struct TabsState {
             pub titles: Vec<String>,
             pub index: usize,
         }
-        
+
         impl<'a> TabsState {
+            /// create a new instance
             pub fn new(titles: Vec<String>) -> TabsState {
                 TabsState { titles, index: 0 }
             }
+
+            /// move to the right on tabs section
             pub fn next(&mut self) {
                 self.index = (self.index + 1) % self.titles.len();
             }
-        
+
+            /// move to the left on tabs section
             pub fn previous(&mut self) {
                 if self.index > 0 {
                     self.index -= 1;
@@ -45,11 +50,39 @@ cfg_if! {
                 }
             }
         }
-        
+
+        /// Struct that manage all the informations in the TUI 
+        /// 
+        /// tabs : manage the top bars
+        /// 
+        /// should_quit : boolean used to check if the TUI should be closed
+        /// 
+        /// show_chart : boolean to hide/show the charts 
+        /// 
+        /// show_description : boolean to show the tooltip on the popup
+        /// 
+        /// logs_state : struct to show all the logs messages
+        /// 
+        /// processor_data : struct to keep track of the info about processor
+        /// 
+        /// memory_data : struct to keep track of the info about memory
+        /// 
+        /// data_window : pair to manage the bounds of the plots
+        /// 
+        /// progress : progress bar for the simulation running
+        /// 
+        /// reps : number of repetition of the simulation
+        /// 
+        /// steps : number of step of the simulation
+        /// 
+        /// tot_reps : number of total repetions
+        /// 
+        /// tot_steps : number of total steps
         pub struct UI {
             pub tabs: TabsState,
             pub should_quit: bool,
             pub show_chart: bool,
+            pub show_description: bool,
             pub logs_state: ListState,
             pub processor_data: Vec<(f64, f64)>,
             pub memory_data: Vec<(f64, f64)>,
@@ -60,7 +93,6 @@ cfg_if! {
             pub rep: u64,
             pub tot_reps: u64,
             pub tot_steps: u64,
-            pub show_description: bool,
         }
         impl UI {
             pub fn new(tsteps: u64, treps: u64) -> UI {
@@ -95,7 +127,7 @@ cfg_if! {
                 };
                 self.logs_state.select(Some(i));
             }
-        
+
             pub fn on_down(&mut self) {
                 let logs = LOGS.lock().unwrap();
                 let i = match self.logs_state.selected() {
@@ -110,15 +142,15 @@ cfg_if! {
                 };
                 self.logs_state.select(Some(i));
             }
-        
+
             pub fn on_right(&mut self) {
                 self.tabs.next();
             }
-        
+
             pub fn on_left(&mut self) {
                 self.tabs.previous();
             }
-        
+
             pub fn on_key(&mut self, c: char) {
                 match c {
                     'q' => {
@@ -144,21 +176,21 @@ cfg_if! {
                     }
                 }
             }
-        
+
             pub fn on_tick(&mut self, step: u64, progress: f64) {
                 // Update progress
                 self.progress = progress;
                 self.step = step;
-    
+
                 let cpu;
                 let mem;
-    
+
                 {
                     let monitor = MONITOR.lock().unwrap();
                     cpu = *monitor.cpu_used.last().unwrap_or(&-1.);
                     mem = *monitor.mem_used.last().unwrap_or(&-1.);
-                }                
-                
+                }
+
                 if self.processor_data.len() > 100 {
                     self.processor_data.remove(0);
                     self.data_window.0 = self.data_window.0 + 1;
@@ -169,20 +201,20 @@ cfg_if! {
                     .unwrap_or(&(0. as f64, 0. as f64))
                     .0;
                 self.processor_data.push((position + 1., cpu));
-        
+
                 if self.memory_data.len() > 100 {
                     self.memory_data.remove(0);
                 }
-        
+
                 self.memory_data.push((position + 1., mem));
             }
-        
+
             pub fn on_rep(&mut self, rep: u64, step_second_for_rep: u64) {
                 self.reps
                     .insert(0, ((rep + 1).to_string(), step_second_for_rep));
                 self.rep = rep;
             }
-        
+
             pub fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
                 let popup_layout = Layout::default()
                     .direction(Direction::Vertical)
@@ -195,7 +227,7 @@ cfg_if! {
                         .as_ref(),
                     )
                     .split(r);
-        
+
                 Layout::default()
                     .direction(Direction::Horizontal)
                     .constraints(
@@ -208,11 +240,11 @@ cfg_if! {
                     )
                     .split(popup_layout[1])[1]
             }
-        
+
             pub fn show_popup<B: Backend>(&mut self, f: &mut Frame<B>, s: String) {
                 let size = f.size();
                 let area = UI::centered_rect(60, 20, size);
-        
+
                 let text = vec![
                     // Spans::from("Commands:"),
                     Spans::from(vec![Span::styled(s, Style::default().fg(Color::Black))]),
@@ -232,16 +264,16 @@ cfg_if! {
                     .block(block)
                     .alignment(Alignment::Center)
                     .wrap(Wrap { trim: true });
-        
+
                 f.render_widget(Clear, area); //this clears out the background
                 f.render_widget(paragraph, area);
             }
-        
+
             pub fn draw<B: Backend>(&mut self, f: &mut Frame<B>) {
                 let chunks = Layout::default()
                     .constraints([Constraint::Length(3), Constraint::Min(0)].as_ref())
                     .split(f.size());
-        
+
                 for (pname, _pdata) in DATA.lock().unwrap().iter() {
                     if !self.tabs.titles.contains(pname) {
                         self.tabs.titles.push(String::from(pname));
@@ -253,14 +285,14 @@ cfg_if! {
                     .iter()
                     .map(|t| Spans::from(Span::styled(t, Style::default().fg(Color::Green))))
                     .collect();
-        
+
                 let title = format!("Rust-ab 🦀");
                 let tabs = Tabs::new(titles)
                     .block(Block::default().borders(Borders::ALL).title(title))
                     .highlight_style(Style::default().fg(Color::Yellow))
                     .select(self.tabs.index);
                 f.render_widget(tabs, chunks[0]);
-        
+
                 match self.tabs.index {
                     0 => {
                         self.draw_first_tab(f, chunks[1]);
@@ -269,7 +301,7 @@ cfg_if! {
                         self.draw_tab(id, f, chunks[1]);
                     }
                 };
-        
+
                 if self.show_description {
                     let d = DESCR.lock().unwrap().clone();
                     if d.len() != 0 {
@@ -282,11 +314,11 @@ cfg_if! {
                 B: Backend,
             {
                 let data = DATA.lock().unwrap();
-        
+
                 let mut datasets = Vec::new();
                 let chart_name = self.tabs.titles[id].clone();
                 let pdata = data.get(&chart_name).unwrap();
-        
+
                 let markers = [
                     symbols::Marker::Dot,
                     symbols::Marker::Braille,
@@ -302,7 +334,7 @@ cfg_if! {
                     Color::Green,
                     Color::Cyan,
                 ];
-        
+
                 let mut marker_id = 0;
                 let mut color_id = 0;
                 for (sname, points) in pdata.series.iter() {
@@ -316,7 +348,7 @@ cfg_if! {
                     marker_id = (marker_id + 1) % markers.len();
                     color_id = (color_id + 1) % colors.len();
                 }
-        
+
                 let chart = Chart::new(datasets)
                     .block(
                         Block::default()
@@ -368,7 +400,7 @@ cfg_if! {
                 // }
                 f.render_widget(chart, area);
             }
-        
+
             fn draw_first_tab<B>(&mut self, f: &mut Frame<B>, area: Rect)
             where
                 B: Backend,
@@ -383,12 +415,12 @@ cfg_if! {
                         .as_ref(),
                     )
                     .split(area);
-        
+
                 self.draw_gauges(f, chunks[0]);
                 self.draw_text(f, chunks[2]);
                 self.draw_charts(f, chunks[1]);
             }
-        
+
             fn draw_gauges<B>(&self, f: &mut Frame<B>, area: Rect)
             where
                 B: Backend,
@@ -406,7 +438,7 @@ cfg_if! {
                     .line_set(symbols::line::THICK)
                     .ratio((self.rep + 1) as f64 / (self.tot_reps) as f64);
                 f.render_widget(line_gauge, chunks[0]);
-        
+
                 let label = format!("{:.2}%", self.progress * 100.);
                 let gauge = Gauge::default()
                     .block(Block::default().title("Repetition Progress:"))
@@ -420,7 +452,7 @@ cfg_if! {
                     .ratio(self.progress);
                 f.render_widget(gauge, chunks[1]);
             }
-        
+
             fn draw_charts<B>(&mut self, f: &mut Frame<B>, area: Rect)
             where
                 B: Backend,
@@ -439,15 +471,15 @@ cfg_if! {
                         .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
                         .direction(Direction::Horizontal)
                         .split(chunks[0]);
-        
+
                     // Draw tasks
                     let logs = LOGS.lock().unwrap();
-        
+
                     let info_style = Style::default().fg(Color::Blue);
                     let warning_style = Style::default().fg(Color::Yellow);
                     let error_style = Style::default().fg(Color::Magenta);
                     let critical_style = Style::default().fg(Color::Red);
-        
+
                     let logs: Vec<ListItem> = logs
                         .iter()
                         .map(|x| {
@@ -457,12 +489,12 @@ cfg_if! {
                                 LogType::Critical => critical_style,
                                 _ => info_style,
                             };
-        
+
                             let content = vec![Spans::from(vec![
                                 Span::styled(format!("{:<9}", x.ltype), s),
                                 Span::raw(x.body.clone()),
                             ])];
-        
+
                             ListItem::new(content)
                         })
                         .collect();
@@ -471,13 +503,13 @@ cfg_if! {
                         .highlight_style(Style::default().add_modifier(Modifier::BOLD))
                         .highlight_symbol("> ");
                     f.render_stateful_widget(logs, chunks_pane_one[0], &mut self.logs_state);
-        
+
                     let new: Vec<(&str, u64)> = self
                         .reps
                         .iter()
                         .map(|(string, val)| (string.as_str(), *val))
                         .collect();
-        
+
                     let barchart = BarChart::default()
                         .block(
                             Block::default()
@@ -552,7 +584,7 @@ cfg_if! {
                     f.render_widget(chart, chunks[1]);
                 }
             }
-        
+
             fn draw_text<B>(&self, f: &mut Frame<B>, area: Rect)
             where
                 B: Backend,
@@ -588,4 +620,3 @@ cfg_if! {
         }
     }
 }
-

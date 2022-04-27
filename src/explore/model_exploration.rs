@@ -1,3 +1,8 @@
+/// internal function to run the simulation inside the explore macros
+/// 
+/// step : number of total step of the simulation
+/// 
+/// state : the State of the simulation
 #[macro_export]
 macro_rules! simulate_explore {
     ($step:expr, $state:expr) => {{
@@ -32,11 +37,19 @@ macro_rules! simulate_explore {
 }
 
 #[macro_export]
-///step = simulation step number,
-///schedule,
-///states,
-///input{input:type},
-///output[output:type]
+///Macro to to perform sequential model exploration using basic parameters sweeping
+/// 
+/// step : simulation step number,
+/// 
+/// repconf: number of repetitions
+/// 
+/// state: state of the simulation
+/// 
+/// input: multiple custom input, pair of a identifier and his type
+/// 
+/// output: multiple custom input, pair of a identifier and his type
+/// 
+/// mode: enum to choose which mode of execution is desired (Supported option: Exaustive, Matched)
 macro_rules! explore_sequential {
 
         //exploration with explicit output parameters
@@ -49,8 +62,8 @@ macro_rules! explore_sequential {
             println!("Running sequential model exploration...");
 
             //typecheck
-            let _rep_conf = $rep_conf as usize;
-            let _nstep = $nstep as u32;
+            let rep_conf = $rep_conf as usize;
+            let nstep = $nstep as u32;
 
             let mut n_conf:usize = 1;
             let mut config_table_index: Vec<Vec<usize>> = Vec::new();
@@ -100,9 +113,9 @@ macro_rules! explore_sequential {
                     println!("-- {}: {:?}", stringify!(state.$input), state.$input);
                 )*
 
-                for j in 0..$rep_conf{
+                for j in 0..rep_conf{
                     println!("Running simulation {}", j+1);
-                    let result = simulate_explore!($nstep, state);
+                    let result = simulate_explore!(nstep, state);
                     dataframe.push(
                         FrameRow::new(i as u32, j + 1 as u32, $(state.$input.clone(),)* $(state.$output,)* result[0].0, result[0].1)
                     );
@@ -120,6 +133,19 @@ macro_rules! explore_sequential {
     }
 
 #[macro_export]
+///Macro to to perform parallel model exploration using basic parameters sweeping
+/// 
+/// step : simulation step number,
+/// 
+/// repconf: number of repetitions
+/// 
+/// state: state of the simulation
+/// 
+/// input: multiple custom input, pair of a identifier and his type
+/// 
+/// output: multiple custom input, pair of a identifier and his type
+/// 
+/// mode: enum to choose which mode of execution is desired (Supported option: Exaustive, Matched)
 macro_rules! explore_parallel {
         ($nstep: expr, $rep_conf:expr, $state:ty,
             input {$($input:ident: $input_ty: ty )*},
@@ -201,6 +227,21 @@ macro_rules! explore_parallel {
     }
 
 #[macro_export]
+/// Internal function for automatic building the structure for the Dataframe
+/// 
+/// The dataframe allow to write the data of the simulations into a comfort structure that can be saved inside a file or easily manipulated
+/// 
+/// Complete pattern of the macro
+/// 
+/// name : custom name of the structure 
+/// 
+/// input : multiple pairs of identifier and type
+/// 
+/// input_vec : vectors of elements, must specify the identifier, the type and the vector length
+/// 
+/// output : multiple pairs of identifier and type
+/// 
+/// derive : optional parameter for the derive directive
 macro_rules! build_dataframe {
         //Dataframe with input and output parameters and optional parameters
         (
@@ -291,44 +332,3 @@ macro_rules! build_dataframe {
                 )
         };
 }
-
-/* #[macro_export]
-//macro general to call exploration
-macro_rules! explore {
-
-    //exploration with explicit output parameters
-    ($nstep: expr, $rep_conf:expr, $state:ty,
-    input {$($input:ident: $input_ty: ty )*},
-    output [$($output:ident: $output_ty: ty )*],
-    $mode: expr,
-    $cmode: expr,
-    $( $x:ident: $x_ty: ty ),*
-    ) => {{
-
-        // optional parameters created for distributed mode
-        $(
-            // create a new variable for optional parameters and pass it as an optional expression
-            let $x = $x;
-        )*
-        build_dataframe!(FrameRow, input {$( $input:$input_ty)* }, output[ $( $output:$output_ty )*], $( $x:$x_ty ),* );
-        // check which computation mode is required for the exploration
-        match $cmode {
-            ComputationMode::Sequential => explore_sequential!(
-                $nstep, $rep_conf, $state, input {$($input: $input_ty)*}, output [$($output: $output_ty)*], $mode, $( $x ),*
-            ),
-            ComputationMode::Parallel => explore_parallel!(
-                $nstep, $rep_conf, $state, input {$($input: $input_ty)*}, output [$($output: $output_ty)*], $mode, $( $x ),*
-            ),
-            _ => Vec::new()
-        }
-    }};
-
-    ($nstep: expr, $rep_conf:expr, $state_name:ty, input {$($input:ident: $input_ty: ty )*,},
-    $mode: expr,
-    $cmode: expr) => {
-                explore!($nstep, $rep_conf, $state_name, input { $($input: $input_ty)*}, output [],
-                $mode, $cmode)
-        };
-
-}
- */

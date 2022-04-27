@@ -20,8 +20,10 @@ use std::{
     sync::{Mutex, Once},
 };
 
+
+/// Singleton to manage Gaussian Process and makes it available to user function
 #[cfg(any(feature = "bayesian"))]
-pub struct SingletonGP {
+struct SingletonGP {
     pub gauss_pr: Mutex<GaussianProcess<Gaussian, ConstantPrior>>,
 }
 
@@ -34,6 +36,7 @@ impl SingletonGP {
     }
 }
 
+///get instance of Singleton. Create it at first call.
 #[cfg(any(feature = "bayesian"))]
 pub fn get_instance(x: &Vec<Vec<f64>>, y: &Vec<f64>) -> &'static SingletonGP {
     static mut SINGLETON: MaybeUninit<SingletonGP> = MaybeUninit::uninit();
@@ -53,6 +56,9 @@ pub fn get_instance(x: &Vec<Vec<f64>>, y: &Vec<f64>) -> &'static SingletonGP {
     }
 }
 
+
+/// macro to define Optimazer required by Bayesian resolver
+/// acquisition: acquisition function passed by user
 #[cfg(any(feature = "bayesian"))]
 #[macro_export]
 macro_rules! build_optimizer {
@@ -102,6 +108,20 @@ macro_rules! build_optimizer {
     };
 }
 
+
+/// Macro to perform bayesian optimization with custom functions.  
+/// 
+/// init_population: function that creates the population, must return an array of individual. An individual is the state of the simulation to compute.
+/// 
+/// costly_function: function to evaluate the goodness of a solution.
+/// 
+/// acquisition_function: acquisition function to evaluate quickly a solution, using previous results.
+///
+/// gen_new_points: function to sample new starting point for the current iteration
+/// 
+/// check_domain: bayesian work on continuos function. With the methods we fix/check the results of an iteration.
+/// 
+/// n_iter: number of iterations of bayesian optimization algorithm
 #[cfg(any(feature = "bayesian"))]
 #[macro_export]
 macro_rules! bayesian_opt {
@@ -220,6 +240,19 @@ macro_rules! bayesian_opt {
     }};
 }
 
+/// Macro to perform bayesian optimization with default functions.
+/// x_init: initial x values
+/// 
+/// y_init: costs of x_init elements
+/// 
+/// costly_function: function to evaluate the goodness of a solution.
+///
+/// n_iter: number of iterations of bayesian optimization algorithm
+///
+/// batch_size: how many samples for each iteration
+/// 
+/// scale: factor of scaling to generate samples
+
 #[cfg(any(feature = "bayesian"))]
 #[macro_export]
 macro_rules! bayesian_opt_base {
@@ -273,15 +306,18 @@ macro_rules! bayesian_opt_base {
     }};
 }
 #[cfg(any(feature = "bayesian"))]
-struct OptAcquisition {
+struct OptBase {
     gauss_pr: GaussianProcess<Gaussian, ConstantPrior>,
     x: Vec<Vec<f64>>,
 }
 
+
+
+///Base Optimizer for Bayesian solver
 #[cfg(any(feature = "bayesian"))]
-impl OptAcquisition {
+impl OptBase {
     pub fn new(x: &Vec<Vec<f64>>, y: &Vec<f64>) -> Self {
-        OptAcquisition {
+        OptBase {
             gauss_pr: GaussianProcess::default(x.clone(), y.clone()),
             x: x.clone(),
         }
@@ -289,18 +325,19 @@ impl OptAcquisition {
 }
 
 #[cfg(any(feature = "bayesian"))]
-impl ArgminOp for OptAcquisition {
+impl ArgminOp for OptBase {
+    /// Points to start iteration
     type Param = Vec<f64>;
-    // Type of the return value computed by the cost function
+    /// Type of the return value computed by the cost function
     type Output = f64;
-    // Type of the Hessian. Can be `()` if not needed.
+    /// Type of the Hessian. Can be `()` if not needed.
     type Hessian = Vec<Vec<f64>>;
-    // Type of the Jacobian. Can be `()` if not needed.
+    /// Type of the Jacobian. Can be `()` if not needed.
     type Jacobian = ();
-    // Floating point precision
+    /// Floating point precision
     type Float = f64;
 
-    // Apply the cost function to a parameter `p`
+    /// Apply the cost function to a parameter `p`
     fn apply(&self, p: &Self::Param) -> Result<Self::Output, Error> {
         Ok(acquisition_function_base(
             &self.gauss_pr,
@@ -316,7 +353,7 @@ impl ArgminOp for OptAcquisition {
 
 #[cfg(any(feature = "bayesian"))]
 #[inline(always)]
-///Expected Improvement algorithm
+///Expected Improvement algorithm.
 pub fn acquisition_function_base(
     gauss_pr: &GaussianProcess<Gaussian, ConstantPrior>,
     x_new: &Vec<f64>,
@@ -353,6 +390,8 @@ pub fn acquisition_function_base(
     (mean_y_new - mean_y_max) * z_cfd + sigma_y_new * z_pdf
 }
 
+
+/// Generate new samples for Bayesian Base macro
 #[cfg(any(feature = "bayesian"))]
 #[inline(always)]
 pub fn get_next_point_base(
@@ -376,7 +415,7 @@ pub fn get_next_point_base(
     let mut min = f64::MAX;
     let mut x_next: Vec<f64> = Vec::new();
     for i in 0..trial_x.len() {
-        let acquisition = OptAcquisition::new(&x, &y);
+        let acquisition = OptBase::new(&x, &y);
 
         let linesearch: MoreThuenteLineSearch<Vec<f64>, f64> = MoreThuenteLineSearch::new()
             .c(1e-4, 0.9)

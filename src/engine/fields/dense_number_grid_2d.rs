@@ -80,14 +80,23 @@ cfg_if! {
 
     } else {
 
+        /// Matrix with double buffering 
+        /// A simpler version of the DenseGrid2D to use with simpler values.
+        /// This is useful to represent simulation spaces covered by a simple entity that can be represented with a non-agent structure.
         pub struct DenseNumberGrid2D<T: Copy + Clone + PartialEq> {
+
+            /// Matrix to write data. Vector of vectors that have a generic Object O inside
             pub locs: RefCell<Vec<Vec<T>>>,
+            /// Matrix to read data. Vector of vectors that have a generic Object O inside
             pub rlocs: RefCell<Vec<Vec<T>>>,
+            /// First dimension of the field
             pub width: i32,
+            /// Second dimension of the field
             pub height: i32
         }
 
         impl<T: Copy + Clone + PartialEq> DenseNumberGrid2D<T> {
+            /// Create new instance of DenseNumberGrid2D
             pub fn new(width: i32, height: i32) -> DenseNumberGrid2D<T> {
                 DenseNumberGrid2D {
                     locs: RefCell::new(std::iter::repeat_with(Vec::new).take((width * height) as usize).collect()),
@@ -97,6 +106,13 @@ cfg_if! {
                 }
             }
 
+            /// Apply a closure to all values.
+            ///
+            /// READ - update the values from rlocs
+            ///
+            /// WRITE - update the values from locs
+            ///
+            /// READWRITE - check locs and rlocs simultaneously to apply the closure
             pub fn apply_to_all_values<F>(&self, closure: F, option: GridOption)
             where
                 F: Fn(&T) -> T,
@@ -158,6 +174,7 @@ cfg_if! {
                 }
             }
 
+            /// Return all the empty bags in rlocs
             pub fn get_empty_bags(&self) -> Vec<Int2D>{
                 let mut empty_bags = Vec::new();
                 for i in 0 ..  self.width{
@@ -171,6 +188,7 @@ cfg_if! {
                 empty_bags
             }
 
+            /// Return a random empty bag in rlocs. `None` if no bags are available
             pub fn get_random_empty_bag(&self) -> Option<Int2D>{
                 let mut rng = rand::thread_rng();
                 loop {
@@ -184,6 +202,7 @@ cfg_if! {
                 }
             }
 
+            /// Return the first value of a specific position. `None` if position is empty
             pub fn get_value(&self, loc: &Int2D) -> Option<T> {
                 let index = ((loc.x * self.height) + loc.y) as usize;
                 let rlocs = self.rlocs.borrow();
@@ -194,6 +213,7 @@ cfg_if! {
                 }
             }
 
+            /// Return all values of a specific position inside write state. `None` if position is empty
             pub fn get_value_unbuffered(&self, loc: &Int2D) -> Option<Vec<T>> {
                 let mut obj = Vec::new();
                 let index = ((loc.x * self.height) + loc.y) as usize;
@@ -209,6 +229,8 @@ cfg_if! {
                 }
             }
 
+
+            /// Read and apply a closure to all values inside Read state
             pub fn iter_values<F>(&self, closure: F)
                 where
                     F: Fn(
@@ -229,6 +251,7 @@ cfg_if! {
                 }
             }
 
+            /// Read and apply a closure to all values inside Write state
             pub fn iter_values_unbuffered<F>(&self, closure: F)
             where
                 F: Fn(
@@ -251,7 +274,7 @@ cfg_if! {
             }
 
 
-
+            /// Write a value in a specific position
             pub fn set_value_location(&self, value: T, loc: &Int2D) {
                 let index = ((loc.x * self.height) + loc.y) as usize;
                 let mut locs = self.locs.borrow_mut();
@@ -266,6 +289,7 @@ cfg_if! {
         }
 
         impl<T: Copy + Clone + PartialEq> Field for DenseNumberGrid2D<T> {
+            /// Swap read and write states of the field and clear write State
             fn lazy_update(&mut self){
                 unsafe {
                     std::ptr::swap(
@@ -279,6 +303,7 @@ cfg_if! {
                 }
             }
 
+            /// Copy values from write state into read one
             fn update(&mut self) {
                 for i in 0 ..  self.width{
                     for j in 0 .. self.height{

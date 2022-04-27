@@ -200,6 +200,17 @@ cfg_if! {
             }
         }
     }else{
+
+        /// Field with double buffering for sparse matrix
+        ///
+        /// locs - hashmap to write data. HashMap<location, vector<object>>
+        ///
+        /// rlocs - hashmap to read data.  HashMap<location, vector<object>>
+        ///
+        /// width - first dimension of the field
+        ///
+        /// height - second dimension of the field
+        ///
         pub struct SparseGrid2D<O: Eq + Hash + Clone + Copy> {
             pub locs: RefCell<HashMap<Int2D, Vec<O>>>,
             pub rlocs: RefCell<HashMap<Int2D, Vec<O>>>,
@@ -207,6 +218,7 @@ cfg_if! {
             pub height: i32,
         }
         impl<O: Eq + Hash + Clone + Copy> SparseGrid2D<O> {
+            /// create a new instanceSparseNumberenseGrid2D
             pub fn new(width: i32, height: i32) -> SparseGrid2D<O> {
                 SparseGrid2D {
                     locs: RefCell::new(HashMap::new()),
@@ -216,6 +228,13 @@ cfg_if! {
                 }
             }
 
+            /// use a closure to manipulate items inside the matrix
+            ///
+            /// READ - update the values from rlocs
+            ///
+            /// WRITE - update the values from locs
+            ///
+            /// READWRITE - check locs and rlocs simultaneously to apply the closure
             pub fn apply_to_all_values<F>(&self, closure: F, option: GridOption)
             where
                 F: Fn(&Int2D, &O) -> Option<O>,
@@ -238,7 +257,7 @@ cfg_if! {
                         }
                     }
                     // TO CHECK
-                    //works only with 1 element for bag
+                    // works only with 1 element for bag
                     GridOption::READWRITE =>{
                         let rlocs = self.rlocs.borrow();
                         let mut locs = self.locs.borrow_mut();
@@ -260,6 +279,7 @@ cfg_if! {
                 }
             }
 
+            /// get objects at loc from rlocs
             pub fn get_objects(&self, loc: &Int2D) -> Option<Vec<O>> {
                 match self.rlocs.borrow().get(loc) {
                     Some(obj) => {
@@ -269,6 +289,7 @@ cfg_if! {
                 }
             }
 
+            /// get objects at loc from locs
             pub fn get_objects_unbuffered(&self, loc: &Int2D) -> Option<Vec<O>> {
                 match self.locs.borrow().get(loc) {
                     Some(obj) => {
@@ -278,7 +299,7 @@ cfg_if! {
                 }
             }
 
-
+            /// get all empty bags from rlocs
             pub fn get_empty_bags(&self) -> Vec<Int2D>{
                 let mut empty_bags = Vec::new();
                 for i in 0 ..  self.width{
@@ -295,6 +316,7 @@ cfg_if! {
                 empty_bags
             }
 
+            /// get one random empty bag from rlocs
             pub fn get_random_empty_bag(&self) -> Option<Int2D>{
                 let mut rng = rand::thread_rng();
                 loop {
@@ -308,6 +330,7 @@ cfg_if! {
                 }
             }
 
+            /// iterate over the rlocs matrix and apply the closure
             pub fn iter_objects<F>(&self, closure: F)
             where
                 F: Fn(
@@ -323,6 +346,7 @@ cfg_if! {
                 }
             }
 
+            /// iterate over the locs matrix and apply the closure
             pub fn iter_objects_unbuffered<F>(&self, closure: F)
             where
                 F: Fn(
@@ -338,6 +362,7 @@ cfg_if! {
                 }
             }
 
+            /// set object at loc on locs
             pub fn set_object_location(&self, object: O, loc: &Int2D) {
                 let mut locs = self.locs.borrow_mut();
                 match locs.get_mut(loc){
@@ -404,6 +429,7 @@ cfg_if! {
         }
 
         impl<O: Eq + Hash + Clone + Copy> Field for SparseGrid2D<O> {
+            /// Swap the state of the field and clear locs
             fn lazy_update(&mut self){
                 unsafe {
                     std::ptr::swap(
@@ -414,6 +440,7 @@ cfg_if! {
                 self.locs.borrow_mut().clear();
             }
 
+            /// Swap the state of the field and updates the rlocs matrix
             fn update(&mut self) {
                 let mut rlocs = self.rlocs.borrow_mut();
                 for (key, value) in self.locs.borrow().iter() {

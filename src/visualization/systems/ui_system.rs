@@ -1,4 +1,7 @@
-use bevy::prelude::{Entity, Query, Without};
+use cfg_if::cfg_if;
+cfg_if! {
+    if #[cfg(any(feature = "visualization", feature = "visualization_wasm"))] {
+        use bevy::prelude::{Entity, Query, Without};
 use bevy_egui::egui::{Color32, RichText};
 use bevy_egui::{egui, EguiContext};
 
@@ -111,4 +114,7 @@ pub fn ui_system<I: VisualizationState<S> + Clone + 'static, S: State>(
             });
         });
     });
+}
+
+    }
 }

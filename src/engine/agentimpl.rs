@@ -4,6 +4,14 @@ use std::hash::Hash;
 use std::hash::Hasher;
 
 #[derive(Clone)]
+/// Concrete type for the Agent
+///
+/// id: id of the AgentImpl
+///
+/// agent: wrap inside a Box a dyn Agent trait to allow the use of a custom agent type
+///
+/// repeating: boolean used for the scheduling option
+///
 pub struct AgentImpl {
     pub id: u32,
     pub agent: Box<dyn Agent>,
@@ -11,6 +19,7 @@ pub struct AgentImpl {
 }
 
 impl AgentImpl {
+    /// create a new instance of AgentImpl
     pub fn new(the_agent: Box<dyn Agent>, id: u32) -> AgentImpl {
         AgentImpl {
             id: id,
@@ -19,6 +28,7 @@ impl AgentImpl {
         }
     }
 
+    /// return the id of AgentImpl
     pub fn id(self) -> u32 {
         self.id
     }

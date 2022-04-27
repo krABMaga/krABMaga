@@ -1,4 +1,9 @@
 #[macro_export]
+/// internal macro to extend the dataframe to standardize the structure for MPI protocol 
+/// 
+/// name: identifier of the custom structure
+/// 
+/// input: all the input fields of the structure
 macro_rules! extend_dataframe_explore {
     //implementation of a trait to send/receive with mpi
     ($name:ident,
@@ -35,16 +40,27 @@ macro_rules! extend_dataframe_explore {
     };
 }
 
-// macro to perform distribued model exploration using a genetic algorithm based on MPI
-// an individual is the state of the simulation to compute
-// init_population: function that creates the population, must return an array of individual
-// fitness: function that computes the fitness value, takes a single individual and the schedule, must return an f32
-// mutation: function that perform the mutation, takes a single individual as parameter
-// crossover: function that creates the population, takes the entire population as parameter
-// state: state of the simulation representing an individual
-// desired_fitness: desired fitness value
-// generation_num: max number of generations to compute
-// step: number of steps of the single simulation
+/// macro to perform distribued model exploration using a genetic algorithm based on MPI
+/// 
+/// init_population: function that creates the population, must return an array of individual. An individual is the state of the simulation to compute
+/// 
+/// fitness: function that computes the fitness value, takes a single individual and the schedule, must return an f32
+/// 
+/// selection: function that select pair of individuals with some criterion and create a new individual for the next generation
+/// 
+/// mutation: function that perform the mutation, takes a single individual as parameter
+/// 
+/// crossover: function that creates the population, takes the entire population as parameter
+/// 
+/// state: state of the simulation representing an individual
+/// 
+/// desired_fitness: desired fitness value
+/// 
+/// generation_num: max number of generations to compute
+/// 
+/// step: number of steps of the single simulation
+/// 
+/// reps: optional values for number of repetitions
 #[macro_export]
 macro_rules! explore_ga_distributed_mpi {
     (
