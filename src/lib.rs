@@ -1,3 +1,5 @@
+#![doc(html_logo_url = "https://rust-ab.github.io/images/krabmaga.png")]
+
 //![Rust-AB](https://github.com/rust-ab/rust-ab) is a discrete events simulation engine for developing ABM simulation
 //!written in the [Rust language](https://www.rust-lang.org/).
 //!
@@ -93,7 +95,7 @@
 //!cargo make run --release
 //!```
 //!
-//!In addition to the classical visualization, you can run your Rust-AB simulation inside your browser using (*Web Assembly*)[https://webassembly.org].
+//!In addition to the classical visualization, you can run your Rust-AB simulation inside your browser using (*Web Assembly*)<https://webassembly.org>.
 //!This is possible with the command:
 //!```
 //!# Requires 'cargo make' installed
@@ -264,22 +266,43 @@
 //!  
 
 
+/// Main module, with structs for Agents, Fields and Schedule
 pub mod engine;
+
+#[doc(hidden)]
+/// Module for model exploration
 pub mod explore;
+
+#[doc(hidden)]
 pub mod utils;
 
-pub use core::fmt;
+#[doc(hidden)]
+pub use {
 
-#[cfg(not(feature = "visualization_wasm"))]
-pub use crossterm;
+    hashbrown,
+    indicatif::ProgressBar,
+    rand,
+    rand_pcg,
+    rayon,
+    std::time::Instant,
+    systemstat::{saturating_sub_bytes, Platform, System},
+    ::lazy_static::*,
+    csv::{Reader, Writer},
+    rayon::prelude::*,
+    std::collections::HashMap,
+    std::error::Error,
+    std::fs::File,
+    std::fs::OpenOptions,
+    std::io,
+    std::io::prelude::*,
+    std::io::Write,
+    std::process::{Command, Stdio},
+    std::sync::{Arc, Mutex},
+    std::thread,
+    std::time::Duration,
+    core::fmt,
+};
 
-pub use hashbrown;
-pub use indicatif::ProgressBar;
-pub use rand;
-pub use rand_pcg;
-pub use rayon;
-pub use std::time::Instant;
-pub use systemstat::{saturating_sub_bytes, Platform, System};
 
 #[cfg(any(feature = "visualization", feature = "visualization_wasm",))]
 pub mod visualization;
@@ -287,45 +310,29 @@ pub mod visualization;
 #[cfg(any(feature = "visualization", feature = "visualization_wasm",))]
 pub use bevy;
 
+#[doc(hidden)]
 pub use rand::{
     distributions::{Distribution, Uniform},
     thread_rng, Rng,
 };
 
-pub use ::lazy_static::*;
-pub use csv::{Reader, Writer};
-pub use rayon::prelude::*;
-pub use std::collections::HashMap;
-use std::error::Error;
-pub use std::fs::File;
-pub use std::fs::OpenOptions;
-pub use std::io::prelude::*;
-pub use std::io::Write;
-pub use std::process::{Command, Stdio};
-pub use std::sync::{Arc, Mutex};
-pub use std::thread;
-pub use std::time::Duration;
-
+#[doc(hidden)]
 #[cfg(not(feature = "visualization_wasm"))]
-pub use crossterm::{
-    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
-    execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+pub use {
+    tui::{
+        backend::{Backend, CrosstermBackend},
+        Terminal,
+    },
+    crate::utils::monitoring::ui::UI,
+    crossterm::event::poll,
+    crossterm::{
+        event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
+        execute,
+        terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    },
+    crossterm,
 };
 
-pub use std::io;
-
-#[cfg(not(feature = "visualization_wasm"))]
-pub use tui::{
-    backend::{Backend, CrosstermBackend},
-    Terminal,
-};
-
-#[cfg(not(feature = "visualization_wasm"))]
-pub use crate::utils::monitoring::ui::UI;
-
-#[cfg(not(feature = "visualization_wasm"))]
-pub use crossterm::event::poll;
 
 #[cfg(feature = "distributed_mpi")]
 pub use {
@@ -344,9 +351,11 @@ pub use {
 #[cfg(feature = "distributed_mpi")]
 pub extern crate mpi;
 
+#[doc(hidden)]
 #[cfg(any(feature = "bayesian"))]
 pub use {argmin, finitediff, friedrich, statrs};
 
+#[doc(hidden)]
 #[cfg(feature = "aws")]
 pub use {
     aws_config,
@@ -374,16 +383,15 @@ pub enum Info {
 /// 2 modes to generate the data
 /// Exaustive: Brute force parameter exploration
 /// Matched: explore every input with the same indexes
- 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum ExploreMode {
     Exaustive,
     Matched,
 }
 
-
-/// Struct to manage plots inside `Simulation Terminal`
+#[doc(hidden)]
 #[derive(Clone)]
+/// Struct to manage plots inside `Simulation Terminal`
 pub struct PlotData {
     /// Plot name
     pub name: String,
@@ -403,6 +411,7 @@ pub struct PlotData {
     pub ylabel: String,
 }
 
+#[doc(hidden)]
 impl PlotData {
     /// Create new Plot
     pub fn new(name: String, xlabel: String, ylabel: String) -> PlotData {
@@ -439,6 +448,8 @@ impl fmt::Display for LogType {
         }
     }
 }
+
+#[doc(hidden)]
 pub struct Log {
     /// One of 4 availbale types
     pub ltype: LogType,
@@ -446,16 +457,22 @@ pub struct Log {
     pub body: String,
 }
 
+
 lazy_static! {
+
     /// static HashMap to manage plots of the whole simulation. Used to create tabs and plot inside `UI` module.
+    #[doc(hidden)]
     pub static ref DATA: Mutex<HashMap<String, PlotData>> = Mutex::new(HashMap::new());
     /// static Vec to store all Logs and make it availables inside terminal.
+    #[doc(hidden)]
     pub static ref LOGS: Mutex<Vec<Log>> = Mutex::new(Vec::new());
     /// static String to save Model description to show as a popup. Press 's' on `Simulation Terminal.
+    #[doc(hidden)]
     pub static ref DESCR: Mutex<String> = Mutex::new(String::new());
 }
 
 
+#[doc(hidden)]
 /// struct to store machine system info during the simulation.
 pub struct Monitoring {
     /// Percentage of memory used
@@ -464,6 +481,7 @@ pub struct Monitoring {
     pub cpu_used: Vec<f64>,
 }
 
+#[doc(hidden)]
 impl Monitoring {
     pub fn new() -> Self {
         Monitoring {
@@ -475,9 +493,11 @@ impl Monitoring {
 
 lazy_static! {
     /// static object to collect data of monitoring 
+    #[doc(hidden)]
     pub static ref MONITOR: Arc<Mutex<Monitoring>> = Arc::new(Mutex::new(Monitoring::new()));
 }
 
+#[doc(hidden)]
 pub use std::sync::mpsc::{self, TryRecvError};
 
 
@@ -912,6 +932,7 @@ mod no_exported {
     }
 
     //Used to count tokens of an expansion
+    #[doc(hidden)]
     #[macro_export]
     macro_rules! count_tts {
         ($($tts:tt)*) => {<[()]>::len(&[$(replace_expr!($tts ())),*])};
@@ -962,8 +983,9 @@ pub fn write_csv<A: DataFrame>(name: &str, dataframe: &[A]) -> Result<(), Box<dy
     Ok(())
 }
 
-///Trait implemented dynamically for our dataframe struct.
-///Used into "export_dataframe" function
+#[doc(hidden)]
+//Trait implemented dynamically for our dataframe struct.
+//Used into "export_dataframe" function
 pub trait DataFrame {
     fn field_names() -> &'static [&'static str];
     fn to_string(&self) -> Vec<String>;

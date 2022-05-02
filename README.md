@@ -32,19 +32,22 @@ rust-ab = { git="https://github.com/rust-ab/rust-ab.git" }
 To get started using Rust-AB, see [the examples](https://github.com/rust-ab/rust-ab-examples).
 There's also a template to set up the correct project structure and the required files [here](https://github.com/rust-ab/rust-ab-examples/tree/main/template).
 
-**Parallel execution**
-
-Parallel execution can be achieved by passing the `parallel` feature when running a simulation and specifying the number of threads to use:
-
-```cargo run --release --features parallel -- --nt 4```
-- ```-- --nt X``` where ```X``` is the number of threads used by the parallel execution.
-
 **Model Visualization with Bevy Game Engine**
 
-Rust-AB exploits the [Bevy Game Engine](https://bevyengine.org/) to support model visualization.
-
+Based on [Bevy game engine](https://bevyengine.org/), it's possible to run simulation with visualization. It's also available a menu to start and stop simulations and a slider to set simulation speed.
+To run a model with visualization enabled, you have to start the simulation with the command:
 ```sh
-cargo run --release --example --features="visualization"
+cargo run --release --features  visualization
+
+# Alternative command. Requires 'cargo make' installed
+cargo make run --release 
+```
+
+In addition to the classical visualization, you can run your Rust-AB simulation inside your browser using (*Web Assembly*)[https://webassembly.org]. 
+This is possible with the command:
+```sh
+# Requires 'cargo make' installed
+cargo make serve --release 
 ```
 
 ***Visualization FAQs***
@@ -64,120 +67,112 @@ The visualization framework requires certain dependencies to run the simulation 
 - :apple: MacOS: No dependencies needed.
 - :penguin: Linux: A few dependencies are needed. Check [here](https://github.com/bevyengine/bevy/blob/main/docs/linux_dependencies.md) for a list based on your distribution.
 
+---
+
+### How to write your first model
+
+If you don't start from our [Template](https://github.com/rust-ab/rust-ab-examples/tree/main/template), add this to your `Cargo.toml`:
+```toml
+[dependencies]
+rust-ab = { git="https://github.com/rust-ab/rust-ab.git" }
+
+[features]
+visualization = ["rust-ab/visualization"]
+visualization_wasm = ["rust-ab/visualization_wasm"]
+```
+
+We **strongly** recommend to use [Template](https://github.com/rust-ab/rust-ab-examples/tree/main/template) or any other example as base of a new project, especially if you want to provide any visualization.
+
+Each Rust-AB model needs structs that implements our *Traits*, one for *State* and the other for *Agent*. In the *State* struct you have to put *Agent* field(s), because it represents the ecosystem of a simulation. More details for each Rust-AB componenet are in the [Architecture](#architecture) section.
+
+The simplest part is `main.rs`, because is similar for each example.
+You can define two *main* functions using **cfg** directive, that can remove code based on which features are (not) enabled.  
+Without visualization, you have only to use *simulate!* to run simulation, passing a state, step number and how may time repeat your simulation. 
+With visualization, you have to set graphical settings (like dimension or background) and call *start* method.
+```rs
+// Main used when only the simulation should run, without any visualization.
+#[cfg(not(any(feature = "visualization", feature = "visualization_wasm")))]
+fn main() {
+  let dim = (200., 200.);
+  let state = Flocker::new(dim, num_agents);
+  let step = 10;
+  let reps = 1;
+  let num_agents = 100;  
+  let _ = simulate!(state, step, reps);
+}
+
+// Main used when a visualization feature is applied.
+#[cfg(any(feature = "visualization", feature = "visualization_wasm"))]
+fn main() {
+  let dim = (200., 200.);
+  let num_agents = 100;
+  let state = Flocker::new(dim, num_agents);
+  Visualization::default()
+      .with_window_dimensions(1000., 700.)
+      .with_simulation_dimensions(dim.0 as f32, dim.1 as f32)
+      .with_background_color(Color::rgb(0., 0., 0.))
+      .with_name("Flockers")
+      .start::<VisState, Flocker>(VisState, state);
+}
+
+```
+---
+
+### Available features
+
+| Compilation Feature  | Description |  Experimental | Release Candidate  | Stable  |
+|:----:|:---------:|:---:|:---:|:---:|
+| **No Features** | Possibility to run model using `Simulation Terminal` and setup model-exploration experiments (Parameter Sweeping, Genetic and Random) in sequential/parallel mode. It's enough to create your base simulations. |   |   | 🦀 |
+| **visualization**  | Based on `Bevy engine`, it makes possible to visualize your model elements, to understand better the behavior of your simulation. |   | 🦀 |   |
+| **visualization-wasm** | Based on `Web Assembly`, give you the possibility to execute your visualized simulation inside your own browser. |   | 🦀 |   |
+| **distributed-mpi** | Enable distributed model exploration using MPI. At each iteration, the amount of configurations are balanced among your nodes.  |   |  🦀 |   |
+| **bayesian**  | Use ML Rust libraries to use/create function to use `Bayesian Optimization`.|   | 🦀  |   |
+| **parallel**  | Speed-up a single simulation parallelizing agent scheduling during a step.| 🦀  |   |   |
+
+
+---
+
+### Macros for playing with Simulation Terminal
+
+`Simulation Terminal` is enabled by default using macro `simulate!`, so can be used passing a state, step number and how may time repeat your simulation..
+That macro has a fourth optional parameter, a boolean. When `false` is passed, `Simulation Terminal` is disabled.
+```rs
+($s:expr, $step:expr, $reps:expr $(, $flag:expr)?) => {{
+      // Macro code 
+}}
+```
+
+You can create tabs and plot your data using two macro:
+- `addplot!` let you create a new plot that will be displayed in its own tab.
+```rs
+addplot!(String::from("Chart Name"), String::from("xxxx"), String::from("yyyyy"));
+```
+- `plot!` to add a point to a plot. Points can be added during simulation execution, for example inside `after_step` method.
+  You have to pass plot name, series name, x value and y value. Coordinate values need to be `f64`.
+```rs
+plot!(String::from("Chart name"), String::from("s1"), x, y);
+```
+
+On Terminal home page there is also a *log section*, you can plot log messages when some event needs to be noticed.
+You can navigate among all logs using ↑↓ arrows.
+To add a log use the macro `log!`, passing a `LogType` (an enum) and the log message.
+```rs
+ log!(LogType::Info, String::from("Log Message"));
+```
+
+Are available four type of Logs:
+```rs
+pub enum LogType {
+    Info,
+    Warning,
+    Error,
+    Critical,
+}
+```
+
+
 ### [Contributing FAQ](CONTRIBUTING.md)
  
-<!--
-## Boids Simulation Example
-
-The Boids model by C. Raynolds, 1986, is a steering behavior ABM for autonomous agents, which simulates the flocking behavior of birds. The agent behavior is derived by a linear combination of three independent rules: _Separation_: steer in order to avoid crowding local flockmates; _Alignment_: steer towards the average heading of local flockmates; _Cohesion_: steer to move towards the average location (center of mass) of local flockmates.
-
-- Single core execution: ```cargo run --release --example boids```
-- Multiple core execution: ```cargo run --release --example boids --features parallel -- --nt 4```
-
-## Boids Simulation Example
-
-The Boids model by C. Raynolds, 1986, is a steering behavior ABM for autonomous agents, which simulates the flocking behavior of birds. The agent behavior is derived by a linear combination of three independent rules: _Separation_: steer in order to avoid crowding local flockmates; _Alignment_: steer towards the average heading of local flockmates; _Cohesion_: steer to move towards the average location (center of mass) of local flockmates.
-
-
-### Agent definition
-
-A Rust-AB agent is a struct contains all the local agent data. For our exampel, we have to define a new struct named _Bird_ that emulate the concept of a bird in a flock. The struct definition, in Rust-AB, must implements the trait  _Agent_ and the traits _Eq_ and _Hash_. According to the model specification, each agent in each simulation time has to compute three steering rules according to its neighboring agents. For this reason, it will be placed in a Rust-AB _Field2D_, a bi-dimensional environment. Consequentially, the agent definition must implements the trait _Location2D_, and also the traits _Clone_ and _Copy_, instead of developing they can be automatically computed using the Rust macro ```#derive[(\_)]```.
-
-The steering behavior model can be developed by storing the location of the agent in the previous time and in current time, the agent location can be modeled using a Rust-AB struct named _Real2D_. Furthermore, an unique identify is stored in the agent in order to easily develop the trait _Hash_. 
-
-```rust
-#[derive(Clone, Copy)]
-pub struct Bird{
-    pub id: u128,
-    pub loc: Real2D,
-    pub last_d: Real2D,
-}
-```
-
-The agent logic is placed in the _step_ function, however, in order to develop more robust code, we designed agent logic using three sub-functions defined in the agent implementation. Listing _code2_ shows the agent implementation code. Lines 1-8 defines the object _Bird_, by providing the object constructor, and three functions: avoidance, cohesion, and consistency, corresponding to the steering model rules. Each function takes as input parameter the reference to a vector of agents (the agent neighborhood) and returns a new Real2D, which is the force computed according to the neighbors. Moreover, lines 9-12 shows the code for implementing the trait _Location2D_ trait, which enables to place the agent in the _Field2D_ environment. Lines 13-20 shows the code for implementing the Rust traits _Hash_ and _Eq_, notice that in order to develop the Rust _Eq_ trait, it is needed to develop also the trait _PartialEq_, which is developed by exploiting the unique agent identifier.
-
-Finally, the agent _step_ function is defined. Lines 21-39 shows the code of the agent logic, that enables to simulate the steering behavior of the model. The agent computes the neighboring agents (line 23) and using the sub-functions compute its new location. The computed location is used to update the status of the environment (line 37). Notice that in order to access to the simulation state, are used a particular Rust mechanism.
-
-```rust
-impl Bird {
-    pub fn new(id: u128, loc: Real2D, last_d: Real2D) -> Self {
-        Bird {id, loc, last_d}
-    }
-    pub fn avoidance (self, _vec: &Vec<Bird>) -> Real2D {..}
-    pub fn cohesion (self, _vec: &Vec<Bird>) -> Real2D {..}
-    pub fn consistency (self, _vec: &Vec<Bird>) -> Real2D {..}
- }
-impl Location2D<Real2D> for Bird {
-    fn get_location(self) -> Real2D { self.loc }
-    fn set_location(&mut self, loc: Real2D) { self.loc = loc; }
-}
-impl Hash for Bird {
-    fn hash<H>(&self, state: &mut H) where H: Hasher,
-    { state.write_u128(self.id); state.finish();}
-}
-impl Eq for Bird {}
-impl PartialEq for Bird {
-    fn eq(&self, other: &Bird) -> bool {self.id == other.id}
-}
-impl Agent for Bird {
-    fn step(&mut self) {
-        let vec = GLOBAL_STATE.lock().unwrap().field1.get_neighbors_within_distance(self.loc,10.0);
-        let avoid = self.avoidance(&vec);
-        let cohe  = self.cohesion(&vec);
-        let rand  = self.randomness();
-        let cons  = self.consistency(&vec);
-        let mom   = self.last_d;
-        let mut dx = COHESION*cohe.x + AVOIDANCE*avoid.x + CONSISTENCY*cons.x + RANDOMNESS*rand.x + MOMENTUM*mom.x;
-        let mut dy = COHESION*cohe.y + AVOIDANCE*avoid.y + CONSISTENCY*cons.y + RANDOMNESS*rand.y + MOMENTUM*mom.y;
-        let dis = (dx*dx + dy*dy).sqrt();
-        if dis > 0.0 { dx = dx/dis*JUMP; dy = dy/dis*JUMP;}
-        let _lastd = Real2D {x: dx, y:dy};
-        let loc_x = toroidal_transform(self.loc.x + dx, WIDTH);
-        let loc_y = toroidal_transform(self.loc.y + dy, HEIGHT);
-        self.loc = Real2D{x: loc_x, y: loc_y};
-        GLOBAL_STATE.lock().unwrap().field1.set_object_location(*self, Real2D{x: loc_x, y: loc_y});
-    }
-}
-```
-
-### Model definition
-
-Rust-AB simulation comprises several fields definitions and state variables, that must be placed in a struct (the simulation state). We define the Boids simulation state by declaring a new struct named _State_. 
-
-According to the model and the agent definition, we designed the agents interactions using the _Field2D_ environment, for this reason the state struct contains only a _Field2D_ declaration. Moreover, the Rust memory model does not allow the programmer to share data across several functions invocations. To access the simulation state inside the agent _step_ function, we have to declare the _State_ instance as a global variable, and exploit a semaphore (or mutex) to safely read it. Notice that  the _State_ struct  needs to be  initialized at running time using the macro ```lazy_static!``` (line 8-10).
-
-```rust
-pub struct State{
-    pub field1: Field2D<Bird>,
-}
-impl State {
-    pub fn new(w: f64, h: f64, d: f64, t: bool) -> State { State {field1: Field2D::new(w, h, d, t),}}
-}
-//Global variables definition
-lazy_static! {
-    static  ref GLOBAL_STATE: Mutex<State> = Mutex::new(State::new(WIDTH, HEIGTH, DISCRETIZATION, TOROIDAL));
-}
-```
-
-
-Finally, the  main simulation function is defined. At line 2 a new Rust-AB _Schedule_ is defined, while from line 3 to 11 are randomly initialized a number of agents, placed in the _Field2D_ (line 9), and scheduled using the _schedule_repeating_ method (line 10). At line 12 the schedule step is called for a certain number of times.
-
-```rust
-fn main() {
-    let mut schedule: Schedule<Bird> = Schedule::new();
-    let mut rng = rand::thread_rng();
-    for bird_id in 0..NUM_AGENT{
-        let r1: f64 = rng.gen();
-        let r2: f64 = rng.gen();
-        let last_d = Real2D {x: 0.0, y: 0.0};
-        let bird = Bird::new(bird_id, Real2D{x: WIDTH*r1, y: HEIGTH*r2},last_d);
-        GLOBAL_STATE.lock().unwrap().field1.set_object_location(bird,bird.loc);
-        schedule.schedule_repeating(bird,0.0,0);
-    }
-    for _ in 1..STEP{ schedule.step(); }
-}
-```
--->
 ## Support conference paper
 
 If you find this code useful in your research, please consider citing:

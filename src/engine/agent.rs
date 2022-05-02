@@ -16,7 +16,7 @@ pub trait Agent: Downcast + DynClone + Send + Sync {
         false
     }
 
-    ///define the optional behaviour of the agent before the step
+    ///define the optional behaviour of the agent before computing the actual step
     fn before_step(
         &mut self,
         _state: &mut dyn State,
@@ -24,7 +24,7 @@ pub trait Agent: Downcast + DynClone + Send + Sync {
         None
     }
 
-    ///define the optional behaviour of the agent after the step
+    ///define the optional behaviour of the agent after computing the actual step
     fn after_step(
         &mut self,
         _state: &mut dyn State,

@@ -1,5 +1,6 @@
 pub mod dense_number_grid_2d;
 pub mod dense_object_grid_2d;
+#[doc(hidden)]
 pub mod field;
 pub mod field_2d;
 pub mod grid_option;

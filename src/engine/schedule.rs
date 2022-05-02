@@ -387,6 +387,7 @@ cfg_if! {
     }
 }
 
+#[doc(hidden)]
 // A struct used to specify schedule options to pass to an agent's clone when an agent reproduces.
 pub struct ScheduleOptions {
     pub ordering: i32,
