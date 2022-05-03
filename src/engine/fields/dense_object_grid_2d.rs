@@ -133,6 +133,17 @@ cfg_if! {
                 self.obj2loc.remove(object);
             }
 
+            pub fn remove_object_location(&self, object: O, loc: &Int2D) {
+                match self.loc2objs.get_write(loc) {
+                    Some(mut vec) => {
+                        if !vec.is_empty() {
+                            vec.retain(|&x| x != object);
+                        }
+                    }
+                    None => { /* do nothing */ },
+                }
+            }
+
             pub fn set_object_location(&self, object: O, loc: &Int2D) {
                 match self.loc2objs.get_write(loc) {
                     Some(mut vec) => {
@@ -145,8 +156,8 @@ cfg_if! {
                 }
                 self.obj2loc.insert(object, *loc);
             }
+        
         }
-
         impl<O: Eq + Hash + Clone + Copy> Field for DenseGrid2D<O> {
 
             fn lazy_update(&mut self){

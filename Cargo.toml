@@ -126,4 +126,4 @@ visualization_wasm = [
 ]
 
 [lib]
-doctest = false
+doctest = false     
