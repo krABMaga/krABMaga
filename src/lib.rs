@@ -285,7 +285,6 @@ pub use {
     rand_pcg,
     rayon,
     std::time::Instant,
-    systemstat::{saturating_sub_bytes, Platform, System},
     ::lazy_static::*,
     csv::{Reader, Writer},
     rayon::prelude::*,
@@ -331,6 +330,7 @@ pub use {
         terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     },
     crossterm,
+    systemstat::{saturating_sub_bytes, Platform, System},
 };
 
 
