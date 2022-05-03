@@ -35,7 +35,6 @@ csv = "1.*"
 indicatif = "0.*"
 crossbeam = "0.*"
 rand_pcg = "0.*"
-systemstat = "0.*"
 
 
 # Model exploration AWS features
@@ -76,6 +75,8 @@ getrandom = {version="0.*", features=["wasm-bindgen"], default-features = false}
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 tui = "0.17.0"
 crossterm = "0.23.2"
+systemstat = "0.*"
+
 
 # Must be kept separate and asked to the user due to missing support for conditional compilation of features
 # https://github.com/rust-lang/cargo/issues/7914
