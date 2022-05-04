@@ -1,9 +1,10 @@
-# krABMaga 🦀🥋
-_**A modern developing art for reliable and efficient ABM simulation with the Rust language**_
+<div align="center">
+  <img src="https://github.com/krABMaga/krABMaga.github.io/blob/main/static/images/krabmaga.gif" alt="krabmaga animated logo" width="150" height="130">
+  <h1> krABMaga </h1>
+  <h3> <i>A modern novel developing art for reliable and efficient ABM simulation with the Rust language</i></h3>
+</div>
 
 **Previously Rust-AB** 
-
-
 
 ![Rust CI](https://github.com/spagnuolocarmine/krABMaga/workflows/Rust%20CI/badge.svg)
 [![codecov](https://codecov.io/gh/krABMaga/rkrABMaga/branch/main/graph/badge.svg?token=GWYP2UBPIZ)](https://codecov.io/gh/krABMaga/krABMaga)  
