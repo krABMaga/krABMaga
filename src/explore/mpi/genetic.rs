@@ -78,7 +78,7 @@ macro_rules! explore_ga_distributed_mpi {
     ) => {{
 
         // MPI initialization
-        let mut universe = mpi::initialize().expect("Error initialing mpi enviroment");
+        let mut universe = mpi_fork_fnsp::initialize().expect("Error initialing mpi enviroment");
         let world = universe.world();
         let root_rank = 0;
         let root_process = world.process_at_rank(root_rank);

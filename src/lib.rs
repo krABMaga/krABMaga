@@ -337,19 +337,19 @@ pub use {
 #[cfg(feature = "distributed_mpi")]
 pub use {
     memoffset::{offset_of, span_of},
-    mpi::datatype::DynBufferMut,
-    mpi::datatype::PartitionMut,
-    mpi::point_to_point as p2p,
-    mpi::Count,
-    mpi::{
-        datatype::{UncommittedUserDatatype, UserDatatype},
+    mpi_fork_fnsp::datatype::DynBufferMut,
+    mpi_fork_fnsp::datatype::PartitionMut,
+    mpi_fork_fnsp::point_to_point as p2p,
+    mpi_fork_fnsp::Count,
+    mpi_fork_fnsp::{
+        datatype::{UserDatatype},
         traits::*,
         Address,
     },
 };
 
 #[cfg(feature = "distributed_mpi")]
-pub extern crate mpi;
+pub extern crate mpi_fork_fnsp;
 
 #[doc(hidden)]
 #[cfg(any(feature = "bayesian"))]

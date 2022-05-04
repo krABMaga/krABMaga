@@ -48,9 +48,7 @@ aws-sdk-lambda = {version = "0.4", optional = true}
 futures = {version = "0.3", optional = true}
 
 # Model exploration MPI features
-# rsmpi points to a specific commit
-#mpi = { git = "https://github.com/bsteinb/rsmpi", rev = "f9aec8b8d82", optional = true }
-mpi = { git = "https://github.com/bsteinb/rsmpi", optional = true }
+mpi-fork-fnsp = { version="0.6", optional = true }
 memoffset = { version = "0.6.4", optional = true}
 
 # Bayesian
@@ -82,7 +80,7 @@ systemstat = "0.*"
 # https://github.com/rust-lang/cargo/issues/7914
 [features]
 distributed_mpi = [
-    "mpi",
+    "mpi-fork-fnsp",
     "memoffset"
 ]
 aws = [
