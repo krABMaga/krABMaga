@@ -6,6 +6,7 @@
 
 **Previously Rust-AB** 
 
+![License](https://shields.io/github/license/krABMaga/krABMaga)
 ![Rust CI](https://github.com/krABMaga/krABMaga/workflows/Rust%20CI/badge.svg)
 [![codecov](https://codecov.io/gh/krABMaga/rkrABMaga/branch/main/graph/badge.svg?token=GWYP2UBPIZ)](https://codecov.io/gh/krABMaga/krABMaga)  
 
