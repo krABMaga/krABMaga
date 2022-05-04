@@ -1,8 +1,13 @@
 # krABMaga 🦀🥋
-**An Agent-Based Simulation engine written in Rust**
- 
+## A modern developing art for reliable and efficient ABM simulation with the Rust language
+**Previously Rust-AB** 
+
+
+
 ![Rust CI](https://github.com/spagnuolocarmine/krABMaga/workflows/Rust%20CI/badge.svg)
-[![codecov](https://codecov.io/gh/krABMaga/rkrABMaga/branch/main/graph/badge.svg?token=GWYP2UBPIZ)](https://codecov.io/gh/krABMaga/krABMaga)  (*parallel* and *visualization* features are excluded)
+[![codecov](https://codecov.io/gh/krABMaga/rkrABMaga/branch/main/graph/badge.svg?token=GWYP2UBPIZ)](https://codecov.io/gh/krABMaga/krABMaga)  
+
+(Notice that the *parallel* and *visualization* components are excluded as are experimental)
 
 **krABMaga** is a discrete events simulation engine for developing ABM simulation that is written in Rust language. 
 
