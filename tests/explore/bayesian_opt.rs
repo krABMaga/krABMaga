@@ -7,15 +7,16 @@ use std::{
 #[cfg(any(feature = "bayesian"))]
 use {
     argmin::prelude::*,
+    argmin::prelude::Error,
     argmin::solver::linesearch::MoreThuenteLineSearch,
     argmin::solver::quasinewton::LBFGS,
     finitediff::FiniteDiff,
     friedrich::gaussian_process::GaussianProcess,
     friedrich::kernel::Gaussian,
     friedrich::prior::ConstantPrior,
-    rust_ab::explore::bayesian_opt::*,
-    rust_ab::*,
-    rust_ab::{rand, Rng},
+    krABMaga::explore::bayesian_opt::*,
+    krABMaga::*,
+    krABMaga::{rand, Rng},
     statrs::distribution::{Continuous, ContinuousCDF, Normal},
 };
 

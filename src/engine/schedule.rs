@@ -20,7 +20,7 @@ cfg_if! {
     if #[cfg(feature ="parallel")]{
         lazy_static! {
             pub static ref THREAD_NUM: usize = {
-                let matches = App::new("Rust-AB")
+                let matches = App::new("krABMaga")
                     .arg(Arg::with_name("bench").long("bench"))
                     .arg(
                         Arg::with_name("num_thread")

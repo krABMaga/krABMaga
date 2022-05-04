@@ -5,10 +5,10 @@ the development phase.
 
 The structure of the project is:
 
-- engine: The Rust-AB framework files are stored here, as well as data structures that can be used in simulation
+- engine: The krABMaga framework files are stored here, as well as data structures that can be used in simulation
   development.
 - utils: Contains utilities used by the framework such as the DBDashMap data structure.
-- visualization: Contains the (optional) visualization framework files that interact with Rust-AB.
+- visualization: Contains the (optional) visualization framework files that interact with krABMaga.
 
 # How to: Test
 

@@ -1,14 +1,14 @@
-#![doc(html_logo_url = "https://rust-ab.github.io/images/krabmaga.png")]
+#![doc(html_logo_url = "https://krABMaga.github.io/images/krabmaga.png")]
 
-//![Rust-AB](https://github.com/rust-ab/rust-ab) is a discrete events simulation engine for developing ABM simulation
+//![krABMaga](https://github.com/krABMaga/krABMaga) is a discrete events simulation engine for developing ABM simulation
 //!written in the [Rust language](https://www.rust-lang.org/).
 //!
-//![Rust-AB](https://github.com/rust-ab/rust-ab) is designed to be a ready-to-use tool for the ABM community and for this
+//![krABMaga](https://github.com/krABMaga/krABMaga) is designed to be a ready-to-use tool for the ABM community and for this
 //!reason the architectural concepts of the well-adopted [MASON library](https://cs.gmu.edu/~eclab/projects/mason/) were
 //!re-engineered to exploit the Rust peculiarities and programming model, in particular by keeping the visualization and the
 //!simulation subsystems fully separated.
 //!
-//!⚡ The actual community effort on [Rust-AB](https://github.com/rust-ab/rust-ab) is mainly devoted to supporting parallel
+//!⚡ The actual community effort on [krABMaga](https://github.com/krABMaga/krABMaga) is mainly devoted to supporting parallel
 //!execution and model visualization using the [Bevy game engine](https://bevyengine.org/).
 //!
 //!---
@@ -33,7 +33,7 @@
 //!
 //!```toml
 //![dependencies]
-//!rust-ab = { git="https://github.com/rust-ab/rust-ab.git" }
+//!krABMaga = { git="https://github.com/krABMaga/krABMaga.git" }
 //!```
 //!
 //!To simply run your simulation:
@@ -67,9 +67,9 @@
 //!# How to run your first example simulaton
 //!First of all, install latest version of [Rust](https://www.rust-lang.org/tools/install). Follow steps to setup Rust toolchain (*cargo*, *rustc* and *rustup*).
 //!
-//!Now, you can download/clone all available Rust-AB examples from our github repository called [rust-ab-examples](https://github.com/rust-ab/rust-ab-examples).
+//!Now, you can download/clone all available krABMaga examples from our github repository called [krABMaga-examples](https://github.com/krABMaga/krABMaga-examples).
 //!
-//!To run a simulation, go to root directory of a model, for example `/path/to/rust-ab-examples/flockers`. With command `ls`, you should be able to see a typcal Rust-AB simulation struct:
+//!To run a simulation, go to root directory of a model, for example `/path/to/krABMaga-examples/flockers`. With command `ls`, you should be able to see a typcal krABMaga simulation struct:
 //!- `src`: main folder with code. It contains `main.rs` file and two directories for model and visulization components.
 //!- `Cargo.toml`: Configuration file for Rust project, with dependencies and features.
 //!- `assets`: an images folder. It contains all the icons that can be used for visualization.
@@ -81,9 +81,9 @@
 //!```sh
 //!cargo run --release
 //!```
-//!Running in this way, you can see our `Simulation Terminal` (better known as `Simulation Monitor`)) based on [tui-rs](https://github.com/fdehau/tui-rs), a rust library that provides components to create terminal with an interface. As a modelist, you can use Rust-AB macros to create several plots, print logs and add a model description (shown using a popup)
+//!Running in this way, you can see our `Simulation Terminal` (better known as `Simulation Monitor`)) based on [tui-rs](https://github.com/fdehau/tui-rs), a rust library that provides components to create terminal with an interface. As a modelist, you can use krABMaga macros to create several plots, print logs and add a model description (shown using a popup)
 //!
-//!<img style="width: 500;height:500;margin-left: auto;margin-right: auto;" src="https://rust-ab.github.io/tui-wsg.gif"/>
+//!<img style="width: 500;height:500;margin-left: auto;margin-right: auto;" src="https://krABMaga.github.io/tui-wsg.gif"/>
 //!
 //!
 //!Based on [Bevy game engine](https://bevyengine.org/), it's possible to run simulation with visualization. It's also available a menu to start and stop simulations and a slider to set simulation speed.
@@ -95,7 +95,7 @@
 //!cargo make run --release
 //!```
 //!
-//!In addition to the classical visualization, you can run your Rust-AB simulation inside your browser using (*Web Assembly*)<https://webassembly.org>.
+//!In addition to the classical visualization, you can run your krABMaga simulation inside your browser using (*Web Assembly*)<https://webassembly.org>.
 //!This is possible with the command:
 //!```
 //!# Requires 'cargo make' installed
@@ -105,19 +105,19 @@
 //!
 //!---
 //!# How to write your first model
-//!If you don't start from our [Template](https://github.com/rust-ab/rust-ab-examples/tree/main/template), add this to your `Cargo.toml`:
+//!If you don't start from our [Template](https://github.com/krABMaga/krABMaga-examples/tree/main/template), add this to your `Cargo.toml`:
 //!```
 //![dependencies]
-//!rust-ab = { git="https://github.com/rust-ab/rust-ab.git" }
+//!krABMaga = { git="https://github.com/krABMaga/krABMaga.git" }
 //!
 //![features]
-//!visualization = ["rust-ab/visualization"]
-//!visualization_wasm = ["rust-ab/visualization_wasm"]
+//!visualization = ["krABMaga/visualization"]
+//!visualization_wasm = ["krABMaga/visualization_wasm"]
 //!```
 //!
-//!We **strongly** recommend to use [Template](https://github.com/rust-ab/rust-ab-examples/tree/main/template) or any other example as base of a new project, especially if you want to provide any visualization.
+//!We **strongly** recommend to use [Template](https://github.com/krABMaga/krABMaga-examples/tree/main/template) or any other example as base of a new project, especially if you want to provide any visualization.
 //!
-//!Each Rust-AB model needs structs that implements our *Traits*, one for *State* and the other for *Agent*. In the *State* struct you have to put *Agent* field(s), because it represents the ecosystem of a simulation. More details for each Rust-AB componenet are in the [Architecture](#architecture) section.
+//!Each krABMaga model needs structs that implements our *Traits*, one for *State* and the other for *Agent*. In the *State* struct you have to put *Agent* field(s), because it represents the ecosystem of a simulation. More details for each krABMaga componenet are in the [Architecture](#architecture) section.
 //!
 //!The simplest part is `main.rs`, because is similar for each example.
 //!You can define two *main* functions using **cfg** directive, that can remove code based on which features are (not) enabled.  
@@ -190,12 +190,12 @@
 //!
 //!---
 //!# How to contribute
-//!If you want to test, add or change something inside Rust-AB engine, you can clone [main repo](https://github.com/rust-ab/rust-ab) locally, and change dependecy inside `Cargo.toml` of your examples:
+//!If you want to test, add or change something inside krABMaga engine, you can clone [main repo](https://github.com/krABMaga/krABMaga) locally, and change dependecy inside `Cargo.toml` of your examples:
 //!
 //!```
 //![dependencies]
-//!# rust-ab = { git="https://github.com/rust-ab/rust-ab.git" }
-//!rust-ab = { path="path/to/rust-ab"}
+//!# krABMaga = { git="https://github.com/krABMaga/krABMaga.git" }
+//!krABMaga = { path="path/to/krABMaga"}
 //!```
 //!
 //!---
@@ -203,20 +203,20 @@
 //!# Architecture
 //!#### Agents
 //!
-//!The Rust-AB framework defines a trait `Agent` that can be implemented on a struct to define `Agent` specific functionalities,
+//!The krABMaga framework defines a trait `Agent` that can be implemented on a struct to define `Agent` specific functionalities,
 //!mainly the `step` method which specifies how the agent behaves for each simulation step, and the `get_id` method,
 //!to uniquely identify an agent. There are also other methods, with default implementation, to improve agent control:
 //!
 //!- `is_stopped` notify the scheduler if a specific agent should be removed or not, based on some condition.
 //!- `before_step` and `after_step` to implement some operations before/after a step.
 //!
-//!The Rust-AB framework allow multi-agent implementations: you can define multiple 'Agent' that
-//!implement the trait, and [Wolf, Sheep & Grass](https://rust-ab.github.io/wolfsheepgrass/) is the main example of this feature.
+//!The krABMaga framework allow multi-agent implementations: you can define multiple 'Agent' that
+//!implement the trait, and [Wolf, Sheep & Grass](https://krABMaga.github.io/wolfsheepgrass/) is the main example of this feature.
 //!
 //!#### Simulation state
 //!
 //!The simulation state can be considered as the single source of truth of the simulation, where data resides and is updated.
-//!Like `Agent`, Rust-AB exposes a `State` trait to let the user mark a particular structure as a simulation state, along with
+//!Like `Agent`, krABMaga exposes a `State` trait to let the user mark a particular structure as a simulation state, along with
 //!exposing an `update` method to define logic to execute once for each simulation step. The simulation state is the perfect
 //!structure to put field definitions on (such as 2D continuous fields, grids and so on). An important effect of the state being
 //!the single source of truth forces agents to update (and most importantly read) their own location by interacting with the
@@ -232,7 +232,7 @@
 //!The scheduler works as a priority queue, where the agents are sorted according to their scheduled time
 //!and a priority value - an integer. The simulation time - a real value - starts from the scheduling time of the first agent.
 //!
-//!The schedule structure exposed by the Rust-AB framework provides two methods to do so:
+//!The schedule structure exposed by the krABMaga framework provides two methods to do so:
 //!
 //!- `schedule_once` to insert an agent in the schedule for a specific simulation step. The scheduling time and the
 //!  priority are given as parameters. The priority is used to sort all agents within the same simulation time.
@@ -245,7 +245,7 @@
 //!
 //!#### Data structures
 //!
-//!<!-- The Rust-AB framework exposes a few data structures based on the `DBDashMap`, a customized version of the
+//!<!-- The krABMaga framework exposes a few data structures based on the `DBDashMap`, a customized version of the
 //![Rust HashMap](https://doc.rust-lang.org/std/collections/struct.HashMap.html) that implements a double
 //!buffering technique to avoid indeterminism caused by the lack of knowledge of the agents' step execution order within a step.
 //!The `DBDashMap` implements the interior mutability pattern, which allows the user to safely write in it without having an actual
@@ -819,7 +819,7 @@ macro_rules! simulate_old {
 
         match option {
             Info::Verbose => {
-                // println!("\u{1F980} Rust-AB v1.0\n");
+                // println!("\u{1F980} krABMaga v1.0\n");
                 // println!(
                 //     "{0: >10}|{1: >9}|    {2: >11}|{3: >10}|",
                 //     "#Rep", "Steps", "Steps/Seconds", "Time"
@@ -828,7 +828,7 @@ macro_rules! simulate_old {
             }
             Info::Normal => {
                 println!("{esc}c", esc = 27 as char);
-                println!("\u{1F980} Rust-AB v1.0\n");
+                println!("\u{1F980} krABMaga v1.0\n");
                 println!(
                     "{0: >10}|{1: >9}|    {2: >11}|{3: >10}|",
                     "#Rep", "Steps", "Avg. Steps/Seconds", "Avg. Time"
@@ -870,7 +870,7 @@ macro_rules! simulate_old {
                 Info::Verbose => {}
                 Info::Normal => {
                     println!("{esc}c", esc = 27 as char);
-                    println!("\u{1F980} Rust-AB v1.0\n");
+                    println!("\u{1F980} krABMaga v1.0\n");
                     println!(
                         "{0: >10}|{1: >9}|    {2: >11}|{3: >10}|",
                         "#Rep", "Steps", "Avg. Steps/Seconds", "Avg. Time"

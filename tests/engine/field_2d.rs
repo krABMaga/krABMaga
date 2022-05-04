@@ -17,9 +17,9 @@ static NUM_AGENT: u32 = 10;
 use {
     crate::model::flockers::{bird::*, state::*},
     rand::Rng,
-    rust_ab::engine::location::Real2D,
-    rust_ab::engine::schedule::Schedule,
-    rust_ab::engine::state::State,
+    krABMaga::engine::location::Real2D,
+    krABMaga::engine::schedule::Schedule,
+    krABMaga::engine::state::State,
 };
 
 #[cfg(not(any(

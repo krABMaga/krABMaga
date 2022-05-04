@@ -286,7 +286,7 @@ cfg_if! {
                     .map(|t| Spans::from(Span::styled(t, Style::default().fg(Color::Green))))
                     .collect();
 
-                let title = format!("Rust-ab 🦀");
+                let title = format!("krABMaga 🦀");
                 let tabs = Tabs::new(titles)
                     .block(Block::default().borders(Borders::ALL).title(title))
                     .highlight_style(Style::default().fg(Color::Yellow))

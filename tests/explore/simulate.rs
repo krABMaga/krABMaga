@@ -5,8 +5,8 @@
     feature = "parallel"
 )))]
 use {
-    crate::model::flockers::state::*, rust_ab::engine::schedule::Schedule,
-    rust_ab::engine::state::State, rust_ab::*,
+    crate::model::flockers::state::*, krABMaga::engine::schedule::Schedule,
+    krABMaga::engine::state::State, krABMaga::*,
 };
 
 #[cfg(not(any(

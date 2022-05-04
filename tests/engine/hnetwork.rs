@@ -4,7 +4,7 @@
     feature = "visualization_wasm",
     feature = "parallel"
 )))]
-use {rust_ab::engine::fields::field::Field, rust_ab::engine::fields::hnetwork::*};
+use {krABMaga::engine::fields::field::Field, krABMaga::engine::fields::hnetwork::*};
 
 #[cfg(not(any(
     feature = "visualization",

@@ -7,7 +7,7 @@ mod utils;
 #[cfg(test)]
 fn simulate_ui_structs() {
     use rand::Rng;
-    use rust_ab::*;
+    use krABMaga::*;
 
     let mut rng = rand::thread_rng();
 

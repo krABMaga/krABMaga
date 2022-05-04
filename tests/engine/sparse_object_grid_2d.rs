@@ -18,10 +18,10 @@ static WIDTH: i32 = 10;
     feature = "parallel"
 )))]
 use {
-    crate::model::flockers::bird::Bird, rust_ab::engine::fields::field::Field,
-    rust_ab::engine::fields::grid_option::GridOption,
-    rust_ab::engine::fields::sparse_object_grid_2d::SparseGrid2D, rust_ab::engine::location::Int2D,
-    rust_ab::engine::location::Real2D,
+    crate::model::flockers::bird::Bird, krABMaga::engine::fields::field::Field,
+    krABMaga::engine::fields::grid_option::GridOption,
+    krABMaga::engine::fields::sparse_object_grid_2d::SparseGrid2D, krABMaga::engine::location::Int2D,
+    krABMaga::engine::location::Real2D,
 };
 
 #[cfg(not(any(

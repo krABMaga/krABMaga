@@ -1,5 +1,5 @@
 [package]
-name = "rust-ab"
+name = "krABMaga"
 version = "1.0.0"
 authors = [
     "Carmine Spagnuolo <spagnuolocarmine@gmail.com>", 
@@ -16,8 +16,8 @@ license = "MIT"
 keywords = ["discrete", "simulation", "agent based model", "agent based simulation"]
 categories = ["science", "simulation", "agent based model"]
 readme = "README.md"
-homepage = "https://rust-ab.github.io/"
-repository = "https://github.com/rust-ab/rust-ab"
+homepage = "https://krABMaga.github.io/"
+repository = "https://github.com/krABMaga/krABMaga"
 
 [dependencies]
 hashbrown = "0.*"

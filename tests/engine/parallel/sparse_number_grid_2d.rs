@@ -6,9 +6,9 @@ static WIDTH: i32 = 10;
 
 #[cfg(any(feature = "parallel"))]
 use {
-    rust_ab::engine::fields::field::Field, rust_ab::engine::fields::grid_option::GridOption,
-    rust_ab::engine::fields::sparse_number_grid_2d::SparseNumberGrid2D,
-    rust_ab::engine::location::Int2D,
+    krABMaga::engine::fields::field::Field, krABMaga::engine::fields::grid_option::GridOption,
+    krABMaga::engine::fields::sparse_number_grid_2d::SparseNumberGrid2D,
+    krABMaga::engine::location::Int2D,
 };
 
 #[cfg(any(feature = "parallel"))]

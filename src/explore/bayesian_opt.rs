@@ -23,7 +23,7 @@ use std::{
 
 /// Singleton to manage Gaussian Process and makes it available to user function
 #[cfg(any(feature = "bayesian"))]
-struct SingletonGP {
+pub struct SingletonGP {
     pub gauss_pr: Mutex<GaussianProcess<Gaussian, ConstantPrior>>,
 }
 
