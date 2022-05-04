@@ -1,5 +1,6 @@
 # krABMaga 🦀🥋
 _**A modern developing art for reliable and efficient ABM simulation with the Rust language**_
+
 **Previously Rust-AB** 
 
 
