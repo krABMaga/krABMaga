@@ -1,24 +1,24 @@
-# Rust-AB 🚀 🤖
+# krABMaga 🦀🥋
 **An Agent-Based Simulation engine written in Rust**
  
-![Rust CI](https://github.com/spagnuolocarmine/rust-ab/workflows/Rust%20CI/badge.svg)
-[![codecov](https://codecov.io/gh/rust-ab/rust-ab/branch/main/graph/badge.svg?token=GWYP2UBPIZ)](https://codecov.io/gh/rust-ab/rust-ab)  (*parallel* and *visualization* features are excluded)
+![Rust CI](https://github.com/spagnuolocarmine/krABMaga/workflows/Rust%20CI/badge.svg)
+[![codecov](https://codecov.io/gh/krABMaga/rkrABMaga/branch/main/graph/badge.svg?token=GWYP2UBPIZ)](https://codecov.io/gh/krABMaga/krABMaga)  (*parallel* and *visualization* features are excluded)
 
-**Rust-AB** is a discrete events simulation engine for developing ABM simulation that is written in Rust language. 
+**krABMaga** is a discrete events simulation engine for developing ABM simulation that is written in Rust language. 
 
-Rust-AB is designed to be a _ready-to-use_ tool for the ABM community and for this reason the architectural concepts of the well-adopted MASON library were re-engineered to exploit the Rust peculiarities and programming model.
+krABMaga is designed to be a _ready-to-use_ tool for the ABM community and for this reason the architectural concepts of the well-adopted MASON library were re-engineered to exploit the Rust peculiarities and programming model.
 
-:zap:  The actual community effort on Rust-AB is mainly devoted to supporting **Parallel** execution and model **Visualization** using the [Bevy game engine](https://bevyengine.org/).
+:zap:  The actual community effort on krABMagais mainly devoted to supporting **Parallel** execution and model **Visualization** using the [Bevy game engine](https://bevyengine.org/).
 
 # Examples
 
-All the examples are hosted in a separate repository [here](https://github.com/rust-ab/rust-ab-examples).
-- [Ants Foraging](https://github.com/rust-ab/rust-ab-examples/tree/main/antsforaging)
-- [Flockers](https://github.com/rust-ab/rust-ab-examples/tree/main/flockers)
-- [Forest Fire](https://github.com/rust-ab/rust-ab-examples/tree/main/forestfire)
-- [Schelling Model](https://github.com/rust-ab/rust-ab-examples/tree/main/schelling)
-- [Virus on Network](https://github.com/rust-ab/rust-ab-examples/tree/main/virusnetwork)
-- [Wolf Sheep Grass](https://github.com/rust-ab/rust-ab-examples/tree/main/wolfsheepgrass)
+All the examples are hosted in a separate repository [here](https://github.com/krABMaga/examples).
+- [Ants Foraging](https://github.com/krABMaga/examples/tree/main/antsforaging)
+- [Flockers](https://github.com/krABMaga/examples/tree/main/flockers)
+- [Forest Fire](https://github.com/krABMaga/examples/tree/main/forestfire)
+- [Schelling Model](https://github.com/krABMaga/examples/tree/main/schelling)
+- [Virus on Network](https://github.com/krABMaga/examples/tree/main/virusnetwork)
+- [Wolf Sheep Grass](https://github.com/krABMaga/examples/tree/main/wolfsheepgrass)
 
 ### Usage
 
@@ -26,11 +26,11 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-rust-ab = { git="https://github.com/rust-ab/rust-ab.git" }
+krabmaga = { git="https://github.com/krABMaga/krABMaga.git" }
 ```
 
-To get started using Rust-AB, see [the examples](https://github.com/rust-ab/rust-ab-examples).
-There's also a template to set up the correct project structure and the required files [here](https://github.com/rust-ab/rust-ab-examples/tree/main/template).
+To get started using krABMaga, see [the examples](https://github.com/krABMaga/examples).
+There's also a template to set up the correct project structure and the required files [here](https://github.com/krABMaga/examples/tree/main/template).
 
 **Model Visualization with Bevy Game Engine**
 
@@ -43,7 +43,7 @@ cargo run --release --features  visualization
 cargo make run --release 
 ```
 
-In addition to the classical visualization, you can run your Rust-AB simulation inside your browser using (*Web Assembly*)[https://webassembly.org]. 
+In addition to the classical visualization, you can run your krABMaga simulation inside your browser using (*Web Assembly*)[https://webassembly.org]. 
 This is possible with the command:
 ```sh
 # Requires 'cargo make' installed
@@ -71,19 +71,19 @@ The visualization framework requires certain dependencies to run the simulation 
 
 ### How to write your first model
 
-If you don't start from our [Template](https://github.com/rust-ab/rust-ab-examples/tree/main/template), add this to your `Cargo.toml`:
+If you don't start from our [Template](https://github.com/krABMaga/examples/tree/main/template), add this to your `Cargo.toml`:
 ```toml
 [dependencies]
-rust-ab = { git="https://github.com/rust-ab/rust-ab.git" }
+krabmaga = { git="https://github.com/krABMaga/krABMaga.git" }
 
 [features]
-visualization = ["rust-ab/visualization"]
-visualization_wasm = ["rust-ab/visualization_wasm"]
+visualization = ["krabmaga/visualization"]
+visualization_wasm = ["krabmaga/visualization_wasm"]
 ```
 
-We **strongly** recommend to use [Template](https://github.com/rust-ab/rust-ab-examples/tree/main/template) or any other example as base of a new project, especially if you want to provide any visualization.
+We **strongly** recommend to use [Template](https://github.com/krABMaga/examples/tree/main/template) or any other example as base of a new project, especially if you want to provide any visualization.
 
-Each Rust-AB model needs structs that implements our *Traits*, one for *State* and the other for *Agent*. In the *State* struct you have to put *Agent* field(s), because it represents the ecosystem of a simulation. More details for each Rust-AB componenet are in the [Architecture](#architecture) section.
+Each krABMaga model needs structs that implements our *Traits*, one for *State* and the other for *Agent*. In the *State* struct you have to put *Agent* field(s), because it represents the ecosystem of a simulation. More details for each krABMaga componenet are in the [Architecture](#architecture) section.
 
 The simplest part is `main.rs`, because is similar for each example.
 You can define two *main* functions using **cfg** directive, that can remove code based on which features are (not) enabled.  
