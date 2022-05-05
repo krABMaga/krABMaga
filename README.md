@@ -2,11 +2,13 @@
   <img src="https://raw.githubusercontent.com/krABMaga/krABMaga.github.io/main/static/images/krabmaga.gif" alt="krabmaga animated logo" width="150" height="130">
   <h1> krABMaga </h1>
   <h4> <i>A modern developing art for reliable and efficient ABM simulation with the Rust language</i></h4>
+  <img alt="Crates.io" src="https://img.shields.io/crates/l/krabmaga">
+  <img alt="Crates.io" src="https://img.shields.io/crates/v/krabmaga">
+  <img alt="docs.rs" src="https://img.shields.io/docsrs/krabmaga">
 </div>
 
-**Previously Rust-AB** 
+**Previously named Rust-AB** 
 
-![License](https://shields.io/github/license/krABMaga/krABMaga)
 ![Rust CI](https://github.com/krABMaga/krABMaga/workflows/Rust%20CI/badge.svg)
 [![codecov](https://codecov.io/gh/krABMaga/krABMaga/branch/main/graph/badge.svg?token=GWYP2UBPIZ)](https://codecov.io/gh/krABMaga/krABMaga)
 
@@ -198,7 +200,7 @@ If you find this code useful in your research, please consider citing:
 }
 
 ```
-:trophy: Best Paper Nominee
+🏆 Best Paper Nominee
 
 
 ## License
