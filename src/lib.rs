@@ -1,13 +1,16 @@
-#![doc(html_logo_url = "https://krABMaga.github.io/images/krabmaga.png")]
+#![doc(html_logo_url = "https://raw.githubusercontent.com/krABMaga/krABMaga.github.io/main/static/images/krabmaga_docs.png")]
 
 //!
 //![krABMaga](https://github.com/krABMaga/krABMaga) is a discrete events simulation engine for developing ABM simulation
 //!written in the [Rust language](https://www.rust-lang.org/).
-//!
+//! 
 //![krABMaga](https://github.com/krABMaga/krABMaga) is designed to be a ready-to-use tool for the ABM community and for this
 //!reason the architectural concepts of the well-adopted [MASON library](https://cs.gmu.edu/~eclab/projects/mason/) were
 //!re-engineered to exploit the Rust peculiarities and programming model, in particular by keeping the visualization and the
 //!simulation subsystems fully separated.
+//!
+//! *Developed by [IsisLab](https://www.isislab.it)*
+//!  <img alt="ISISLab Logo" src="https://raw.githubusercontent.com/krABMaga/krABMaga.github.io/main/static/images/isislab.png">
 //!
 //!---
 //!
@@ -93,10 +96,10 @@
 //!
 //!<div class="row">
 //!  <div class="column" >
-//!    <img style="margin-left: auto;" src="https://krabmaga.github.io/images/tui-wsg.gif"/>
+//!    <img style="margin-left: auto;" src="https://raw.githubusercontent.com/krABMaga/krABMaga.github.io/main/static/images/tui-wsg.gif"/>
 //!  </div>
 //!  <div class="column">
-//!    <img style="margin-left: auto;" src="https://krabmaga.github.io/images/ant.gif"/>
+//!    <img style="margin-left: auto;" src="https://raw.githubusercontent.com/krABMaga/krABMaga.github.io/main/static/images/ant.gif"/>
 //!  </div>
 //!</div>
 //!
