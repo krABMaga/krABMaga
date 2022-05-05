@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://github.com/krABMaga/krABMaga.github.io/blob/main/static/images/krabmaga.gif" alt="krabmaga animated logo" width="150" height="130">
+  <img src="https://raw.githubusercontent.com/krABMaga/krABMaga.github.io/main/static/images/krabmaga.gif" alt="krabmaga animated logo" width="150" height="130">
   <h1> krABMaga </h1>
   <h4> <i>A modern developing art for reliable and efficient ABM simulation with the Rust language</i></h4>
 </div>
