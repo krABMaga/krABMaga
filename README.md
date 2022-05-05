@@ -15,6 +15,8 @@
 
 krABMaga is designed to be a _ready-to-use_ tool for the ABM community and for this reason the architectural concepts of the well-adopted MASON library were re-engineered to exploit the Rust peculiarities and programming model.
 
+**Developed by** ![ISISLab](https://krabmaga.github.io/images/isislab.png)
+
 # Examples
 
 All the examples are hosted in a separate repository [here](https://github.com/krABMaga/examples).
