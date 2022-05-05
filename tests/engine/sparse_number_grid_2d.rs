@@ -18,9 +18,9 @@ static WIDTH: i32 = 10;
     feature = "parallel"
 )))]
 use {
-    krABMaga::engine::fields::field::Field, krABMaga::engine::fields::grid_option::GridOption,
-    krABMaga::engine::fields::sparse_number_grid_2d::SparseNumberGrid2D,
-    krABMaga::engine::location::Int2D,
+    krabmaga::engine::fields::field::Field, krabmaga::engine::fields::grid_option::GridOption,
+    krabmaga::engine::fields::sparse_number_grid_2d::SparseNumberGrid2D,
+    krabmaga::engine::location::Int2D,
 };
 
 #[cfg(not(any(

@@ -4,7 +4,7 @@
     feature = "visualization_wasm",
     feature = "parallel"
 )))]
-use {krABMaga::engine::fields::field::Field, krABMaga::engine::fields::network::*};
+use {krabmaga::engine::fields::field::Field, krabmaga::engine::fields::network::*};
 
 #[cfg(not(any(
     feature = "visualization",

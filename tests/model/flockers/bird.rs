@@ -1,10 +1,10 @@
 use core::fmt;
-use krABMaga::engine::agent::Agent;
-use krABMaga::engine::fields::field_2d::{toroidal_distance, toroidal_transform};
-use krABMaga::engine::location::{Location2D, Real2D};
-use krABMaga::engine::state::State;
-use krABMaga::rand;
-use krABMaga::rand::Rng;
+use krabmaga::engine::agent::Agent;
+use krabmaga::engine::fields::field_2d::{toroidal_distance, toroidal_transform};
+use krabmaga::engine::location::{Location2D, Real2D};
+use krabmaga::engine::state::State;
+use krabmaga::rand;
+use krabmaga::rand::Rng;
 use std::hash::{Hash, Hasher};
 
 use crate::model::flockers::state::Flocker;

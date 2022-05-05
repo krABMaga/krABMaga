@@ -1,7 +1,7 @@
 use std::fmt::Display;
 use std::hash::{Hash, Hasher};
 
-use krABMaga::engine::agent::Agent;
+use krabmaga::engine::agent::Agent;
 
 #[derive(Clone, Debug, Copy)]
 pub struct MyNode {
@@ -14,7 +14,7 @@ impl Agent for MyNode{
         self.id
     }
 
-    fn step(&mut self, state: &mut dyn krABMaga::engine::state::State) {
+    fn step(&mut self, state: &mut dyn krabmaga::engine::state::State) {
         
     }
 }

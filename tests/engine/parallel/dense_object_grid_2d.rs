@@ -7,9 +7,9 @@ static WIDTH: i32 = 10;
 #[cfg(any(feature = "parallel"))]
 use {
     crate::model::flockers::bird::Bird,
-    krABMaga::engine::fields::dense_object_grid_2d::DenseGrid2D,
-    krABMaga::engine::fields::field::Field, krABMaga::engine::fields::grid_option::GridOption,
-    krABMaga::engine::location::Int2D, krABMaga::engine::location::Real2D, rand::Rng,
+    krabmaga::engine::fields::dense_object_grid_2d::DenseGrid2D,
+    krabmaga::engine::fields::field::Field, krabmaga::engine::fields::grid_option::GridOption,
+    krabmaga::engine::location::Int2D, krabmaga::engine::location::Real2D, rand::Rng,
 };
 
 #[cfg(any(feature = "parallel"))]

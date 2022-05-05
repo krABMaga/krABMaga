@@ -14,9 +14,9 @@ use {
     friedrich::gaussian_process::GaussianProcess,
     friedrich::kernel::Gaussian,
     friedrich::prior::ConstantPrior,
-    krABMaga::explore::bayesian_opt::*,
-    krABMaga::*,
-    krABMaga::{rand, Rng},
+    krabmaga::explore::bayesian_opt::*,
+    krabmaga::*,
+    krabmaga::{rand, Rng},
     statrs::distribution::{Continuous, ContinuousCDF, Normal},
 };
 

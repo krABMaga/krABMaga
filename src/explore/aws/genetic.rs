@@ -164,7 +164,7 @@ fi
 
         // generate the lambda function
         let function_str = format!(r#"
-use krABMaga::{{
+use krabmaga::{{
     lambda_runtime,
     aws_sdk_sqs,
     aws_config,

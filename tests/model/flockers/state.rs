@@ -1,11 +1,11 @@
 use crate::model::flockers::bird::Bird;
-use krABMaga::engine::fields::field::Field;
-use krABMaga::engine::fields::field_2d::Field2D;
-use krABMaga::engine::location::Real2D;
-use krABMaga::engine::schedule::Schedule;
-use krABMaga::engine::state::State;
-use krABMaga::rand;
-use krABMaga::rand::Rng;
+use krabmaga::engine::fields::field::Field;
+use krabmaga::engine::fields::field_2d::Field2D;
+use krabmaga::engine::location::Real2D;
+use krabmaga::engine::schedule::Schedule;
+use krabmaga::engine::state::State;
+use krabmaga::rand;
+use krabmaga::rand::Rng;
 use std::any::Any;
 
 pub static WIDTH: f32 = 10.0;

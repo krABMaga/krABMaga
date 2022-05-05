@@ -1,6 +1,6 @@
 #[cfg(test)]
 #[cfg(any(feature = "parallel"))]
-use {krABMaga::engine::fields::field::Field, krABMaga::engine::fields::network::*};
+use {krabmaga::engine::fields::field::Field, krabmaga::engine::fields::network::*};
 
 #[cfg(any(feature = "parallel"))]
 static NUM_NODES: u16 = 10;

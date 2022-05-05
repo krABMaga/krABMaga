@@ -10,7 +10,7 @@
 )))]
 #[test]
 fn schedule_operations() {
-    use krABMaga::engine::schedule::Schedule;
+    use krabmaga::engine::schedule::Schedule;
 
     use crate::utils::mynode::MyNode;
 
