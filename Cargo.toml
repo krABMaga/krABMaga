@@ -50,6 +50,7 @@ aws-sdk-lambda = {version = "0.4", optional = true}
 futures = {version = "0.3", optional = true}
 
 # Model exploration MPI features
+# We used this crate because "rsmpi" has some bugs, so we updated to this fork
 mpi-fork-fnsp = { version="0.6", optional = true }
 memoffset = { version = "0.6.4", optional = true}
 
