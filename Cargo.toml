@@ -13,7 +13,7 @@ authors = [
 ]
 edition = "2021"
 license = "MIT"
-keywords = ["discrete-event-simulation", "simulation", "agent-based model", "agent-based simulation"]
+keywords = ["discrete-event-simulation", "simulation", "agent-based-model", "agent-based-simulation"]
 categories = ["Science", "Simulation", "Agent-based model", "Mathematics", "Visualization"]
 description = "A modern developing art for reliable and efficient ABM simulation with the Rust language."
 readme = "README.md"
