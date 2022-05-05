@@ -5,16 +5,14 @@
   <img alt="Crates.io" src="https://img.shields.io/crates/l/krabmaga">
   <img alt="Crates.io" src="https://img.shields.io/crates/v/krabmaga">
   <img alt="docs.rs" src="https://img.shields.io/docsrs/krabmaga">
+  <img alt="Rust CI" src="https://github.com/krABMaga/krABMaga/workflows/Rust%20CI/badge.svg">
+  <img alt="codecov" src="https://codecov.io/gh/krABMaga/krABMaga/branch/main/graph/badge.svg?token=GWYP2UBPIZ)](https://codecov.io/gh/krABMaga/krABMaga">
 </div>
-
-**Previously named Rust-AB** 
-
-![Rust CI](https://github.com/krABMaga/krABMaga/workflows/Rust%20CI/badge.svg)
-[![codecov](https://codecov.io/gh/krABMaga/krABMaga/branch/main/graph/badge.svg?token=GWYP2UBPIZ)](https://codecov.io/gh/krABMaga/krABMaga)
 
 (Notice that the *parallel* and *visualization* components are excluded from _codecov_ as are experimental ore release candidate)
 
 **krABMaga** is a discrete events simulation engine for developing ABM simulation that is written in Rust language. 
+**Previously named Rust-AB** 
 
 krABMaga is designed to be a _ready-to-use_ tool for the ABM community and for this reason the architectural concepts of the well-adopted MASON library were re-engineered to exploit the Rust peculiarities and programming model.
 
