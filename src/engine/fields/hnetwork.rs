@@ -195,18 +195,12 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> HNetwork<O, L> {
             None => return None,
         };
         let edges = self.redges.borrow();
-        match edges.get(uid) {
-            Some(es) => Some((*(es.clone())).to_vec()),
-            None => None,
-        }
+        edges.get(uid).map(|es| (*(es.clone())).to_vec())
     }
 
     /// get a node from its id
     pub fn get_object(&self, uid: u32) -> Option<O> {
-        match self.rid2nodes.borrow_mut().get(&uid) {
-            Some(u) => Some(u.clone()),
-            None => None,
-        }
+        self.rid2nodes.borrow_mut().get(&uid).cloned()
     }
 
     /// Remove all the edges of the network

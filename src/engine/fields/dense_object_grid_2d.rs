@@ -156,7 +156,7 @@ cfg_if! {
                 }
                 self.obj2loc.insert(object, *loc);
             }
-        
+
         }
         impl<O: Eq + Hash + Clone + Copy> Field for DenseGrid2D<O> {
 
@@ -173,7 +173,7 @@ cfg_if! {
 
 
 }else{
-            /// Matrix with double buffering 
+            /// Matrix with double buffering
             pub struct DenseGrid2D<O: Eq + Hash + Clone + Copy> {
                 /// Matrix to write data. Vector of vectors that have a generic Object O inside
                 pub locs: RefCell<Vec<Vec<O>>>,

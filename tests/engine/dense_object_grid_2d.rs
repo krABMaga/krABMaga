@@ -18,7 +18,8 @@ static WIDTH: i32 = 10;
     feature = "parallel"
 )))]
 use {
-    crate::model::flockers::bird::Bird, krABMaga::engine::fields::dense_object_grid_2d::DenseGrid2D,
+    crate::model::flockers::bird::Bird,
+    krABMaga::engine::fields::dense_object_grid_2d::DenseGrid2D,
     krABMaga::engine::fields::field::Field, krABMaga::engine::fields::grid_option::GridOption,
     krABMaga::engine::location::Int2D, krABMaga::engine::location::Real2D,
 };

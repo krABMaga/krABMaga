@@ -20,10 +20,10 @@ pub struct AgentImpl {
 
 impl AgentImpl {
     /// create a new instance of AgentImpl
-    pub fn new(the_agent: Box<dyn Agent>, id: u32) -> AgentImpl {
+    pub fn new(agent: Box<dyn Agent>, id: u32) -> AgentImpl {
         AgentImpl {
-            id: id,
-            agent: the_agent,
+            id,
+            agent,
             repeating: false,
         }
     }

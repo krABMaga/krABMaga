@@ -224,7 +224,7 @@ cfg_if! {
     // SEQUENTIAL IF
     else{
         /// Struct to manage all the agents in the simulation
-        /// 
+        ///
         /// step: current step of the simulation
         /// time: current time of the simulation
         /// events: priority queue filled with a pair of AgentImpl and his Priority
@@ -281,7 +281,7 @@ cfg_if! {
             }
 
             /// insert an agent in the PriorityQueue with the repeating field set at true
-            /// 
+            ///
             /// return false if the insertion in the priority queue fails
             pub fn schedule_repeating(&mut self, agent: Box<dyn Agent>, the_time:f32, the_ordering:i32) -> bool {
                 let mut a = AgentImpl::new(agent, self.agent_ids_counting);
@@ -290,10 +290,7 @@ cfg_if! {
 
                 let pr = Priority::new(the_time, the_ordering);
                 let opt = self.events.push(a, pr);
-                match opt {
-                    Some(_) => false,
-                    None => true,
-                }
+                opt.is_none()
             }
 
             /// return a vector of all the objects contained in the PriorityQueue

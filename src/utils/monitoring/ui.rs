@@ -1,8 +1,4 @@
-use crate::log;
-use crate::Log;
-use crate::LogType;
-use crate::PlotData;
-use crate::{Monitoring, DATA, DESCR, LOGS, MONITOR};
+use crate::{log, Log, LogType, DATA, DESCR, LOGS, MONITOR};
 use cfg_if::cfg_if;
 
 cfg_if! {
@@ -14,11 +10,10 @@ cfg_if! {
             style::{Color, Modifier, Style},
             symbols,
             text::{Span, Spans},
-            widgets::canvas::{Canvas, Line, Map, MapResolution, Rectangle},
             widgets::ListState,
             widgets::{
-                Axis, BarChart, Block, Borders, Cell, Chart, Clear, Dataset, Gauge, LineGauge, List,
-                ListItem, Paragraph, Row, Sparkline, Table, Tabs, Wrap,
+                Axis, BarChart, Block, Borders, Chart, Clear, Dataset, Gauge, LineGauge, List,
+                ListItem, Paragraph, Tabs, Wrap,
             },
             Frame,
         };
@@ -51,32 +46,32 @@ cfg_if! {
             }
         }
 
-        /// Struct that manage all the informations in the TUI 
-        /// 
+        /// Struct that manage all the informations in the TUI
+        ///
         /// tabs : manage the top bars
-        /// 
+        ///
         /// should_quit : boolean used to check if the TUI should be closed
-        /// 
-        /// show_chart : boolean to hide/show the charts 
-        /// 
+        ///
+        /// show_chart : boolean to hide/show the charts
+        ///
         /// show_description : boolean to show the tooltip on the popup
-        /// 
+        ///
         /// logs_state : struct to show all the logs messages
-        /// 
+        ///
         /// processor_data : struct to keep track of the info about processor
-        /// 
+        ///
         /// memory_data : struct to keep track of the info about memory
-        /// 
+        ///
         /// data_window : pair to manage the bounds of the plots
-        /// 
+        ///
         /// progress : progress bar for the simulation running
-        /// 
+        ///
         /// reps : number of repetition of the simulation
-        /// 
+        ///
         /// steps : number of step of the simulation
-        /// 
+        ///
         /// tot_reps : number of total repetions
-        /// 
+        ///
         /// tot_steps : number of total steps
         pub struct UI {
             pub tabs: TabsState,
@@ -193,12 +188,12 @@ cfg_if! {
 
                 if self.processor_data.len() > 100 {
                     self.processor_data.remove(0);
-                    self.data_window.0 = self.data_window.0 + 1;
+                    self.data_window.0 += 1;
                 }
                 let position = self
                     .processor_data
                     .last()
-                    .unwrap_or(&(0. as f64, 0. as f64))
+                    .unwrap_or(&(0_f64, 0_f64))
                     .0;
                 self.processor_data.push((position + 1., cpu));
 
@@ -286,7 +281,7 @@ cfg_if! {
                     .map(|t| Spans::from(Span::styled(t, Style::default().fg(Color::Green))))
                     .collect();
 
-                let title = format!("krABMaga 🦀");
+                let title = "krABMaga 🦀".to_string();
                 let tabs = Tabs::new(titles)
                     .block(Block::default().borders(Borders::ALL).title(title))
                     .highlight_style(Style::default().fg(Color::Yellow))
@@ -304,7 +299,7 @@ cfg_if! {
 
                 if self.show_description {
                     let d = DESCR.lock().unwrap().clone();
-                    if d.len() != 0 {
+                    if !d.is_empty() {
                         self.show_popup(f, d);
                     }
                 }
@@ -342,7 +337,7 @@ cfg_if! {
                         Dataset::default()
                             .name(sname)
                             .marker(markers[marker_id])
-                            .style(Style::default().fg(colors[color_id]).clone())
+                            .style(Style::default().fg(colors[color_id]))
                             .data(points),
                     );
                     marker_id = (marker_id + 1) % markers.len();

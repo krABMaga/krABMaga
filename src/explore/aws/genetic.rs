@@ -1,23 +1,23 @@
 /// macro to perform sequential model exploration using a genetic algorithm on AWS
-/// 
+///
 /// init_population: function that creates the population, must return an array of individual (an individual is the state of the simulation to compute)
-/// 
+///
 /// fitness: function that computes the fitness value, takes a single individual and the schedule, must return an f32
-/// 
+///
 /// mutation: function that perform the mutation, takes a single individual as parameter
-/// 
+///
 /// crossover: function that creates the population, takes the entire population as parameter
-/// 
+///
 /// state: state of the simulation representing an individual
-/// 
+///
 /// desired_fitness: desired fitness value
-/// 
+///
 /// generation_num: max number of generations to compute
-/// 
+///
 /// step: number of steps of the single simulation
-/// 
+///
 /// num_func: number of lambda functions to be spawned
-/// 
+///
 /// reps: number of repetitions of the simulation using each individual
 #[macro_export]
 macro_rules! explore_ga_aws {

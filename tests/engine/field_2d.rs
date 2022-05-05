@@ -16,10 +16,10 @@ static NUM_AGENT: u32 = 10;
 )))]
 use {
     crate::model::flockers::{bird::*, state::*},
-    rand::Rng,
     krABMaga::engine::location::Real2D,
     krABMaga::engine::schedule::Schedule,
     krABMaga::engine::state::State,
+    rand::Rng,
 };
 
 #[cfg(not(any(

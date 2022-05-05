@@ -265,7 +265,6 @@
 //!  structure that can be cloned, most notably simple primitive values such as f64s. As the previous grid, there are two implementations: `SparseNumberGrid2D` and `DenseNumberGrid2D`.
 //!  
 
-
 /// Main module, with structs for Agents, Fields and Schedule
 pub mod engine;
 
@@ -278,15 +277,12 @@ pub mod utils;
 
 #[doc(hidden)]
 pub use {
-
+    ::lazy_static::*,
+    core::fmt,
+    csv::{Reader, Writer},
     hashbrown,
     indicatif::ProgressBar,
-    rand,
-    rand_pcg,
-    rayon,
-    std::time::Instant,
-    ::lazy_static::*,
-    csv::{Reader, Writer},
+    rand, rand_pcg, rayon,
     rayon::prelude::*,
     std::collections::HashMap,
     std::error::Error,
@@ -299,9 +295,8 @@ pub use {
     std::sync::{Arc, Mutex},
     std::thread,
     std::time::Duration,
-    core::fmt,
+    std::time::Instant,
 };
-
 
 #[cfg(any(feature = "visualization", feature = "visualization_wasm",))]
 pub mod visualization;
@@ -318,21 +313,20 @@ pub use rand::{
 #[doc(hidden)]
 #[cfg(not(feature = "visualization_wasm"))]
 pub use {
-    tui::{
-        backend::{Backend, CrosstermBackend},
-        Terminal,
-    },
     crate::utils::monitoring::ui::UI,
+    crossterm,
     crossterm::event::poll,
     crossterm::{
         event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
         execute,
         terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     },
-    crossterm,
     systemstat::{saturating_sub_bytes, Platform, System},
+    tui::{
+        backend::{Backend, CrosstermBackend},
+        Terminal,
+    },
 };
-
 
 #[cfg(feature = "distributed_mpi")]
 pub use {
@@ -341,11 +335,7 @@ pub use {
     mpi_fork_fnsp::datatype::PartitionMut,
     mpi_fork_fnsp::point_to_point as p2p,
     mpi_fork_fnsp::Count,
-    mpi_fork_fnsp::{
-        datatype::{UserDatatype},
-        traits::*,
-        Address,
-    },
+    mpi_fork_fnsp::{datatype::UserDatatype, traits::*, Address},
 };
 
 #[cfg(feature = "distributed_mpi")]
@@ -371,7 +361,6 @@ pub use {
     tokio::runtime::Runtime, // 0.3.5
 };
 
-
 /// Options of old_simulate! macro
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Info {
@@ -395,7 +384,7 @@ pub enum ExploreMode {
 pub struct PlotData {
     /// Plot name
     pub name: String,
-    /// Data of a plot. Managed using `HashMap` 
+    /// Data of a plot. Managed using `HashMap`
     pub series: HashMap<String, Vec<(f64, f64)>>,
     /// Min value of x axis
     pub min_x: f64,
@@ -428,8 +417,7 @@ impl PlotData {
     }
 }
 
-
-/// Available log types to use for `Simulation Terminal` log mechanism. 
+/// Available log types to use for `Simulation Terminal` log mechanism.
 #[derive(Copy, Clone, Debug)]
 pub enum LogType {
     Info,
@@ -457,7 +445,6 @@ pub struct Log {
     pub body: String,
 }
 
-
 lazy_static! {
 
     /// static HashMap to manage plots of the whole simulation. Used to create tabs and plot inside `UI` module.
@@ -470,7 +457,6 @@ lazy_static! {
     #[doc(hidden)]
     pub static ref DESCR: Mutex<String> = Mutex::new(String::new());
 }
-
 
 #[doc(hidden)]
 /// struct to store machine system info during the simulation.
@@ -492,14 +478,13 @@ impl Monitoring {
 }
 
 lazy_static! {
-    /// static object to collect data of monitoring 
+    /// static object to collect data of monitoring
     #[doc(hidden)]
     pub static ref MONITOR: Arc<Mutex<Monitoring>> = Arc::new(Mutex::new(Monitoring::new()));
 }
 
 #[doc(hidden)]
 pub use std::sync::mpsc::{self, TryRecvError};
-
 
 /// Run simulation directly using this macro. By default, `Simulation Terminal` is used
 ///
@@ -732,8 +717,6 @@ macro_rules! simulate {
     }}; // end pattern macro
 } //end macro
 
-
-
 /// Add a description to your simulation. You can show a popup with this message.
 #[macro_export]
 macro_rules! description {
@@ -800,7 +783,7 @@ macro_rules! log {
 
 #[macro_export]
 /// Run simulation directly using this macro. Not based on `Simulation Terminal`.
-/// 
+///
 /// s: istance of state of simulation
 ///
 /// step: simulation step number
@@ -1029,11 +1012,10 @@ macro_rules! gen_param {
     }};
 }
 
-
 /// Load parameters from a csv
-/// 
+///
 /// input_file: path to the csv
-/// 
+///
 /// x: x_ty, couples of field names and their types.
 #[macro_export]
 macro_rules! load_csv {

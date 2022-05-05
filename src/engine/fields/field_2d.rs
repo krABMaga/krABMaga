@@ -275,7 +275,7 @@ cfg_if! {
             pub width: f32,
             /// Second dimension of the field
             pub heigth: f32,
-            /// Value to discretize `Real2D` positions to our Matrix 
+            /// Value to discretize `Real2D` positions to our Matrix
             pub discretization: f32,
             /// `true` if you want a Toroidal field, `false` otherwise
             pub toroidal: bool,
@@ -424,7 +424,7 @@ cfg_if! {
                 neighbors
             }
 
-            /// Return objects at a specific location 
+            /// Return objects at a specific location
             pub fn get_objects(&self, loc: Real2D) -> Vec<O>{
                 let bag = self.discretize(&loc);
                 let index = ((bag.x * self.dh) + bag.y) as usize;

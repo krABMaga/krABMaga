@@ -28,11 +28,11 @@ cfg_if! {
         }
     } else if #[cfg(any(feature = "visualization", feature = "visualization_wasm"))] {
         // Trait do define basic function for a simulation state
-        // 
+        //
         // init : should initialize all the starting values of a simulation
-        // 
+        //
         // as_any/as_any_mut/as_state/as_state_mut : support functions to return a Dyn values
-        // 
+        //
         // reset: reset all the values of the simulation
         pub trait State: Send + 'static {
 
@@ -57,19 +57,19 @@ cfg_if! {
         }
     } else{
         /// Trait do define basic function for a simulation state
-        /// 
+        ///
         /// init: should initialize all the starting values of a simulation
-        /// 
-        /// as_any/as_any_mut/as_state/as_state_mut: support functions to return a Dyn values 
-        /// 
+        ///
+        /// as_any/as_any_mut/as_state/as_state_mut: support functions to return a Dyn values
+        ///
         /// reset: reset all the values of the simulation
-        /// 
+        ///
         /// update: function to wrap up the calls on fields update
-        /// 
+        ///
         /// before_step: define the optional behaviour of the state before computing the actual step
-        /// 
+        ///
         /// after_step: define the optional behaviour of the state after computing the actual step
-        /// 
+        ///
         /// end_condition: define a condition where the simulation should end
         pub trait State: Send + 'static {
 

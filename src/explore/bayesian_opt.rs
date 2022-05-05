@@ -20,7 +20,6 @@ use std::{
     sync::{Mutex, Once},
 };
 
-
 /// Singleton to manage Gaussian Process and makes it available to user function
 #[cfg(any(feature = "bayesian"))]
 pub struct SingletonGP {
@@ -55,7 +54,6 @@ pub fn get_instance(x: &Vec<Vec<f64>>, y: &Vec<f64>) -> &'static SingletonGP {
         SINGLETON.assume_init_ref()
     }
 }
-
 
 /// macro to define Optimazer required by Bayesian resolver
 /// acquisition: acquisition function passed by user
@@ -108,19 +106,18 @@ macro_rules! build_optimizer {
     };
 }
 
-
 /// Macro to perform bayesian optimization with custom functions.  
-/// 
+///
 /// init_population: function that creates the population, must return an array of individual. An individual is the state of the simulation to compute.
-/// 
+///
 /// costly_function: function to evaluate the goodness of a solution.
-/// 
+///
 /// acquisition_function: acquisition function to evaluate quickly a solution, using previous results.
 ///
 /// gen_new_points: function to sample new starting point for the current iteration
-/// 
+///
 /// check_domain: bayesian work on continuos function. With the methods we fix/check the results of an iteration.
-/// 
+///
 /// n_iter: number of iterations of bayesian optimization algorithm
 #[cfg(any(feature = "bayesian"))]
 #[macro_export]
@@ -242,15 +239,15 @@ macro_rules! bayesian_opt {
 
 /// Macro to perform bayesian optimization with default functions.
 /// x_init: initial x values
-/// 
+///
 /// y_init: costs of x_init elements
-/// 
+///
 /// costly_function: function to evaluate the goodness of a solution.
 ///
 /// n_iter: number of iterations of bayesian optimization algorithm
 ///
 /// batch_size: how many samples for each iteration
-/// 
+///
 /// scale: factor of scaling to generate samples
 
 #[cfg(any(feature = "bayesian"))]
@@ -310,8 +307,6 @@ struct OptBase {
     gauss_pr: GaussianProcess<Gaussian, ConstantPrior>,
     x: Vec<Vec<f64>>,
 }
-
-
 
 ///Base Optimizer for Bayesian solver
 #[cfg(any(feature = "bayesian"))]
@@ -389,7 +384,6 @@ pub fn acquisition_function_base(
     let z_pdf = normal.pdf(z);
     (mean_y_new - mean_y_max) * z_cfd + sigma_y_new * z_pdf
 }
-
 
 /// Generate new samples for Bayesian Base macro
 #[cfg(any(feature = "bayesian"))]

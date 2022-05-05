@@ -1,7 +1,7 @@
 /// internal function to run the simulation inside the explore macros
-/// 
+///
 /// step : number of total step of the simulation
-/// 
+///
 /// state : the State of the simulation
 #[macro_export]
 macro_rules! simulate_explore {
@@ -38,17 +38,17 @@ macro_rules! simulate_explore {
 
 #[macro_export]
 ///Macro to to perform sequential model exploration using basic parameters sweeping
-/// 
+///
 /// step : simulation step number,
-/// 
+///
 /// repconf: number of repetitions
-/// 
+///
 /// state: state of the simulation
-/// 
+///
 /// input: multiple custom input, pair of a identifier and his type
-/// 
+///
 /// output: multiple custom input, pair of a identifier and his type
-/// 
+///
 /// mode: enum to choose which mode of execution is desired (Supported option: Exaustive, Matched)
 macro_rules! explore_sequential {
 
@@ -134,17 +134,17 @@ macro_rules! explore_sequential {
 
 #[macro_export]
 ///Macro to to perform parallel model exploration using basic parameters sweeping
-/// 
+///
 /// step : simulation step number,
-/// 
+///
 /// repconf: number of repetitions
-/// 
+///
 /// state: state of the simulation
-/// 
+///
 /// input: multiple custom input, pair of a identifier and his type
-/// 
+///
 /// output: multiple custom input, pair of a identifier and his type
-/// 
+///
 /// mode: enum to choose which mode of execution is desired (Supported option: Exaustive, Matched)
 macro_rules! explore_parallel {
         ($nstep: expr, $rep_conf:expr, $state:ty,
@@ -228,19 +228,19 @@ macro_rules! explore_parallel {
 
 #[macro_export]
 /// Internal function for automatic building the structure for the Dataframe
-/// 
+///
 /// The dataframe allow to write the data of the simulations into a comfort structure that can be saved inside a file or easily manipulated
-/// 
+///
 /// Complete pattern of the macro
-/// 
-/// name : custom name of the structure 
-/// 
+///
+/// name : custom name of the structure
+///
 /// input : multiple pairs of identifier and type
-/// 
+///
 /// input_vec : vectors of elements, must specify the identifier, the type and the vector length
-/// 
+///
 /// output : multiple pairs of identifier and type
-/// 
+///
 /// derive : optional parameter for the derive directive
 macro_rules! build_dataframe {
         //Dataframe with input and output parameters and optional parameters

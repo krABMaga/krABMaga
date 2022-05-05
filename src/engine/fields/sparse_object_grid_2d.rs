@@ -281,22 +281,12 @@ cfg_if! {
 
             /// get objects at loc from rlocs
             pub fn get_objects(&self, loc: &Int2D) -> Option<Vec<O>> {
-                match self.rlocs.borrow().get(loc) {
-                    Some(obj) => {
-                        Some(obj.clone())
-                    },
-                    None => None,
-                }
+                self.rlocs.borrow().get(loc).cloned()
             }
 
             /// get objects at loc from locs
             pub fn get_objects_unbuffered(&self, loc: &Int2D) -> Option<Vec<O>> {
-                match self.locs.borrow().get(loc) {
-                    Some(obj) => {
-                        Some(obj.clone())
-                    },
-                    None => None,
-                }
+                self.locs.borrow().get(loc).cloned()
             }
 
             /// get all empty bags from rlocs

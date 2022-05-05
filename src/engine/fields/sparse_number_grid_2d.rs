@@ -153,19 +153,13 @@ cfg_if! {
             /// get the value at loc from rlocs
             pub fn get_value(&self, loc: &Int2D) -> Option<T> {
                 let rlocs = self.rlocs.borrow();
-                match rlocs.get(loc){
-                    Some(x) => Some(*x),
-                    None => None
-                }
+                rlocs.get(loc).copied()
             }
 
             /// get the value at loc from locs
             pub fn get_value_unbuffered(&self, loc: &Int2D) -> Option<T> {
                 let locs = self.locs.borrow();
-                match locs.get(loc){
-                    Some(x) => Some(*x),
-                    None => None
-                }
+                locs.get(loc).copied()
             }
 
             /// set the value at loc on locs

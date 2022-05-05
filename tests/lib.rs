@@ -4,10 +4,10 @@ mod explore;
 mod model;
 mod utils;
 
-#[cfg(test)]
+#[test]
 fn simulate_ui_structs() {
-    use rand::Rng;
     use krABMaga::*;
+    use rand::Rng;
 
     let mut rng = rand::thread_rng();
 

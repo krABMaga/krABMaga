@@ -6,8 +6,8 @@ use std::{
 #[cfg(test)]
 #[cfg(any(feature = "bayesian"))]
 use {
-    argmin::prelude::*,
     argmin::prelude::Error,
+    argmin::prelude::*,
     argmin::solver::linesearch::MoreThuenteLineSearch,
     argmin::solver::quasinewton::LBFGS,
     finitediff::FiniteDiff,

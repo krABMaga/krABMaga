@@ -1,12 +1,12 @@
 #[macro_export]
-/// internal macro to extend the dataframe to standardize the structure for MPI protocol 
-/// 
+/// internal macro to extend the dataframe to standardize the structure for MPI protocol
+///
 /// name: identifier of the custom structure
-/// 
+///
 /// input: all the input fields of the structure
-/// 
+///
 /// input_vec: all the input vectors fields of the structure
-/// 
+///
 /// output: all the output fields of the structure
 macro_rules! extend_dataframe {
     //Dataframe with input and output parameters and optional parameters
@@ -75,19 +75,19 @@ macro_rules! extend_dataframe {
 }
 
 /// macro to perform distribued model exploration using basic parameter sweeping based on MPI
-/// 
+///
 ///nstep: number of steps of the single simulation
-/// 
+///
 ///rep_conf: how many times run a configuration
-/// 
+///
 ///state: struct name implementing trait State
-/// 
+///
 ///input {name: type}: input paramaters of simulation
-/// 
+///
 ///input_vec { name : [type, size] }: array params of simulations
-/// 
+///
 ///output [name: type]: output parameters of simulation
-/// 
+///
 /// mode: enum to choose which mode of execution is desired (Supported option: Exaustive, Matched)
 #[macro_export]
 macro_rules! explore_distributed_mpi {

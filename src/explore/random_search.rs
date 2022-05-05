@@ -1,21 +1,21 @@
 /// Macro to perform model exploration using the random search algorithm
-/// 
+///
 /// init_state: state that has to be initialized
-/// 
+///
 /// n_iter: number of iterations
-/// 
+///
 /// target: goal of the search
-/// 
+///
 /// cost_function: fitness function to calculate the optimal value
-/// 
+///
 /// gen_sample: function to generate the samples that have to be analyzed
-/// 
+///
 /// batch_size: number of samples
-/// 
+///
 /// step: number of steps
-/// 
+///
 /// reps: number of repetitions
-/// 
+///
 #[macro_export]
 macro_rules! random_search {
     (

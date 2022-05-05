@@ -80,7 +80,7 @@ cfg_if! {
 
     } else {
 
-        /// Matrix with double buffering 
+        /// Matrix with double buffering
         /// A simpler version of the DenseGrid2D to use with simpler values.
         /// This is useful to represent simulation spaces covered by a simple entity that can be represented with a non-agent structure.
         pub struct DenseNumberGrid2D<T: Copy + Clone + PartialEq> {
