@@ -1,6 +1,6 @@
 [package]
 name = "krABMaga"
-version = "1.0.0"
+version = "0.1.1"
 authors = [
     "Carmine Spagnuolo <spagnuolocarmine@gmail.com>", 
     "Alessia Antelmi <aantelmi@unisa.it>", 
@@ -13,35 +13,37 @@ authors = [
 ]
 edition = "2021"
 license = "MIT"
-keywords = ["discrete", "simulation", "agent based model", "agent based simulation"]
-categories = ["science", "simulation", "agent based model"]
+keywords = ["discrete-event-simulation", "simulation", "agent-based model", "agent-based simulation"]
+categories = ["Science", "Simulation", "Agent-based model", "Mathematics", "Visualization"]
+description = "A modern developing art for reliable and efficient ABM simulation with the Rust language."
 readme = "README.md"
 homepage = "https://krABMaga.github.io/"
 repository = "https://github.com/krABMaga/krABMaga"
+documentation = "https://docs.rs/krABMaga"
 
 [dependencies]
-hashbrown = "0.*"
-priority-queue = "1.*"
-rand = "0.*"
-lazy_static = "1.*"
-cfg-if = "1.*"
-num_cpus = "1.*"
+hashbrown = "0.12.1"
+priority-queue = "1.2.1"
+rand = "0.8.5"
+lazy_static = "1.4.0"
+cfg-if = "1.0.0"
+num_cpus = "1.13.1"
 rayon="1.5.1"
-clap="2.*"
-ahash="0.*"
-dyn-clone="1.*"
-downcast-rs = "1.*"
-csv = "1.*"
-indicatif = "0.*"
-crossbeam = "0.*"
-rand_pcg = "0.*"
+clap="2.34.0"
+ahash="0.7.6"
+dyn-clone="1.0.5"
+downcast-rs = "1.2.0"
+csv = "1.1.6"
+indicatif = "0.16.2"
+crossbeam = "0.8.1"
+rand_pcg = "0.3.1"
 
 
 # Model exploration AWS features
 lambda_runtime = {version = "0.4", optional = true}
-serde = { version = "1.*", features = ["derive"], optional = true}
-serde_json = {version = "1.*", optional = true}
-tokio = { version = "1.*", features = ["full"], optional = true }
+serde = { version = "1.0.137", features = ["derive"], optional = true}
+serde_json = {version = "1.0.81", optional = true}
+tokio = { version = "1.18.1", features = ["full"], optional = true }
 aws-config = {version = "0.4", optional = true}
 aws-sdk-sqs = {version = "0.4", optional = true}
 aws-sdk-lambda = {version = "0.4", optional = true}
@@ -55,11 +57,11 @@ memoffset = { version = "0.6.4", optional = true}
 friedrich = { version = "0.4.1", optional = true }
 statrs = { version = "0.15.0", optional = true } 
 argmin = { version = "0.5.0", optional = true }
-finitediff = { version = "0.*", optional = true }
+finitediff = { version = "0.1.4", optional = true }
 
 # Visualization features
 bevy_prototype_lyon = {version="0.4.0", optional=true, default-features = false}
-image = {version="0.*", optional=true, default-features = false}
+image = {version="0.24.2", optional=true, default-features = false}
 bevy_egui = {version="0.10",optional=true, default-features = false}
 [dependencies.bevy]
 version= "0.6"
@@ -67,13 +69,13 @@ default-features = false
 optional=true
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-getrandom = {version="0.*", features=["wasm-bindgen"], default-features = false}
+getrandom = {version="0.2.6", features=["wasm-bindgen"], default-features = false}
 
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 tui = "0.17.0"
 crossterm = "0.23.2"
-systemstat = "0.*"
+systemstat = "0.1.10"
 
 
 # Must be kept separate and asked to the user due to missing support for conditional compilation of features
