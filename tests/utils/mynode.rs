@@ -1,10 +1,22 @@
 use std::fmt::Display;
 use std::hash::{Hash, Hasher};
 
-#[derive(Clone, Debug)]
+use krABMaga::engine::agent::Agent;
+
+#[derive(Clone, Debug, Copy)]
 pub struct MyNode {
     pub id: u32,
     pub flag: bool,
+}
+
+impl Agent for MyNode{
+    fn get_id(&self) -> u32 {
+        self.id
+    }
+
+    fn step(&mut self, state: &mut dyn krABMaga::engine::state::State) {
+        
+    }
 }
 
 impl Eq for MyNode {}
