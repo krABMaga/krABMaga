@@ -1,9 +1,11 @@
-#![doc(html_logo_url = "https://raw.githubusercontent.com/krABMaga/krABMaga.github.io/main/static/images/krabmaga_docs.png")]
+#![doc(
+    html_logo_url = "https://raw.githubusercontent.com/krABMaga/krABMaga.github.io/main/static/images/krabmaga_docs.png"
+)]
 
 //!
 //![krABMaga](https://github.com/krABMaga/krABMaga) is a discrete events simulation engine for developing ABM simulation
 //!written in the [Rust language](https://www.rust-lang.org/).
-//! 
+//!
 //![krABMaga](https://github.com/krABMaga/krABMaga) is designed to be a ready-to-use tool for the ABM community and for this
 //!reason the architectural concepts of the well-adopted [MASON library](https://cs.gmu.edu/~eclab/projects/mason/) were
 //!re-engineered to exploit the Rust peculiarities and programming model, in particular by keeping the visualization and the
@@ -49,7 +51,7 @@
 //!- `assets`: an images folder. It contains all the icons that can be used for visualization.
 //!- `Makefile.toml`: another configuration file, necessary to a correct execution of visualization.
 //!
-//!Inside the root directory of model that you choose, you can run a models with or without visualization. 
+//!Inside the root directory of model that you choose, you can run a models with or without visualization.
 //!
 //!To simply run your simulation, with no visualization:
 //!```sh
@@ -70,7 +72,7 @@
 //!  padding: 5px;
 //!  display:inline-block;
 //!  text-align: center;
-//!  vertical-align:middle; 
+//!  vertical-align:middle;
 //!}
 //!
 //!  @media screen and (max-width: 400px) {
@@ -110,14 +112,14 @@
 //!cargo run --release --features  visualization
 //!
 //!# Alternative command. Requires 'cargo make' installed
-//!cargo make run --release 
+//!cargo make run --release
 //!```
 //!
-//!In addition to the classical visualization, you can run your krABMaga simulation inside your browser using (*Web Assembly*)[https://webassembly.org]. 
+//!In addition to the classical visualization, you can run your krABMaga simulation inside your browser using (*Web Assembly*)[https://webassembly.org].
 //!This is possible with the command:
 //!```sh
 //!# Requires 'cargo make' installed
-//!cargo make serve --release 
+//!cargo make serve --release
 //!```
 //!
 //!
@@ -140,7 +142,7 @@
 //!
 //!The simplest part is `main.rs`, because is similar for each example.
 //!You can define two *main* functions using **cfg** directive, that can remove code based on which features are (not) enabled.  
-//!Without visualization, you have only to use *simulate!* to run simulation, passing a state, step number and how may time repeat your simulation. 
+//!Without visualization, you have only to use *simulate!* to run simulation, passing a state, step number and how may time repeat your simulation.
 //!With visualization, you have to set graphical settings (like dimension or background) and call *start* method.
 //!```rs
 //!// Main used when only the simulation should run, without any visualization.
@@ -207,7 +209,7 @@
 //!That macro has a fourth optional parameter, a boolean. When `false` is passed, `Simulation Terminal` is disabled.
 //!```rs
 //!($s:expr, $step:expr, $reps:expr $(, $flag:expr)?) => {{
-//!      // Macro code 
+//!      // Macro code
 //!}}
 //!```
 //!
@@ -299,7 +301,7 @@
 //!
 //!## Data structures
 //!
-//!<!-- The krABMaga framework exposes a few data structures based on the `DBDashMap`, a customized version of the 
+//!<!-- The krABMaga framework exposes a few data structures based on the `DBDashMap`, a customized version of the
 //![Rust HashMap](https://doc.rust-lang.org/std/collections/struct.HashMap.html) that implements a double
 //!buffering technique to avoid indeterminism caused by the lack of knowledge of the agents' step execution order within a step.
 //!The `DBDashMap` implements the interior mutability pattern, which allows the user to safely write in it without having an actual
@@ -357,6 +359,7 @@ pub mod utils;
 #[doc(hidden)]
 pub use {
     ::lazy_static::*,
+    chrono,
     core::fmt,
     csv::{Reader, Writer},
     hashbrown,
@@ -365,6 +368,7 @@ pub use {
     rayon::prelude::*,
     std::collections::HashMap,
     std::error::Error,
+    std::fs,
     std::fs::File,
     std::fs::OpenOptions,
     std::io,
@@ -400,6 +404,7 @@ pub use {
         execute,
         terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     },
+    plotters, 
     systemstat::{saturating_sub_bytes, Platform, System},
     tui::{
         backend::{Backend, CrosstermBackend},
@@ -461,9 +466,9 @@ pub enum ExploreMode {
 #[derive(Clone)]
 /// Struct to manage plots inside `Simulation Terminal`
 pub struct PlotData {
-    /// Plot name
+    /// Title of the plot
     pub name: String,
-    /// Data of a plot. Managed using `HashMap`
+    /// Data of a plot. Managed using `HashMap`: the key is series name, the value is a vector of couples (x, y) representing the data of the series.
     pub series: HashMap<String, Vec<(f64, f64)>>,
     /// Min value of x axis
     pub min_x: f64,
@@ -477,12 +482,14 @@ pub struct PlotData {
     pub xlabel: String,
     /// Label of y axis
     pub ylabel: String,
+    /// If true: the plot is stored as a PNG file
+    pub to_be_stored: bool,
 }
 
 #[doc(hidden)]
 impl PlotData {
     /// Create new Plot
-    pub fn new(name: String, xlabel: String, ylabel: String) -> PlotData {
+    pub fn new(name: String, xlabel: String, ylabel: String, to_be_stored: bool) -> PlotData {
         PlotData {
             name,
             series: HashMap::new(),
@@ -492,7 +499,116 @@ impl PlotData {
             max_y: f64::MIN,
             xlabel,
             ylabel,
+            to_be_stored,
         }
+    }
+
+    #[cfg(not(feature = "visualization_wasm"))]
+    pub fn store_plot(&self, rep: u64) {
+        let n_markers = 3;
+
+        let colors = [
+            RED,
+            RGBColor(0, 95, 106), // Petrol Green
+            BLACK,
+            MAGENTA,
+            GREEN,
+            BLUE,
+        ];
+
+        use plotters::prelude::*;
+
+        let date = CURRENT_DATE.clone();
+        let path = format!("output/{}/{}", date, self.name.replace("/", "-"));
+
+        // Create directory if it doesn't exist
+        fs::create_dir_all(&path).expect("Can't create folder");
+
+        let output_name = format!("{}/{}_{}.png", &path, self.name.replace("/", "-"), rep);
+
+        let root = BitMapBackend::new(&output_name, (1024, 768)).into_drawing_area();
+        root.fill(&WHITE).expect("Can't fill the canvas");
+
+        let mut scatter_ctx = ChartBuilder::on(&root)
+            .caption(self.name.clone(), ("sans-serif", 30))
+            .margin(5)
+            .x_label_area_size(60)
+            .y_label_area_size(60)
+            .build_cartesian_2d(self.min_x..self.max_x, self.min_y..self.max_y)
+            .expect("Error Creating Chart");
+
+        scatter_ctx
+            .configure_mesh()
+            .disable_x_mesh()
+            .disable_y_mesh()
+            .y_desc(self.ylabel.clone())
+            .x_desc(self.xlabel.clone())
+            .draw()
+            .expect("Cant't draw mesh");
+
+        let mut marker_id = 0;
+        let mut color_id = 0;
+        for (series_name, series) in &self.series {
+            match marker_id {
+                0 => scatter_ctx
+                    .draw_series(
+                        series
+                            .iter()
+                            .map(|(x, y)| Circle::new((*x, *y), 2.0, colors[color_id].filled())),
+                    )
+                    .expect("Can't draw series")
+                    .label(series_name)
+                    .legend(move |(x, y)| Circle::new((x, y), 3.0, colors[color_id].filled())),
+                1 => scatter_ctx
+                    .draw_series(
+                        series
+                            .iter()
+                            .map(|(x, y)| Cross::new((*x, *y), 3.0, colors[color_id].filled())),
+                    )
+                    .expect("Can't draw series")
+                    .label(series_name)
+                    .legend(move |(x, y)| Cross::new((x, y), 3.0, colors[color_id].filled())),
+                2 => scatter_ctx
+                    .draw_series(series.iter().map(|(x, y)| {
+                        TriangleMarker::new((*x, *y), 3.0, colors[color_id].filled())
+                    }))
+                    .expect("Can't draw series")
+                    .label(series_name)
+                    .legend(move |(x, y)| {
+                        TriangleMarker::new((x, y), 3.0, colors[color_id].filled())
+                    }),
+                _ => scatter_ctx
+                    .draw_series(
+                        series
+                            .iter()
+                            .map(|(x, y)| Circle::new((*x, *y), 2.0, colors[color_id].filled())),
+                    )
+                    .expect("Can't draw series")
+                    .label(series_name)
+                    .legend(move |(x, y)| Circle::new((x, y), 3.0, colors[color_id].filled())),
+            };
+
+            scatter_ctx
+                .draw_series(LineSeries::new(
+                    series.iter().map(|(x, y)| (*x, *y)),
+                    colors[color_id],
+                ))
+                .expect("Can't draw series curve");
+
+            marker_id = (marker_id + 1) % n_markers;
+            color_id = (color_id + 1) % colors.len();
+        }
+
+        scatter_ctx
+            .configure_series_labels()
+            .position(SeriesLabelPosition::UpperRight)
+            .background_style(&WHITE.mix(0.8))
+            .border_style(&BLACK)
+            .draw()
+            .expect("Can't draw series labels");
+
+        root.present()
+            .expect(format!("Unable to write result to file: {}", output_name).as_str());
     }
 }
 
@@ -522,6 +638,15 @@ pub struct Log {
     pub ltype: LogType,
     /// Log message to display
     pub body: String,
+    /// If true, Log will be stored in a log file
+    pub to_be_stored: bool,
+}
+
+// Implements Display for Log
+impl fmt::Display for Log {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{} {}", self.ltype, self.body)
+    }
 }
 
 lazy_static! {
@@ -535,6 +660,9 @@ lazy_static! {
     /// static String to save Model description to show as a popup. Press 's' on `Simulation Terminal.
     #[doc(hidden)]
     pub static ref DESCR: Mutex<String> = Mutex::new(String::new());
+    /// Current date to manage plot storage
+    #[doc(hidden)]
+    pub static ref CURRENT_DATE: String = chrono::Local::now().format("%Y-%m-%d %H-%M-%S").to_string();
 }
 
 #[doc(hidden)]
@@ -574,6 +702,7 @@ pub use std::sync::mpsc::{self, TryRecvError};
 /// reps: # of repetitions
 ///
 /// flag boolean: to abilitate TUI (optional, default true)
+#[cfg(not(feature = "visualization_wasm"))]
 #[macro_export]
 macro_rules! simulate {
     ($s:expr, $step:expr, $reps:expr $(, $flag:expr)?) => {{
@@ -662,6 +791,8 @@ macro_rules! simulate {
                 let start = std::time::Instant::now();
                 let mut schedule: Schedule = Schedule::new();
                 state.init(&mut schedule);
+
+                log!(LogType::Info, format!("#{} Simulation started", r), true);
                 //simulation loop
                 for i in 0..n_step {
 
@@ -709,7 +840,24 @@ macro_rules! simulate {
                         break;
                     }
                     ui.on_tick(i, (i + 1) as f64 / n_step as f64);
+
                 } //end simulation loop
+
+                log!(LogType::Info, format!("#{} Simulation ended", r), true);
+
+                {
+                    let data = DATA.lock().unwrap();
+                    // iterate on data values and save to file
+                    for (key, plot) in data.iter() {
+                        if plot.to_be_stored {
+                            plot.store_plot(r)
+                        }
+                    }
+
+
+                }
+
+
                 let run_duration = start.elapsed();
                 ui.on_rep(
                     r,
@@ -734,6 +882,29 @@ macro_rules! simulate {
             } //end of repetitions
 
             let _ = tx.send(());
+
+
+            {
+                let mut logs = LOGS.lock().unwrap();
+
+                // iter on logs and save to file
+
+                if logs.len() > 0 {
+                    let date = CURRENT_DATE.clone();
+                    // Create directory if it doesn't exist
+                    fs::create_dir_all("output").expect("Can't create folder");
+                    let log_path = format!("output/{}.log", date);
+                    let mut f = File::create(log_path).expect("Can't create log file");
+                    for log in logs.iter() {
+                        if log.to_be_stored {
+                        write!(f, "{}\n", log).expect("Can't write to log file");
+                        }
+                    }
+                }
+
+
+            }
+
 
             loop {
                 terminal.draw(|f| ui.draw(f));
@@ -836,10 +1007,16 @@ macro_rules! plot {
 /// Create new plot for your simulation
 #[macro_export]
 macro_rules! addplot {
-    ($name:expr, $xlabel:expr, $ylabel:expr) => {{
+    ($name:expr, $xlabel:expr, $ylabel:expr $(, $to_be_stored: expr)? ) => {{
+
+        let mut to_be_stored = false;
+        $(
+            to_be_stored = $to_be_stored;
+        )?
+
         let mut data = DATA.lock().unwrap();
         if !data.contains_key(&$name) {
-            data.insert($name, PlotData::new($name, $xlabel, $ylabel));
+            data.insert($name, PlotData::new($name, $xlabel, $ylabel, to_be_stored));
         }
     }};
 }
@@ -847,14 +1024,21 @@ macro_rules! addplot {
 /// Add a log to the simulation logger
 #[macro_export]
 macro_rules! log {
-    ($ltype:expr, $message:expr) => {{
+    ($ltype:expr, $message:expr $(, $to_be_stored: expr)? ) => {{
         //TODO: Avoid From String
+
+        let mut to_be_stored = false;
+        $(
+            to_be_stored = $to_be_stored;
+        )?
+
         let mut logs = LOGS.lock().unwrap();
         logs.insert(
             0,
             Log {
                 ltype: $ltype,
                 body: $message,
+                to_be_stored,
             },
         );
     }};
