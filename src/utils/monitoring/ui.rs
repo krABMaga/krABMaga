@@ -326,7 +326,6 @@ cfg_if! {
                     Color::Magenta,
                     Color::Blue,
                     Color::Yellow,
-                    Color::Green,
                     Color::Cyan,
                 ];
 

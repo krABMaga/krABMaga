@@ -193,7 +193,7 @@ cfg_if! {
                         locs: RefCell::new(std::iter::repeat_with(Vec::new).take((width * height) as usize).collect()),
                         rlocs: RefCell::new(std::iter::repeat_with(Vec::new).take((width * height)as usize).collect()),
                         width: width.abs(),
-                        height: width.abs(),
+                        height: height.abs(),
                     }
                 }
 
