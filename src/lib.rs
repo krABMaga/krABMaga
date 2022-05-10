@@ -445,7 +445,7 @@ pub use {
     tokio::runtime::Runtime, // 0.3.5
 };
 
-/// Options of old_simulate! macro
+/// Options of `old_simulate!` macro
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Info {
     Verbose,
@@ -453,11 +453,11 @@ pub enum Info {
 }
 
 ///
-/// 2 modes to generate the data
-/// Exaustive: Brute force parameter exploration
-/// Matched: explore every input with the same indexes
+/// Model Exploration modes
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum ExploreMode {
+    /// Exaustive: Brute force parameter exploration
+    /// Matched: explore every input with the same indexes
     Exaustive,
     Matched,
 }
@@ -695,13 +695,15 @@ pub use std::sync::mpsc::{self, TryRecvError};
 
 /// Run simulation directly using this macro. By default, `Simulation Terminal` is used
 ///
-/// s: istance of state of simulation
+/// # Arguments
+/// 
+/// *`s` - istance of state of simulation
 ///
-/// step: simulation step number
+/// *`step`- number of steps to run
 ///
-/// reps: # of repetitions
+/// *`reps`- number of repetitions to run
 ///
-/// flag boolean: to abilitate TUI (optional, default true)
+/// *`flag` - to abilitate TUI (optional, default true)
 #[cfg(not(feature = "visualization_wasm"))]
 #[macro_export]
 macro_rules! simulate {
@@ -967,7 +969,11 @@ macro_rules! simulate {
     }}; // end pattern macro
 } //end macro
 
-/// Add a description to your simulation. You can show a popup with this message.
+/// Add a description to your simulation. You can show a popup (pressing `s`) with this message.
+/// 
+/// # Arguments
+/// 
+/// * `description` - The description to be shown.
 #[macro_export]
 macro_rules! description {
     ($description:expr) => {{
@@ -975,7 +981,17 @@ macro_rules! description {
     }};
 }
 
-///Add a point to a series of an existing plot
+/// Add a point to a series of an existing plot. 
+/// 
+/// # Arguments
+/// 
+/// * `name` - name of the plot
+/// 
+/// * `series` - name of the series
+/// 
+/// * `x` - x value
+/// 
+/// * `y` - y value
 #[macro_export]
 macro_rules! plot {
     ($name:expr, $serie:expr, $x:expr, $y:expr) => {{
@@ -1004,7 +1020,17 @@ macro_rules! plot {
     }};
 }
 
-/// Create new plot for your simulation
+/// Create new plot for your simulation.
+/// 
+/// # Arguments
+/// 
+/// * `name`- name of the plot.
+///  
+/// * `x_label`- label for the x axis.
+///  
+/// * `y_label`- label for the y axis.
+///  
+/// * `to_be_stored`- if true, the plot will be saved in the output folder.
 #[macro_export]
 macro_rules! addplot {
     ($name:expr, $xlabel:expr, $ylabel:expr $(, $to_be_stored: expr)? ) => {{
@@ -1021,13 +1047,19 @@ macro_rules! addplot {
     }};
 }
 
-/// Add a log to the simulation logger
+/// Add a log to the simulation logger.
+/// 
+/// # Arguments
+/// 
+/// * `ltype` - LogType paramater to specify the type of log. See `LogType` enum for more information.
+/// 
+/// * `message` - message to be logged. 
 #[macro_export]
 macro_rules! log {
     ($ltype:expr, $message:expr $(, $to_be_stored: expr)? ) => {{
         //TODO: Avoid From String
 
-        let mut to_be_stored = false;
+        let to_be_stored = false;
         $(
             to_be_stored = $to_be_stored;
         )?
@@ -1047,13 +1079,15 @@ macro_rules! log {
 #[macro_export]
 /// Run simulation directly using this macro. Not based on `Simulation Terminal`.
 ///
-/// s: istance of state of simulation
-///
-/// step: simulation step number
-///
-/// reps: # of repetitions
-///
-/// info: type of info you want to display during and after simulation
+/// # Arguments
+/// 
+/// * `step` - number of steps to be simulated
+/// 
+/// * `s` - istance of state of simulation
+///  
+/// * `reps` - number of repetitions
+///  
+/// * `info` - type of info you want to display during and after simulation. See `Info` enum for more information.
 macro_rules! simulate_old {
     ($step:expr, $s:expr, $reps:expr, $info:expr) => {{
         let mut s = $s;
@@ -1170,6 +1204,7 @@ macro_rules! simulate_old {
 
 #[macro_use]
 mod no_exported {
+    #[doc(hidden)]
     #[macro_export]
     macro_rules! replace_expr {
         ($_t:tt $sub:expr) => {
@@ -1184,6 +1219,7 @@ mod no_exported {
         ($($tts:tt)*) => {<[()]>::len(&[$(replace_expr!($tts ())),*])};
     }
 
+    #[doc(hidden)]
     #[macro_export]
     macro_rules! build_configurations{
 
@@ -1214,8 +1250,15 @@ mod no_exported {
 }
 
 ///Create a csv file with the experiment results
+///
 ///"DataFrame" trait allow the function to know field names and
+/// 
 ///params list + output list for each configuration runned
+/// 
+/// # Arguments
+/// * `name` - filename to save the csv file
+/// * `dataframe` - dataframe with the configurations and results
+
 pub fn write_csv<A: DataFrame>(name: &str, dataframe: &[A]) -> Result<(), Box<dyn Error>> {
     let csv_name = format!("{}.csv", name);
     let mut wtr = Writer::from_path(csv_name).expect("error on open the file path");
@@ -1237,9 +1280,13 @@ pub trait DataFrame {
     fn to_string(&self) -> Vec<String>;
 }
 
-///Generate parameter values using a Uniform Distribution
-///Params: Type, Min, Max and number of samples
-///n_samples is optional, if omitted only a single sample is computed
+///Generate parameter values using a Uniform Distribution.
+/// 
+/// # Arguments
+/// * `type` - The type of the values to sample.
+/// * `min` - The minimum value of the range.
+/// * `max` - The maximum value of the range.
+/// * `n` - The number of values to sample.
 #[macro_export]
 macro_rules! gen_param {
     ( $type:ty, $min:expr, $max:expr, $n:expr) => {{
@@ -1275,11 +1322,13 @@ macro_rules! gen_param {
     }};
 }
 
-/// Load parameters from a csv
+/// Load parameters from a csv.
 ///
-/// input_file: path to the csv
+/// # Arguments
+/// 
+/// * `input_file` - path to the csv
 ///
-/// x: x_ty, couples of field names and their types.
+/// * `x` and `x_ty`, couples of field names and their types.
 #[macro_export]
 macro_rules! load_csv {
 

@@ -14,7 +14,8 @@ fn simulate_ui_structs() {
     addplot!(
         String::from("Agents"),           // Plot Name
         String::from("Steps"),            // Axis X
-        String::from("Number of agents")  //Axis Y
+        String::from("Number of agents"),  //Axis Y
+        true // Save the plot locally
     );
 
     for step in 0..10 {
@@ -32,6 +33,28 @@ fn simulate_ui_structs() {
             rng.gen_range(0..10_u32) as f64
         );
     }
+
+    {
+
+        let data = DATA.lock().unwrap();
+        for (_, plot) in data.iter() {
+            if plot.to_be_stored {
+                plot.store_plot(0)
+            }
+        }
+
+        use std::path::Path;
+        let date = CURRENT_DATE.clone();
+        let path = format!("output/{}/Agents/Agents_0.png", date);
+
+        // Check if the plot file exists
+        assert!(Path::new(&path).exists());
+
+        // Remove the file
+        fs::remove_dir_all("output").expect("Error removing output directory");
+    
+    }
+
 
     log!(LogType::Info, "Info Log".to_string());
     log!(LogType::Warning, "Warning Log".to_string());

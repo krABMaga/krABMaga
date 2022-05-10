@@ -14,7 +14,7 @@ impl Agent for MyNode {
         self.id
     }
 
-    fn step(&mut self, state: &mut dyn krabmaga::engine::state::State) {}
+    fn step(&mut self, _state: &mut dyn krabmaga::engine::state::State) {}
 }
 
 impl Eq for MyNode {}

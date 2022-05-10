@@ -7,3 +7,4 @@
 Cargo.lock
 .vscode
 /bin
+/output
