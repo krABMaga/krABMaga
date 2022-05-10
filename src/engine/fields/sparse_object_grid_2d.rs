@@ -202,23 +202,22 @@ cfg_if! {
     }else{
 
         /// Field with double buffering for sparse matrix
-        ///
-        /// locs - hashmap to write data. HashMap<location, vector<object>>
-        ///
-        /// rlocs - hashmap to read data.  HashMap<location, vector<object>>
-        ///
-        /// width - first dimension of the field
-        ///
-        /// height - second dimension of the field
-        ///
         pub struct SparseGrid2D<O: Eq + Hash + Clone + Copy> {
+            /// Hashmap to write data. Key is location, value is the number.
             pub locs: RefCell<HashMap<Int2D, Vec<O>>>,
+            /// Hashmap to read data. Key is the value, value is the location.
             pub rlocs: RefCell<HashMap<Int2D, Vec<O>>>,
+            /// First dimension of the field
             pub width: i32,
+            /// Second dimension of the field
             pub height: i32,
         }
         impl<O: Eq + Hash + Clone + Copy> SparseGrid2D<O> {
-            /// create a new instanceSparseNumberenseGrid2D
+            /// create a new instance of SparseNumberenseGrid2D
+            /// # Arguments
+            /// 
+            /// * `width` - first dimension of the field
+            /// * `height` - second dimension of the field
             pub fn new(width: i32, height: i32) -> SparseGrid2D<O> {
                 SparseGrid2D {
                     locs: RefCell::new(HashMap::new()),
@@ -228,13 +227,15 @@ cfg_if! {
                 }
             }
 
-            /// use a closure to manipulate items inside the matrix
+            /// Apply a closure to all values.
             ///
-            /// READ - update the values from rlocs
-            ///
-            /// WRITE - update the values from locs
-            ///
-            /// READWRITE - check locs and rlocs simultaneously to apply the closure
+            /// # Arguments
+            /// * `closure` - closure to apply to all values
+            /// * `option` - option to read or write
+            /// ## `option` possible values
+            /// * `READ` - update the values from rlocs
+            /// * `WRITE` - update the values from locs
+            /// * `READWRITE` - check locs and rlocs simultaneously to apply the closure
             pub fn apply_to_all_values<F>(&self, closure: F, option: GridOption)
             where
                 F: Fn(&Int2D, &O) -> Option<O>,
@@ -279,17 +280,23 @@ cfg_if! {
                 }
             }
 
-            /// get objects at loc from rlocs
+            /// Get the value at a specific location.
+            /// 
+            /// # Arguments
+            /// * `loc` - location to get the value from
             pub fn get_objects(&self, loc: &Int2D) -> Option<Vec<O>> {
                 self.rlocs.borrow().get(loc).cloned()
             }
 
-            /// get objects at loc from locs
+            /// Get the value at a specific location from the write state.
+            /// 
+            /// # Arguments
+            /// * `loc` - location to get the value from
             pub fn get_objects_unbuffered(&self, loc: &Int2D) -> Option<Vec<O>> {
                 self.locs.borrow().get(loc).cloned()
             }
 
-            /// get all empty bags from rlocs
+            /// Get all empty bags from read state.
             pub fn get_empty_bags(&self) -> Vec<Int2D>{
                 let mut empty_bags = Vec::new();
                 for i in 0 ..  self.width{
@@ -306,7 +313,7 @@ cfg_if! {
                 empty_bags
             }
 
-            /// get one random empty bag from rlocs
+            /// Get one random empty bag from read state.
             pub fn get_random_empty_bag(&self) -> Option<Int2D>{
                 let mut rng = rand::thread_rng();
                 loop {
@@ -320,7 +327,10 @@ cfg_if! {
                 }
             }
 
-            /// iterate over the rlocs matrix and apply the closure
+            /// Iterate over the rlocs matrix and apply the closure.
+            /// 
+            /// # Arguments
+            /// * `closure` - closure to apply to all values
             pub fn iter_objects<F>(&self, closure: F)
             where
                 F: Fn(
@@ -336,7 +346,10 @@ cfg_if! {
                 }
             }
 
-            /// iterate over the locs matrix and apply the closure
+            /// Iterate over the locs matrix and apply the closure
+            /// 
+            /// # Arguments
+            /// * `closure` - closure to apply to all values
             pub fn iter_objects_unbuffered<F>(&self, closure: F)
             where
                 F: Fn(
@@ -352,7 +365,11 @@ cfg_if! {
                 }
             }
 
-            /// set object at loc on locs
+            /// Set object at a specific location.
+            /// 
+            /// # Arguments
+            /// * `loc` - location to set the object at
+            /// * `object` - object to insert
             pub fn set_object_location(&self, object: O, loc: &Int2D) {
                 let mut locs = self.locs.borrow_mut();
                 match locs.get_mut(loc){

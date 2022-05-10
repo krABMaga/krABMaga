@@ -291,6 +291,12 @@ cfg_if! {
         impl<O: Location2D<Real2D> + Clone + Hash + Eq + Copy + Display> Field2D<O>  {
 
             /// Create a new `Field2D`
+            /// 
+            /// # Arguments
+            /// * `w` - Width, first dimension of the field
+            /// * `h` - Height, second dimension of the field
+            /// * `d` - Value to discretize `Real2D` positions to our Matrix
+            /// * `t` - `true` if you want a Toroidal field, `false` otherwise
             pub fn new(w: f32, h: f32, d: f32, t: bool) -> Field2D<O> {
                 Field2D {
                     bags: RefCell::new(std::iter::repeat_with(Vec::new).take((((w/d).ceil()+1.0) * ((h/d).ceil() +1.0))as usize).collect()),
@@ -308,6 +314,9 @@ cfg_if! {
             }
 
             /// Map coordinates of an object into matrix indexes
+            /// 
+            /// # Arguments
+            /// * `loc` - `Real2D` coordinates of the object
             fn discretize(&self, loc: &Real2D) -> Int2D {
                 let x_floor = (loc.x/self.discretization).floor();
                 let x_floor = x_floor as i32;
@@ -322,6 +331,10 @@ cfg_if! {
             }
 
             /// Return the set of objects within a certain distance
+            /// 
+            /// # Arguments
+            /// * `loc` - `Real2D` coordinates of the object
+            /// * `dist` - Distance to look for objects
             pub fn get_neighbors_within_distance(&self, loc: Real2D, dist: f32) -> Vec<O> {
                 let mut neighbors: Vec<O>;
 
@@ -378,6 +391,10 @@ cfg_if! {
             }
 
             /// Return the set of objects within a certain distance. No circle check.
+            /// 
+            /// # Arguments
+            /// * `loc` - `Real2D` coordinates of the object
+            /// * `dist` - Distance to look for objects
             pub fn get_neighbors_within_relax_distance(&self, loc: Real2D, dist: f32) -> Vec<O> {
                 let mut neighbors;
 
@@ -425,6 +442,9 @@ cfg_if! {
             }
 
             /// Return objects at a specific location
+            /// 
+            /// # Arguments
+            /// * `loc` - `Real2D` coordinates of the object
             pub fn get_objects(&self, loc: Real2D) -> Vec<O>{
                 let bag = self.discretize(&loc);
                 let index = ((bag.x * self.dh) + bag.y) as usize;
@@ -433,6 +453,9 @@ cfg_if! {
             }
 
             /// Return number of object at a specific location
+            /// 
+            /// # Arguments
+            /// * `loc` - `Real2D` coordinates of the object
             pub fn num_objects_at_location(&self, loc: Real2D) -> usize {
                 let bag = self.discretize(&loc);
                 let index = ((bag.x * self.dh) + bag.y) as usize;
@@ -441,6 +464,10 @@ cfg_if! {
             }
 
             /// Insert an object into a specific position
+            /// 
+            /// # Arguments
+            /// * `obj` - Object to insert
+            /// * `loc` - `Real2D` coordinates of the object
             pub fn set_object_location(&self, object: O, loc: Real2D) {
                 let bag = self.discretize(&loc);
                 let index = ((bag.x * self.dh) + bag.y) as usize;

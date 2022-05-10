@@ -80,24 +80,23 @@ cfg_if! {
     } else {
 
         /// Field with double buffering for sparse matrix
-        ///
-        /// locs - hashmap to write data. HashMap<location, number>
-        ///
-        /// rlocs - hashmap to read data. HashMap<location, number>
-        ///
-        /// width - first dimension of the field
-        ///
-        /// height - second dimension of the field
-        ///
         pub struct SparseNumberGrid2D<T: Copy + Clone> {
+            /// Hashmap to write data. Key is location, value is the number.
             pub locs: RefCell<HashMap<Int2D, T>>,
+            /// Hashmap to read data. Key is the value, value is the location.
             pub rlocs: RefCell<HashMap<Int2D, T>>,
+            /// First dimension of the field
             pub width: i32,
+            /// Second dimension of the field
             pub height: i32
         }
 
         impl<T: Copy + Clone> SparseNumberGrid2D<T> {
             /// create a new instance of SparseNumberenseGrid2D
+            /// 
+            /// # Arguments
+            /// * `width` - first dimension of the field
+            /// * `height` - second dimension of the field
             pub fn new(width: i32, height: i32) -> SparseNumberGrid2D<T> {
                 SparseNumberGrid2D {
                     locs: RefCell::new(HashMap::new()),
@@ -107,13 +106,15 @@ cfg_if! {
                 }
             }
 
-            /// use a closure to manipulate items inside the matrix
+            /// Apply a closure to all values.
             ///
-            /// READ - update the values from rlocs
-            ///
-            /// WRITE - update the values from locs
-            ///
-            /// READWRITE - check locs and rlocs simultaneously to apply the closure
+            /// # Arguments
+            /// * `closure` - closure to apply to all values
+            /// * `option` - option to read or write
+            /// ## `option` possible values
+            /// * `READ` - update the values from rlocs
+            /// * `WRITE` - update the values from locs
+            /// * `READWRITE` - check locs and rlocs simultaneously to apply the closure
             pub fn apply_to_all_values<F>(&self, closure: F, option: GridOption)
             where
                 F: Fn(&T) -> T,
@@ -150,19 +151,29 @@ cfg_if! {
                 }
             }
 
-            /// get the value at loc from rlocs
+            /// Get the value at a specific location.
+            /// 
+            /// # Arguments
+            /// * `loc` - location to get the value from
             pub fn get_value(&self, loc: &Int2D) -> Option<T> {
                 let rlocs = self.rlocs.borrow();
                 rlocs.get(loc).copied()
             }
 
-            /// get the value at loc from locs
+            /// Get the value at a specific location from the write state.
+            /// 
+            /// # Arguments
+            /// * `loc` - location to get the value from
             pub fn get_value_unbuffered(&self, loc: &Int2D) -> Option<T> {
                 let locs = self.locs.borrow();
                 locs.get(loc).copied()
             }
 
-            /// set the value at loc on locs
+            /// Set the value at a specific location.
+            /// 
+            /// # Arguments
+            /// * `value` - value to set at the location
+            /// * `loc` - location to set the value at
             pub fn set_value_location(&self, value: T, loc: &Int2D) {
                 let mut locs = self.locs.borrow_mut();
                 locs.insert(*loc, value);

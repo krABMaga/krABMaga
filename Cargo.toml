@@ -127,5 +127,9 @@ visualization_wasm = [
     "bevy_egui",
 ]
 
+[package.metadata.docs.rs]
+features = ["bayesian"]
+
+
 [lib]
 doctest = false     

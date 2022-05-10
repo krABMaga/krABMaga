@@ -1,15 +1,16 @@
+//hidden documentation
+#[doc(hidden)]
 #[macro_export]
-/// Internal function for automatic building the structure for the Dataframe
+/// Internal function for automatic building the structure for the Dataframe.
 ///
 /// The dataframe allow to write the data of the simulations into a comfort structure that can be saved inside a file or easily manipulated
 ///
-/// Complete pattern of the macro
+/// # Arguments
+/// * `name` - The custom name of the dataframe
+/// 
+/// * `input` - multiple pairs of identifier and type
 ///
-/// name : custom name of the structure
-///
-/// input : multiple pairs of identifier and type
-///
-/// vec : vectors of elements, must specify the identifier, the type and the vector length
+/// * `vec` - vectors of elements, must specify the identifier, the type and the vector length
 ///
 /// derive : optional parameter for the derive directive
 macro_rules! build_dataframe_explore {
@@ -121,25 +122,19 @@ macro_rules! build_dataframe_explore {
 
 }
 
-/// macro to perform sequential model exploration using a genetic algorithm
+/// Macro to perform sequential model exploration using a genetic algorithm.
+/// 
+/// # Arguments
 ///
-/// init_population: function that creates the population, must return an array of individual (an individual is the state of the simulation to compute)
-///
-/// fitness: function that computes the fitness value, takes a single individual and the schedule, must return an f32
-///
-/// mutation: function that perform the mutation, takes a single individual as parameter
-///
-/// crossover: function that creates the population, takes the entire population as parameter
-///
-/// state: state of the simulation representing an individual
-///
-/// desired_fitness: desired fitness value
-///
-/// generation_num: max number of generations to compute
-///
-/// step: number of steps of the single simulation
-///
-/// reps: number of repetitions of the simulation using each individual
+/// * `init_population` - function that creates the population, must return an array of individual (an individual is the state of the simulation to compute)
+/// * `fitness` - function that computes the fitness value, takes a single individual and the schedule, must return an f32
+/// * `mutation` - function that perform the mutation, takes a single individual as parameter
+/// * `crossover` - function that creates the population, takes the entire population as parameter
+/// * `state` - state of the simulation representing an individual
+/// * `desired_fitness` - desired fitness value
+/// * `generation_num` - max number of generations to compute
+/// * `step` - number of steps of the single simulation
+/// * `reps` - number of repetitions of the simulation using each individual (optional, default is 1)
 #[macro_export]
 macro_rules! explore_ga_sequential {
     (
@@ -315,23 +310,19 @@ macro_rules! explore_ga_sequential {
 
 }
 
-/// macro to perform parallel model exploration using a genetic algorithm
+/// Macro to perform parallel model exploration using a genetic algorithm.
 ///
-/// init_population: function that creates the population, must return an array of individual. An individual is the state of the simulation to compute
+/// # Arguments
 ///
-/// fitness: function that computes the fitness value, takes a single individual and the schedule, must return an f32
-///
-/// mutation: function that perform the mutation, takes a single individual as parameter
-///
-/// crossover: function that creates the population, takes the entire population as parameter
-///
-/// state: state of the simulation representing an individual
-///
-/// desired_fitness: desired fitness value
-///
-/// generation_num: max number of generations to compute
-///
-/// step: number of steps of the single simulation
+/// * `init_population` - function that creates the population, must return an array of individual (an individual is the state of the simulation to compute)
+/// * `fitness` - function that computes the fitness value, takes a single individual and the schedule, must return an f32
+/// * `mutation` - function that perform the mutation, takes a single individual as parameter
+/// * `crossover` - function that creates the population, takes the entire population as parameter
+/// * `state` - state of the simulation representing an individual
+/// * `desired_fitness` - desired fitness value
+/// * `generation_num` - max number of generations to compute
+/// * `step` - number of steps of the single simulation
+/// * `reps` - number of repetitions of the simulation using each individual (optional, default is 1)
 #[macro_export]
 macro_rules! explore_ga_parallel {
     (

@@ -188,6 +188,10 @@ cfg_if! {
             impl<O: Eq + Hash + Clone + Copy> DenseGrid2D<O> {
 
                 /// create a new instance of DenseGrid2D
+                /// 
+                /// # Arguments
+                /// * `width` - first dimension of the field
+                /// * `height` - second dimension of the field
                 pub fn new(width: i32, height: i32) -> DenseGrid2D<O> {
                     DenseGrid2D {
                         locs: RefCell::new(std::iter::repeat_with(Vec::new).take((width * height) as usize).collect()),
@@ -197,13 +201,15 @@ cfg_if! {
                     }
                 }
 
-                /// Use a closure to manipulate items inside the matrix
+                /// Apply a closure to all values.
                 ///
-                /// READ - update the values from rlocs
-                ///
-                /// WRITE - update the values from locs
-                ///
-                /// READWRITE - check locs and rlocs simultaneously to apply the closure
+                /// # Arguments
+                /// * `closure` - closure to apply to all values
+                /// * `option` - option to read or write
+                /// ## `option` possible values
+                /// * `READ` - update the values from rlocs
+                /// * `WRITE` - update the values from locs
+                /// * `READWRITE` - check locs and rlocs simultaneously to apply the closure
                 pub fn apply_to_all_values<F>(&self, closure: F, option: GridOption)
                 where
                     F: Fn(&Int2D, &O) -> Option<O>,
@@ -292,6 +298,9 @@ cfg_if! {
                 }
 
                 /// Return a vector of objects at loc from rlocs
+                /// 
+                /// # Arguments
+                /// * `loc` - location to get the objects
                 pub fn get_objects(&self, loc: &Int2D) -> Option<Vec<O>> {
                     let mut obj = Vec::new();
                     let index = ((loc.x * self.height) + loc.y) as usize;
@@ -308,6 +317,9 @@ cfg_if! {
                 }
 
                 /// Return a vector of objects at loc from locs
+                /// 
+                /// # Arguments
+                /// * `loc` - location to get the objects
                 pub fn get_objects_unbuffered(&self, loc: &Int2D) -> Option<Vec<O>> {
 
                     let mut obj = Vec::new();
@@ -339,6 +351,9 @@ cfg_if! {
                 }
 
                 /// Iterate over the locs matrix and apply the closure
+                ///
+                /// # Arguments
+                /// * `closure` - closure to apply to each element of the matrix
                 pub fn iter_objects<F>(&self, closure: F)
                 where
                     F: Fn(
@@ -360,6 +375,9 @@ cfg_if! {
                 }
 
                 /// Iterate over the rlocs matrix and apply the closure
+                /// 
+                /// # Arguments
+                /// * `closure` - closure to apply to each element of the matrix
                 pub fn iter_objects_unbuffered<F>(&self, closure: F)
                 where
                     F: Fn(
@@ -383,6 +401,10 @@ cfg_if! {
 
 
                 /// Insert an object at loc inside the locs matrix
+                /// 
+                /// # Arguments
+                /// * `obj` - object to insert
+                /// * `loc` - location to insert the object
                 pub fn set_object_location(&self, object: O, loc: &Int2D) {
                     let index = ((loc.x * self.height) + loc.y) as usize;
                     let mut locs = self.locs.borrow_mut();
@@ -395,6 +417,10 @@ cfg_if! {
                 }
 
                 /// Remove an object at loc inside the locs matrix
+                /// 
+                /// # Arguments
+                /// * `obj` - object to remove
+                /// * `loc` - location to remove the object
                 pub fn remove_object_location(&self, object: O, loc: &Int2D) {
                     let index = ((loc.x * self.height) + loc.y) as usize;
                     let mut locs = self.locs.borrow_mut();

@@ -35,7 +35,7 @@ impl SingletonGP {
     }
 }
 
-///get instance of Singleton. Create it at first call.
+///Get instance of Singleton. Create it at first call.
 #[cfg(any(feature = "bayesian"))]
 pub fn get_instance(x: &Vec<Vec<f64>>, y: &Vec<f64>) -> &'static SingletonGP {
     static mut SINGLETON: MaybeUninit<SingletonGP> = MaybeUninit::uninit();
@@ -55,8 +55,11 @@ pub fn get_instance(x: &Vec<Vec<f64>>, y: &Vec<f64>) -> &'static SingletonGP {
     }
 }
 
-/// macro to define Optimazer required by Bayesian resolver
-/// acquisition: acquisition function passed by user
+/// Macro to define Optimazer required by Bayesian resolver
+/// 
+/// # Arguments
+/// 
+/// * `acquisition` - acquisition function passed by user.
 #[cfg(any(feature = "bayesian"))]
 #[macro_export]
 macro_rules! build_optimizer {
@@ -108,17 +111,18 @@ macro_rules! build_optimizer {
 
 /// Macro to perform bayesian optimization with custom functions.  
 ///
-/// init_population: function that creates the population, must return an array of individual. An individual is the state of the simulation to compute.
+/// # Arguments
+/// * `init_population` - function that creates the population, must return an array of individual. An individual is the state of the simulation to compute.
 ///
-/// costly_function: function to evaluate the goodness of a solution.
+/// * `costly_function` - function to evaluate the goodness of a solution.
 ///
-/// acquisition_function: acquisition function to evaluate quickly a solution, using previous results.
+/// * `acquisition_function` - acquisition function to evaluate quickly a solution, using previous results.
 ///
-/// gen_new_points: function to sample new starting point for the current iteration
+/// * `gen_new_points` - function to sample new starting point for the current iteration
 ///
-/// check_domain: bayesian work on continuos function. With the methods we fix/check the results of an iteration.
+/// * `check_domain` - bayesian work on continuos function. With the methods we fix/check the results of an iteration.
 ///
-/// n_iter: number of iterations of bayesian optimization algorithm
+/// * `n_iter` - number of iterations of bayesian optimization algorithm
 #[cfg(any(feature = "bayesian"))]
 #[macro_export]
 macro_rules! bayesian_opt {
@@ -238,18 +242,20 @@ macro_rules! bayesian_opt {
 }
 
 /// Macro to perform bayesian optimization with default functions.
-/// x_init: initial x values
+/// 
+/// # Arguments
+/// 
+/// * `x_init` - initial x values
 ///
-/// y_init: costs of x_init elements
+/// * `y_init` - costs of x_init elements
 ///
-/// costly_function: function to evaluate the goodness of a solution.
+/// * `costly_function` - function to evaluate the goodness of a solution.
 ///
-/// n_iter: number of iterations of bayesian optimization algorithm
+/// * `n_iter` - number of iterations of bayesian optimization algorithm
 ///
-/// batch_size: how many samples for each iteration
+/// * `batch_size` - how many samples for each iteration
 ///
-/// scale: factor of scaling to generate samples
-
+/// * `scale` - factor of scaling to generate samples
 #[cfg(any(feature = "bayesian"))]
 #[macro_export]
 macro_rules! bayesian_opt_base {

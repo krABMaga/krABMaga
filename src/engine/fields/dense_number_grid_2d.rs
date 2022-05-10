@@ -97,6 +97,10 @@ cfg_if! {
 
         impl<T: Copy + Clone + PartialEq> DenseNumberGrid2D<T> {
             /// Create new instance of DenseNumberGrid2D
+            /// 
+            /// # Arguments
+            /// * `width` - First dimension of the field
+            /// * `height` - Second dimension of the field 
             pub fn new(width: i32, height: i32) -> DenseNumberGrid2D<T> {
                 DenseNumberGrid2D {
                     locs: RefCell::new(std::iter::repeat_with(Vec::new).take((width * height) as usize).collect()),
@@ -108,11 +112,13 @@ cfg_if! {
 
             /// Apply a closure to all values.
             ///
-            /// READ - update the values from rlocs
-            ///
-            /// WRITE - update the values from locs
-            ///
-            /// READWRITE - check locs and rlocs simultaneously to apply the closure
+            /// # Arguments
+            /// * `closure` - closure to apply to all values
+            /// * `option` - option to read or write
+            /// ## `option` possible values
+            /// * `READ` - update the values from rlocs
+            /// * `WRITE` - update the values from locs
+            /// * `READWRITE` - check locs and rlocs simultaneously to apply the closure
             pub fn apply_to_all_values<F>(&self, closure: F, option: GridOption)
             where
                 F: Fn(&T) -> T,
@@ -202,7 +208,10 @@ cfg_if! {
                 }
             }
 
-            /// Return the first value of a specific position. `None` if position is empty
+            /// Return the first value of a specific position. `None` if position is empty.
+            /// 
+            /// # Arguments
+            /// * `loc` - position to get the value
             pub fn get_value(&self, loc: &Int2D) -> Option<T> {
                 let index = ((loc.x * self.height) + loc.y) as usize;
                 let rlocs = self.rlocs.borrow();
@@ -213,7 +222,10 @@ cfg_if! {
                 }
             }
 
-            /// Return all values of a specific position inside write state. `None` if position is empty
+            /// Return all values of a specific position inside write state. `None` if position is empty.
+            /// 
+            /// # Arguments
+            /// * `loc` - position to get the values
             pub fn get_value_unbuffered(&self, loc: &Int2D) -> Option<Vec<T>> {
                 let mut obj = Vec::new();
                 let index = ((loc.x * self.height) + loc.y) as usize;
@@ -231,6 +243,9 @@ cfg_if! {
 
 
             /// Read and apply a closure to all values inside Read state
+            /// 
+            /// # Arguments
+            /// * `closure` - closure to apply to all values
             pub fn iter_values<F>(&self, closure: F)
                 where
                     F: Fn(
@@ -252,6 +267,9 @@ cfg_if! {
             }
 
             /// Read and apply a closure to all values inside Write state
+            /// 
+            /// # Arguments
+            /// * `closure` - closure to apply to all values
             pub fn iter_values_unbuffered<F>(&self, closure: F)
             where
                 F: Fn(
@@ -275,6 +293,10 @@ cfg_if! {
 
 
             /// Write a value in a specific position
+            /// 
+            /// # Arguments
+            /// * `value` - value to write
+            /// * `loc` - position to write the value
             pub fn set_value_location(&self, value: T, loc: &Int2D) {
                 let index = ((loc.x * self.height) + loc.y) as usize;
                 let mut locs = self.locs.borrow_mut();

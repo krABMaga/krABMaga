@@ -224,15 +224,14 @@ cfg_if! {
     // SEQUENTIAL IF
     else{
         /// Struct to manage all the agents in the simulation
-        ///
-        /// step: current step of the simulation
-        /// time: current time of the simulation
-        /// events: priority queue filled with a pair of AgentImpl and his Priority
-        /// agents_ids_counting: unique ids
         pub struct Schedule{
+            /// Current step of the simulation
             pub step: u64,
+            /// Current time of the simulation
             pub time: f32,
+            /// Priority queue filled with a pair of AgentImpl and his Priority
             pub events: PriorityQueue<AgentImpl,Priority>,
+            /// Unique ids inside schedule
             pub agent_ids_counting: u32,
         }
 
@@ -265,7 +264,7 @@ cfg_if! {
         }
 
         impl Schedule {
-            ///create a new instance for Schedule
+            /// Create a new instance for Schedule
             pub fn new() -> Schedule {
                 Schedule {
                     step: 0,
@@ -275,14 +274,24 @@ cfg_if! {
                 }
             }
 
-            ///insert an agent in the PriorityQueue for one step
-            pub fn schedule_once(&mut self, agent: AgentImpl,the_time:f32, the_ordering:i32) {
+            /// Onsert an agent in the PriorityQueue for one step
+            /// 
+            /// # Arguments
+            /// * `agent` - Agent to schedule
+            /// * `the_time` - Time to schedule the agent
+            /// * `the_ordering` - Ordering of the agent inside the queue
+            pub fn schedule_once(&mut self, agent: AgentImpl, the_time:f32, the_ordering:i32) {
                 self.events.push(agent, Priority{time: the_time, ordering: the_ordering});
             }
 
-            /// insert an agent in the PriorityQueue with the repeating field set at true
+            /// Insert an agent in the PriorityQueue with the repeating field set at true.
             ///
-            /// return false if the insertion in the priority queue fails
+            /// Return false if the insertion in the priority queue fails.
+            /// 
+            /// # Arguments
+            /// * `agent` - Agent to schedule
+            /// * `the_time` - Time to schedule the agent
+            /// * `the_ordering` - Ordering of the agent inside the queue
             pub fn schedule_repeating(&mut self, agent: Box<dyn Agent>, the_time:f32, the_ordering:i32) -> bool {
                 let mut a = AgentImpl::new(agent, self.agent_ids_counting);
                 self.agent_ids_counting +=1;
@@ -293,7 +302,7 @@ cfg_if! {
                 opt.is_none()
             }
 
-            /// return a vector of all the objects contained in the PriorityQueue
+            /// Return a vector of all the objects contained in the PriorityQueue
             pub fn get_all_events(&self) -> Vec<Box<dyn Agent>>{
                 let mut tor: Vec<Box<dyn Agent>> = Vec::new();
                 for e in self.events.iter(){
@@ -302,7 +311,11 @@ cfg_if! {
                 tor
             }
 
-            /// remove an agent, if exist, from the PriorityQueue
+            /// Remove an agent, if exist, from the PriorityQueue.
+            /// 
+            /// # Arguments
+            /// * `agent` - Agent to remove
+            /// * `my_id` - Id of the agent to remove
             pub fn dequeue(&mut self, agent: Box<dyn Agent>, my_id: u32) -> bool {
                 let a = AgentImpl::new(agent, my_id);
                 let removed = self.events.remove(&a);
@@ -317,7 +330,10 @@ cfg_if! {
                 }
             }
 
-            /// Compute the step for each agent in the PriorityQueue
+            /// Compute the step for each agent in the PriorityQueue.
+            /// 
+            /// # Arguments
+            /// * `state` - State of the simulation
             pub fn step(&mut self, state: &mut dyn State){
 
                 if self.step == 0{

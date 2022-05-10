@@ -5,18 +5,27 @@ use dyn_clone::DynClone;
 
 /// Agent define the specific functionalities that an agent of a simulation should have e.g. the step function
 pub trait Agent: Downcast + DynClone + Send + Sync {
-    ///define the core behaviour of the agent
+    /// Define the core behaviour of the agent. Write here all the code that will be executed by the agent at each step.
+    /// 
+    /// # Arguments
+    /// * `state` - state of the simulation
     fn step(&mut self, state: &mut dyn State);
 
-    ///return the id of the agent
+    /// Return the id of the agent
     fn get_id(&self) -> u32;
 
     /// Specifies whether this agent should be removed from the schedule after the current step.
+    /// 
+    /// # Arguments
+    /// * `state` - state of the simulation
     fn is_stopped(&mut self, _state: &mut dyn State) -> bool {
         false
     }
 
-    ///define the optional behaviour of the agent before computing the actual step
+    /// Define the optional behaviour of the agent before computing the actual step
+    /// 
+    /// # Arguments
+    /// * `state` - state of the simulation
     fn before_step(
         &mut self,
         _state: &mut dyn State,
@@ -24,7 +33,7 @@ pub trait Agent: Downcast + DynClone + Send + Sync {
         None
     }
 
-    ///define the optional behaviour of the agent after computing the actual step
+    /// Define the optional behaviour of the agent after computing the actual step
     fn after_step(
         &mut self,
         _state: &mut dyn State,

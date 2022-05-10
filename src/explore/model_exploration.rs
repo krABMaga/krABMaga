@@ -1,4 +1,5 @@
-/// internal function to run the simulation inside the explore macros
+#[doc(hidden)]
+/// Internal function to run the simulation inside the explore macros
 ///
 /// step : number of total step of the simulation
 ///
@@ -37,19 +38,15 @@ macro_rules! simulate_explore {
 }
 
 #[macro_export]
-///Macro to to perform sequential model exploration using basic parameters sweeping
+/// Macro to to perform sequential model exploration using basic parameters sweeping
 ///
-/// step : simulation step number,
-///
-/// repconf: number of repetitions
-///
-/// state: state of the simulation
-///
-/// input: multiple custom input, pair of a identifier and his type
-///
-/// output: multiple custom input, pair of a identifier and his type
-///
-/// mode: enum to choose which mode of execution is desired (Supported option: Exaustive, Matched)
+/// # Arguments
+/// * `step` - simulation step number,
+/// * `repconf` - number of repetitions
+/// * `state` - state of the simulation
+/// * `input` - multiple custom input, pair of a identifier and its type
+/// * `output` - multiple custom input, pair of a identifier and its type
+/// * `mode` - enum to choose which mode of execution is desired (Supported option: Exaustive, Matched)
 macro_rules! explore_sequential {
 
         //exploration with explicit output parameters
@@ -133,19 +130,15 @@ macro_rules! explore_sequential {
     }
 
 #[macro_export]
-///Macro to to perform parallel model exploration using basic parameters sweeping
+/// Macro to to perform parallel model exploration using basic parameters sweeping
 ///
-/// step : simulation step number,
-///
-/// repconf: number of repetitions
-///
-/// state: state of the simulation
-///
-/// input: multiple custom input, pair of a identifier and his type
-///
-/// output: multiple custom input, pair of a identifier and his type
-///
-/// mode: enum to choose which mode of execution is desired (Supported option: Exaustive, Matched)
+/// # Arguments
+/// * `step` - simulation step number,
+/// * `repconf` - number of repetitions
+/// * `state` - state of the simulation
+/// * `input` - multiple custom input, pair of a identifier and its type
+/// * `output` - multiple custom input, pair of a identifier and its type
+/// * `mode` - enum to choose which mode of execution is desired (Supported option: Exaustive, Matched)
 macro_rules! explore_parallel {
         ($nstep: expr, $rep_conf:expr, $state:ty,
             input {$($input:ident: $input_ty: ty )*},
@@ -226,6 +219,7 @@ macro_rules! explore_parallel {
         };
     }
 
+#[doc(hidden)]
 #[macro_export]
 /// Internal function for automatic building the structure for the Dataframe
 ///

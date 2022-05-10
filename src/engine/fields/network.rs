@@ -43,7 +43,11 @@ pub struct Edge<L: Clone + Hash + Display> {
 }
 
 impl<L: Clone + Hash + Display> Edge<L> {
-    // Create a new edge
+    /// Create a new edge
+    /// # Arguments
+    /// * `u_node` - id of source node
+    /// * `v_node` - id of destination node
+    /// * `edge_options` - edge options (label and/or weight)
     pub fn new(u_node: u32, v_node: u32, edge_options: EdgeOptions<L>) -> Edge<L> {
         match edge_options {
             EdgeOptions::Simple => Edge {
@@ -555,16 +559,21 @@ cfg_if! {
         }
 
     } else { // not for visualization or parallel feature
-        /// Connect nodes using `Edge` struct
+        /// A network is a collection of nodes and edges.
         pub struct Network<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> {
+            /// Write state of edges
             pub edges: RefCell<HashMap<u32, Vec<Edge<L>>>>,
+            /// Read state of edges
             pub redges: RefCell<HashMap<u32, Vec<Edge<L>>>>,
+            /// Map from nodes to their id
             pub nodes2id: RefCell<HashMap<O, u32>>,
+            /// Map from id to nodes
             pub id2nodes: RefCell<HashMap<u32, O>>,
+            /// Map from id to nodes. Used as a read state
             pub rid2nodes: RefCell<HashMap<u32, O>>,
+            /// directed graph or not
             pub direct: bool,
         }
-
 
         impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display + Debug> Display for Network<O, L> {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error>
@@ -599,7 +608,9 @@ cfg_if! {
 
         }
         impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> Network<O, L> {
-            /// Create a new Network. Network can directed or not
+            /// Create a new Network. Network can directed or not.
+            /// # Arguments
+            /// * `d` - true if the network is directed
             pub fn new(d: bool) -> Network<O, L> {
                 Network {
                     edges: RefCell::new(HashMap::new()),
@@ -612,6 +623,11 @@ cfg_if! {
             }
 
             /// Add new edge. Add also reverse edge if `direct` is true
+            /// 
+            /// # Arguments
+            /// * `u` - source node
+            /// * `v` - target node
+            /// * `edge_options` - edge options enum (label and/or weight)
             pub fn add_edge(&self, u: O, v: O, edge_options: EdgeOptions<L>) -> (bool, bool) {
                 let nodes2id = self.nodes2id.borrow_mut();
                 let mut vbool = false;
@@ -655,6 +671,9 @@ cfg_if! {
             }
 
             /// Add a new node to the network
+            /// 
+            /// # Arguments
+            /// * `u` - node to add
             pub fn add_node(&self, u: O) {
                 let mut nodes2id = self.nodes2id.borrow_mut();
                 let mut id2nodes = self.id2nodes.borrow_mut();
@@ -673,7 +692,13 @@ cfg_if! {
             }
 
             /// Part of "preferential attachment" process.
+            /// 
             /// Add a edges to a new node. New network members prefer to make a connection to the more popular existing members.
+            /// 
+            /// # Arguments
+            /// * `u` - node to connect
+            /// * `n_sample` - number of nodes to connect to
+            /// * `my_seed` - seed for random number generator
             pub fn add_prob_edge(&self, u: O, n_sample: &usize, my_seed: u64) {
                 let id2nodes = self.id2nodes.borrow();
                 let mut dist: Vec<(&O, i32)> = Vec::new();
@@ -736,6 +761,10 @@ cfg_if! {
             // }
 
             /// Get an `Edge` from the network
+            /// 
+            /// # Arguments
+            /// * `u` - source node
+            /// * `v` - target node
             pub fn get_edge(&self, u: O, v: O) -> Option<Edge<L>> {
                 let nodes2id = self.nodes2id.borrow();
                 let id2nodes = self.id2nodes.borrow();
@@ -766,6 +795,9 @@ cfg_if! {
             }
 
             /// Get all edges of a node
+            /// 
+            /// # Arguments
+            /// * `u` - node
             pub fn get_edges(&self, u: O) -> Option<Vec<Edge<L>>> {
                 let nodes2id = self.nodes2id.borrow();
                 let uid = match nodes2id.get(&u) {
@@ -777,13 +809,20 @@ cfg_if! {
             }
 
 
-            /// get a node from an id
+            /// Get a node from an id. Returns `None` if the id is not found
+            /// 
+            /// # Arguments
+            /// * `uid` - id of the node
             pub fn get_object(&self, uid: u32) -> Option<O> {
                 self.rid2nodes.borrow_mut().get(&uid).cloned()
             }
 
             ///Generate an undirected network based on
             ///Barabási-Albert’s preferential attachment model.
+            /// 
+            /// # Arguments
+            /// * `node_set` - nodes of the network
+            /// * `init_edges` - initial edges for each node
             #[allow(non_snake_case)]
             pub fn preferential_attachment_BA(
                 &mut self,
@@ -854,8 +893,12 @@ cfg_if! {
 
             ///Generate an undirected network based on
             ///Barabási-Albert’s preferential attachment model
-            ///with defined seed
-
+            ///with defined seed.
+            /// 
+            /// # Arguments
+            /// * `node_set` - nodes of the network
+            /// * `init_edges` - initial edges for each node
+            /// * `my_seed` - seed for the random number generator
             #[allow(non_snake_case)]
             pub fn preferential_attachment_BA_with_seed(
                 &mut self,
@@ -929,6 +972,10 @@ cfg_if! {
             }
 
             /// Remove a specific edge. Remove also reverse edge if `direct` is true
+            /// 
+            /// # Arguments
+            /// * `u` - instance of the first node
+            /// * `v` - instance of the second node
             pub fn remove_edge(&self, u: O, v: O) -> Option<Edge<L>> {
                 let nodes2id = self.nodes2id.borrow();
 
@@ -966,6 +1013,9 @@ cfg_if! {
 
 
             /// Remove all incoming edges of a node
+            /// 
+            /// # Arguments
+            /// * `u` - instance of the node
             pub fn remove_incoming_edges(&self, u: O) -> Option<Vec<Edge<L>>> {
                 // let edges = self.edges.borrow();
                 // let nodes = edges.keys();
@@ -991,6 +1041,9 @@ cfg_if! {
             }
 
             /// Remove all outgoing edges of a node
+            /// 
+            /// # Arguments
+            /// * `u` - instance of the node
             pub fn remove_outgoing_edges(&self, u: O) -> Option<Vec<Edge<L>>> {
 
                 let mut ris = vec![];
@@ -1016,6 +1069,9 @@ cfg_if! {
 
 
             /// Remove a specific node
+            /// 
+            /// # Arguments
+            /// * `u` - instance of the node
             pub fn remove_node(&self, u: O) -> bool {
                 let uid: u32;
                 {
@@ -1052,41 +1108,10 @@ cfg_if! {
                 true
             }
 
-            // pub fn random_attachment(&mut self, node_set: Vec<O>, u: O, direct: bool, init_edges: usize) {
-            //     let n_nodes = node_set.len();
-
-            //     self.remove_all_edges();
-
-            //     if n_nodes == 0 {
-            //         return;
-            //     }
-            //     self.add_node(node_set[0]);
-            //     self.update();
-            //     if n_nodes == 1 {
-            //         return;
-            //     }
-            //     self.add_node(node_set[1]);
-
-            //     self.add_edge(node_set[0], node_set[1], EdgeOptions::Simple);
-            //     self.update();
-
-            //     let mut rng = rand::thread_rng();
-            //     for i in 0..n_nodes {
-            //         let node = node_set[i] as O;
-
-            //         let mut choices_list = node_set
-            //             .choose_multiple(&mut rng, init_edges)
-            //             .collect::<Vec<_>>();
-
-            //         for choice in choices_list {
-            //             self.add_edge(node, *choice, EdgeOptions::Simple);
-            //         }
-            //     }
-            //     self.update();
-            // }
-
-
             /// Update node info
+            /// 
+            /// # Arguments
+            /// * `u` - instance of the node to update
             pub fn update_node(&self, u: O) {
                 let nodes2id = self.nodes2id.borrow_mut();
                 let mut id2nodes = self.id2nodes.borrow_mut();
