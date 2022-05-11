@@ -16,7 +16,22 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: check
-          args: --release
+          args: --release 
+
+  checkvis:
+    name: Check visualization and bayesian
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --release --features "visualization, bayesian"
 
   fmt:
     name: Rustfmt
@@ -48,3 +63,19 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: clippy
+
+  clippyvis:
+    name: Clippy visualization
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - run: rustup component add clippy
+      - uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --features "visualization, bayesian"

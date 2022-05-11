@@ -208,10 +208,13 @@ cfg_if! {
 
                             let vid_edge = nodes2id.get(self.id2nodes.get_read(&e.v).expect("error on get_read"))
                                 .expect("error on get");
-                            if self.direct && e.u == *uid && *vid == *vid_edge {
-                                return Some(e.clone());
-                            } else if !self.direct && ((e.u == *uid && *vid_edge == *vid) || (*vid_edge == *uid && e.u == *vid))
-                            {
+                            // if self.direct && e.u == *uid && *vid == *vid_edge {
+                            //     return Some(e.clone());
+                            // } else if !self.direct && ((e.u == *uid && *vid_edge == *vid) || (*vid_edge == *uid && e.u == *vid))
+                            // {
+                            //     return Some(e.clone());
+                            // }
+                            if e.u == *uid && *vid_edge == *vid || !self.direct && *vid_edge == *uid && e.u == *vid {
                                 return Some(e.clone());
                             }
                         }
