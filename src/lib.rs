@@ -1061,7 +1061,7 @@ macro_rules! log {
 
         let to_be_stored = false;
         $(
-            to_be_stored = $to_be_stored;
+            let to_be_stored = $to_be_stored;
         )?
 
         let mut logs = LOGS.lock().unwrap();

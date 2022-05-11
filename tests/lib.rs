@@ -56,10 +56,10 @@ fn simulate_ui_structs() {
     }
 
 
-    log!(LogType::Info, "Info Log".to_string());
+    log!(LogType::Info, "Info Log".to_string(), true);
     log!(LogType::Warning, "Warning Log".to_string());
     log!(LogType::Error, "Error Log".to_string());
-    log!(LogType::Critical, "Critical Log".to_string());
+    log!(LogType::Critical, "Critical Log".to_string(), true);
 
     let logs = LOGS.lock().unwrap();
 
