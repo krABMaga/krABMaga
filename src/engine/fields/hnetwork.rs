@@ -104,7 +104,7 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> HNetwork<O, L> {
     }
 
     /// Add a new hyper-edge.
-    /// 
+    ///
     /// # Arguments
     /// * `nodes` - nodes of the hyper-edge you want to add
     /// * `edge_options` - Enum to set edge information
@@ -162,7 +162,7 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> HNetwork<O, L> {
     }
 
     /// Get an hyper-edge from a list of nodes. `None` if not found
-    /// 
+    ///
     /// # Arguments
     /// * `nodes` - nodes of the hyper-edge you want to get
     pub fn get_edge(&self, nodes: &[O]) -> Option<HEdge<L>> {
@@ -196,7 +196,7 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> HNetwork<O, L> {
     }
 
     /// Get all edges of a node
-    /// 
+    ///
     /// # Arguments
     /// * `u` - node you want to get the edges
     pub fn get_edges(&self, u: O) -> Option<Vec<HEdge<L>>> {
@@ -210,7 +210,7 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> HNetwork<O, L> {
     }
 
     /// Get a node from its id
-    /// 
+    ///
     /// # Arguments
     /// * `uid` - id of the node you want to get
     pub fn get_object(&self, uid: u32) -> Option<O> {
@@ -224,7 +224,7 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> HNetwork<O, L> {
     }
 
     /// Remove a specific edge using a list of nodes
-    /// 
+    ///
     /// # Arguments
     /// * `nodes` - nodes of the hyper-edge you want to remove
     pub fn remove_edge(&self, nodes: &[O]) -> Option<HEdge<L>> {
@@ -264,7 +264,7 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> HNetwork<O, L> {
     }
 
     /// Remove an edge passing an `HEdge` object
-    /// 
+    ///
     /// # Arguments
     /// * `to_rempoe` - `HEdge` you want to remove
     fn remove_edge_with_hedge(&self, to_remove: &HEdge<L>) -> Option<HEdge<L>> {
@@ -290,7 +290,7 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> HNetwork<O, L> {
     }
 
     /// Remove a specific node and all the edges that involve it
-    /// 
+    ///
     /// # Arguments
     /// * `u` - node you want to remove
     pub fn remove_object(&self, u: O) -> bool {
@@ -318,7 +318,7 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> HNetwork<O, L> {
     }
 
     /// Update a node
-    /// 
+    ///
     /// # Arguments
     /// * `u` - node you want to update
     pub fn update_node(&self, u: O) {

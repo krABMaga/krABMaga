@@ -404,7 +404,7 @@ pub use {
         execute,
         terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     },
-    plotters, 
+    plotters,
     systemstat::{saturating_sub_bytes, Platform, System},
     tui::{
         backend::{Backend, CrosstermBackend},
@@ -608,7 +608,8 @@ impl PlotData {
             .expect("Can't draw series labels");
 
         root.present()
-            .expect(format!("Unable to write result to file: {}", output_name).as_str());
+            .unwrap_or_else(|_| panic!("Unable to write result to file: {}", output_name))
+        //.expect(format!("Unable to write result to file: {}", output_name).as_str());
     }
 }
 
@@ -684,6 +685,12 @@ impl Monitoring {
     }
 }
 
+impl Default for Monitoring {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 lazy_static! {
     /// static object to collect data of monitoring
     #[doc(hidden)]
@@ -696,7 +703,7 @@ pub use std::sync::mpsc::{self, TryRecvError};
 /// Run simulation directly using this macro. By default, `Simulation Terminal` is used
 ///
 /// # Arguments
-/// 
+///
 /// *`s` - istance of state of simulation
 ///
 /// *`step`- number of steps to run
@@ -970,9 +977,9 @@ macro_rules! simulate {
 } //end macro
 
 /// Add a description to your simulation. You can show a popup (pressing `s`) with this message.
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `description` - The description to be shown.
 #[macro_export]
 macro_rules! description {
@@ -981,16 +988,16 @@ macro_rules! description {
     }};
 }
 
-/// Add a point to a series of an existing plot. 
-/// 
+/// Add a point to a series of an existing plot.
+///
 /// # Arguments
-/// 
+///
 /// * `name` - name of the plot
-/// 
+///
 /// * `series` - name of the series
-/// 
+///
 /// * `x` - x value
-/// 
+///
 /// * `y` - y value
 #[macro_export]
 macro_rules! plot {
@@ -1021,9 +1028,9 @@ macro_rules! plot {
 }
 
 /// Create new plot for your simulation.
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `name`- name of the plot.
 ///  
 /// * `x_label`- label for the x axis.
@@ -1048,12 +1055,12 @@ macro_rules! addplot {
 }
 
 /// Add a log to the simulation logger.
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `ltype` - LogType paramater to specify the type of log. See `LogType` enum for more information.
-/// 
-/// * `message` - message to be logged. 
+///
+/// * `message` - message to be logged.
 #[macro_export]
 macro_rules! log {
     ($ltype:expr, $message:expr $(, $to_be_stored: expr)? ) => {{
@@ -1064,15 +1071,17 @@ macro_rules! log {
             let to_be_stored = $to_be_stored;
         )?
 
-        let mut logs = LOGS.lock().unwrap();
-        logs.insert(
-            0,
-            Log {
-                ltype: $ltype,
-                body: $message,
-                to_be_stored,
-            },
-        );
+        {
+            let mut logs = LOGS.lock().unwrap();
+            logs.insert(
+                0,
+                Log {
+                    ltype: $ltype,
+                    body: $message,
+                    to_be_stored,
+                },
+            );
+        }
     }};
 }
 
@@ -1080,9 +1089,9 @@ macro_rules! log {
 /// Run simulation directly using this macro. Not based on `Simulation Terminal`.
 ///
 /// # Arguments
-/// 
+///
 /// * `step` - number of steps to be simulated
-/// 
+///
 /// * `s` - istance of state of simulation
 ///  
 /// * `reps` - number of repetitions
@@ -1252,9 +1261,9 @@ mod no_exported {
 ///Create a csv file with the experiment results
 ///
 ///"DataFrame" trait allow the function to know field names and
-/// 
+///
 ///params list + output list for each configuration runned
-/// 
+///
 /// # Arguments
 /// * `name` - filename to save the csv file
 /// * `dataframe` - dataframe with the configurations and results
@@ -1281,7 +1290,7 @@ pub trait DataFrame {
 }
 
 ///Generate parameter values using a Uniform Distribution.
-/// 
+///
 /// # Arguments
 /// * `type` - The type of the values to sample.
 /// * `min` - The minimum value of the range.
@@ -1325,7 +1334,7 @@ macro_rules! gen_param {
 /// Load parameters from a csv.
 ///
 /// # Arguments
-/// 
+///
 /// * `input_file` - path to the csv
 ///
 /// * `x` and `x_ty`, couples of field names and their types.

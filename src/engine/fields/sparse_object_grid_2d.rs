@@ -215,7 +215,7 @@ cfg_if! {
         impl<O: Eq + Hash + Clone + Copy> SparseGrid2D<O> {
             /// create a new instance of SparseNumberenseGrid2D
             /// # Arguments
-            /// 
+            ///
             /// * `width` - first dimension of the field
             /// * `height` - second dimension of the field
             pub fn new(width: i32, height: i32) -> SparseGrid2D<O> {
@@ -281,7 +281,7 @@ cfg_if! {
             }
 
             /// Get the value at a specific location.
-            /// 
+            ///
             /// # Arguments
             /// * `loc` - location to get the value from
             pub fn get_objects(&self, loc: &Int2D) -> Option<Vec<O>> {
@@ -289,7 +289,7 @@ cfg_if! {
             }
 
             /// Get the value at a specific location from the write state.
-            /// 
+            ///
             /// # Arguments
             /// * `loc` - location to get the value from
             pub fn get_objects_unbuffered(&self, loc: &Int2D) -> Option<Vec<O>> {
@@ -328,7 +328,7 @@ cfg_if! {
             }
 
             /// Iterate over the rlocs matrix and apply the closure.
-            /// 
+            ///
             /// # Arguments
             /// * `closure` - closure to apply to all values
             pub fn iter_objects<F>(&self, closure: F)
@@ -347,7 +347,7 @@ cfg_if! {
             }
 
             /// Iterate over the locs matrix and apply the closure
-            /// 
+            ///
             /// # Arguments
             /// * `closure` - closure to apply to all values
             pub fn iter_objects_unbuffered<F>(&self, closure: F)
@@ -366,7 +366,7 @@ cfg_if! {
             }
 
             /// Set object at a specific location.
-            /// 
+            ///
             /// # Arguments
             /// * `loc` - location to set the object at
             /// * `object` - object to insert

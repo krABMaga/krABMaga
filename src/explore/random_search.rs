@@ -1,4 +1,3 @@
-
 /// Macro to perform model exploration using the random search algorithm.
 ///
 /// # Arguments

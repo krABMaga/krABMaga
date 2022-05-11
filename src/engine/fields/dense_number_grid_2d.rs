@@ -97,10 +97,10 @@ cfg_if! {
 
         impl<T: Copy + Clone + PartialEq> DenseNumberGrid2D<T> {
             /// Create new instance of DenseNumberGrid2D
-            /// 
+            ///
             /// # Arguments
             /// * `width` - First dimension of the field
-            /// * `height` - Second dimension of the field 
+            /// * `height` - Second dimension of the field
             pub fn new(width: i32, height: i32) -> DenseNumberGrid2D<T> {
                 DenseNumberGrid2D {
                     locs: RefCell::new(std::iter::repeat_with(Vec::new).take((width * height) as usize).collect()),
@@ -209,7 +209,7 @@ cfg_if! {
             }
 
             /// Return the first value of a specific position. `None` if position is empty.
-            /// 
+            ///
             /// # Arguments
             /// * `loc` - position to get the value
             pub fn get_value(&self, loc: &Int2D) -> Option<T> {
@@ -223,7 +223,7 @@ cfg_if! {
             }
 
             /// Return all values of a specific position inside write state. `None` if position is empty.
-            /// 
+            ///
             /// # Arguments
             /// * `loc` - position to get the values
             pub fn get_value_unbuffered(&self, loc: &Int2D) -> Option<Vec<T>> {
@@ -243,7 +243,7 @@ cfg_if! {
 
 
             /// Read and apply a closure to all values inside Read state
-            /// 
+            ///
             /// # Arguments
             /// * `closure` - closure to apply to all values
             pub fn iter_values<F>(&self, closure: F)
@@ -267,7 +267,7 @@ cfg_if! {
             }
 
             /// Read and apply a closure to all values inside Write state
-            /// 
+            ///
             /// # Arguments
             /// * `closure` - closure to apply to all values
             pub fn iter_values_unbuffered<F>(&self, closure: F)
@@ -293,7 +293,7 @@ cfg_if! {
 
 
             /// Write a value in a specific position
-            /// 
+            ///
             /// # Arguments
             /// * `value` - value to write
             /// * `loc` - position to write the value

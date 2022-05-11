@@ -7,7 +7,7 @@
 ///
 /// # Arguments
 /// * `name` - The custom name of the dataframe
-/// 
+///
 /// * `input` - multiple pairs of identifier and type
 ///
 /// * `vec` - vectors of elements, must specify the identifier, the type and the vector length
@@ -123,7 +123,7 @@ macro_rules! build_dataframe_explore {
 }
 
 /// Macro to perform sequential model exploration using a genetic algorithm.
-/// 
+///
 /// # Arguments
 ///
 /// * `init_population` - function that creates the population, must return an array of individual (an individual is the state of the simulation to compute)

@@ -188,7 +188,7 @@ cfg_if! {
             impl<O: Eq + Hash + Clone + Copy> DenseGrid2D<O> {
 
                 /// create a new instance of DenseGrid2D
-                /// 
+                ///
                 /// # Arguments
                 /// * `width` - first dimension of the field
                 /// * `height` - second dimension of the field
@@ -298,7 +298,7 @@ cfg_if! {
                 }
 
                 /// Return a vector of objects at loc from rlocs
-                /// 
+                ///
                 /// # Arguments
                 /// * `loc` - location to get the objects
                 pub fn get_objects(&self, loc: &Int2D) -> Option<Vec<O>> {
@@ -317,7 +317,7 @@ cfg_if! {
                 }
 
                 /// Return a vector of objects at loc from locs
-                /// 
+                ///
                 /// # Arguments
                 /// * `loc` - location to get the objects
                 pub fn get_objects_unbuffered(&self, loc: &Int2D) -> Option<Vec<O>> {
@@ -375,7 +375,7 @@ cfg_if! {
                 }
 
                 /// Iterate over the rlocs matrix and apply the closure
-                /// 
+                ///
                 /// # Arguments
                 /// * `closure` - closure to apply to each element of the matrix
                 pub fn iter_objects_unbuffered<F>(&self, closure: F)
@@ -401,7 +401,7 @@ cfg_if! {
 
 
                 /// Insert an object at loc inside the locs matrix
-                /// 
+                ///
                 /// # Arguments
                 /// * `obj` - object to insert
                 /// * `loc` - location to insert the object
@@ -417,7 +417,7 @@ cfg_if! {
                 }
 
                 /// Remove an object at loc inside the locs matrix
-                /// 
+                ///
                 /// # Arguments
                 /// * `obj` - object to remove
                 /// * `loc` - location to remove the object

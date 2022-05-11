@@ -56,9 +56,9 @@ pub fn get_instance(x: &Vec<Vec<f64>>, y: &Vec<f64>) -> &'static SingletonGP {
 }
 
 /// Macro to define Optimazer required by Bayesian resolver
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `acquisition` - acquisition function passed by user.
 #[cfg(any(feature = "bayesian"))]
 #[macro_export]
@@ -242,9 +242,9 @@ macro_rules! bayesian_opt {
 }
 
 /// Macro to perform bayesian optimization with default functions.
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `x_init` - initial x values
 ///
 /// * `y_init` - costs of x_init elements

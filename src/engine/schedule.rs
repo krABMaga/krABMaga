@@ -275,7 +275,7 @@ cfg_if! {
             }
 
             /// Onsert an agent in the PriorityQueue for one step
-            /// 
+            ///
             /// # Arguments
             /// * `agent` - Agent to schedule
             /// * `the_time` - Time to schedule the agent
@@ -287,7 +287,7 @@ cfg_if! {
             /// Insert an agent in the PriorityQueue with the repeating field set at true.
             ///
             /// Return false if the insertion in the priority queue fails.
-            /// 
+            ///
             /// # Arguments
             /// * `agent` - Agent to schedule
             /// * `the_time` - Time to schedule the agent
@@ -312,7 +312,7 @@ cfg_if! {
             }
 
             /// Remove an agent, if exist, from the PriorityQueue.
-            /// 
+            ///
             /// # Arguments
             /// * `agent` - Agent to remove
             /// * `my_id` - Id of the agent to remove
@@ -331,7 +331,7 @@ cfg_if! {
             }
 
             /// Compute the step for each agent in the PriorityQueue.
-            /// 
+            ///
             /// # Arguments
             /// * `state` - State of the simulation
             pub fn step(&mut self, state: &mut dyn State){

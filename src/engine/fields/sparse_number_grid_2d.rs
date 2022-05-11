@@ -93,7 +93,7 @@ cfg_if! {
 
         impl<T: Copy + Clone> SparseNumberGrid2D<T> {
             /// create a new instance of SparseNumberenseGrid2D
-            /// 
+            ///
             /// # Arguments
             /// * `width` - first dimension of the field
             /// * `height` - second dimension of the field
@@ -152,7 +152,7 @@ cfg_if! {
             }
 
             /// Get the value at a specific location.
-            /// 
+            ///
             /// # Arguments
             /// * `loc` - location to get the value from
             pub fn get_value(&self, loc: &Int2D) -> Option<T> {
@@ -161,7 +161,7 @@ cfg_if! {
             }
 
             /// Get the value at a specific location from the write state.
-            /// 
+            ///
             /// # Arguments
             /// * `loc` - location to get the value from
             pub fn get_value_unbuffered(&self, loc: &Int2D) -> Option<T> {
@@ -170,7 +170,7 @@ cfg_if! {
             }
 
             /// Set the value at a specific location.
-            /// 
+            ///
             /// # Arguments
             /// * `value` - value to set at the location
             /// * `loc` - location to set the value at

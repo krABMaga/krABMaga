@@ -623,7 +623,7 @@ cfg_if! {
             }
 
             /// Add new edge. Add also reverse edge if `direct` is true
-            /// 
+            ///
             /// # Arguments
             /// * `u` - source node
             /// * `v` - target node
@@ -671,7 +671,7 @@ cfg_if! {
             }
 
             /// Add a new node to the network
-            /// 
+            ///
             /// # Arguments
             /// * `u` - node to add
             pub fn add_node(&self, u: O) {
@@ -692,9 +692,9 @@ cfg_if! {
             }
 
             /// Part of "preferential attachment" process.
-            /// 
+            ///
             /// Add a edges to a new node. New network members prefer to make a connection to the more popular existing members.
-            /// 
+            ///
             /// # Arguments
             /// * `u` - node to connect
             /// * `n_sample` - number of nodes to connect to
@@ -761,7 +761,7 @@ cfg_if! {
             // }
 
             /// Get an `Edge` from the network
-            /// 
+            ///
             /// # Arguments
             /// * `u` - source node
             /// * `v` - target node
@@ -795,7 +795,7 @@ cfg_if! {
             }
 
             /// Get all edges of a node
-            /// 
+            ///
             /// # Arguments
             /// * `u` - node
             pub fn get_edges(&self, u: O) -> Option<Vec<Edge<L>>> {
@@ -810,7 +810,7 @@ cfg_if! {
 
 
             /// Get a node from an id. Returns `None` if the id is not found
-            /// 
+            ///
             /// # Arguments
             /// * `uid` - id of the node
             pub fn get_object(&self, uid: u32) -> Option<O> {
@@ -819,7 +819,7 @@ cfg_if! {
 
             ///Generate an undirected network based on
             ///Barabási-Albert’s preferential attachment model.
-            /// 
+            ///
             /// # Arguments
             /// * `node_set` - nodes of the network
             /// * `init_edges` - initial edges for each node
@@ -894,7 +894,7 @@ cfg_if! {
             ///Generate an undirected network based on
             ///Barabási-Albert’s preferential attachment model
             ///with defined seed.
-            /// 
+            ///
             /// # Arguments
             /// * `node_set` - nodes of the network
             /// * `init_edges` - initial edges for each node
@@ -972,7 +972,7 @@ cfg_if! {
             }
 
             /// Remove a specific edge. Remove also reverse edge if `direct` is true
-            /// 
+            ///
             /// # Arguments
             /// * `u` - instance of the first node
             /// * `v` - instance of the second node
@@ -1013,7 +1013,7 @@ cfg_if! {
 
 
             /// Remove all incoming edges of a node
-            /// 
+            ///
             /// # Arguments
             /// * `u` - instance of the node
             pub fn remove_incoming_edges(&self, u: O) -> Option<Vec<Edge<L>>> {
@@ -1041,7 +1041,7 @@ cfg_if! {
             }
 
             /// Remove all outgoing edges of a node
-            /// 
+            ///
             /// # Arguments
             /// * `u` - instance of the node
             pub fn remove_outgoing_edges(&self, u: O) -> Option<Vec<Edge<L>>> {
@@ -1069,7 +1069,7 @@ cfg_if! {
 
 
             /// Remove a specific node
-            /// 
+            ///
             /// # Arguments
             /// * `u` - instance of the node
             pub fn remove_node(&self, u: O) -> bool {
@@ -1109,7 +1109,7 @@ cfg_if! {
             }
 
             /// Update node info
-            /// 
+            ///
             /// # Arguments
             /// * `u` - instance of the node to update
             pub fn update_node(&self, u: O) {
