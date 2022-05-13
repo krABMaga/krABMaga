@@ -178,11 +178,6 @@ cfg_if! {
                 result
             }
 
-            // TODO
-            // take a location and return the corresponding objects on that location from the write state
-            // pub fn get_objects_unbuffered(&self, loc: Real2D) -> Vec<&O> {
-            // }
-
             // take an object and return the corresponding location
             pub fn get_location(&self, object: O) -> Option<&Real2D> {
                 self.floc.get_read(&object)
@@ -452,6 +447,17 @@ cfg_if! {
                 rbags[index].clone()
             }
 
+            /// Return objects at a specific location
+            ///
+            /// # Arguments
+            /// * `loc` - `Real2D` coordinates of the object
+            pub fn get_objects_unbuffered(&self, loc: Real2D) -> Vec<O>{
+                let bag = self.discretize(&loc);
+                let index = ((bag.x * self.dh) + bag.y) as usize;
+                let bags = self.bags.borrow();
+                bags[index].clone()
+            }
+
             /// Return number of object at a specific location
             ///
             /// # Arguments
@@ -477,6 +483,21 @@ cfg_if! {
                     *self.nagents.borrow_mut() += 1;
                 }
             }
+
+            pub fn remove_object_location(&self, object: O, loc: Real2D) {
+                let bag = self.discretize(&loc);
+                let index = ((bag.x * self.dh) + bag.y) as usize;
+                let mut bags = self.bags.borrow_mut();
+                if !bags[index].is_empty() {
+                    let before = bags[index].len();
+                    bags[index].retain(|&x| x != object);
+                    let after = bags[index].len();
+
+                    if !self.density_estimation_check{
+                        *self.nagents.borrow_mut() -= before - after;
+                    }
+                }
+            }
         }
 
         impl<'a, O: Location2D<Real2D> + Clone + Hash + Eq + Copy + Display> Field for Field2D<O>{
@@ -495,7 +516,8 @@ cfg_if! {
                     ((*self.nagents.borrow_mut())as usize)/((self.dw * self.dh) as usize);
                     self.density_estimation_check = true;
                     self.bags =  RefCell::new(std::iter::repeat_with(|| Vec::with_capacity(self.density_estimation)).take((self.dw * self.dh) as usize).collect());
-                }else{
+                }
+                else {
                     let mut bags =self.bags.borrow_mut();
                     for b in 0..bags.len(){
                         bags[b].clear();

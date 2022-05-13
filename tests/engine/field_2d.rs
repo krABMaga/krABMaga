@@ -152,9 +152,25 @@ fn field_2d_gets() {
         .field1
         .num_objects_at_location(Real2D { x: 5.0, y: 5.0 });
     assert_eq!(2, num_birds);
-
     num_birds = state
         .field1
         .num_objects_at_location(Real2D { x: 0.0, y: 0.0 });
     assert_eq!(1, num_birds);
+
+    let bird4 = Bird::new(4, Real2D { x: 0.0, y: 0.0 }, last_d);
+    state.field1.set_object_location(bird4, bird4.pos);
+    let birds = state
+        .field1
+        .get_objects_unbuffered(Real2D { x: 0.0, y: 0.0 });
+    assert_eq!(1, birds.len());
+
+    let birds = state.field1.get_objects(Real2D { x: 0.0, y: 0.0 });
+    assert_eq!(1, birds.len());
+
+    //TODO finish this test
+    state.field1.remove_object_location(bird4, bird4.pos);
+    let birds = state
+        .field1
+        .get_objects_unbuffered(Real2D { x: 0.0, y: 0.0 });
+    assert_eq!(0, birds.len());
 }

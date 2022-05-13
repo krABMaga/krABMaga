@@ -39,6 +39,9 @@ fn sparse_number_grid_2d() {
         }
     }
 
+    let bags = grid.get_empty_bags();
+    assert_eq!(bags.len(), 100);
+
     grid.update();
 
     grid.apply_to_all_values(|_value| 1, GridOption::WRITE);
@@ -79,6 +82,14 @@ fn sparse_number_grid_2d() {
             assert_eq!(val, 3);
         }
     }
+
+    let loc = Int2D { x: 4, y: 5 };
+    grid.set_value_location(3, &loc);
+    grid.remove_value_location(3, &loc);
+    let v = grid.get_value_unbuffered(&loc);
+    assert!(v.is_none());
+    let v = grid.get_value(&loc);
+    assert!(v.is_some());
 
     for i in 0..10 {
         for j in 0..10 {

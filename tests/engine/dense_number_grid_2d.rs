@@ -75,8 +75,8 @@ fn dense_number_grid_2d_apply() {
 
     grid.iter_values_unbuffered(|loc, val| {
         let value = grid.get_value_unbuffered(&loc).unwrap();
-        assert_eq!(*val, value[0]);
-        assert_eq!((loc.x * loc.y) as u16, value[0]);
+        assert_eq!(*val, value);
+        assert_eq!((loc.x * loc.y) as u16, value);
     });
 
     grid.lazy_update();
@@ -102,7 +102,17 @@ fn dense_number_grid_2d_bags() {
 
     let loc = grid.get_random_empty_bag();
     assert!(None != loc);
-    grid.set_value_location(10, &(loc.unwrap()));
+    let loc = loc.unwrap();
+    grid.set_value_location(10, &loc);
+    
+    let value = grid.get_value_unbuffered(&loc);
+    assert!(None != value);
+    assert_eq!(Some(10), value);
+    grid.remove_value_location(&loc);
+    let value = grid.get_value_unbuffered(&loc);
+    assert!(None == value);
+
+    grid.set_value_location(10, &loc);
     grid.update();
     let all = grid.get_empty_bags();
     assert_eq!((HEIGHT * WIDTH - 1) as usize, all.len());
@@ -114,7 +124,7 @@ fn dense_number_grid_2d_bags() {
         }
     }
 
-    grid.update();
+    grid.lazy_update();
     let none = grid.get_empty_bags();
     assert_eq!(0, none.len());
 }

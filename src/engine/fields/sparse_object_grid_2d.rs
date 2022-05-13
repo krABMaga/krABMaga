@@ -303,7 +303,11 @@ cfg_if! {
                     for j in 0 .. self.height{
                         let loc = Int2D{x: i, y: j};
                         match self.rlocs.borrow().get(&loc){
-                            Some(_bag) =>{},
+                            Some(_bag) =>{
+                                if _bag.is_empty(){
+                                    empty_bags.push(loc);
+                                }
+                            },
                             None => {
                                 empty_bags.push(Int2D{x: i, y: j});
                             }
@@ -313,7 +317,7 @@ cfg_if! {
                 empty_bags
             }
 
-            /// Get one random empty bag from read state.
+            /// Get one random empty bag from read state. `None` if no empty bag is found.
             pub fn get_random_empty_bag(&self) -> Option<Int2D>{
                 let mut rng = rand::thread_rng();
                 loop {
@@ -346,10 +350,11 @@ cfg_if! {
                 }
             }
 
-            /// Iterate over the locs matrix and apply the closure
+            /// Iterate over all objects inside the field and apply the closure.
+            /// Useful when you want to access to all the objects changed/executed into the current step.
             ///
             /// # Arguments
-            /// * `closure` - closure to apply to all values
+            /// * `closure` - closure to apply to each element of the matrix
             pub fn iter_objects_unbuffered<F>(&self, closure: F)
             where
                 F: Fn(
@@ -365,7 +370,11 @@ cfg_if! {
                 }
             }
 
-            /// Set object at a specific location.
+            /// Insert an object in a specific position.
+            /// Double buffering swap the write and read state at the end of the step, so you have to call this function also if the object is not changed.
+            ///
+            /// If the position is empty, the object is pushed in the bag.
+            /// If the position is not empty, the object is pushed in the bag and the old object is dropped.
             ///
             /// # Arguments
             /// * `loc` - location to set the object at
@@ -382,6 +391,21 @@ cfg_if! {
                 }
             }
 
+            /// Remove an object from write state.
+            /// You have to use it to remove an object written/updated in this step.
+            /// Double buffering swap the write and read state at the end of the step, so you have to call
+            /// this function only if the object was written/set in this step.
+            ///
+            /// # Arguments
+            /// * `obj` - object to remove
+            /// * `loc` - location to remove the object
+            pub fn remove_object_location(&self, object: O, loc: &Int2D) {
+                let mut locs = self.locs.borrow_mut();
+                let bag = locs.get_mut(loc);
+                if let Some(bag) = bag {
+                    bag.retain(|&obj| obj != object);
+                }
+            }
 
 
             // pub fn remove_object(&self, object: &O) {

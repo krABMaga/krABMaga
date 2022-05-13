@@ -173,9 +173,12 @@ cfg_if! {
 
 
 }else{
-            /// Matrix with double buffering
+            /// Matrix with double buffering.
+            ///
+            /// You can insert/update objects preserving a common state to read from in a step.
             pub struct DenseGrid2D<O: Eq + Hash + Clone + Copy> {
                 /// Matrix to write data. Vector of vectors that have a generic Object O inside
+                /// The outer vector represents the whole field, the inner vector represents the objects inside a cell
                 pub locs: RefCell<Vec<Vec<O>>>,
                 /// Matrix to read data. Vector of vectors that have a generic Object O inside
                 pub rlocs: RefCell<Vec<Vec<O>>>,
@@ -187,7 +190,7 @@ cfg_if! {
 
             impl<O: Eq + Hash + Clone + Copy> DenseGrid2D<O> {
 
-                /// create a new instance of DenseGrid2D
+                /// Create a new instance of DenseGrid2D
                 ///
                 /// # Arguments
                 /// * `width` - first dimension of the field
@@ -283,7 +286,7 @@ cfg_if! {
                     }
                 }
 
-                /// Return all the empty bags in rlocs
+                /// Return all the empty bags from read state.
                 pub fn get_empty_bags(&self) -> Vec<Int2D>{
                     let mut empty_bags = Vec::new();
                     for i in 0 ..  self.width{
@@ -297,7 +300,21 @@ cfg_if! {
                     empty_bags
                 }
 
-                /// Return a vector of objects at loc from rlocs
+                /// Return a random empty bag from read state. `None` if no bags are available.
+                pub fn get_random_empty_bag(&self) -> Option<Int2D>{
+
+                    let empty_bags = self.get_empty_bags();
+                    if empty_bags.is_empty() {
+                        return None;
+                    }
+
+                    let mut rng = rand::thread_rng();
+                    let index = rng.gen_range(0..empty_bags.len());
+                    Some(empty_bags[index])
+
+                }
+
+                /// Return all the objects in a specific position. `None` if position is empty.
                 ///
                 /// # Arguments
                 /// * `loc` - location to get the objects
@@ -316,7 +333,8 @@ cfg_if! {
                     }
                 }
 
-                /// Return a vector of objects at loc from locs
+                /// Return all the objects in a specific position from write state. `None` if position is empty.
+                /// Useful when you want to get some object don't written in previous iterations, but into the current step.
                 ///
                 /// # Arguments
                 /// * `loc` - location to get the objects
@@ -336,21 +354,8 @@ cfg_if! {
                     }
                 }
 
-                /// Return a random empty bag from rlocs
-                pub fn get_random_empty_bag(&self) -> Option<Int2D>{
-                    let mut rng = rand::thread_rng();
-                    loop {
-                        let i = rng.gen_range(0..self.width);
-                        let j = rng.gen_range(0..self.height);
-                        let loc = Int2D{x: i, y: j};
-                        let index = ((i * self.height) +j) as usize;
-                        if self.rlocs.borrow()[index].is_empty() {
-                            return Some(loc);
-                        }
-                    }
-                }
 
-                /// Iterate over the locs matrix and apply the closure
+                /// Iterate over the read state and apply the closure.
                 ///
                 /// # Arguments
                 /// * `closure` - closure to apply to each element of the matrix
@@ -374,7 +379,8 @@ cfg_if! {
                     }
                 }
 
-                /// Iterate over the rlocs matrix and apply the closure
+                /// Iterate over all objects inside the field and apply the closure.
+                /// Useful when you want to access to all the objects changed/executed into the current step.
                 ///
                 /// # Arguments
                 /// * `closure` - closure to apply to each element of the matrix
@@ -400,7 +406,11 @@ cfg_if! {
                 }
 
 
-                /// Insert an object at loc inside the locs matrix
+                /// Insert an object in a specific position.
+                /// Double buffering swap the write and read state at the end of the step, so you have to call this function also if the object is not changed.
+                ///
+                /// If the position is empty, the value is pushed in the bag.
+                /// If the position is not empty, the value is pushed in the bag and the old value is dropped.
                 ///
                 /// # Arguments
                 /// * `obj` - object to insert
@@ -416,7 +426,10 @@ cfg_if! {
                     locs[index].push(object);
                 }
 
-                /// Remove an object at loc inside the locs matrix
+                /// Remove an object from write state.
+                /// You have to use it to remove an object written/updated in this step.
+                /// Double buffering swap the write and read state at the end of the step, so you have to call
+                /// this function only if the object was written/set in this step.
                 ///
                 /// # Arguments
                 /// * `obj` - object to remove

@@ -68,6 +68,28 @@ fn dense_object_grid_2d_bags() {
 
     let vec = grid.get_empty_bags();
     assert_eq!(vec.len(), 0);
+
+    // clear all objects
+    grid.lazy_update();
+
+    let loc = grid.get_random_empty_bag().unwrap();
+
+    grid.set_object_location(
+        Bird::new(0, Real2D { x: 0., y: 0. }, Real2D { x: 0., y: 0. }),
+        &loc,
+    );
+
+    grid.remove_object_location(
+        Bird::new(0, Real2D { x: 0., y: 0. }, Real2D { x: 0., y: 0. }),
+        &loc,
+    );
+
+    let obj = grid.get_objects_unbuffered(&loc);
+    assert_eq!(obj.unwrap().len(), 0);
+
+    grid.lazy_update();
+    let vec = grid.get_empty_bags();
+    assert_eq!(vec.len(), 100);
 }
 
 #[cfg(not(any(

@@ -3,6 +3,8 @@ use crate::engine::{
     location::Int2D,
 };
 
+use crate::rand::Rng;
+
 use cfg_if::cfg_if;
 
 cfg_if! {
@@ -151,6 +153,38 @@ cfg_if! {
                 }
             }
 
+            /// Get all empty bags from read state.
+            pub fn get_empty_bags(&self) -> Vec<Int2D>{
+                let mut empty_bags = Vec::new();
+                for i in 0 ..  self.width{
+                    for j in 0 .. self.height{
+                        let loc = Int2D{x: i, y: j};
+                        match self.rlocs.borrow().get(&loc){
+                            Some(_bag) =>{},
+                            None => {
+                                empty_bags.push(Int2D{x: i, y: j});
+                            }
+                        }
+                    }
+                }
+                empty_bags
+            }
+
+            /// Get one random empty bag from read state. `None` if no empty bag is found.
+            pub fn get_random_empty_bag(&self) -> Option<Int2D>{
+                let mut rng = rand::thread_rng();
+                loop {
+                    let loc = Int2D{x: rng.gen_range(0..self.width), y: rng.gen_range(0..self.height)};
+                    match self.rlocs.borrow().get(&loc){
+                        Some(_bag) =>{},
+                        None => {
+                            return Some(loc)
+                        }
+                    }
+                }
+            }
+
+
             /// Get the value at a specific location.
             ///
             /// # Arguments
@@ -160,7 +194,10 @@ cfg_if! {
                 rlocs.get(loc).copied()
             }
 
-            /// Get the value at a specific location from the write state.
+            /// Return value of a specific position from write state. `None` if position is empty.
+            ///
+            /// Useful when you want to get some value written in the current step.
+            /// For example, you want to get the value of a cell that is being written with a `set_value_location()`
             ///
             /// # Arguments
             /// * `loc` - location to get the value from
@@ -169,7 +206,11 @@ cfg_if! {
                 locs.get(loc).copied()
             }
 
-            /// Set the value at a specific location.
+            /// Insert a value in a specific position.
+            /// Double buffering swap the write and read state at the end of the step, so you have to call this function also if the value is not changed.
+            ///
+            /// If the position is empty, the value is pushed in the bag.
+            /// If the position is not empty, the value is pushed in the bag and the old value is dropped.
             ///
             /// # Arguments
             /// * `value` - value to set at the location
@@ -178,6 +219,20 @@ cfg_if! {
                 let mut locs = self.locs.borrow_mut();
                 locs.insert(*loc, value);
             }
+
+            /// Remove a value from write state.
+            /// You have to use it to remove a value written/updated in this step.
+            /// Double buffering swap the write and read state at the end of the step, so you have to call
+            /// this function only if the value was written/set in this step.
+            ///
+            /// # Arguments
+            /// * `value` - object to remove
+            /// * `loc` - location to remove the object
+            pub fn remove_value_location(&self, _value: T, loc: &Int2D) {
+                let mut locs = self.locs.borrow_mut();
+                locs.remove(loc);
+            }
+
         }
 
         impl<T: Copy + Clone> Field for SparseNumberGrid2D<T> {
