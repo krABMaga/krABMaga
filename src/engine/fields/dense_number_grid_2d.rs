@@ -80,8 +80,9 @@ cfg_if! {
 
     } else {
 
-        /// Matrix with double buffering.
+        /// Field with double buffering for dense matrix.
         /// You can insert/update values preserving a common state to read from in a step.
+        /// As a values matrix, can contain one value per cell.
         ///
         ///
         /// A simpler version of the DenseGrid2D to use with simple values.
@@ -166,33 +167,6 @@ cfg_if! {
                     },
                     //works only with 1 element for bag
                     GridOption::READWRITE =>{
-                        // let mut locs = self.locs.borrow_mut();
-                        // let rlocs = self.rlocs.borrow_mut();
-                        // // for each bag in read
-                        // for i in 0..rlocs.len() {
-                        //     // calculate the bag_id
-                        //     // if the corresponding write bag is not empty
-                        //     if !locs[i].is_empty() {
-                        //         // for each element in the write bag
-                        //         for elem in locs[i].iter_mut() {
-                        //             // apply the closure
-                        //             let result = closure(elem);
-                        //             *elem = result;
-                        //         }
-                        //     }else{ // else if the corresponding bag is not empty
-                        //         // if the read bag is empty go to the next iteration
-                        //         if rlocs[i].is_empty() { continue }
-                        //         // for each element in the read bag
-                        //         for elem in rlocs[i].iter() {
-                        //             // apply the closure
-                        //             let result = closure(elem);
-                        //             if !locs[i].contains(&result){
-                        //                 // push it
-                        //                 locs[i].push(result);
-                        //             }
-                        //         }
-                        //     }
-                        // }
 
                         let mut locs = self.locs.borrow_mut();
                         let rlocs = self.rlocs.borrow_mut();
@@ -208,6 +182,43 @@ cfg_if! {
                         }
                     }
                 }
+            }
+
+            /// Return the position of the first element that matches the given value.
+            /// Return None if no element matches.
+            ///
+            /// # Arguments
+            /// * `value` - value to search for
+            pub fn get_location(&self, value: T) -> Option<Int2D> {
+                let locs = self.rlocs.borrow();
+                for i in  0..self.width{
+                    for j in 0..self.height{
+                        let elem = locs[(i *  self.height + j) as usize];
+                        if elem.is_some() && elem.unwrap() == value {
+                            return Some(Int2D {x: i, y: j});
+                        }
+                    }
+                }
+                None
+
+            }
+
+            /// Return the position of the first element that matches the given value from write state.
+            /// Return None if no element matches.
+            ///
+            /// # Arguments
+            /// * `value` - value to search for
+            pub fn get_location_unbuffered(&self, value: T) -> Option<Int2D> {
+                let locs = self.locs.borrow();
+                for i in  0..self.width{
+                    for j in 0..self.height{
+                        let elem = locs[(i *  self.height + j) as usize];
+                        if elem.is_some() && elem.unwrap() == value {
+                            return Some(Int2D {x: i, y: j});
+                        }
+                    }
+                }
+                None
             }
 
             /// Return all the empty bags in rlocs
@@ -261,7 +272,7 @@ cfg_if! {
             }
 
 
-            /// Read and apply a closure to all values inside Read state
+            /// Read and call a closure to all values inside Read state
             ///
             /// # Arguments
             /// * `closure` - closure to apply to all values
@@ -318,7 +329,7 @@ cfg_if! {
 
 
             /// Write a value in a specific position.
-            /// Thanks to the double buffering, you havent to worry about remove value from position of previous step.
+            /// Thanks to the double buffering, you havent to worry about remove value of previous step.
             ///
             /// If the position is empty, the value is pushed in the bag.
             /// If the position is not empty, the value is pushed in the bag and the old value is dropped.

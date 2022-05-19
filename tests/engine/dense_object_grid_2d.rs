@@ -45,7 +45,27 @@ fn dense_object_grid_2d_bags() {
         Bird::new(0, Real2D { x: 0., y: 0. }, Real2D { x: 0., y: 0. }),
         &loc,
     );
+    
+    let loc2 = grid.get_location_unbuffered(&Bird::new(0, Real2D { x: 0., y: 0. }, Real2D { x: 0., y: 0. }));
+    assert!(loc2.is_some());
+    let loc2 = loc2.unwrap();
+    assert_eq!(loc.x, loc2.x);
+    assert_eq!(loc.y, loc2.y);
+
+    let loc2 = grid.get_location_unbuffered(&Bird::new(1, Real2D { x: 0., y: 0. }, Real2D { x: 0., y: 0. }));
+    assert!(loc2.is_none());
+
     grid.lazy_update();
+
+    
+    let loc2 = grid.get_location(&Bird::new(0, Real2D { x: 0., y: 0. }, Real2D { x: 0., y: 0. }));
+    assert!(loc2.is_some());
+    let loc2 = loc2.unwrap();
+    assert_eq!(loc.x, loc2.x);
+    assert_eq!(loc.y, loc2.y);
+
+    let loc2 = grid.get_location(&Bird::new(1, Real2D { x: 0., y: 0. }, Real2D { x: 0., y: 0. }));
+    assert!(loc2.is_none());
 
     let vec = grid.get_empty_bags();
     assert_eq!(vec.len(), 99);

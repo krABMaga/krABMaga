@@ -30,7 +30,7 @@ use {
     feature = "parallel"
 )))]
 #[test]
-fn dense_object_grid_2d_bags() {
+fn sparse_object_grid_2d_bags() {
     let mut grid: SparseGrid2D<Bird> = SparseGrid2D::new(WIDTH, HEIGHT);
 
     let vec = grid.get_empty_bags();
@@ -45,7 +45,42 @@ fn dense_object_grid_2d_bags() {
         Bird::new(0, Real2D { x: 0., y: 0. }, Real2D { x: 0., y: 0. }),
         &loc,
     );
+
+    let loc2 = grid.get_location_unbuffered(&Bird::new(
+        0,
+        Real2D { x: 0., y: 0. },
+        Real2D { x: 0., y: 0. },
+    ));
+    assert!(loc2.is_some());
+    let loc2 = loc2.unwrap();
+    assert_eq!(loc.x, loc2.x);
+    assert_eq!(loc.y, loc2.y);
+
+    let loc2 = grid.get_location_unbuffered(&Bird::new(
+        3,
+        Real2D { x: 0., y: 0. },
+        Real2D { x: 0., y: 0. },
+    ));
+    assert!(loc2.is_none());
+
     grid.update();
+
+    let loc2 = grid.get_location(&Bird::new(
+        0,
+        Real2D { x: 0., y: 0. },
+        Real2D { x: 0., y: 0. },
+    ));
+    assert!(loc2.is_some());
+    let loc2 = loc2.unwrap();
+    assert_eq!(loc.x, loc2.x);
+    assert_eq!(loc.y, loc2.y);
+
+    let loc = grid.get_location(&Bird::new(
+        3,
+        Real2D { x: 0., y: 0. },
+        Real2D { x: 0., y: 0. },
+    ));
+    assert!(loc.is_none());
 
     let vec = grid.get_empty_bags();
     assert_eq!(vec.len(), 99);
@@ -56,8 +91,14 @@ fn dense_object_grid_2d_bags() {
             grid.set_object_location(
                 Bird::new(
                     (i * HEIGHT + j) as u32,
-                    Real2D { x: 0., y: 0. },
-                    Real2D { x: 0., y: 0. },
+                    Real2D {
+                        x: i as f32,
+                        y: j as f32,
+                    },
+                    Real2D {
+                        x: i as f32,
+                        y: j as f32,
+                    },
                 ),
                 &loc,
             );
@@ -98,7 +139,7 @@ fn dense_object_grid_2d_bags() {
     feature = "parallel"
 )))]
 #[test]
-fn dense_object_grid_2d_apply() {
+fn sparse_object_grid_2d_apply() {
     let mut grid: SparseGrid2D<Bird> = SparseGrid2D::new(WIDTH, HEIGHT);
 
     for i in 0..HEIGHT {

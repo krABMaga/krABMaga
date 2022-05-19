@@ -314,6 +314,44 @@ cfg_if! {
 
                 }
 
+
+                            /// Return the position of the first element that matches the given value.
+            /// Return None if no element matches.
+            ///
+            /// # Arguments
+            /// * `value` - value to search for
+            pub fn get_location(&self, object: &O) -> Option<Int2D> {
+                let locs = self.rlocs.borrow();
+                for i in  0..self.width{
+                    for j in 0..self.height{
+                        let index = (i *  self.height + j) as usize;
+                        if locs[index].contains(object) {
+                            return Some(Int2D {x: i, y: j });
+                        }
+                    }
+                }
+                None
+
+            }
+
+            /// Return the position of the first element that matches the given value from write state.
+            /// Return None if no element matches.
+            ///
+            /// # Arguments
+            /// * `value` - value to search for
+            pub fn get_location_unbuffered(&self, object: &O) -> Option<Int2D> {
+                let locs = self.locs.borrow();
+                for i in  0..self.width{
+                    for j in 0..self.height{
+                        let index = (i *  self.height + j) as usize;
+                        if locs[index].contains(object) {
+                            return Some(Int2D {x: i, y: j });
+                        }
+                    }
+                }
+                None
+            }
+
                 /// Return all the objects in a specific position. `None` if position is empty.
                 ///
                 /// # Arguments

@@ -35,12 +35,17 @@ fn simulate_ui_structs() {
     }
 
     {
-        let data = DATA.lock().unwrap();
-        for (_, plot) in data.iter() {
+        
+        { 
+            let data = DATA.lock().unwrap();
+            println!("Start");
+            for (_, plot) in data.iter() {
             if plot.to_be_stored {
                 plot.store_plot(0)
+                }
             }
         }
+
 
         use std::path::Path;
         let date = CURRENT_DATE.clone();
@@ -53,11 +58,12 @@ fn simulate_ui_structs() {
         fs::remove_dir_all("output").expect("Error removing output directory");
     }
 
-    log!(LogType::Info, "Info Log".to_string(), true);
-    log!(LogType::Warning, "Warning Log".to_string());
-    log!(LogType::Error, "Error Log".to_string());
-    log!(LogType::Critical, "Critical Log".to_string(), true);
-
+    {
+        log!(LogType::Info, "Info Log".to_string(), true);
+        log!(LogType::Warning, "Warning Log".to_string());
+        log!(LogType::Error, "Error Log".to_string());
+        log!(LogType::Critical, "Critical Log".to_string(), true);
+    }
     {
         let logs = LOGS.lock().unwrap();
         for log in logs.iter() {

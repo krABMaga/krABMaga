@@ -280,21 +280,57 @@ cfg_if! {
                 }
             }
 
-            /// Get the value at a specific location.
+            /// Return the position of the first element that matches the given object.
+            /// Return None if no element matches.
             ///
             /// # Arguments
-            /// * `loc` - location to get the value from
+            /// * `value` - value to search for
+            pub fn get_location(&self, object: &O) -> Option<Int2D> {
+                let rlocs = self.rlocs.borrow();
+                for (key, objs) in rlocs.iter() {
+                    for obj in objs {
+                        if *obj == *object {
+                            return Some(*key);
+                        }
+                    }
+                }
+                None
+            }
+
+            /// Return the position of the first element that matches the given value.
+            /// Return None if no element matches.
+            /// It will return the value from the write state.
+            ///
+            /// # Arguments
+            /// * `value` - value to search for
+            pub fn get_location_unbuffered(&self, object: &O) -> Option<Int2D> {
+                let locs = self.locs.borrow();
+                for (key, objs) in locs.iter() {
+                    for obj in objs {
+                        if *obj == *object {
+                            return Some(*key);
+                        }
+                    }
+                }
+                None
+            }
+
+            /// Get the object at a specific location.
+            ///
+            /// # Arguments
+            /// * `loc` - location to get the ogject from
             pub fn get_objects(&self, loc: &Int2D) -> Option<Vec<O>> {
                 self.rlocs.borrow().get(loc).cloned()
             }
 
-            /// Get the value at a specific location from the write state.
+            /// Get the object at a specific location from the write state.
             ///
             /// # Arguments
-            /// * `loc` - location to get the value from
+            /// * `loc` - location to get the object from
             pub fn get_objects_unbuffered(&self, loc: &Int2D) -> Option<Vec<O>> {
                 self.locs.borrow().get(loc).cloned()
             }
+
 
             /// Get all empty bags from read state.
             pub fn get_empty_bags(&self) -> Vec<Int2D>{
@@ -331,10 +367,10 @@ cfg_if! {
                 }
             }
 
-            /// Iterate over the rlocs matrix and apply the closure.
+            /// Iterate over the Read State matrix and call the closure for each object.
             ///
             /// # Arguments
-            /// * `closure` - closure to apply to all values
+            /// * `closure` - closure to apply to all objects
             pub fn iter_objects<F>(&self, closure: F)
             where
                 F: Fn(
@@ -407,56 +443,6 @@ cfg_if! {
                 }
             }
 
-
-            // pub fn remove_object(&self, object: &O) {
-            //     if let Some(old_loc) = self.locs.get(object) {
-            //         self.locs_inversed
-            //             .get_mut(old_loc)
-            //             .unwrap()
-            //             .value_mut()
-            //             .retain(|&x| x != *object);
-            //     }
-
-            //     self.locs.remove(object);
-            // }
-
-
-            // pub fn remove_object(&self, object: &O) {
-            //  if let Some(old_loc) = self.locs.get(object) {
-            //     self.locs_inversed
-            //         .get_mut(old_loc)
-            //         .unwrap()
-            //         .value_mut()
-            //         .retain(|&x| x != *object);
-            // }
-
-            //     let loc = self.a2loc.borrow().get(object).unwrap();
-            //     let index = ((loc.x * self.height) + loc.y) as usize;
-            //     for
-            //     match self.locs.try_borrow_mut() {
-            //         Ok(mut locs) => {
-            //             locs[index].retain(|&x| x != *object);
-            //         },
-            //         Err(_) => {},
-            //     }
-            //     match self.rlocs.try_borrow_mut() {
-            //         Ok(mut locs) => {
-            //             locs[index].retain(|&x| x != *object);
-            //         },
-            //         Err(_) => {},
-            //     }
-            // }
-
-            // pub fn get_object(&self, object: &O) -> Option<&O> {
-            //     match self.locs.get_key_value(object) {
-            //         Some((updated_object, _loc)) => Some(updated_object),
-            //         None => None,
-            //     }
-            // }
-
-            // pub fn get_object_location(&self, object: O) -> Option<&Int2D> {
-            //     self.locs.get(&object)
-            // }
         }
 
         impl<O: Eq + Hash + Clone + Copy> Field for SparseGrid2D<O> {

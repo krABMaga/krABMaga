@@ -13,6 +13,7 @@ cfg_if! {
         use crate::utils::dbdashmap::DBDashMap;
     } else {
         use std::cell::RefCell;
+        use crate::*;
     }
 }
 
@@ -23,7 +24,7 @@ cfg_if! {
             pub fbag: DBDashMap<Int2D, Vec<O>>,
             pub floc: DBDashMap<O, Real2D>,
             pub width: f32,
-            pub heigth: f32,
+            pub height: f32,
             pub discretization: f32,
             pub toroidal: bool,
         }
@@ -36,7 +37,7 @@ cfg_if! {
                     fbag: DBDashMap::new(),
                     floc: DBDashMap::new(),
                     width: w,
-                    heigth: h,
+                    height: h,
                     discretization: d,
                     toroidal: t,
                 }
@@ -57,7 +58,7 @@ cfg_if! {
 
             pub fn get_neighbors_within_distance(&self, loc: Real2D, dist: f32) -> Vec<O> {
 
-                let density = ((self.width * self.heigth) as usize)/(self.findex.r_len());
+                let density = ((self.width * self.height) as usize)/(self.findex.r_len());
                 let sdist = (dist * dist) as usize;
                 let mut neighbors: Vec<O> = Vec::with_capacity(density as usize * sdist);
 
@@ -68,7 +69,7 @@ cfg_if! {
                 let disc_dist = (dist/self.discretization).floor() as i32;
                 let disc_loc = self.discretize(&loc);
                 let max_x = (self.width/self.discretization).ceil() as i32;
-                let max_y =  (self.heigth/self.discretization).ceil() as i32;
+                let max_y =  (self.height/self.discretization).ceil() as i32;
 
                 let mut min_i = disc_loc.x - disc_dist;
                 let mut max_i = disc_loc.x + disc_dist;
@@ -88,7 +89,7 @@ cfg_if! {
                             x: t_transform(i, max_x),
                             y: t_transform(j, max_y),
                         };
-                        let check = check_circle(&bag_id, self.discretization, self.width, self.heigth, &loc, dist, self.toroidal);
+                        let check = check_circle(&bag_id, self.discretization, self.width, self.height, &loc, dist, self.toroidal);
                         let vector =  match self.fbag.get_read(&bag_id) {
                             Some(i) => i,
                             None => continue,
@@ -96,7 +97,7 @@ cfg_if! {
 
                         for elem in vector{
                             if (check == 0 &&
-                                distance(&loc, &(elem.get_location()), self.width, self.heigth, self.toroidal) <= dist) ||
+                                distance(&loc, &(elem.get_location()), self.width, self.height, self.toroidal) <= dist) ||
                                 check == 1
                             {
                                 neighbors.push(*elem);
@@ -109,7 +110,7 @@ cfg_if! {
 
             pub fn get_neighbors_within_relax_distance(&self, loc: Real2D, dist: f32) -> Vec<O> {
 
-                let density = ((self.width * self.heigth) as usize)/(self.findex.r_len());
+                let density = ((self.width * self.height) as usize)/(self.findex.r_len());
                 let sdist = (dist * dist) as usize;
                 let mut neighbors: Vec<O> = Vec::with_capacity(density as usize * sdist);
 
@@ -120,7 +121,7 @@ cfg_if! {
                 let disc_dist = (dist/self.discretization).floor() as i32;
                 let disc_loc = self.discretize(&loc);
                 let max_x = (self.width/self.discretization).ceil() as i32;
-                let max_y =  (self.heigth/self.discretization).ceil() as i32;
+                let max_y =  (self.height/self.discretization).ceil() as i32;
 
                 let mut min_i = disc_loc.x - disc_dist;
                 let mut max_i = disc_loc.x + disc_dist;
@@ -269,7 +270,7 @@ cfg_if! {
             /// First dimension of the field
             pub width: f32,
             /// Second dimension of the field
-            pub heigth: f32,
+            pub height: f32,
             /// Value to discretize `Real2D` positions to our Matrix
             pub discretization: f32,
             /// `true` if you want a Toroidal field, `false` otherwise
@@ -298,7 +299,7 @@ cfg_if! {
                     rbags: RefCell::new(std::iter::repeat_with(Vec::new).take((((w/d).ceil()+1.0) * ((h/d).ceil() +1.0))as usize).collect()),
                     nagents: RefCell::new(0),
                     width: w,
-                    heigth: h,
+                    height: h,
                     discretization: d,
                     toroidal: t,
                     dh: ((h/d).ceil() as i32 +1),
@@ -325,6 +326,21 @@ cfg_if! {
                 }
             }
 
+            /// Map matrix indexes into coordinates of an object
+            ///
+            /// # Arguments
+            /// * `loc` - `Int2D` indexes of the object
+            fn not_discretize(&self, loc: &Int2D) -> Real2D {
+                let x_real = loc.x as f32 * self.discretization;                
+                let y_real = loc.y as f32 * self.discretization;
+
+                Real2D {
+                    x: x_real,
+                    y: y_real,
+                }
+            }
+
+
             /// Return the set of objects within a certain distance
             ///
             /// # Arguments
@@ -348,7 +364,7 @@ cfg_if! {
                 let disc_dist = (dist/self.discretization).floor() as i32;
                 let disc_loc = self.discretize(&loc);
                 let max_x = (self.width/self.discretization).ceil() as i32;
-                let max_y =  (self.heigth/self.discretization).ceil() as i32;
+                let max_y =  (self.height/self.discretization).ceil() as i32;
 
                 let mut min_i = disc_loc.x - disc_dist;
                 let mut max_i = disc_loc.x + disc_dist;
@@ -369,13 +385,13 @@ cfg_if! {
                             y: t_transform(j, max_y),
                         };
 
-                        let check = check_circle(&bag_id, self.discretization, self.width, self.heigth, &loc, dist, self.toroidal);
+                        let check = check_circle(&bag_id, self.discretization, self.width, self.height, &loc, dist, self.toroidal);
 
                         let index = ((bag_id.x * self.dh) + bag_id.y) as usize;
                         let bags = self.rbags.borrow();
 
                         for elem in &bags[index]{
-                            if (check == 0 && distance(&loc, &(elem.get_location()), self.width, self.heigth, self.toroidal) <= dist) || check == 1 {
+                            if (check == 0 && distance(&loc, &(elem.get_location()), self.width, self.height, self.toroidal) <= dist) || check == 1 {
                                 neighbors.push(*elem);
                             }
                         }
@@ -406,7 +422,7 @@ cfg_if! {
                 let disc_dist = (dist/self.discretization).floor() as i32;
                 let disc_loc = self.discretize(&loc);
                 let max_x = (self.width/self.discretization).ceil() as i32;
-                let max_y =  (self.heigth/self.discretization).ceil() as i32;
+                let max_y =  (self.height/self.discretization).ceil() as i32;
 
                 let mut min_i = disc_loc.x - disc_dist;
                 let mut max_i = disc_loc.x + disc_dist;
@@ -458,6 +474,84 @@ cfg_if! {
                 bags[index].clone()
             }
 
+            /// Iterate over the read state and apply the closure.
+            ///
+            /// # Arguments
+            /// * `closure` - closure to apply to each element of the matrix
+            pub fn iter_objects<F>(&self, closure: F)
+            where
+                F: Fn(
+                        &Real2D, //location
+                        &O, //value
+                )
+            {
+                for i in 0 .. self.dw{
+                    for j in 0 .. self.dh{
+                        let index = ((i * self.dh) + j) as usize;
+                        let locs = &self.rbags.borrow()[index];
+                        if !locs.is_empty() {
+                            let real_pos = self.not_discretize(&Int2D {x: i, y: j});
+                            for obj in locs{
+                                closure(&real_pos, obj);
+                            }
+                        }
+                    }
+                }
+            }
+
+            /// Iterate over all objects inside the field and apply the closure.
+            /// Useful when you want to access to all the objects changed/executed into the current step.
+            ///
+            /// # Arguments
+            /// * `closure` - closure to apply to each element of the matrix
+            pub fn iter_objects_unbuffered<F>(&self, closure: F)
+            where
+                F: Fn(
+                    &Real2D, //location
+                    &O, //value
+                )
+            {
+                for i in 0 .. self.dw{
+                    for j in 0 .. self.dh{
+                        let index = ((i * self.dh) + j) as usize;
+                        let locs = &self.bags.borrow()[index];
+                        if !locs.is_empty() {
+                            let real_pos = self.not_discretize(&Int2D {x: i, y: j});
+                            for obj in locs{
+                                closure(&real_pos, obj);
+                            }
+                        }
+                    }
+                }
+            }
+
+
+            /// Return all the empty bags from read state.
+            pub fn get_empty_bags(&self) -> Vec<Real2D>{
+                let mut empty_bags = Vec::new();
+                for i in 0 ..  self.dw{
+                    for j in 0 .. self.dh{
+                        let index = ((i * self.dh) + j) as usize;
+                        if self.rbags.borrow()[index].is_empty() {
+                        
+                            empty_bags.push(self.not_discretize(&Int2D{x: i, y: j}));
+                        }
+                    }
+                }
+                empty_bags
+            }
+
+            /// Return a random empty bag from read state. `None` if no bags are available.
+            pub fn get_random_empty_bag(&self) -> Option<Real2D>{
+                let empty_bags = self.get_empty_bags();
+                if empty_bags.is_empty() {
+                    return None;
+                }
+                let mut rng = rand::thread_rng();
+                let index = rng.gen_range(0..empty_bags.len());
+                Some(empty_bags[index])
+            }
+
             /// Return number of object at a specific location
             ///
             /// # Arguments
@@ -484,6 +578,14 @@ cfg_if! {
                 }
             }
 
+            /// Remove an object from a specific position.
+            /// You have to use it to remove an object written/updated in this step.
+            /// Double buffering swap the write and read state at the end of the step, so you have to call
+            /// this function only if the object was written/set in this step.
+            /// 
+            /// # Arguments
+            /// * `object` - Object to remove
+            /// * `loc` - `Real2D` coordinates of the object
             pub fn remove_object_location(&self, object: O, loc: Real2D) {
                 let bag = self.discretize(&loc);
                 let index = ((bag.x * self.dh) + bag.y) as usize;
@@ -540,7 +642,7 @@ fn check_circle(
     bag: &Int2D,
     discretization: f32,
     width: f32,
-    heigth: f32,
+    height: f32,
     loc: &Real2D,
     dis: f32,
     tor: bool,
@@ -551,7 +653,7 @@ fn check_circle(
     };
     let ne = Real2D {
         x: nw.x,
-        y: (nw.y + discretization).min(heigth),
+        y: (nw.y + discretization).min(height),
     };
     let sw = Real2D {
         x: (nw.x + discretization).min(width),
@@ -559,16 +661,16 @@ fn check_circle(
     };
     let se = Real2D { x: sw.x, y: ne.y };
 
-    if distance(&nw, loc, width, heigth, tor) <= dis
-        && distance(&ne, loc, width, heigth, tor) <= dis
-        && distance(&sw, loc, width, heigth, tor) <= dis
-        && distance(&se, loc, width, heigth, tor) <= dis
+    if distance(&nw, loc, width, height, tor) <= dis
+        && distance(&ne, loc, width, height, tor) <= dis
+        && distance(&sw, loc, width, height, tor) <= dis
+        && distance(&se, loc, width, height, tor) <= dis
     {
         1
-    } else if distance(&nw, loc, width, heigth, tor) > dis
-        && distance(&ne, loc, width, heigth, tor) > dis
-        && distance(&sw, loc, width, heigth, tor) > dis
-        && distance(&se, loc, width, heigth, tor) > dis
+    } else if distance(&nw, loc, width, height, tor) > dis
+        && distance(&ne, loc, width, height, tor) > dis
+        && distance(&sw, loc, width, height, tor) > dis
+        && distance(&se, loc, width, height, tor) > dis
     {
         -1
     } else {

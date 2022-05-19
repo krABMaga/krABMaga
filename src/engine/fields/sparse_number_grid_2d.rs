@@ -81,8 +81,13 @@ cfg_if! {
 
     } else {
 
-        /// Field with double buffering for sparse matrix
-        pub struct SparseNumberGrid2D<T: Copy + Clone> {
+        /// Field with double buffering for sparse matrix.
+        /// You can insert/update values preserving a common state to read from in a step.
+        /// As a values matrix, can contain one value per cell.
+        ///
+        /// A simpler version of the SparseGrid2D to use with simple values.
+        /// This is useful to represent simulation spaces covered by a simple entity that can be represented with a non-agent structure.
+        pub struct SparseNumberGrid2D<T: Copy + Clone + PartialEq> {
             /// Hashmap to write data. Key is location, value is the number.
             pub locs: RefCell<HashMap<Int2D, T>>,
             /// Hashmap to read data. Key is the value, value is the location.
@@ -93,7 +98,7 @@ cfg_if! {
             pub height: i32
         }
 
-        impl<T: Copy + Clone> SparseNumberGrid2D<T> {
+        impl<T: Copy + Clone + PartialEq> SparseNumberGrid2D<T> {
             /// create a new instance of SparseNumberenseGrid2D
             ///
             /// # Arguments
@@ -153,6 +158,42 @@ cfg_if! {
                 }
             }
 
+
+            /// Read and call a closure to all values inside Read state
+            /// # Arguments
+            /// * `closure` - closure to apply to all values
+            pub fn iter_values<F>(&self, closure: F)
+            where
+                F: Fn(
+                    &Int2D, //location
+                    &T//value
+                )
+            {
+                let rlocs = self.rlocs.borrow();
+                for (key, val) in rlocs.iter(){
+                    closure(key, val);
+                }
+            }
+
+            /// Iterate over all valuse inside the field and apply the closure.
+            /// Useful when you want to access to all the objects changed/executed into the current step.
+            ///
+            /// # Arguments
+            /// * `closure` - closure to apply to each element of the matrix
+            pub fn iter_values_unbuffered<F>(&self, closure: F)
+            where
+                F: Fn(
+                    &Int2D, //location
+                    &T, //value
+                )
+            {
+                let locs = self.locs.borrow();
+                for (key, val) in locs.iter(){
+                    closure(key, val);
+                }
+            }
+
+
             /// Get all empty bags from read state.
             pub fn get_empty_bags(&self) -> Vec<Int2D>{
                 let mut empty_bags = Vec::new();
@@ -182,6 +223,37 @@ cfg_if! {
                         }
                     }
                 }
+            }
+
+            /// Return the position of the first element that matches the given value.
+            /// Return None if no element matches.
+            ///
+            /// # Arguments
+            /// * `value` - value to search for
+            pub fn get_location(&self, value: T) -> Option<Int2D> {
+                let rlocs = self.rlocs.borrow();
+                for (key, val) in rlocs.iter() {
+                    if *val == value {
+                        return Some(*key);
+                    }
+                }
+                None
+            }
+
+            /// Return the position of the first element that matches the given value.
+            /// Return None if no element matches.
+            /// It will return the value from the write state.
+            ///
+            /// # Arguments
+            /// * `value` - value to search for
+            pub fn get_location_unbuffered(&self, value: T) -> Option<Int2D> {
+                let locs = self.locs.borrow();
+                for (key, val) in locs.iter() {
+                    if *val == value {
+                        return Some(*key);
+                    }
+                }
+                None
             }
 
 
@@ -226,16 +298,15 @@ cfg_if! {
             /// this function only if the value was written/set in this step.
             ///
             /// # Arguments
-            /// * `value` - object to remove
-            /// * `loc` - location to remove the object
-            pub fn remove_value_location(&self, _value: T, loc: &Int2D) {
+            /// * `loc` - location to remove the value
+            pub fn remove_value_location(&self, loc: &Int2D) {
                 let mut locs = self.locs.borrow_mut();
                 locs.remove(loc);
             }
 
         }
 
-        impl<T: Copy + Clone> Field for SparseNumberGrid2D<T> {
+        impl<T: Copy + Clone + PartialEq> Field for SparseNumberGrid2D<T> {
             /// Swap the state of the field and clear locs
             fn lazy_update(&mut self) {
                 unsafe {
