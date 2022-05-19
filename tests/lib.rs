@@ -35,17 +35,15 @@ fn simulate_ui_structs() {
     }
 
     {
-        
-        { 
+        {
             let data = DATA.lock().unwrap();
             println!("Start");
             for (_, plot) in data.iter() {
-            if plot.to_be_stored {
-                plot.store_plot(0)
+                if plot.to_be_stored {
+                    plot.store_plot(0)
                 }
             }
         }
-
 
         use std::path::Path;
         let date = CURRENT_DATE.clone();

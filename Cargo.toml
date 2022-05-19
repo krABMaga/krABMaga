@@ -9,7 +9,8 @@ authors = [
     "Francesco Foglia <frafonia@gmail.com>", 
     "Pasquale Caramante <pasqcaramante@gmail.com>", 
     "Luca Postiglione <lucapostiglione10@gmail.com>", 
-    "Giuseppe D'Ambrosio <giuseppe.dambrosio14@gmail.com>"
+    "Giuseppe D'Ambrosio <giuseppe.dambrosio14@gmail.com>",
+    "Andrea Tranquillo <andreatranquillo87@gmail.com>"
 ]
 edition = "2021"
 license = "MIT"

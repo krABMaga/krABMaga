@@ -331,7 +331,7 @@ cfg_if! {
             /// # Arguments
             /// * `loc` - `Int2D` indexes of the object
             fn not_discretize(&self, loc: &Int2D) -> Real2D {
-                let x_real = loc.x as f32 * self.discretization;                
+                let x_real = loc.x as f32 * self.discretization;
                 let y_real = loc.y as f32 * self.discretization;
 
                 Real2D {
@@ -533,7 +533,7 @@ cfg_if! {
                     for j in 0 .. self.dh{
                         let index = ((i * self.dh) + j) as usize;
                         if self.rbags.borrow()[index].is_empty() {
-                        
+
                             empty_bags.push(self.not_discretize(&Int2D{x: i, y: j}));
                         }
                     }
@@ -582,7 +582,7 @@ cfg_if! {
             /// You have to use it to remove an object written/updated in this step.
             /// Double buffering swap the write and read state at the end of the step, so you have to call
             /// this function only if the object was written/set in this step.
-            /// 
+            ///
             /// # Arguments
             /// * `object` - Object to remove
             /// * `loc` - `Real2D` coordinates of the object

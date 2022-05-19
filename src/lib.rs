@@ -520,7 +520,7 @@ impl PlotData {
 
         let date = CURRENT_DATE.clone();
         let path = format!("output/{}/{}", date, self.name.replace("/", "-"));
-        
+
         // Create directory if it doesn't exist
         fs::create_dir_all(&path).expect("Can't create folder");
 
@@ -537,8 +537,8 @@ impl PlotData {
             .y_label_area_size(60)
             .build_cartesian_2d(self.min_x..self.max_x, self.min_y..self.max_y)
             .expect("Error Creating Chart");
-            
-            scatter_ctx
+
+        scatter_ctx
             .configure_mesh()
             .disable_x_mesh()
             .disable_y_mesh()
@@ -547,9 +547,9 @@ impl PlotData {
             .draw()
             .expect("Cant't draw mesh");
 
-            let mut marker_id = 0;
-            let mut color_id = 0;
-            for (series_name, series) in &self.series {
+        let mut marker_id = 0;
+        let mut color_id = 0;
+        for (series_name, series) in &self.series {
             match marker_id {
                 0 => scatter_ctx
                     .draw_series(

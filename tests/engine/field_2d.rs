@@ -128,7 +128,7 @@ fn field_2d_gets() {
     let last_d = Real2D { x: 0.0, y: 0.0 };
     let loc1 = Real2D { x: 0.0, y: 0.0 };
     let loc2 = Real2D { x: 5.0, y: 5.0 };
-    
+
     let bird1 = Bird::new(1, loc1, last_d);
     let bird2 = Bird::new(2, loc2, last_d);
     let bird3 = Bird::new(3, loc2, last_d);
@@ -177,7 +177,6 @@ fn field_2d_gets() {
     assert_eq!(0, birds.len());
 }
 
-
 #[cfg(not(any(
     feature = "visualization",
     feature = "visualization_wasm",
@@ -198,7 +197,6 @@ fn field_2d_bags() {
     state.field1.set_object_location(bird2, bird2.pos);
     state.field1.set_object_location(bird3, bird3.pos);
 
-    
     state.update(0);
 
     let bags = state.field1.get_empty_bags();
@@ -217,13 +215,13 @@ fn field_2d_bags() {
     feature = "parallel"
 )))]
 #[test]
-fn field_2d_iter(){
+fn field_2d_iter() {
     let mut state = Flocker::new((10., 10.), 0);
     let last_d = Real2D { x: 0.0, y: 0.0 };
     let loc1 = Real2D { x: 0.0, y: 0.0 };
     let loc2 = Real2D { x: 0.01, y: 0.01 };
     let loc3 = Real2D { x: 5.0, y: 5.0 };
-    
+
     let bird1 = Bird::new(1, loc1, last_d);
     let bird2 = Bird::new(2, loc2, last_d);
     let bird3 = Bird::new(3, loc3, last_d);
@@ -246,5 +244,4 @@ fn field_2d_iter(){
         let bird = state.field1.get_objects(loc);
         assert!(bird.contains(&obj));
     });
-
 }
