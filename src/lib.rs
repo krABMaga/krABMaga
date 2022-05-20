@@ -524,7 +524,6 @@ impl PlotData {
         // Create directory if it doesn't exist
         fs::create_dir_all(&path).expect("Can't create folder");
 
-        println!("Storing plot {}", self.name);
         let output_name = format!("{}/{}_{}.png", &path, self.name.replace("/", "-"), rep);
 
         let root = BitMapBackend::new(&output_name, (1024, 768)).into_drawing_area();

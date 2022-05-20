@@ -34,27 +34,29 @@ fn simulate_ui_structs() {
         );
     }
 
-    {
-        {
-            let data = DATA.lock().unwrap();
-            println!("Start");
-            for (_, plot) in data.iter() {
-                if plot.to_be_stored {
-                    plot.store_plot(0)
-                }
-            }
-        }
+    // {
+    //     {
+    //         let data;
+    //         {
+    //             data = DATA.lock().unwrap().clone();
+    //         }
+    //         for (_, plot) in data.iter() {
+    //             if plot.to_be_stored {
+    //                 plot.store_plot(0)
+    //             }
+    //         }
+    //     }
 
-        use std::path::Path;
-        let date = CURRENT_DATE.clone();
-        let path = format!("output/{}/Agents/Agents_0.png", date);
+    //     use std::path::Path;
+    //     let date = CURRENT_DATE.clone();
+    //     let path = format!("output/{}/Agents/Agents_0.png", date);
 
-        // Check if the plot file exists
-        assert!(Path::new(&path).exists());
+    //     // Check if the plot file exists
+    //     assert!(Path::new(&path).exists());
 
-        // Remove the file
-        fs::remove_dir_all("output").expect("Error removing output directory");
-    }
+    //     // Remove the file
+    //     fs::remove_dir_all("output").expect("Error removing output directory");
+    // }
 
     {
         log!(LogType::Info, "Info Log".to_string(), true);
