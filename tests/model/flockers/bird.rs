@@ -1,7 +1,7 @@
 use core::fmt;
 use krabmaga::engine::agent::Agent;
-use krabmaga::engine::fields::field_2d::{toroidal_distance, toroidal_transform};
-use krabmaga::engine::location::{Location2D, Real2D};
+use krabmaga::engine::fields::field_2d::{toroidal_distance, toroidal_transform, Location2D};
+use krabmaga::engine::location::Real2D;
 use krabmaga::engine::state::State;
 use krabmaga::rand;
 use krabmaga::rand::Rng;

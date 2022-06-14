@@ -1,11 +1,17 @@
 use crate::engine::{
     fields::field::Field,
-    location::{Int2D, Location2D, Real2D},
+    location::{Int2D, Real2D},
 };
 
 use core::fmt::Display;
 use std::cmp;
 use std::hash::Hash;
+
+/// A trait to request implementation of the two basic function that must be implemented
+pub trait Location2D<Real2D> {
+    fn get_location(self) -> Real2D;
+    fn set_location(&mut self, loc: Real2D);
+}
 
 use cfg_if::cfg_if;
 cfg_if! {

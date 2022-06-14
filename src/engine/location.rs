@@ -2,12 +2,6 @@ use std::fmt;
 use std::hash::Hash;
 use std::hash::Hasher;
 
-/// A trait to request implementation of the two basic function that must be implemented
-pub trait Location2D<T: fmt::Display + Eq + PartialEq + Copy> {
-    fn get_location(self) -> T;
-    fn set_location(&mut self, loc: T);
-}
-
 /// A structure describing a two-dimensional, f32 location, for use in continuous fields.
 #[derive(Clone, Default, Copy, Debug)]
 pub struct Real2D {
