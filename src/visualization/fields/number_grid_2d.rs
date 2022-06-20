@@ -69,7 +69,7 @@ pub trait BatchRender<S: State> {
     {
         let texture = self.texture();
         let handle = sprite_render_factory.assets.add(texture);
-        let transform = Transform::from_xyz(sim.center_x, sim.center_y, self.get_layer());
+        let transform = Transform::from_xyz(sim.center_x -0.5, sim.center_y -0.5, self.get_layer());
         let sprite_bundle = SpriteBundle {
             texture: handle,
             transform,
