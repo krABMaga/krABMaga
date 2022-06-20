@@ -4,6 +4,10 @@ use cfg_if::cfg_if;
 cfg_if! {
     if #[cfg(not(feature = "visualization_wasm"))]
     {
+
+        pub const SCALE_Y: f64 = 0.2;
+        pub const SCALE_X: f64 = 10.;
+
         use tui::{
             backend::Backend,
             layout::{Alignment, Constraint, Direction, Layout, Rect},
@@ -359,7 +363,7 @@ cfg_if! {
                             .title(pdata.xlabel.clone())
                             .style(Style::default().fg(Color::Gray))
                             //TODO +10 is a temporary fix for plot range
-                            .bounds([pdata.min_x, pdata.max_x + 10.0])
+                            .bounds([pdata.min_x, pdata.max_x + SCALE_X])
                             .labels(vec![
                                 Span::styled(
                                     pdata.min_x.to_string(),
@@ -376,14 +380,14 @@ cfg_if! {
                             .title(pdata.ylabel.clone())
                             .style(Style::default().fg(Color::Gray))
                             //TODO +10 is a temporary fix for plot range
-                            .bounds([pdata.min_y, pdata.max_y + 10.0])
+                            .bounds([pdata.min_y, pdata.max_y + pdata.max_y * SCALE_Y])
                             .labels(vec![
                                 Span::styled(
                                     pdata.min_y.to_string(),
                                     Style::default().add_modifier(Modifier::BOLD),
                                 ),
                                 Span::styled(
-                                    pdata.max_y.to_string(),
+                                    (pdata.max_y + pdata.max_y * SCALE_Y).to_string(),
                                     Style::default().add_modifier(Modifier::BOLD),
                                 ),
                             ]),
@@ -511,7 +515,7 @@ cfg_if! {
                                 .title("Step/Seconds for Repetitions"),
                         )
                         .data(&new[..])
-                        .bar_width(3)
+                        .bar_width(5)
                         .bar_gap(2)
                         .bar_set(symbols::bar::NINE_LEVELS)
                         .value_style(
