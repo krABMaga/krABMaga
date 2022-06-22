@@ -47,7 +47,7 @@ cfg_if! {
                         let mut sprite_bundle = sprite_render_factory.get_emoji_loader(emoji);
                         let loc = Self::fetch_loc(state, obj).expect("error on fetch_loc");
                         let rotation = Quat::from_rotation_z(Self::fetch_rotation(state, obj));
-                        sprite_bundle.transform = Transform::from_xyz(loc.x as f32, loc.y as f32, 0.);
+                        sprite_bundle.transform = Transform::from_xyz(loc.x as f32, loc.y as f32 -0.5, 0.);
                         sprite_bundle.transform.rotation = rotation;
                         let scale = Self::scale(obj);
                         sprite_bundle.transform.scale.x = scale.0;
@@ -71,7 +71,8 @@ cfg_if! {
                         let mut sprite_bundle = sprite_render_factory.get_emoji_loader(emoji);
                         let loc = Self::fetch_loc(state, obj).expect("error on fetch_lock");
                         let rotation = Quat::from_rotation_z(Self::fetch_rotation(state, obj));
-                        sprite_bundle.transform = Transform::from_xyz(loc.x as f32, loc.y as f32, 0.);
+                        // sprite_bundle.transform = Transform::from_xyz(loc.x as f32, loc.y as f32 -0.5, 0.);
+                        sprite_bundle.transform = Transform::from_xyz(loc.x as f32, 0.5, 0.);
                         sprite_bundle.transform.rotation = rotation;
                         let scale = Self::scale(obj);
                         sprite_bundle.transform.scale.x = scale.0;
@@ -123,7 +124,7 @@ cfg_if! {
                     *material = new_material;
 
                     transform.translation.x = loc.x as f32;
-                    transform.translation.y = loc.y as f32;
+                    transform.translation.y = loc.y as f32 + 0.5;
                     let rotation = Quat::from_rotation_z(Self::fetch_rotation(state, obj));
                     transform.rotation = rotation;
                 }
