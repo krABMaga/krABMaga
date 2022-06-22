@@ -65,7 +65,7 @@ cfg_if! {
                 let (scale_x, scale_y) = agent_render.scale(agent, state);
                 let rotation = agent_render.rotation(agent, state);
 
-                let mut transform = Transform::from_translation(Vec3::new(x , y -0.5, z));
+                let mut transform = Transform::from_translation(Vec3::new(x , y + 0.5, z));
                 transform.scale.x = scale_x;
                 transform.scale.y = scale_y;
                 transform.rotation = Quat::from_rotation_z(rotation);

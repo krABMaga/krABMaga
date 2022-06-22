@@ -49,7 +49,7 @@ pub fn renderer_system<I: VisualizationState<S> + Clone + 'static, S: State>(
                     &mut *visible,
                 );
                 // transform.translation.x = 0.5;
-                transform.translation.y -= 0.5;
+                transform.translation.y += 0.5;
                 let SpriteType::Emoji(emoji_code) =
                     agent_render.sprite(&agent, &Box::new(state.as_state()));
                 let new_material = sprite_factory.get_material_handle(emoji_code);
