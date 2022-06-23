@@ -8,6 +8,7 @@ on:
       - '**.md'
       - 'tests/**'
       - '.gitignore'
+      - 'src/utils/**'
 
 jobs:
   sync:

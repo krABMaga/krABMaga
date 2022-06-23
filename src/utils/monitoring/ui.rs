@@ -508,6 +508,29 @@ cfg_if! {
                         .map(|(string, val)| (string.as_str(), *val))
                         .collect();
 
+                    let mut max: u64 = 0;
+                    for (_, val) in new.iter() {
+                        if val > &max {
+                            max = *val;
+                        }
+                    }
+                    //convert max to string and count the number of digits
+                    let max_str = max.to_string();
+                    let mut max_digits = 0;
+                    for c in max_str.chars() {
+                        if c.is_digit(10) {
+                            max_digits += 1;
+                        }
+                    }
+                    let size_bar: u16;
+                    match max_digits {
+                        1..=2 => size_bar = 3,
+                        3 => size_bar = 5,
+                        4 => size_bar = 7,
+                        5 => size_bar = 9,
+                        _ => size_bar = 11,
+                    }
+
                     let barchart = BarChart::default()
                         .block(
                             Block::default()
@@ -515,7 +538,7 @@ cfg_if! {
                                 .title("Step/Seconds for Repetitions"),
                         )
                         .data(&new[..])
-                        .bar_width(5)
+                        .bar_width(size_bar)
                         .bar_gap(2)
                         .bar_set(symbols::bar::NINE_LEVELS)
                         .value_style(
