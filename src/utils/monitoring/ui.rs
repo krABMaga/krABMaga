@@ -92,6 +92,7 @@ cfg_if! {
             pub rep: u64,
             pub tot_reps: u64,
             pub tot_steps: u64,
+            pub tot_logs: usize,
         }
         impl UI {
             pub fn new(tsteps: u64, treps: u64) -> UI {
@@ -109,15 +110,15 @@ cfg_if! {
                     rep: 0,
                     tot_reps: treps,
                     tot_steps: tsteps,
+                    tot_logs: 0,
                     show_description: false,
                 }
             }
             pub fn on_up(&mut self) {
-                let logs = LOGS.lock().unwrap();
                 let i = match self.logs_state.selected() {
                     Some(i) => {
                         if i == 0 {
-                            logs.len() - 1
+                            self.tot_logs - 1
                         } else {
                             i - 1
                         }
@@ -128,10 +129,10 @@ cfg_if! {
             }
 
             pub fn on_down(&mut self) {
-                let logs = LOGS.lock().unwrap();
+                
                 let i = match self.logs_state.selected() {
                     Some(i) => {
-                        if i >= logs.len() - 1 {
+                        if i >= self.tot_logs - 1 {
                             0
                         } else {
                             i + 1
@@ -316,7 +317,14 @@ cfg_if! {
 
                 let mut datasets = Vec::new();
                 let chart_name = self.tabs.titles[id].clone();
-                let pdata = data.get(&chart_name).unwrap();
+                
+                let pdata = match data.get(&chart_name){
+                    Some(pdata) => pdata,
+                    None => {
+                        return;d
+                    }
+                };
+                
 
                 let markers = [
                     symbols::Marker::Dot,
@@ -479,7 +487,7 @@ cfg_if! {
                     let critical_style = Style::default().fg(Color::Red);
 
                     let logs: Vec<ListItem> = logs
-                        .iter()
+                        .iter().flatten()
                         .map(|x| {
                             let s = match x.ltype {
                                 LogType::Warning => warning_style,
@@ -496,6 +504,9 @@ cfg_if! {
                             ListItem::new(content)
                         })
                         .collect();
+
+                    self.tot_logs = logs.len();
+                    
                     let logs = List::new(logs)
                         .block(Block::default().borders(Borders::ALL).title("Logs"))
                         .highlight_style(Style::default().add_modifier(Modifier::BOLD))

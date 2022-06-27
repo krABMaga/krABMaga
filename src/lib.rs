@@ -657,7 +657,7 @@ lazy_static! {
     pub static ref DATA: Mutex<HashMap<String, PlotData>> = Mutex::new(HashMap::new());
     /// static Vec to store all Logs and make it availables inside terminal.
     #[doc(hidden)]
-    pub static ref LOGS: Mutex<Vec<Log>> = Mutex::new(Vec::new());
+    pub static ref LOGS: Mutex<Vec<Vec<Log>>> = Mutex::new(Vec::new());
     /// static String to save Model description to show as a popup. Press 's' on `Simulation Terminal.
     #[doc(hidden)]
     pub static ref DESCR: Mutex<String> = Mutex::new(String::new());
@@ -698,7 +698,7 @@ lazy_static! {
 }
 
 #[doc(hidden)]
-pub use std::sync::mpsc::{self, TryRecvError};
+pub use std::sync::mpsc::{self, TryRecvError, RecvError};
 
 /// Run simulation directly using this macro. By default, `Simulation Terminal` is used
 ///
@@ -711,7 +711,7 @@ pub use std::sync::mpsc::{self, TryRecvError};
 /// *`reps`- number of repetitions to run
 ///
 /// *`flag` - to abilitate TUI (optional, default true)
-#[cfg(not(feature = "visualization_wasm"))]
+// #[cfg(not(feature = "visualization_wasm"))]
 #[macro_export]
 macro_rules! simulate {
     ($s:expr, $step:expr, $reps:expr $(, $flag:expr)?) => {{
@@ -722,25 +722,27 @@ macro_rules! simulate {
         )?
 
         if flag {
-            let tick_rate = Duration::from_millis(250);
+            // let tick_rate = Duration::from_millis(250);
 
-            let _ = enable_raw_mode();
-            let mut stdout = io::stdout();
-            let _ = execute!(stdout, EnterAlternateScreen, EnableMouseCapture);
+            // let _ = enable_raw_mode();
+            // let mut stdout = io::stdout();
+            // let _ = execute!(stdout, EnterAlternateScreen, EnableMouseCapture);
 
-            let backend = CrosstermBackend::new(stdout);
-            let mut terminal = Terminal::new(backend).unwrap();
+            // let backend = CrosstermBackend::new(stdout);
+            // let mut terminal = Terminal::new(backend).unwrap();
 
-            let mut last_tick = Instant::now();
-            let mut ui = UI::new($step, $reps);
+            // let mut last_tick = Instant::now();
+            // let mut ui = UI::new($step, $reps);
 
             let mut s = $s;
             let mut state = s.as_state_mut();
             let n_step: u64 = $step;
 
             let mut monitor = Arc::clone(&MONITOR);
-            let (tx, rx) = mpsc::channel();
+            let (sender_monitoring, recv_monitoring) = mpsc::channel();
+            let (sender_ui, recv_ui) = mpsc::channel();
 
+            
             thread::spawn(move ||
             loop {
                 // System info - Monitoring CPU and Memory used
@@ -759,7 +761,7 @@ macro_rules! simulate {
 
                 let cpu_used = match sys.cpu_load_aggregate() {
                     Ok(cpu)=> {
-                        thread::sleep(Duration::from_millis(1000));
+                        thread::sleep(Duration::from_millis(100));
                         let cpu = cpu.done().unwrap();
                         cpu.user as f64 * 100.0
                     },
@@ -783,7 +785,7 @@ macro_rules! simulate {
                 }
 
 
-                match rx.try_recv() {
+                match recv_monitoring.try_recv() {
                     Ok(_) | Err(TryRecvError::Disconnected) => {
                         break;
                     }
@@ -791,23 +793,34 @@ macro_rules! simulate {
                 }
             });
 
-            for r in 0..$reps {
+            
+            #[derive(Clone)]
+            enum MessageType {
+                AfterRep(u64, u64),
+                AfterStep(u64, f64),
+                Clear,
+                Consumed,
+                EndOfSimulation,
+                Quit,
+                Step,
+            }
+            
+            let mut tui_operation: Arc<Mutex<MessageType>> = Arc::new(Mutex::new(MessageType::Consumed));
+            let mut tui_reps: Arc<Mutex<MessageType>> = Arc::new(Mutex::new(MessageType::Consumed));
 
-                //clean data structure for UI
-                DATA.lock().unwrap().clear();
-                terminal.clear();
-
-                let start = std::time::Instant::now();
-                let mut schedule: Schedule = Schedule::new();
-                state.init(&mut schedule);
-
-                log!(LogType::Info, format!("#{} Simulation started", r), true);
-                //simulation loop
-                for i in 0..n_step {
-
+            let c_tui_operation = Arc::clone(&tui_operation);
+            let c_tui_reps = Arc::clone(&tui_reps);
+            let terminal_thread = thread::spawn(move || {
+                let tick_rate = Duration::from_millis(250);
+                let _ = enable_raw_mode();
+                let mut stdout = io::stdout();
+                let _ = execute!(stdout, EnterAlternateScreen, EnableMouseCapture);    
+                let backend = CrosstermBackend::new(stdout);
+                let mut terminal = Terminal::new(backend).unwrap();
+                let mut last_tick = Instant::now();
+                let mut ui = UI::new($step, $reps);
+                loop {
                     terminal.draw(|f| ui.draw(f));
-                    schedule.step(state);
-
                     let timeout = tick_rate
                     .checked_sub(last_tick.elapsed())
                     .unwrap_or_else(|| Duration::from_secs(0));
@@ -838,17 +851,108 @@ macro_rules! simulate {
                         terminal.show_cursor();
                         break;
                     }
-                    if state.end_condition(&mut schedule) {
-                        disable_raw_mode();
-                        execute!(
-                            terminal.backend_mut(),
-                            LeaveAlternateScreen,
-                            DisableMouseCapture
+
+                    match recv_ui.try_recv() {
+                        Ok(_) | Err(TryRecvError::Disconnected) => {
+                            let op;
+                            let rep;
+                            {
+                                op = c_tui_operation.lock().unwrap().clone();
+                                rep = c_tui_reps.lock().unwrap().clone();
+                            }
+
+                            match op {
+
+                                MessageType::AfterStep(step, progress) => {
+                                    ui.on_tick(step, progress);
+                                },
+        
+                                MessageType::Clear => {
+                                    terminal.clear();
+                                },
+                                
+                                MessageType::Quit => {
+                                    terminal.clear();
+                                    disable_raw_mode();
+                                    execute!(
+                                        terminal.backend_mut(),
+                                        LeaveAlternateScreen,
+                                        DisableMouseCapture
+                                    );
+                                    terminal.show_cursor();
+                                    break;
+                                },
+                                _ => {},
+                                // MessageType::Step => {
+                                //     terminal.draw(|f| ui.draw(f));
+                                // },
+                            };
+
+                            match rep {
+                                MessageType::AfterRep(r, time) => {
+                                    ui.on_rep(
+                                        r,
+                                        time,
+                                    );
+
+                                    {
+                                        *c_tui_reps.lock().unwrap() = MessageType::Consumed;
+                                    }
+                                },
+                                _ => {},
+                            }
+                        },
+                        Err(TryRecvError::Empty) => {}
+                    }
+                };
+                        
+            });
+
+
+            for r in 0..$reps {
+                {
+                    let mut logs = LOGS.lock().unwrap();
+                    logs.insert(0, Vec::new());
+                }
+                //clean data structure for UI
+                DATA.lock().unwrap().clear();
+                // terminal.clear();
+                {
+                    let mut tui_operation = tui_operation.lock().unwrap();
+                    *tui_operation = MessageType::Clear;
+                }
+
+                sender_ui.send(()).expect("Simulation interrupted by user. Quitting...");
+
+                let start = std::time::Instant::now();
+                let mut schedule: Schedule = Schedule::new();
+                state.init(&mut schedule);
+
+
+                log!(LogType::Info, format!("#{} Simulation started", r), true);
+                //simulation loop
+                for i in 0..n_step {
+
+                    schedule.step(state);
+
+                    //send after step to UI
+                    {
+                        let mut tui_operation = tui_operation.lock().unwrap();
+                        *tui_operation = MessageType::AfterStep(
+                            i,
+                            (i + 1) as f64 / n_step as f64
                         );
-                        terminal.show_cursor();
+                    }
+                    
+                    sender_ui.send(()).expect("Simulation interrupted by user. Quitting...");
+                    if state.end_condition(&mut schedule) {
+                        {
+                            let mut tui_operation = tui_operation.lock().unwrap();
+                            *tui_operation = MessageType::Quit;
+                        }   
+                        sender_ui.send(()).expect("Simulation interrupted by user. Quitting...");
                         break;
                     }
-                    ui.on_tick(i, (i + 1) as f64 / n_step as f64);
 
                 } //end simulation loop
 
@@ -863,96 +967,43 @@ macro_rules! simulate {
                         }
                     }
 
-
                 }
-
 
                 let run_duration = start.elapsed();
-                ui.on_rep(
-                    r,
-                    ((schedule.step as f32 / (run_duration.as_nanos() as f32 * 1e-9)) as u64),
-                );
-                terminal.draw(|f| ui.draw(f));
-
-                if last_tick.elapsed() >= tick_rate {
-                    last_tick = Instant::now();
-                }
-
-                if ui.should_quit {
-                    disable_raw_mode();
-                    execute!(
-                        terminal.backend_mut(),
-                        LeaveAlternateScreen,
-                        DisableMouseCapture
+                {
+                    let mut tui_reps = tui_reps.lock().unwrap();
+                    *tui_reps = MessageType::AfterRep(
+                        r,
+                        ((schedule.step as f32 / (run_duration.as_nanos() as f32 * 1e-9)) as u64),
                     );
-                    terminal.show_cursor();
-                    break;
                 }
+
+                sender_ui.send(()).expect("Simulation interrupted by user. Quitting...");
             } //end of repetitions
 
-            let _ = tx.send(());
+            let _ = sender_monitoring.send(());
 
 
             {
                 let mut logs = LOGS.lock().unwrap();
 
                 // iter on logs and save to file
-
-                if logs.len() > 0 {
-                    let date = CURRENT_DATE.clone();
-                    // Create directory if it doesn't exist
-                    fs::create_dir_all("output").expect("Can't create folder");
-                    let log_path = format!("output/{}.log", date);
-                    let mut f = File::create(log_path).expect("Can't create log file");
-                    for log in logs.iter() {
-                        if log.to_be_stored {
-                        write!(f, "{}\n", log).expect("Can't write to log file");
-                        }
+                
+                let date = CURRENT_DATE.clone();
+                // Create directory if it doesn't exist
+                fs::create_dir_all("output").expect("Can't create folder");
+                let log_path = format!("output/{}.log", date);
+                let mut f = File::create(log_path).expect("Can't create log file");
+                for log in logs.iter().flatten() {
+                    if log.to_be_stored {
+                    write!(f, "{}\n", log).expect("Can't write to log file");
                     }
                 }
-
-
+                
             }
+            
+            terminal_thread.join();
 
-
-            loop {
-                terminal.draw(|f| ui.draw(f));
-
-                let timeout = tick_rate
-                    .checked_sub(last_tick.elapsed())
-                    .unwrap_or_else(|| Duration::from_secs(0));
-
-                if crossterm::event::poll(timeout).unwrap() {
-                    //?
-                    if let Event::Key(key) = event::read().unwrap() {
-                        //?
-                        match key.code {
-                            KeyCode::Char(c) => ui.on_key(c),
-                            KeyCode::Left => ui.on_left(),
-                            KeyCode::Up => ui.on_up(),
-                            KeyCode::Right => ui.on_right(),
-                            KeyCode::Down => ui.on_down(),
-                            _ => {
-                                log!(LogType::Critical, format!("Invalid key pressed!"));
-                            }
-                        }
-                    }
-                }
-
-                if last_tick.elapsed() >= tick_rate {
-                    last_tick = Instant::now();
-                }
-                if ui.should_quit {
-                    disable_raw_mode();
-                    execute!(
-                        terminal.backend_mut(),
-                        LeaveAlternateScreen,
-                        DisableMouseCapture
-                    );
-                    terminal.show_cursor();
-                    break;
-                }
-            }
         } else {
 
             let mut s = $s;
@@ -1073,7 +1124,8 @@ macro_rules! log {
 
         {
             let mut logs = LOGS.lock().unwrap();
-            logs.insert(
+            if logs.is_empty() { logs.push(Vec::new()) }
+            logs[0].insert(
                 0,
                 Log {
                     ltype: $ltype,
