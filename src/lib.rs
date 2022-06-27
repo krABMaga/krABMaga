@@ -698,7 +698,7 @@ lazy_static! {
 }
 
 #[doc(hidden)]
-pub use std::sync::mpsc::{self, TryRecvError, RecvError};
+pub use std::sync::mpsc::{self, RecvError, TryRecvError};
 
 /// Run simulation directly using this macro. By default, `Simulation Terminal` is used
 ///
@@ -742,7 +742,7 @@ macro_rules! simulate {
             let (sender_monitoring, recv_monitoring) = mpsc::channel();
             let (sender_ui, recv_ui) = mpsc::channel();
 
-            
+
             thread::spawn(move ||
             loop {
                 // System info - Monitoring CPU and Memory used
@@ -793,7 +793,7 @@ macro_rules! simulate {
                 }
             });
 
-            
+
             #[derive(Clone)]
             enum MessageType {
                 AfterRep(u64, u64),
@@ -804,7 +804,7 @@ macro_rules! simulate {
                 Quit,
                 Step,
             }
-            
+
             let mut tui_operation: Arc<Mutex<MessageType>> = Arc::new(Mutex::new(MessageType::Consumed));
             let mut tui_reps: Arc<Mutex<MessageType>> = Arc::new(Mutex::new(MessageType::Consumed));
 
@@ -814,7 +814,7 @@ macro_rules! simulate {
                 let tick_rate = Duration::from_millis(250);
                 let _ = enable_raw_mode();
                 let mut stdout = io::stdout();
-                let _ = execute!(stdout, EnterAlternateScreen, EnableMouseCapture);    
+                let _ = execute!(stdout, EnterAlternateScreen, EnableMouseCapture);
                 let backend = CrosstermBackend::new(stdout);
                 let mut terminal = Terminal::new(backend).unwrap();
                 let mut last_tick = Instant::now();
@@ -866,11 +866,11 @@ macro_rules! simulate {
                                 MessageType::AfterStep(step, progress) => {
                                     ui.on_tick(step, progress);
                                 },
-        
+
                                 MessageType::Clear => {
                                     terminal.clear();
                                 },
-                                
+
                                 MessageType::Quit => {
                                     terminal.clear();
                                     disable_raw_mode();
@@ -905,7 +905,7 @@ macro_rules! simulate {
                         Err(TryRecvError::Empty) => {}
                     }
                 };
-                        
+
             });
 
 
@@ -943,13 +943,13 @@ macro_rules! simulate {
                             (i + 1) as f64 / n_step as f64
                         );
                     }
-                    
+
                     sender_ui.send(()).expect("Simulation interrupted by user. Quitting...");
                     if state.end_condition(&mut schedule) {
                         {
                             let mut tui_operation = tui_operation.lock().unwrap();
                             *tui_operation = MessageType::Quit;
-                        }   
+                        }
                         sender_ui.send(()).expect("Simulation interrupted by user. Quitting...");
                         break;
                     }
@@ -988,7 +988,7 @@ macro_rules! simulate {
                 let mut logs = LOGS.lock().unwrap();
 
                 // iter on logs and save to file
-                
+
                 let date = CURRENT_DATE.clone();
                 // Create directory if it doesn't exist
                 fs::create_dir_all("output").expect("Can't create folder");
@@ -999,9 +999,9 @@ macro_rules! simulate {
                     write!(f, "{}\n", log).expect("Can't write to log file");
                     }
                 }
-                
+
             }
-            
+
             terminal_thread.join();
 
         } else {

@@ -129,7 +129,7 @@ cfg_if! {
             }
 
             pub fn on_down(&mut self) {
-                
+
                 let i = match self.logs_state.selected() {
                     Some(i) => {
                         if i >= self.tot_logs - 1 {
@@ -317,14 +317,14 @@ cfg_if! {
 
                 let mut datasets = Vec::new();
                 let chart_name = self.tabs.titles[id].clone();
-                
+
                 let pdata = match data.get(&chart_name){
                     Some(pdata) => pdata,
                     None => {
-                        return;d
+                        return;
                     }
                 };
-                
+
 
                 let markers = [
                     symbols::Marker::Dot,
@@ -506,7 +506,7 @@ cfg_if! {
                         .collect();
 
                     self.tot_logs = logs.len();
-                    
+
                     let logs = List::new(logs)
                         .block(Block::default().borders(Borders::ALL).title("Logs"))
                         .highlight_style(Style::default().add_modifier(Modifier::BOLD))
