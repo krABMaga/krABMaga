@@ -734,9 +734,6 @@ macro_rules! simulate {
             // let mut last_tick = Instant::now();
             // let mut ui = UI::new($step, $reps);
 
-            let mut s = $s;
-            let mut state = s.as_state_mut();
-            let n_step: u64 = $step;
 
             let mut monitor = Arc::clone(&MONITOR);
             let (sender_monitoring, recv_monitoring) = mpsc::channel();
@@ -908,79 +905,85 @@ macro_rules! simulate {
 
             });
 
-
-            for r in 0..$reps {
-                {
-                    let mut logs = LOGS.lock().unwrap();
-                    logs.insert(0, Vec::new());
-                }
-                //clean data structure for UI
-                DATA.lock().unwrap().clear();
-                // terminal.clear();
-                {
-                    let mut tui_operation = tui_operation.lock().unwrap();
-                    *tui_operation = MessageType::Clear;
-                }
-
-                sender_ui.send(()).expect("Simulation interrupted by user. Quitting...");
-
-                let start = std::time::Instant::now();
-                let mut schedule: Schedule = Schedule::new();
-                state.init(&mut schedule);
-
-
-                log!(LogType::Info, format!("#{} Simulation started", r), true);
-                //simulation loop
-                for i in 0..n_step {
-
-                    schedule.step(state);
-
-                    //send after step to UI
+            let sim_thread = thread::spawn(move || {
+                let mut s = $s;
+                let mut state = s.as_state_mut();
+                let n_step: u64 = $step;
+    
+                for r in 0..$reps {
+                    {
+                        let mut logs = LOGS.lock().unwrap();
+                        logs.insert(0, Vec::new());
+                    }
+                    //clean data structure for UI
+                    DATA.lock().unwrap().clear();
+                    // terminal.clear();
                     {
                         let mut tui_operation = tui_operation.lock().unwrap();
-                        *tui_operation = MessageType::AfterStep(
-                            i,
-                            (i + 1) as f64 / n_step as f64
+                        *tui_operation = MessageType::Clear;
+                    }
+
+                    sender_ui.send(()).expect("Simulation interrupted by user. Quitting...");
+
+                    let start = std::time::Instant::now();
+                    let mut schedule: Schedule = Schedule::new();
+                    state.init(&mut schedule);
+
+
+                    log!(LogType::Info, format!("#{} Simulation started", r), true);
+                    //simulation loop
+                    for i in 0..n_step {
+
+                        schedule.step(state);
+
+                        //send after step to UI
+                        {
+                            let mut tui_operation = tui_operation.lock().unwrap();
+                            *tui_operation = MessageType::AfterStep(
+                                i,
+                                (i + 1) as f64 / n_step as f64
+                            );
+                        }
+
+                        sender_ui.send(()).expect("Simulation interrupted by user. Quitting...");
+                        if state.end_condition(&mut schedule) {
+                            {
+                                let mut tui_operation = tui_operation.lock().unwrap();
+                                *tui_operation = MessageType::Quit;
+                            }
+                            sender_ui.send(()).expect("Simulation interrupted by user. Quitting...");
+                            break;
+                        }
+
+                    } //end simulation loop
+
+                    log!(LogType::Info, format!("#{} Simulation ended", r), true);
+
+                    {
+                        let data = DATA.lock().unwrap();
+                        // iterate on data values and save to file
+                        for (key, plot) in data.iter() {
+                            if plot.to_be_stored {
+                                plot.store_plot(r)
+                            }
+                        }
+
+                    }
+
+                    let run_duration = start.elapsed();
+                    {
+                        let mut tui_reps = tui_reps.lock().unwrap();
+                        *tui_reps = MessageType::AfterRep(
+                            r,
+                            ((schedule.step as f32 / (run_duration.as_nanos() as f32 * 1e-9)) as u64),
                         );
                     }
 
                     sender_ui.send(()).expect("Simulation interrupted by user. Quitting...");
-                    if state.end_condition(&mut schedule) {
-                        {
-                            let mut tui_operation = tui_operation.lock().unwrap();
-                            *tui_operation = MessageType::Quit;
-                        }
-                        sender_ui.send(()).expect("Simulation interrupted by user. Quitting...");
-                        break;
-                    }
+                } //end of repetitions
+            });
 
-                } //end simulation loop
-
-                log!(LogType::Info, format!("#{} Simulation ended", r), true);
-
-                {
-                    let data = DATA.lock().unwrap();
-                    // iterate on data values and save to file
-                    for (key, plot) in data.iter() {
-                        if plot.to_be_stored {
-                            plot.store_plot(r)
-                        }
-                    }
-
-                }
-
-                let run_duration = start.elapsed();
-                {
-                    let mut tui_reps = tui_reps.lock().unwrap();
-                    *tui_reps = MessageType::AfterRep(
-                        r,
-                        ((schedule.step as f32 / (run_duration.as_nanos() as f32 * 1e-9)) as u64),
-                    );
-                }
-
-                sender_ui.send(()).expect("Simulation interrupted by user. Quitting...");
-            } //end of repetitions
-
+            sim_thread.join();
             let _ = sender_monitoring.send(());
 
 
