@@ -862,6 +862,9 @@ macro_rules! simulate {
 
                                 MessageType::AfterStep(step, progress) => {
                                     ui.on_tick(step, progress);
+                                    {
+                                        *c_tui_operation.lock().unwrap() = MessageType::Consumed;
+                                    }
                                 },
 
                                 MessageType::Clear => {
@@ -909,7 +912,7 @@ macro_rules! simulate {
                 let mut s = $s;
                 let mut state = s.as_state_mut();
                 let n_step: u64 = $step;
-    
+
                 for r in 0..$reps {
                     {
                         let mut logs = LOGS.lock().unwrap();
