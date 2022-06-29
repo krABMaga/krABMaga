@@ -405,7 +405,8 @@ pub use {
         terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     },
     plotters,
-    systemstat::{saturating_sub_bytes, Platform, System},
+    // systemstat::{saturating_sub_bytes, Platform, System},
+    sysinfo::*,
     tui::{
         backend::{Backend, CrosstermBackend},
         Terminal,
@@ -739,47 +740,80 @@ macro_rules! simulate {
             let (sender_monitoring, recv_monitoring) = mpsc::channel();
             let (sender_ui, recv_ui) = mpsc::channel();
 
+            let pid_main = match get_current_pid() {
+                Ok(pid) => pid,
+                Err(_) => panic!("Unable to get current pid"),
+            };            
 
             thread::spawn(move ||
-            loop {
+                
+                loop {
                 // System info - Monitoring CPU and Memory used
+\\
+                let mut sys = System::new_all();
+                sys.refresh_all();
 
-                let sys = System::new();
+                match sys.process(pid_main) {
+                    Some(process) => {
+                        let mem_used: f64 = ( sys.used_memory() as f64 / sys.total_memory() as f64) * 100.0;
+                        // log!(LogType::Info, format!("Memory used: {}%", mem * 100.0 ));
+                        // log!(LogType::Critical, format!("cpu usage {}", process.cpu_usage() as f64 / sys.cpus().len() as f64));
 
-                let mem_used = match sys.memory() {
-                    Ok(mem) => {
-                        (saturating_sub_bytes(mem.total, mem.free).as_u64() as f64 / mem.total.as_u64() as f64)  * 100.
-                    },
-                    Err(x) =>{
-                        log!(LogType::Critical, format!("Error on load mem used"));
-                        0.0_f64
+                        let cpu_used: f64 = process.cpu_usage() as f64 / sys.cpus().len() as f64;
+
+                        {
+                            let mut monitor = monitor.lock().unwrap();
+
+                            if monitor.mem_used.len()>100 {
+                                monitor.mem_used.remove(0);
+                                monitor.cpu_used.remove(0);
+                            }
+
+                            monitor.mem_used.push(mem_used);
+                            monitor.cpu_used.push(cpu_used);
+                        }
+                    },  
+                    None => {
+                        log!(LogType::Critical, format!("Error on finding main pid"))
                     }
                 };
 
-                let cpu_used = match sys.cpu_load_aggregate() {
-                    Ok(cpu)=> {
-                        thread::sleep(Duration::from_millis(100));
-                        let cpu = cpu.done().unwrap();
-                        cpu.user as f64 * 100.0
-                    },
-                    Err(x) => {
-                        log!(LogType::Critical, format!("Error on load cpu used"));
-                        0.0_f64
-                    }
-                };
+                // let sys = System::new();
 
-                {
-                    let mut monitor = monitor.lock().unwrap();
+                // let mem_used = match sys.memory() {
+                //     Ok(mem) => {
+                //         (saturating_sub_bytes(mem.total, mem.free).as_u64() as f64 / mem.total.as_u64() as f64)  * 100.
+                //     },
+                //     Err(x) =>{
+                //         log!(LogType::Critical, format!("Error on load mem used"));
+                //         0.0_f64
+                //     }
+                // };
 
-                    if monitor.mem_used.len()>100 {
-                        monitor.mem_used.remove(0);
-                        monitor.cpu_used.remove(0);
-                    }
+                // let cpu_used = match sys.cpu_load_aggregate() {
+                //     Ok(cpu)=> {
+                //         thread::sleep(Duration::from_millis(100));
+                //         let cpu = cpu.done().unwrap();
+                //         cpu.user as f64 * 100.0
+                //     },
+                //     Err(x) => {
+                //         log!(LogType::Critical, format!("Error on load cpu used"));
+                //         0.0_f64
+                //     }
+                // };
 
-                    monitor.mem_used.push(mem_used);
-                    monitor.cpu_used.push(cpu_used);
+                // {
+                //     let mut monitor = monitor.lock().unwrap();
 
-                }
+                //     if monitor.mem_used.len()>100 {
+                //         monitor.mem_used.remove(0);
+                //         monitor.cpu_used.remove(0);
+                //     }
+
+                //     monitor.mem_used.push(mem_used);
+                //     monitor.cpu_used.push(cpu_used);
+
+                // }
 
 
                 match recv_monitoring.try_recv() {
