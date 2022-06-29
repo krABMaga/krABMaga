@@ -749,7 +749,7 @@ macro_rules! simulate {
                 
                 loop {
                 // System info - Monitoring CPU and Memory used
-\\
+
                 let mut sys = System::new_all();
                 sys.refresh_all();
 
