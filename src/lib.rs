@@ -729,7 +729,7 @@ pub use std::sync::mpsc::{self, RecvError, TryRecvError};
 /// *`reps`- number of repetitions to run
 ///
 /// *`flag` - to abilitate TUI (optional, default true)
-// #[cfg(not(feature = "visualization_wasm"))]
+#[cfg(not(feature = "visualization_wasm"))]
 #[macro_export]
 macro_rules! simulate {
     ($s:expr, $step:expr, $reps:expr $(, $flag:expr)?) => {{
