@@ -651,11 +651,15 @@ impl fmt::Display for Log {
     }
 }
 
+use std::sync::mpsc::Sender;
 lazy_static! {
-
     /// static HashMap to manage plots of the whole simulation. Used to create tabs and plot inside `UI` module.
     #[doc(hidden)]
     pub static ref DATA: Mutex<HashMap<String, PlotData>> = Mutex::new(HashMap::new());
+    // /// static HashMap to manage plots of the whole simulation. Used to create tabs and plot inside `UI` module.
+    // #[doc(hidden)]
+    pub static ref CSV_SENDER: Mutex<Option<Sender<MessageType>>> = Mutex::new(None);
+    pub static ref PLOT_NAMES: Mutex<std::collections::HashSet<(String, String, String)>> = Mutex::new(std::collections::HashSet::new());
     /// static Vec to store all Logs and make it availables inside terminal.
     #[doc(hidden)]
     pub static ref LOGS: Mutex<Vec<Vec<Log>>> = Mutex::new(Vec::new());
@@ -674,6 +678,19 @@ pub struct Monitoring {
     pub mem_used: Vec<f64>,
     /// Percentage of cpu used
     pub cpu_used: Vec<f64>,
+}
+
+#[doc(hidden)]
+#[derive(Clone)]
+pub enum MessageType {
+    AfterRep(u64, u64),
+    AfterStep(u64, f64),
+    Clear,
+    Consumed,
+    EndOfSimulation,
+    Quit,
+    Step,
+    Plot(String, String, f64, f64),
 }
 
 #[doc(hidden)]
@@ -723,18 +740,6 @@ macro_rules! simulate {
         )?
 
         if flag {
-            // let tick_rate = Duration::from_millis(250);
-
-            // let _ = enable_raw_mode();
-            // let mut stdout = io::stdout();
-            // let _ = execute!(stdout, EnterAlternateScreen, EnableMouseCapture);
-
-            // let backend = CrosstermBackend::new(stdout);
-            // let mut terminal = Terminal::new(backend).unwrap();
-
-            // let mut last_tick = Instant::now();
-            // let mut ui = UI::new($step, $reps);
-
 
             let mut monitor = Arc::clone(&MONITOR);
             let (sender_monitoring, recv_monitoring) = mpsc::channel();
@@ -743,10 +748,10 @@ macro_rules! simulate {
             let pid_main = match get_current_pid() {
                 Ok(pid) => pid,
                 Err(_) => panic!("Unable to get current pid"),
-            };            
+            };
 
             thread::spawn(move ||
-                
+
                 loop {
                 // System info - Monitoring CPU and Memory used
 
@@ -772,48 +777,11 @@ macro_rules! simulate {
                             monitor.mem_used.push(mem_used);
                             monitor.cpu_used.push(cpu_used);
                         }
-                    },  
+                    },
                     None => {
                         log!(LogType::Critical, format!("Error on finding main pid"))
                     }
                 };
-
-                // let sys = System::new();
-
-                // let mem_used = match sys.memory() {
-                //     Ok(mem) => {
-                //         (saturating_sub_bytes(mem.total, mem.free).as_u64() as f64 / mem.total.as_u64() as f64)  * 100.
-                //     },
-                //     Err(x) =>{
-                //         log!(LogType::Critical, format!("Error on load mem used"));
-                //         0.0_f64
-                //     }
-                // };
-
-                // let cpu_used = match sys.cpu_load_aggregate() {
-                //     Ok(cpu)=> {
-                //         thread::sleep(Duration::from_millis(100));
-                //         let cpu = cpu.done().unwrap();
-                //         cpu.user as f64 * 100.0
-                //     },
-                //     Err(x) => {
-                //         log!(LogType::Critical, format!("Error on load cpu used"));
-                //         0.0_f64
-                //     }
-                // };
-
-                // {
-                //     let mut monitor = monitor.lock().unwrap();
-
-                //     if monitor.mem_used.len()>100 {
-                //         monitor.mem_used.remove(0);
-                //         monitor.cpu_used.remove(0);
-                //     }
-
-                //     monitor.mem_used.push(mem_used);
-                //     monitor.cpu_used.push(cpu_used);
-
-                // }
 
 
                 match recv_monitoring.try_recv() {
@@ -825,16 +793,6 @@ macro_rules! simulate {
             });
 
 
-            #[derive(Clone)]
-            enum MessageType {
-                AfterRep(u64, u64),
-                AfterStep(u64, f64),
-                Clear,
-                Consumed,
-                EndOfSimulation,
-                Quit,
-                Step,
-            }
 
             let mut tui_operation: Arc<Mutex<MessageType>> = Arc::new(Mutex::new(MessageType::Consumed));
             let mut tui_reps: Arc<Mutex<MessageType>> = Arc::new(Mutex::new(MessageType::Consumed));
@@ -942,6 +900,62 @@ macro_rules! simulate {
 
             });
 
+
+            let csv_recv: krabmaga::mpsc::Receiver<MessageType>;
+            let (s, r)  = mpsc::channel();
+            {
+                let mut csv_send = CSV_SENDER.lock().expect("Error on lock");
+                *csv_send = Some(s.clone());
+                csv_recv = r;
+            }
+
+            let csv_thread = thread::spawn(move || {
+
+                let open_files = |rep_counter: &u32| {
+
+                    let mut csv_writers: Vec<(String, Writer<File>)> = PLOT_NAMES.lock().unwrap().iter().map(|(name, x, y)| {
+                        let date = CURRENT_DATE.clone();
+                        let path = format!("output/{}/{}", date, name.replace("/", "-"));
+
+                        // Create directory if it doesn't exist
+                        fs::create_dir_all(&path).expect("Can't create folder");
+
+                        let csv_name = format!("{}/{}_{}.csv", path, name.replace("/", "-"), rep_counter);
+                        let mut writer = Writer::from_path(csv_name).expect("error on open the file path");
+                        writer.write_record(&["series", &x, &y]).unwrap();
+                        (name.replace("/", "-"), writer)
+                    }).collect();
+                    csv_writers
+                };
+
+                let mut csv_writers = open_files(&0);
+                let mut rep_counter = 0;
+                loop {
+                    match csv_recv.recv(){
+                        Ok(message) => {
+                            match message {
+                                MessageType::Plot(name, series, x, y) => {
+                                    for (n, writer) in &mut csv_writers {
+                                        if name.replace("/", "-") == *n {
+                                            writer.write_record(&[&series, &x.to_string(), &y.to_string()]).unwrap();
+                                            writer.flush().unwrap();
+                                        }
+                                    }
+                                },
+                                MessageType::EndOfSimulation => {
+                                    rep_counter += 1;
+                                    csv_writers = open_files(&rep_counter);
+                                },
+                                _ => break,
+                            }
+                        },
+                        Err(_) => {
+                        }
+                    };
+                };
+            });
+
+
             let sim_thread = thread::spawn(move || {
                 let mut s = $s;
                 let mut state = s.as_state_mut();
@@ -953,7 +967,7 @@ macro_rules! simulate {
                         logs.insert(0, Vec::new());
                     }
                     //clean data structure for UI
-                    DATA.lock().unwrap().clear();
+                    { DATA.lock().unwrap().clear(); }
                     // terminal.clear();
                     {
                         let mut tui_operation = tui_operation.lock().unwrap();
@@ -994,6 +1008,10 @@ macro_rules! simulate {
 
                     } //end simulation loop
 
+                    {
+                        CSV_SENDER.lock().unwrap().as_ref().unwrap().send(MessageType::EndOfSimulation);
+                    }
+
                     log!(LogType::Info, format!("#{} Simulation ended", r), true);
 
                     {
@@ -1018,9 +1036,14 @@ macro_rules! simulate {
 
                     sender_ui.send(()).expect("Simulation interrupted by user. Quitting...");
                 } //end of repetitions
+                {
+                    CSV_SENDER.lock().unwrap().as_ref().unwrap().send(MessageType::Quit);
+                }
+
             });
 
             sim_thread.join();
+            csv_thread.join();
             let _ = sender_monitoring.send(());
 
 
@@ -1118,6 +1141,45 @@ macro_rules! plot {
     }};
 }
 
+#[macro_export]
+macro_rules! plot_csv {
+    ($name:expr, $serie:expr, $x:expr, $y:expr) => {{
+        let mut data = DATA.lock().unwrap();
+        if data.contains_key(&$name) {
+            let mut pdata = data.get_mut(&$name).unwrap();
+            if !pdata.series.contains_key(&$serie) {
+                pdata.series.insert($serie.clone(), Vec::new());
+            }
+            let serie = pdata.series.get_mut(&$serie).unwrap();
+            serie.push(($x, $y));
+
+            if $x < pdata.min_x {
+                pdata.min_x = $x
+            };
+            if $x > pdata.max_x {
+                pdata.max_x = $x
+            };
+            if $y < pdata.min_y {
+                pdata.min_y = $y
+            };
+            if $y > pdata.max_y {
+                pdata.max_y = $y
+            };
+
+            //send Plot Messsage on send csv channel
+            {
+                let send = CSV_SENDER
+                    .lock()
+                    .unwrap()
+                    .as_ref()
+                    .unwrap()
+                    .send(MessageType::Plot($name.clone(), $serie.clone(), $x, $y))
+                    .expect("Can't send to csv channel");
+            }
+        }
+    }};
+}
+
 /// Create new plot for your simulation.
 ///
 /// # Arguments
@@ -1142,6 +1204,14 @@ macro_rules! addplot {
         if !data.contains_key(&$name) {
             data.insert($name, PlotData::new($name, $xlabel, $ylabel, to_be_stored));
         }
+    }};
+}
+
+#[macro_export]
+macro_rules! setup_csv {
+    ($name:expr, $xlabel:expr, $ylabel:expr  ) => {{
+        let mut names = PLOT_NAMES.lock().unwrap();
+        names.insert(($name, $xlabel, $ylabel));
     }};
 }
 
