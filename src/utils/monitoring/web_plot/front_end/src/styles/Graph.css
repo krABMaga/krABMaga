@@ -1,0 +1,91 @@
+@import url('https://fonts.googleapis.com/css?family=Roboto:400,100,900');
+
+
+  .btn-one {
+    margin-top:20px;
+    padding-top:20px;
+    padding-bottom:20px;
+    display: inline-block;
+    color: #FFF;
+    transition: all 0.3s;
+    position: relative;
+    text-decoration: none;
+  }
+  .btn-one span {
+    transition: all 0.3s;
+  }
+  .btn-one::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    opacity: 0;
+    transition: all 0.3s;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-top-style: solid;
+    border-bottom-style: solid;
+    border-top-color: rgba(255,255,255,0.5);
+    border-bottom-color: rgba(255,255,255,0.5);
+    transform: scale(0.1, 1);
+  }
+  .btn-one:hover span {
+    letter-spacing: 2px;
+  }
+  .btn-one:hover::before {
+    opacity: 1; 
+    transform: scale(1, 1); 
+  }
+  .btn-one::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    transition: all 0.3s;
+    background-color: rgba(255,255,255,0.1);
+  }
+  .btn-one:hover::after {
+    opacity: 0; 
+    transform: scale(0.1, 1);
+  }
+
+@media (min-width: 1220px){
+    .chartContainer{
+        width: 45%;
+        height: 72vh;
+        display: inline-block;
+        margin:30px;
+    }
+    .btn-one{
+        font-size: 1.3rem;
+        width: 200px;
+    }
+}
+@media (max-width: 1220px){
+    .chartContainer{
+        height: 65vh;
+        margin:50px;
+    }
+    .btn-one{
+        font-size: 0.9rem;
+        width: 120px;
+        padding-top:15px;
+        padding-bottom:15px;
+    }
+}
+@media (max-width: 480px){
+    .chartContainer{
+        height: 60vh;
+        margin:20px;
+    }
+}
+hr.rounded {
+    border-top: 8px solid #bbb;
+    border-radius: 5px;
+}

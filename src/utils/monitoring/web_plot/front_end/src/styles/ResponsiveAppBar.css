@@ -1,0 +1,38 @@
+.headerContainer{
+    width:100%;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}
+
+.headerLogo{
+    display:flex;
+    width:15%;
+}
+
+@media (min-width: 480px){
+    .headerContainer{
+        width:100%;
+        display:flex;
+        align-items:center;
+    }
+    
+    .headerLogo{
+        margin-right:auto;
+        width:10%;
+    }
+}
+
+@media (max-width: 480px){
+    .headerContainer{
+        width:100%;
+        display:block;
+        justify-content:center;
+        align-items:center;
+    }
+    
+    .headerLogo{
+        margin:auto;
+        width:30%;
+    }
+}
