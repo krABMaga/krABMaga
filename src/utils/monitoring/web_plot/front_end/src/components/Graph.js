@@ -64,13 +64,13 @@ function getOrCreateColors(id,data,localStorageColor){
     console.log(colors);
     localStorageColor.set(id,colors);
   }
-  window.localStorage.setItem('colors', JSON.stringify(localStorageColor, replacer));
+  window.sessionStorage.setItem('colors', JSON.stringify(localStorageColor, replacer));
   return localStorageColor.get(id);
 }
 
 function removeChartColor(id,localStorageColor){
   localStorageColor.delete(id);
-  window.localStorage.setItem('colors', JSON.stringify(localStorageColor, replacer));
+  window.sessionStorage.setItem('colors', JSON.stringify(localStorageColor, replacer));
 }
 
 function replacer(key, value) {
@@ -333,7 +333,7 @@ const Graph = (props) => {
           },
         };
         console.log(obj.response);
-        const local_storage = window.localStorage.getItem('colors');
+        const local_storage = window.sessionStorage.getItem('colors');
         let localStorageColor = JSON.parse(local_storage,reviver);
         console.log(localStorageColor);
         let color = getOrCreateColors(obj.response.file,obj.response.data,localStorageColor);
@@ -353,7 +353,7 @@ const Graph = (props) => {
             return object.id !== obj.file;
           }),
         );
-        const local_storage = window.localStorage.getItem('colors');
+        const local_storage = window.sessionStorage.getItem('colors');
         let localStorageColor = JSON.parse(local_storage,reviver);
         removeChartColor(obj.file,localStorageColor);
       }
@@ -374,7 +374,6 @@ const Graph = (props) => {
   window.addEventListener('scroll', toggleVisible);
   const [allCharts,setAllCharts] = useState([]);
   const url = 'http://127.0.0.1:8000/getcsvdata';
-
   useEffect(() => {
     AOS.init();
     AOS.refresh();
@@ -382,7 +381,7 @@ const Graph = (props) => {
       .then((response)=>{
         console.log(response.data);
         let allChartsInput = [];
-        if(JSON.parse(window.localStorage.getItem('colors')) === null){
+        if(JSON.parse(window.sessionStorage.getItem('colors')) === null){
           let color_object = new Map();
           for(let i=0; i<response.data.length; i++){
             let color_input = [];
@@ -396,9 +395,9 @@ const Graph = (props) => {
             color_object.set(id_input,color_input);
           }
           const str = JSON.stringify(color_object, replacer);
-          window.localStorage.setItem('colors', JSON.stringify(color_object, replacer));
+          window.sessionStorage.setItem('colors', JSON.stringify(color_object, replacer));
         }else{
-          const local_storage = window.localStorage.getItem('colors');
+          const local_storage = window.sessionStorage.getItem('colors');
           let localStorageColor = JSON.parse(local_storage,reviver);
           console.log(localStorageColor);
           for(let i=0; i<response.data.length; i++){

@@ -45,7 +45,7 @@ function getColors(id,data,localStorageColor){
 
 function removeChartColor(id,localStorageColor){
   localStorageColor.delete(id);
-  window.localStorage.setItem('colors', JSON.stringify(localStorageColor, replacer));
+  window.sessionStorage.setItem('colors', JSON.stringify(localStorageColor, replacer));
 }
 
 function replacer(key, value) {
@@ -206,7 +206,7 @@ useEffect (() => {
   axios.get(url)
     .then((response)=>{
       console.log(response);
-      const local_storage = window.localStorage.getItem('colors');
+      const local_storage = window.sessionStorage.getItem('colors');
       let localStorageColor = JSON.parse(local_storage,reviver);
       let colors = getColors(response.data[0].file,response.data[0].data,localStorageColor);
       for(var j = 0; j < response.data[0].data.datasets.length; j++){
@@ -477,7 +477,7 @@ const [dougChartOptions,setDougChartOptions] = useState({
       console.log(e);
       props.socket.send("Cannot Parse");
     }
-    const local_storage = window.localStorage.getItem('colors');
+    const local_storage = window.sessionStorage.getItem('colors');
     let localStorageColor = JSON.parse(local_storage,reviver);
     if(obj.op === "WRITE"){
       tempLabels.length = 0
