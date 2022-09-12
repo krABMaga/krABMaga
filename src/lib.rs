@@ -405,7 +405,7 @@ pub use {
         terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     },
     plotters,
-    systemstat::{saturating_sub_bytes, Platform, System},
+    sysinfo::*,
     tui::{
         backend::{Backend, CrosstermBackend},
         Terminal,
@@ -424,6 +424,53 @@ pub use {
 
 #[cfg(feature = "distributed_mpi")]
 pub extern crate mpi_fork_fnsp;
+
+#[cfg(feature = "web_plot")]
+pub extern crate walkdir;
+
+#[cfg(feature = "web_plot")]
+pub extern crate csv;
+
+#[cfg(feature = "web_plot")]
+pub extern crate notify;
+
+#[cfg(feature = "web_plot")]
+pub extern crate serde;
+
+#[cfg(feature = "web_plot")]
+pub extern crate serde_json;
+
+#[cfg(feature = "web_plot")]
+pub extern crate tungstenite;
+
+#[cfg(feature = "web_plot")]
+pub use {
+    rocket::http::Header,
+    rocket::fairing::{Fairing, Info, Kind},
+    rocket::fs::NamedFile,
+    std::path::{Path, PathBuf},
+    
+    
+    //TokioTungstenite for web socket
+    std::{net::TcpListener, thread::spawn},
+    
+    tungstenite::{
+        accept_hdr,
+        handshake::server::{Request, Response},
+    },
+    
+    //WalkDir to inspect a directory
+    walkdir::WalkDir,
+    
+    //csv
+    
+    //serde
+    rocket::serde::{Serialize, json::Json},
+    serde::*,
+    
+    //notify to inspect a directory
+    notify::{Watcher, RecursiveMode, RawEvent, raw_watcher},
+};
 
 #[doc(hidden)]
 #[cfg(any(feature = "bayesian"))]
@@ -447,7 +494,7 @@ pub use {
 
 /// Options of `old_simulate!` macro
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
-pub enum Info {
+pub enum InfoSim {
     Verbose,
     Normal,
 }
@@ -650,14 +697,18 @@ impl fmt::Display for Log {
     }
 }
 
+use std::sync::mpsc::Sender;
 lazy_static! {
-
     /// static HashMap to manage plots of the whole simulation. Used to create tabs and plot inside `UI` module.
     #[doc(hidden)]
     pub static ref DATA: Mutex<HashMap<String, PlotData>> = Mutex::new(HashMap::new());
+    // /// static HashMap to manage plots of the whole simulation. Used to create tabs and plot inside `UI` module.
+    // #[doc(hidden)]
+    pub static ref CSV_SENDER: Mutex<Option<Sender<MessageType>>> = Mutex::new(None);
+    pub static ref PLOT_NAMES: Mutex<std::collections::HashSet<(String, String, String)>> = Mutex::new(std::collections::HashSet::new());
     /// static Vec to store all Logs and make it availables inside terminal.
     #[doc(hidden)]
-    pub static ref LOGS: Mutex<Vec<Log>> = Mutex::new(Vec::new());
+    pub static ref LOGS: Mutex<Vec<Vec<Log>>> = Mutex::new(Vec::new());
     /// static String to save Model description to show as a popup. Press 's' on `Simulation Terminal.
     #[doc(hidden)]
     pub static ref DESCR: Mutex<String> = Mutex::new(String::new());
@@ -673,6 +724,19 @@ pub struct Monitoring {
     pub mem_used: Vec<f64>,
     /// Percentage of cpu used
     pub cpu_used: Vec<f64>,
+}
+
+#[doc(hidden)]
+#[derive(Clone)]
+pub enum MessageType {
+    AfterRep(u64, u64),
+    AfterStep(u64, f64),
+    Clear,
+    Consumed,
+    EndOfSimulation,
+    Quit,
+    Step,
+    Plot(String, String, f64, f64),
 }
 
 #[doc(hidden)]
@@ -698,7 +762,7 @@ lazy_static! {
 }
 
 #[doc(hidden)]
-pub use std::sync::mpsc::{self, TryRecvError};
+pub use std::sync::mpsc::{self, RecvError, TryRecvError};
 
 /// Run simulation directly using this macro. By default, `Simulation Terminal` is used
 ///
@@ -722,68 +786,51 @@ macro_rules! simulate {
         )?
 
         if flag {
-            let tick_rate = Duration::from_millis(250);
-
-            let _ = enable_raw_mode();
-            let mut stdout = io::stdout();
-            let _ = execute!(stdout, EnterAlternateScreen, EnableMouseCapture);
-
-            let backend = CrosstermBackend::new(stdout);
-            let mut terminal = Terminal::new(backend).unwrap();
-
-            let mut last_tick = Instant::now();
-            let mut ui = UI::new($step, $reps);
-
-            let mut s = $s;
-            let mut state = s.as_state_mut();
-            let n_step: u64 = $step;
 
             let mut monitor = Arc::clone(&MONITOR);
-            let (tx, rx) = mpsc::channel();
+            let (sender_monitoring, recv_monitoring) = mpsc::channel();
+            let (sender_ui, recv_ui) = mpsc::channel();
+
+            let pid_main = match get_current_pid() {
+                Ok(pid) => pid,
+                Err(_) => panic!("Unable to get current pid"),
+            };
 
             thread::spawn(move ||
-            loop {
+
+                loop {
                 // System info - Monitoring CPU and Memory used
 
-                let sys = System::new();
+                let mut sys = System::new_all();
+                sys.refresh_all();
 
-                let mem_used = match sys.memory() {
-                    Ok(mem) => {
-                        (saturating_sub_bytes(mem.total, mem.free).as_u64() as f64 / mem.total.as_u64() as f64)  * 100.
+                match sys.process(pid_main) {
+                    Some(process) => {
+                        let mem_used: f64 = ( sys.used_memory() as f64 / sys.total_memory() as f64) * 100.0;
+                        // log!(LogType::Info, format!("Memory used: {}%", mem * 100.0 ));
+                        // log!(LogType::Critical, format!("cpu usage {}", process.cpu_usage() as f64 / sys.cpus().len() as f64));
+
+                        let cpu_used: f64 = process.cpu_usage() as f64 / sys.cpus().len() as f64;
+
+                        {
+                            let mut monitor = monitor.lock().unwrap();
+
+                            if monitor.mem_used.len()>100 {
+                                monitor.mem_used.remove(0);
+                                monitor.cpu_used.remove(0);
+                            }
+
+                            monitor.mem_used.push(mem_used);
+                            monitor.cpu_used.push(cpu_used);
+                        }
                     },
-                    Err(x) =>{
-                        log!(LogType::Critical, format!("Error on load mem used"));
-                        0.0_f64
+                    None => {
+                        log!(LogType::Critical, format!("Error on finding main pid"))
                     }
                 };
 
-                let cpu_used = match sys.cpu_load_aggregate() {
-                    Ok(cpu)=> {
-                        thread::sleep(Duration::from_millis(1000));
-                        let cpu = cpu.done().unwrap();
-                        cpu.user as f64 * 100.0
-                    },
-                    Err(x) => {
-                        log!(LogType::Critical, format!("Error on load cpu used"));
-                        0.0_f64
-                    }
-                };
 
-                {
-                    let mut monitor = monitor.lock().unwrap();
-
-                    if monitor.mem_used.len()>100 {
-                        monitor.mem_used.remove(0);
-                        monitor.cpu_used.remove(0);
-                    }
-
-                    monitor.mem_used.push(mem_used);
-                    monitor.cpu_used.push(cpu_used);
-
-                }
-
-
-                match rx.try_recv() {
+                match recv_monitoring.try_recv() {
                     Ok(_) | Err(TryRecvError::Disconnected) => {
                         break;
                     }
@@ -791,23 +838,24 @@ macro_rules! simulate {
                 }
             });
 
-            for r in 0..$reps {
 
-                //clean data structure for UI
-                DATA.lock().unwrap().clear();
-                terminal.clear();
 
-                let start = std::time::Instant::now();
-                let mut schedule: Schedule = Schedule::new();
-                state.init(&mut schedule);
+            let mut tui_operation: Arc<Mutex<MessageType>> = Arc::new(Mutex::new(MessageType::Consumed));
+            let mut tui_reps: Arc<Mutex<MessageType>> = Arc::new(Mutex::new(MessageType::Consumed));
 
-                log!(LogType::Info, format!("#{} Simulation started", r), true);
-                //simulation loop
-                for i in 0..n_step {
-
+            let c_tui_operation = Arc::clone(&tui_operation);
+            let c_tui_reps = Arc::clone(&tui_reps);
+            let terminal_thread = thread::spawn(move || {
+                let tick_rate = Duration::from_millis(250);
+                let _ = enable_raw_mode();
+                let mut stdout = io::stdout();
+                let _ = execute!(stdout, EnterAlternateScreen, EnableMouseCapture);
+                let backend = CrosstermBackend::new(stdout);
+                let mut terminal = Terminal::new(backend).unwrap();
+                let mut last_tick = Instant::now();
+                let mut ui = UI::new($step, $reps);
+                loop {
                     terminal.draw(|f| ui.draw(f));
-                    schedule.step(state);
-
                     let timeout = tick_rate
                     .checked_sub(last_tick.elapsed())
                     .unwrap_or_else(|| Duration::from_secs(0));
@@ -838,59 +886,211 @@ macro_rules! simulate {
                         terminal.show_cursor();
                         break;
                     }
-                    if state.end_condition(&mut schedule) {
-                        disable_raw_mode();
-                        execute!(
-                            terminal.backend_mut(),
-                            LeaveAlternateScreen,
-                            DisableMouseCapture
-                        );
-                        terminal.show_cursor();
-                        break;
+
+                    match recv_ui.try_recv() {
+                        Ok(_) | Err(TryRecvError::Disconnected) => {
+                            let op;
+                            let rep;
+                            {
+                                op = c_tui_operation.lock().unwrap().clone();
+                                rep = c_tui_reps.lock().unwrap().clone();
+                            }
+
+                            match op {
+
+                                MessageType::AfterStep(step, progress) => {
+                                    ui.on_tick(step, progress);
+                                    {
+                                        *c_tui_operation.lock().unwrap() = MessageType::Consumed;
+                                    }
+                                },
+
+                                MessageType::Clear => {
+                                    terminal.clear();
+                                },
+
+                                MessageType::Quit => {
+                                    terminal.clear();
+                                    disable_raw_mode();
+                                    execute!(
+                                        terminal.backend_mut(),
+                                        LeaveAlternateScreen,
+                                        DisableMouseCapture
+                                    );
+                                    terminal.show_cursor();
+                                    break;
+                                },
+                                _ => {},
+                                // MessageType::Step => {
+                                //     terminal.draw(|f| ui.draw(f));
+                                // },
+                            };
+
+                            match rep {
+                                MessageType::AfterRep(r, time) => {
+                                    ui.on_rep(
+                                        r,
+                                        time,
+                                    );
+
+                                    {
+                                        *c_tui_reps.lock().unwrap() = MessageType::Consumed;
+                                    }
+                                },
+                                _ => {},
+                            }
+                        },
+                        Err(TryRecvError::Empty) => {}
                     }
-                    ui.on_tick(i, (i + 1) as f64 / n_step as f64);
+                };
 
-                } //end simulation loop
+            });
 
-                log!(LogType::Info, format!("#{} Simulation ended", r), true);
 
-                {
-                    let data = DATA.lock().unwrap();
-                    // iterate on data values and save to file
-                    for (key, plot) in data.iter() {
-                        if plot.to_be_stored {
-                            plot.store_plot(r)
+            let csv_recv: krabmaga::mpsc::Receiver<MessageType>;
+            let (s, r)  = mpsc::channel();
+            {
+                let mut csv_send = CSV_SENDER.lock().expect("Error on lock");
+                *csv_send = Some(s.clone());
+                csv_recv = r;
+            }
+
+            let csv_thread = thread::spawn(move || {
+
+                let open_files = |rep_counter: &u32| {
+
+                    let mut csv_writers: Vec<(String, Writer<File>)> = PLOT_NAMES.lock().unwrap().iter().map(|(name, x, y)| {
+                        let date = CURRENT_DATE.clone();
+                        let path = format!("output/{}/{}", date, name.replace("/", "-"));
+
+                        // Create directory if it doesn't exist
+                        fs::create_dir_all(&path).expect("Can't create folder");
+
+                        let csv_name = format!("{}/{}_{}.csv", path, name.replace("/", "-"), rep_counter);
+                        let mut writer = Writer::from_path(csv_name).expect("error on open the file path");
+                        writer.write_record(&["series", &x, &y]).unwrap();
+                        (name.replace("/", "-"), writer)
+                    }).collect();
+                    csv_writers
+                };
+
+                let mut csv_writers = open_files(&0);
+                let mut rep_counter = 0;
+                loop {
+                    match csv_recv.recv(){
+                        Ok(message) => {
+                            match message {
+                                MessageType::Plot(name, series, x, y) => {
+                                    for (n, writer) in &mut csv_writers {
+                                        if name.replace("/", "-") == *n {
+                                            writer.write_record(&[&series, &x.to_string(), &y.to_string()]).unwrap();
+                                            writer.flush().unwrap();
+                                        }
+                                    }
+                                },
+                                MessageType::EndOfSimulation => {
+                                    rep_counter += 1;
+                                    csv_writers = open_files(&rep_counter);
+                                },
+                                _ => break,
+                            }
+                        },
+                        Err(_) => {
                         }
+                    };
+                };
+            });
+
+
+            let sim_thread = thread::spawn(move || {
+                let mut s = $s;
+                let mut state = s.as_state_mut();
+                let n_step: u64 = $step;
+
+                for r in 0..$reps {
+                    {
+                        let mut logs = LOGS.lock().unwrap();
+                        logs.insert(0, Vec::new());
+                    }
+                    //clean data structure for UI
+                    { DATA.lock().unwrap().clear(); }
+                    // terminal.clear();
+                    {
+                        let mut tui_operation = tui_operation.lock().unwrap();
+                        *tui_operation = MessageType::Clear;
                     }
 
+                    sender_ui.send(()).expect("Simulation interrupted by user. Quitting...");
 
+                    let start = std::time::Instant::now();
+                    let mut schedule: Schedule = Schedule::new();
+                    state.init(&mut schedule);
+
+
+                    log!(LogType::Info, format!("#{} Simulation started", r), true);
+                    //simulation loop
+                    for i in 0..n_step {
+
+                        schedule.step(state);
+
+                        //send after step to UI
+                        {
+                            let mut tui_operation = tui_operation.lock().unwrap();
+                            *tui_operation = MessageType::AfterStep(
+                                i,
+                                (i + 1) as f64 / n_step as f64
+                            );
+                        }
+
+                        sender_ui.send(()).expect("Simulation interrupted by user. Quitting...");
+                        if state.end_condition(&mut schedule) {
+                            {
+                                let mut tui_operation = tui_operation.lock().unwrap();
+                                *tui_operation = MessageType::Quit;
+                            }
+                            sender_ui.send(()).expect("Simulation interrupted by user. Quitting...");
+                            break;
+                        }
+
+                    } //end simulation loop
+
+                    {
+                        CSV_SENDER.lock().unwrap().as_ref().unwrap().send(MessageType::EndOfSimulation);
+                    }
+
+                    log!(LogType::Info, format!("#{} Simulation ended", r), true);
+
+                    {
+                        let data = DATA.lock().unwrap();
+                        // iterate on data values and save to file
+                        for (key, plot) in data.iter() {
+                            if plot.to_be_stored {
+                                plot.store_plot(r)
+                            }
+                        }
+
+                    }
+
+                    let run_duration = start.elapsed();
+                    {
+                        let mut tui_reps = tui_reps.lock().unwrap();
+                        *tui_reps = MessageType::AfterRep(
+                            r,
+                            ((schedule.step as f32 / (run_duration.as_nanos() as f32 * 1e-9)) as u64),
+                        );
+                    }
+
+                    sender_ui.send(()).expect("Simulation interrupted by user. Quitting...");
+                } //end of repetitions
+                {
+                    CSV_SENDER.lock().unwrap().as_ref().unwrap().send(MessageType::Quit);
                 }
 
+            });
 
-                let run_duration = start.elapsed();
-                ui.on_rep(
-                    r,
-                    ((schedule.step as f32 / (run_duration.as_nanos() as f32 * 1e-9)) as u64),
-                );
-                terminal.draw(|f| ui.draw(f));
-
-                if last_tick.elapsed() >= tick_rate {
-                    last_tick = Instant::now();
-                }
-
-                if ui.should_quit {
-                    disable_raw_mode();
-                    execute!(
-                        terminal.backend_mut(),
-                        LeaveAlternateScreen,
-                        DisableMouseCapture
-                    );
-                    terminal.show_cursor();
-                    break;
-                }
-            } //end of repetitions
-
-            let _ = tx.send(());
+            sim_thread.join();
+            csv_thread.join();
+            let _ = sender_monitoring.send(());
 
 
             {
@@ -898,61 +1098,21 @@ macro_rules! simulate {
 
                 // iter on logs and save to file
 
-                if logs.len() > 0 {
-                    let date = CURRENT_DATE.clone();
-                    // Create directory if it doesn't exist
-                    fs::create_dir_all("output").expect("Can't create folder");
-                    let log_path = format!("output/{}.log", date);
-                    let mut f = File::create(log_path).expect("Can't create log file");
-                    for log in logs.iter() {
-                        if log.to_be_stored {
-                        write!(f, "{}\n", log).expect("Can't write to log file");
-                        }
+                let date = CURRENT_DATE.clone();
+                // Create directory if it doesn't exist
+                fs::create_dir_all("output").expect("Can't create folder");
+                let log_path = format!("output/{}.log", date);
+                let mut f = File::create(log_path).expect("Can't create log file");
+                for log in logs.iter().flatten() {
+                    if log.to_be_stored {
+                    write!(f, "{}\n", log).expect("Can't write to log file");
                     }
                 }
 
-
             }
 
-
-            loop {
-                terminal.draw(|f| ui.draw(f));
-
-                let timeout = tick_rate
-                    .checked_sub(last_tick.elapsed())
-                    .unwrap_or_else(|| Duration::from_secs(0));
-
-                if crossterm::event::poll(timeout).unwrap() {
-                    //?
-                    if let Event::Key(key) = event::read().unwrap() {
-                        //?
-                        match key.code {
-                            KeyCode::Char(c) => ui.on_key(c),
-                            KeyCode::Left => ui.on_left(),
-                            KeyCode::Up => ui.on_up(),
-                            KeyCode::Right => ui.on_right(),
-                            KeyCode::Down => ui.on_down(),
-                            _ => {
-                                log!(LogType::Critical, format!("Invalid key pressed!"));
-                            }
-                        }
-                    }
-                }
-
-                if last_tick.elapsed() >= tick_rate {
-                    last_tick = Instant::now();
-                }
-                if ui.should_quit {
-                    disable_raw_mode();
-                    execute!(
-                        terminal.backend_mut(),
-                        LeaveAlternateScreen,
-                        DisableMouseCapture
-                    );
-                    terminal.show_cursor();
-                    break;
-                }
-            }
+            terminal_thread.join();
+            
         } else {
 
             let mut s = $s;
@@ -1027,6 +1187,45 @@ macro_rules! plot {
     }};
 }
 
+#[macro_export]
+macro_rules! plot_csv {
+    ($name:expr, $serie:expr, $x:expr, $y:expr) => {{
+        let mut data = DATA.lock().unwrap();
+        if data.contains_key(&$name) {
+            let mut pdata = data.get_mut(&$name).unwrap();
+            if !pdata.series.contains_key(&$serie) {
+                pdata.series.insert($serie.clone(), Vec::new());
+            }
+            let serie = pdata.series.get_mut(&$serie).unwrap();
+            serie.push(($x, $y));
+
+            if $x < pdata.min_x {
+                pdata.min_x = $x
+            };
+            if $x > pdata.max_x {
+                pdata.max_x = $x
+            };
+            if $y < pdata.min_y {
+                pdata.min_y = $y
+            };
+            if $y > pdata.max_y {
+                pdata.max_y = $y
+            };
+
+            //send Plot Messsage on send csv channel
+            {
+                let send = CSV_SENDER
+                    .lock()
+                    .unwrap()
+                    .as_ref()
+                    .unwrap()
+                    .send(MessageType::Plot($name.clone(), $serie.clone(), $x, $y))
+                    .expect("Can't send to csv channel");
+            }
+        }
+    }};
+}
+
 /// Create new plot for your simulation.
 ///
 /// # Arguments
@@ -1054,6 +1253,14 @@ macro_rules! addplot {
     }};
 }
 
+#[macro_export]
+macro_rules! setup_csv {
+    ($name:expr, $xlabel:expr, $ylabel:expr  ) => {{
+        let mut names = PLOT_NAMES.lock().unwrap();
+        names.insert(($name, $xlabel, $ylabel));
+    }};
+}
+
 /// Add a log to the simulation logger.
 ///
 /// # Arguments
@@ -1073,7 +1280,8 @@ macro_rules! log {
 
         {
             let mut logs = LOGS.lock().unwrap();
-            logs.insert(
+            if logs.is_empty() { logs.push(Vec::new()) }
+            logs[0].insert(
                 0,
                 Log {
                     ltype: $ltype,
@@ -1096,7 +1304,7 @@ macro_rules! log {
 ///  
 /// * `reps` - number of repetitions
 ///  
-/// * `info` - type of info you want to display during and after simulation. See `Info` enum for more information.
+/// * `info` - type of info you want to display during and after simulation. See `InfoSim` enum for more information.
 macro_rules! simulate_old {
     ($step:expr, $s:expr, $reps:expr, $info:expr) => {{
         let mut s = $s;
@@ -1107,7 +1315,7 @@ macro_rules! simulate_old {
         let option = $info;
 
         match option {
-            Info::Verbose => {
+            InfoSim::Verbose => {
                 // println!("\u{1F980} krABMaga v1.0\n");
                 // println!(
                 //     "{0: >10}|{1: >9}|    {2: >11}|{3: >10}|",
@@ -1115,7 +1323,7 @@ macro_rules! simulate_old {
                 // );
                 // println!("--------------------------------------------------");
             }
-            Info::Normal => {
+            InfoSim::Normal => {
                 println!("{esc}c", esc = 27 as char);
                 println!("\u{1F980} krABMaga v1.0\n");
                 println!(
@@ -1133,8 +1341,8 @@ macro_rules! simulate_old {
         // );
 
         match option {
-            Info::Verbose => {}
-            Info::Normal => {
+            InfoSim::Verbose => {}
+            InfoSim::Normal => {
                 println!("{esc}c", esc = 27 as char);
             }
         }
@@ -1156,8 +1364,8 @@ macro_rules! simulate_old {
             let run_duration = start.elapsed();
 
             match option {
-                Info::Verbose => {}
-                Info::Normal => {
+                InfoSim::Verbose => {}
+                InfoSim::Normal => {
                     println!("{esc}c", esc = 27 as char);
                     println!("\u{1F980} krABMaga v1.0\n");
                     println!(
@@ -1185,12 +1393,12 @@ macro_rules! simulate_old {
             ));
 
             match option {
-                Info::Verbose => {
+                InfoSim::Verbose => {
                     // print!("{}|", step_seconds);
                     // print!("{:width$}", "", width = 9 - time.len());
                     // println!("{}s|", time);
                 }
-                Info::Normal => {
+                InfoSim::Normal => {
                     let mut avg_time = 0.0;
                     let mut avg_step_seconds = 0.0;
                     for (time, step_seconds) in &results {
@@ -1358,4 +1566,272 @@ macro_rules! load_csv {
         let v = ($( $x, )*);
         v
     }};
+}
+
+
+
+#[macro_export]
+macro_rules! plots {
+    () => {
+        #[macro_use] extern crate rocket;
+        
+        //struct for the final response, The client will get a Vector of FinalResponse. Each response represtents the information of 1 file.
+        #[derive(Deserialize,Serialize,Debug)]
+        struct FinalResponse{
+            file : String,
+            data : DataSet,
+        }
+        
+        //struct for a single ChartData
+        #[derive(Debug,Deserialize,Serialize)]
+        struct ChartData{
+            //Example 'Wolfs'
+            label:String,
+            //Example ['40','57,'42']
+            data:Vec<String>,
+        }
+        
+        impl ChartData{
+            //Push a value to the data vector
+            fn add_data(&mut self,data : String) {
+                self.data.push(data);
+            }
+        }
+        
+        //struct for a complete Dataset
+        #[derive(Debug,Deserialize,Serialize)]
+        struct DataSet{
+            datasets: Vec<ChartData>,
+            labels: Vec<String>,
+        }
+        
+        //struct for message to send to the client
+        #[derive(Debug,Deserialize,Serialize)]
+        struct WsMessage{
+            op: String,
+            response: FinalResponse,
+        }
+        
+        //struct for message to send to the client for a Remove Operation
+        #[derive(Debug,Deserialize,Serialize)]
+        struct RemoveStruct{
+            op: String,
+            file: String,
+        }
+        
+        
+        //Struct For CORS Settings
+        pub struct CORS;
+        #[rocket::async_trait]
+        impl Fairing for CORS {
+            fn info(&self) -> Info {
+                Info {
+                    name: "Add CORS headers to responses",
+                    kind: Kind::Response
+                }
+            }
+        
+            async fn on_response<'r>(&self, _request: &'r rocket::Request<'_>, response: &mut rocket::Response<'r>) {
+                response.set_header(Header::new("Access-Control-Allow-Origin", "*"));
+                response.set_header(Header::new("Access-Control-Allow-Methods", "POST, GET, PATCH, OPTIONS"));
+                response.set_header(Header::new("Access-Control-Allow-Headers", "*"));
+                response.set_header(Header::new("Access-Control-Allow-Credentials", "true"));
+            }
+        }
+        
+        //next 3 function to serve the front end
+        #[get("/<file..>")]
+        async fn serve_front_end(file: PathBuf) -> Option<NamedFile> {
+            NamedFile::open(Path::new("./src/bin/build/").join(file)).await.ok()
+        }
+        
+        #[get("/Chart/<_file..>")]
+        async fn serve_front_end_2(_file: PathBuf) -> Option<NamedFile> {
+            NamedFile::open("./src/bin/build/index.html").await.ok()
+        }
+        
+        #[get("/")]
+        async fn index() -> Option<NamedFile> {
+            NamedFile::open("./src/bin/build/index.html").await.ok()
+        }
+        
+        //Endpoint for single chart display
+        #[get("/buildsingledata/<filename>")]
+        async fn get_single_data(filename: String) -> Json<Vec<FinalResponse>>{
+            let path = "./output";
+            let mut final_res = Vec::new();
+            for entry in WalkDir::new(path)
+            .follow_links(true)
+            .into_iter()
+            .filter_map(|e| e.ok()) {
+                let f_name = entry.file_name().to_string_lossy();
+                if f_name.ends_with(".csv"){
+                    if f_name == filename{
+                        let file_name = format!("{}",entry.path().display());
+                        let contents = read_file(&file_name);
+                        let datasets = build_dataset(&contents);
+                        final_res.push(FinalResponse{file:f_name.to_string(),data:datasets});
+                    }
+                }
+            }
+            Json(final_res)
+        }
+        
+        
+        //endpoint for get data
+        //the server parses the data and returns a vector of FinalResponse
+        //each response represents the information about 1 file
+        #[get("/getcsvdata")]
+        async fn get_csv_data() -> Json<Vec<FinalResponse>> {
+            let response = compute();
+            Json(response)
+        }
+        
+        //Main Function
+        //Get paths to the files and build datasets
+        fn compute() -> Vec<FinalResponse>{
+            let mut final_json : Vec<FinalResponse> = Vec::new();
+            let path = "./output";
+            for entry in WalkDir::new(path)
+            .follow_links(true)
+            .into_iter()
+            .filter_map(|e| e.ok()) {
+                let f_name = entry.file_name().to_string_lossy();
+                if f_name.ends_with(".csv"){
+                    let filename = format!("{}",entry.path().display());
+                    let contents = read_file(&filename);
+                    let datasets = build_dataset(&contents);
+                    let final_res = FinalResponse{file:f_name.to_string(),data:datasets};
+                    final_json.push(final_res);
+                }
+            }
+            final_json
+        }
+        
+        //function to read a file
+        fn read_file(filename: &str)-> String{
+            let contents = fs::read_to_string(filename).expect("Something went wrong reading the file");
+            contents
+        }
+        
+        //function to build a Vector of ChartData for each file in the directory
+        fn build_dataset(contents: &str)->DataSet{
+            let mut dataset : Vec<ChartData> = Vec::new();
+            let mut labels : Vec<String> = Vec::new();
+            let mut max = 0;
+            let mut rdr = csv::Reader::from_reader(contents.as_bytes());
+            for result in rdr.records() {
+                let mut insert = true;
+                let record = result.expect("Error Reading Records");
+                for entry in &mut dataset{
+                    if entry.label == record[0].to_string(){
+                        entry.add_data(record[2].to_string());
+                        insert = false;
+                    }
+                }
+                if insert{
+                    dataset.push(ChartData{
+                        label:record[0].to_string(),
+                        data:Vec::new(),
+                    });
+                    for entry in &mut dataset{
+                        if entry.label == record[0].to_string(){
+                            entry.add_data(record[2].to_string());
+                        }
+                    }
+                }
+            }
+            for entry in &dataset{
+                if entry.data.len() > max{
+                    max = entry.data.len();
+                }
+            }
+            for n in 0..max{
+                labels.push(n.to_string());
+            }
+            DataSet{labels:labels,datasets:dataset}
+        }
+        
+        #[launch]
+        async fn rocket() -> _ {
+            
+            spawn(||{
+            let server = TcpListener::bind("127.0.0.1:3012").unwrap();
+            println!("{:?}",std::env::current_dir());
+            println!("listening on port 127.0.0.1:3012");
+            for stream in server.incoming() {
+                spawn(move || {
+                    let callback = |req: &Request,response: Response| {
+                        println!("Received a new ws handshake");
+                        println!("The request's path is: {}", req.uri().path());
+        
+                        //For print Request's Headers
+                        /*println!("The request's headers are:");
+                        for (ref header, _value) in req.headers() {
+                            println!("* {}", header);
+                        }*/
+        
+                        Ok(response)
+                    };
+                    let mut websocket = accept_hdr(stream.unwrap(), callback).unwrap();
+                    let (tx, rx) = std::sync::mpsc::channel();
+        
+                    // Create a watcher object, delivering raw events.
+                    // The notification back-end is selected based on the platform.
+        
+                    let mut watcher = raw_watcher(tx).unwrap();
+        
+                    // Add a path to be watched. All files and directories at that path and
+                    // below will be monitored for changes.
+        
+                    watcher.watch("./output", RecursiveMode::Recursive).unwrap();
+                    println!("watching path : ./output");
+                    loop {
+                        match rx.recv() {
+                            Ok(RawEvent{path: Some(path), op: Ok(op), cookie}) => {
+                                println!("{:?} {:?} ({:?})", op, path, cookie);
+                                let filename = path.file_name().unwrap().to_str().unwrap().to_string();
+                                let file_path = path.clone().into_os_string().into_string().unwrap();
+                                if file_path.ends_with(".csv")
+                                {
+                                    //Create different message for client, based on operation
+                                    let operation;
+                                    match op {
+                                        notify::op::Op::WRITE => operation="WRITE".to_string(),
+                                        notify::op::Op::CREATE => operation="CREATE".to_string(),
+                                        notify::op::Op::REMOVE => operation="REMOVE".to_string(),
+                                        _ => operation="DEFAULT".to_string(),
+                                    }
+                                    if operation == "REMOVE"{
+                                        let response = {RemoveStruct{op:operation,file:filename}};
+                                        let json = serde_json::to_string(&response).unwrap();
+                                        websocket.write_message(tungstenite::Message::Text(json)).unwrap();
+                                    }else{
+                                        let contents = read_file(&file_path);
+                                        let datasets = build_dataset(&contents);
+                                        let final_res = FinalResponse{file:filename,data:datasets};
+                                        let ws_message = WsMessage{op:operation,response:final_res};
+                                        let json = serde_json::to_string(&ws_message).unwrap();
+                                        websocket.write_message(tungstenite::Message::Text(json)).unwrap();
+                                    }
+                            }
+                            },
+                            Ok(event) => println!("broken event: {:?}", event),
+                            Err(e) => println!("watch error: {:?}", e),
+                        }
+                    }
+                });
+            }});
+        
+            //starting the server
+            rocket::build()
+                    .mount("/", rocket::routes![
+                        index,
+                        serve_front_end,
+                        serve_front_end_2,
+                        get_csv_data,
+                        get_single_data
+                    ]).attach(CORS)
+        }
+    }
 }
