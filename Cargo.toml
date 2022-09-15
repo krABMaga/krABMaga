@@ -63,7 +63,6 @@ finitediff = { version = "0.1.4", optional = true }
 
 # Web plots
 rocket = { version = "0.5.0-rc.2", features = ["json"], optional = true }
-rocket_cors = {version ="0.5.2", optional = true }
 walkdir = {version = "2.3.2", optional = true }
 notify = {version = "4.0.17", optional = true }
 tungstenite = {version = "0.17.3", optional = true }
@@ -115,7 +114,6 @@ bayesian = [
 
 web_plot = [
     "rocket",
-    "rocket_cors",
     "walkdir",
     "notify",
     "tungstenite",
@@ -149,7 +147,6 @@ visualization_wasm = [
 
 [package.metadata.docs.rs]
 features = ["bayesian"]
-
 
 [lib]
 doctest = false     

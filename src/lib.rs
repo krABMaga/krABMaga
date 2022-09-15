@@ -427,18 +427,18 @@ pub use {
 pub extern crate mpi_fork_fnsp;
 
 #[cfg(feature = "web_plot")]
-pub extern crate  walkdir;
+pub extern crate walkdir;
 
 #[cfg(feature = "web_plot")]
-pub extern crate  csv;
+pub extern crate csv;
 
 #[cfg(feature = "web_plot")]
-pub extern crate  notify;
+pub extern crate notify;
 
 #[cfg(feature = "web_plot")]
 pub extern crate serde;
 #[cfg(feature = "web_plot")]
-pub use serde::{Serialize, Deserialize};
+pub use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web_plot")]
 pub extern crate serde_json;
@@ -450,10 +450,7 @@ pub extern crate tungstenite;
 pub extern crate rocket;
 
 #[cfg(feature = "web_plot")]
-pub use {
-    rocket::*,
-    serde_derive::*,
-}; 
+pub use {rocket::*, serde_derive::*};
 
 // #[cfg(feature = "web_plot")]
 // pub use {
@@ -461,28 +458,26 @@ pub use {
 //     rocket::fairing::{Fairing, Info, Kind},
 //     rocket::fs::NamedFile,
 //     std::path::{Path, PathBuf},
-    
-    
+
 //     //TokioTungstenite for web socket
 //     std::{net::TcpListener, thread::spawn},
-    
+
 //     tungstenite::{
 //         accept_hdr,
 //         handshake::server::{Request, Response},
 //     },
-    
+
 //     //WalkDir to inspect a directory
 //     walkdir::WalkDir,
-    
+
 //     //csv
-    
+
 //     //serde
 //     rocket::serde::json::Json,
-    
+
 //     //notify to inspect a directory
 //     notify::{Watcher, RecursiveMode, RawEvent, raw_watcher},
 // };
-
 
 #[doc(hidden)]
 #[cfg(any(feature = "bayesian"))]
@@ -1034,7 +1029,11 @@ macro_rules! simulate {
                         *tui_operation = MessageType::Clear;
                     }
 
-                    sender_ui.send(()).expect("Simulation interrupted by user. Quitting...");
+                    match sender_ui.send(()) {
+                        Ok(_) => {},
+                        Err(_) => break
+                    };
+
 
                     let start = std::time::Instant::now();
                     let mut schedule: Schedule = Schedule::new();
@@ -1056,13 +1055,19 @@ macro_rules! simulate {
                             );
                         }
 
-                        sender_ui.send(()).expect("Simulation interrupted by user. Quitting...");
+                        match sender_ui.send(()) {
+                            Ok(_) => {},
+                            Err(_) => break
+                        };
+
+
                         if state.end_condition(&mut schedule) {
                             {
                                 let mut tui_operation = tui_operation.lock().unwrap();
                                 *tui_operation = MessageType::Quit;
                             }
-                            sender_ui.send(()).expect("Simulation interrupted by user. Quitting...");
+                        //        sender_ui.send(()).expect("Simulation interrupted by user. Quitting...");
+                            sender_ui.send(());
                             break;
                         }
 
@@ -1094,7 +1099,11 @@ macro_rules! simulate {
                         );
                     }
 
-                    sender_ui.send(()).expect("Simulation interrupted by user. Quitting...");
+                    match sender_ui.send(()) {
+                        Ok(_) => {},
+                        Err(_) => break
+                    };
+
                 } //end of repetitions
                 {
                     CSV_SENDER.lock().unwrap().as_ref().unwrap().send(MessageType::Quit);
@@ -1126,7 +1135,7 @@ macro_rules! simulate {
             }
 
             terminal_thread.join();
-            
+
         } else {
 
             let mut s = $s;
@@ -1583,7 +1592,6 @@ macro_rules! load_csv {
     }};
 }
 
-
 /// Setup project to download rocket project and run it
 #[macro_export]
 macro_rules! simulate_rocket {
@@ -1597,39 +1605,51 @@ macro_rules! simulate_rocket {
         if !std::path::Path::new("./src/bin/build").is_dir() {
             println!("Git clone rocket project");
             let _ = std::process::Command::new("git")
-                .args(["clone", "https://github.com/krABMaga/rocket-client", "./src/bin/rocket-client"])
+                .args([
+                    "clone",
+                    "https://github.com/krABMaga/rocket-client",
+                    "./src/bin/rocket-client",
+                ])
                 .output()
-                .expect("failed to execute process"); 
-    
-    
-            println!("Install and build React application of frontend");  
+                .expect("failed to execute process");
+
+            println!("Install and build React application of frontend");
             let mut x = std::process::Command::new("bash")
-            .arg("-C")
-            .arg("./src/bin/rocket-client/setup_rocket.sh")
-            .output().expect("failed to execute process");
-        }
-        else {
+                .arg("-C")
+                .arg("./src/bin/rocket-client/setup_rocket.sh")
+                .output()
+                .expect("failed to execute process");
+        } else {
             println!("Rocket project already downloaded");
         }
-        
+
         use std::sync::mpsc::{self, TryRecvError};
-        let (tx, rx) = mpsc::channel();
-        
+        let (server_tx, server_rx) = mpsc::channel();
+
         let rocket_emoji = char::from_u32(0x1F680).expect("Not a valid code point");
 
         println!("Running rocket {}", rocket_emoji);
         let server_thread = std::thread::spawn(move || {
-            let mut rocket_server = Command::new("cargo").stdout(std::process::Stdio::null())
-                .args(["run", "--release", "--features", "web_plot", "--bin", "plots", "-q"])
+            let mut rocket_server = Command::new("cargo")
+                .stdout(std::process::Stdio::null())
+                .args([
+                    "run",
+                    "--release",
+                    "--features",
+                    "web_plot",
+                    "--bin",
+                    "plots",
+                    "-q",
+                ])
                 .spawn();
-                match rx.recv() {
-                    _ => {
-                        // kill Rocket server
-                        if let  Ok(mut rocket_proc) = rocket_server {
-                            rocket_proc.kill().expect("failed to kill process");
-                        }
-                    }              
-                };
+            match server_rx.recv() {
+                _ => {
+                    // kill Rocket server
+                    if let Ok(mut rocket_proc) = rocket_server {
+                        rocket_proc.kill().expect("failed to kill process");
+                    }
+                }
+            };
         });
 
         // wait for rocket server to start
@@ -1639,10 +1659,9 @@ macro_rules! simulate_rocket {
         let _ = simulate!($s, $step, $reps);
 
         // send message to kill rocket server
-        tx.send(()).unwrap();
-        
-        println!("Rocket landed {}", rocket_emoji);
+        server_tx.send(()).unwrap();
 
+        println!("Rocket landed {}", rocket_emoji);
     };
 }
 
@@ -1650,83 +1669,79 @@ macro_rules! simulate_rocket {
 #[macro_export]
 macro_rules! rocket_launcher {
     () => {
-
         use krabmaga::{
-            rocket::http::Header,
+            //notify to inspect a directory
+            notify::{raw_watcher, RawEvent, RecursiveMode, Watcher},
             rocket::fairing::{Fairing, Info, Kind},
             rocket::fs::NamedFile,
+            rocket::http::Header,
             rocket::serde::json::Json,
+            //csv
+            rocket::serde::{Deserialize, Serialize},
+            std::path::{Path, PathBuf},
+
             //TokioTungstenite for web socket
             std::{net::TcpListener, thread::spawn},
-            std::path::{Path, PathBuf},
-            
             tungstenite::{
                 accept_hdr,
                 handshake::server::{Request, Response},
             },
-            
+
             //WalkDir to inspect a directory
             walkdir::WalkDir,
-            
-            //csv    
-            rocket::serde::{Serialize, Deserialize},
-            //notify to inspect a directory
-            notify::{Watcher, RecursiveMode, RawEvent, raw_watcher},
-            
         };
-        
+
         use krabmaga::*;
-        
+
         //struct for the final response, The client will get a Vector of FinalResponse. Each response represtents the information of 1 file.
         #[derive(Deserialize, Serialize, Debug)]
         #[serde(crate = "self::serde")] // must be below the derive attribute
-        struct FinalResponse{
-            file : String,
-            data : DataSet,
+        struct FinalResponse {
+            file: String,
+            data: DataSet,
         }
-        
+
         //struct for a single ChartData
-        #[derive(Debug,Deserialize,Serialize)]
+        #[derive(Debug, Deserialize, Serialize)]
         #[serde(crate = "self::serde")] // must be below the derive attribute
-        struct ChartData{
+        struct ChartData {
             //Example 'Wolfs'
-            label:String,
+            label: String,
             //Example ['40','57,'42']
-            data:Vec<String>,
+            data: Vec<String>,
         }
-        
-        impl ChartData{
+
+        impl ChartData {
             //Push a value to the data vector
-            fn add_data(&mut self,data : String) {
+            fn add_data(&mut self, data: String) {
                 self.data.push(data);
             }
         }
-        
+
         //struct for a complete Dataset
-        #[derive(Debug,Deserialize,Serialize)]
+        #[derive(Debug, Deserialize, Serialize)]
         #[serde(crate = "self::serde")] // must be below the derive attribute
-        struct DataSet{
+        struct DataSet {
             datasets: Vec<ChartData>,
             labels: Vec<String>,
         }
-        
+
         //struct for message to send to the client
-        #[derive(Debug, Deserialize,Serialize)]
+        #[derive(Debug, Deserialize, Serialize)]
         #[serde(crate = "self::serde")] // must be below the derive attribute
-        struct WsMessage{
+        struct WsMessage {
             op: String,
             response: FinalResponse,
         }
-        
+
         //struct for message to send to the client for a Remove Operation
-        #[derive(Debug,Deserialize,Serialize)]
+        #[derive(Debug, Deserialize, Serialize)]
         #[serde(crate = "self::serde")] // must be below the derive attribute
-        struct RemoveStruct{
+        struct RemoveStruct {
             op: String,
             file: String,
         }
-        
-        
+
         //Struct For CORS Settings
         pub struct CORS;
         #[krabmaga::rocket::async_trait]
@@ -1734,57 +1749,69 @@ macro_rules! rocket_launcher {
             fn info(&self) -> Info {
                 Info {
                     name: "Add CORS headers to responses",
-                    kind: Kind::Response
+                    kind: Kind::Response,
                 }
             }
-        
-            async fn on_response<'r>(&self, _request: &'r krabmaga::rocket::Request<'_>, response: &mut krabmaga::rocket::Response<'r>) {
+
+            async fn on_response<'r>(
+                &self,
+                _request: &'r krabmaga::rocket::Request<'_>,
+                response: &mut krabmaga::rocket::Response<'r>,
+            ) {
                 response.set_header(Header::new("Access-Control-Allow-Origin", "*"));
-                response.set_header(Header::new("Access-Control-Allow-Methods", "POST, GET, PATCH, OPTIONS"));
+                response.set_header(Header::new(
+                    "Access-Control-Allow-Methods",
+                    "POST, GET, PATCH, OPTIONS",
+                ));
                 response.set_header(Header::new("Access-Control-Allow-Headers", "*"));
                 response.set_header(Header::new("Access-Control-Allow-Credentials", "true"));
             }
         }
-        
+
         //next 3 function to serve the front end
         #[get("/<file..>")]
         async fn serve_front_end(file: PathBuf) -> Option<NamedFile> {
-            NamedFile::open(Path::new("./src/bin/build/").join(file)).await.ok()
+            NamedFile::open(Path::new("./src/bin/build/").join(file))
+                .await
+                .ok()
         }
-        
+
         #[get("/Chart/<_file..>")]
         async fn serve_front_end_2(_file: PathBuf) -> Option<NamedFile> {
             NamedFile::open("./src/bin/build/index.html").await.ok()
         }
-        
+
         #[get("/")]
         async fn index() -> Option<NamedFile> {
             NamedFile::open("./src/bin/build/index.html").await.ok()
         }
-        
+
         //Endpoint for single chart display
         #[get("/buildsingledata/<filename>")]
-        async fn get_single_data(filename: String) -> Json<Vec<FinalResponse>>{
+        async fn get_single_data(filename: String) -> Json<Vec<FinalResponse>> {
             let path = "./output";
             let mut final_res = Vec::new();
             for entry in WalkDir::new(path)
-            .follow_links(true)
-            .into_iter()
-            .filter_map(|e| e.ok()) {
+                .follow_links(true)
+                .into_iter()
+                .filter_map(|e| e.ok())
+            {
                 let f_name = entry.file_name().to_string_lossy();
-                if f_name.ends_with(".csv"){
-                    if f_name == filename{
-                        let file_name = format!("{}",entry.path().display());
+                if f_name.ends_with(".csv") {
+                    if f_name == filename {
+                        let file_name = format!("{}", entry.path().display());
                         let contents = read_file(&file_name);
                         let datasets = build_dataset(&contents);
-                        final_res.push(FinalResponse{file:f_name.to_string(),data:datasets});
+                        final_res.push(FinalResponse {
+                            file: f_name.to_string(),
+                            data: datasets,
+                        });
                     }
                 }
             }
             Json(final_res)
         }
-        
-        
+
         //endpoint for get data
         //the server parses the data and returns a vector of FinalResponse
         //each response represents the information about 1 file
@@ -1793,153 +1820,190 @@ macro_rules! rocket_launcher {
             let response = compute();
             Json(response)
         }
-        
+
         //Main Function
         //Get paths to the files and build datasets
-        fn compute() -> Vec<FinalResponse>{
-            let mut final_json : Vec<FinalResponse> = Vec::new();
+        fn compute() -> Vec<FinalResponse> {
+            let mut final_json: Vec<FinalResponse> = Vec::new();
             let path = "./output";
             for entry in WalkDir::new(path)
-            .follow_links(true)
-            .into_iter()
-            .filter_map(|e| e.ok()) {
+                .follow_links(true)
+                .into_iter()
+                .filter_map(|e| e.ok())
+            {
                 let f_name = entry.file_name().to_string_lossy();
-                if f_name.ends_with(".csv"){
-                    let filename = format!("{}",entry.path().display());
+                if f_name.ends_with(".csv") {
+                    let filename = format!("{}", entry.path().display());
                     let contents = read_file(&filename);
                     let datasets = build_dataset(&contents);
-                    let final_res = FinalResponse{file:f_name.to_string(),data:datasets};
+                    let final_res = FinalResponse {
+                        file: f_name.to_string(),
+                        data: datasets,
+                    };
                     final_json.push(final_res);
                 }
             }
             final_json
         }
-        
+
         //function to read a file
-        fn read_file(filename: &str)-> String{
-            let contents = fs::read_to_string(filename).expect("Something went wrong reading the file");
+        fn read_file(filename: &str) -> String {
+            let contents =
+                fs::read_to_string(filename).expect("Something went wrong reading the file");
             contents
         }
-        
+
         //function to build a Vector of ChartData for each file in the directory
-        fn build_dataset(contents: &str)->DataSet{
-            let mut dataset : Vec<ChartData> = Vec::new();
-            let mut labels : Vec<String> = Vec::new();
+        fn build_dataset(contents: &str) -> DataSet {
+            let mut dataset: Vec<ChartData> = Vec::new();
+            let mut labels: Vec<String> = Vec::new();
             let mut max = 0;
             let mut rdr = csv::Reader::from_reader(contents.as_bytes());
             for result in rdr.records() {
                 let mut insert = true;
                 let record = result.expect("Error Reading Records");
-                for entry in &mut dataset{
-                    if entry.label == record[0].to_string(){
+                for entry in &mut dataset {
+                    if entry.label == record[0].to_string() {
                         entry.add_data(record[2].to_string());
                         insert = false;
                     }
                 }
-                if insert{
-                    dataset.push(ChartData{
-                        label:record[0].to_string(),
-                        data:Vec::new(),
+                if insert {
+                    dataset.push(ChartData {
+                        label: record[0].to_string(),
+                        data: Vec::new(),
                     });
-                    for entry in &mut dataset{
-                        if entry.label == record[0].to_string(){
+                    for entry in &mut dataset {
+                        if entry.label == record[0].to_string() {
                             entry.add_data(record[2].to_string());
                         }
                     }
                 }
             }
-            for entry in &dataset{
-                if entry.data.len() > max{
+            for entry in &dataset {
+                if entry.data.len() > max {
                     max = entry.data.len();
                 }
             }
-            for n in 0..max{
+            for n in 0..max {
                 labels.push(n.to_string());
             }
-            DataSet{labels:labels,datasets:dataset}
+            DataSet {
+                labels: labels,
+                datasets: dataset,
+            }
         }
-        
+
         #[launch]
         async fn rocket() -> _ {
-            
-            spawn(||{
-            let server = TcpListener::bind("127.0.0.1:3012").unwrap();
-            println!("{:?}",std::env::current_dir());
-            println!("listening on port 127.0.0.1:3012");
-            for stream in server.incoming() {
-                spawn(move || {
-                    let callback = |req: &Request,response: Response| {
-                        println!("Received a new ws handshake");
-                        println!("The request's path is: {}", req.uri().path());
-        
-                        //For print Request's Headers
-                        /*println!("The request's headers are:");
-                        for (ref header, _value) in req.headers() {
-                            println!("* {}", header);
-                        }*/
-        
-                        Ok(response)
-                    };
-                    let mut websocket = accept_hdr(stream.unwrap(), callback).unwrap();
-                    let (tx, rx) = std::sync::mpsc::channel();
-        
-                    // Create a watcher object, delivering raw events.
-                    // The notification back-end is selected based on the platform.
-        
-                    let mut watcher = raw_watcher(tx).unwrap();
-        
-                    // Add a path to be watched. All files and directories at that path and
-                    // below will be monitored for changes.
-        
-                    watcher.watch("./output", RecursiveMode::Recursive).unwrap();
-                    println!("watching path : ./output");
-                    loop {
-                        match rx.recv() {
-                            Ok(RawEvent{path: Some(path), op: Ok(op), cookie}) => {
-                                println!("{:?} {:?} ({:?})", op, path, cookie);
-                                let filename = path.file_name().unwrap().to_str().unwrap().to_string();
-                                let file_path = path.clone().into_os_string().into_string().unwrap();
-                                if file_path.ends_with(".csv")
-                                {
-                                    //Create different message for client, based on operation
-                                    let operation;
-                                    match op {
-                                        notify::op::Op::WRITE => operation="WRITE".to_string(),
-                                        notify::op::Op::CREATE => operation="CREATE".to_string(),
-                                        notify::op::Op::REMOVE => operation="REMOVE".to_string(),
-                                        _ => operation="DEFAULT".to_string(),
+            spawn(|| {
+                let server = TcpListener::bind("127.0.0.1:3012").unwrap();
+                println!("{:?}", std::env::current_dir());
+                println!("listening on port 127.0.0.1:3012");
+                for stream in server.incoming() {
+                    spawn(move || {
+                        let callback = |req: &Request, response: Response| {
+                            println!("Received a new ws handshake");
+                            println!("The request's path is: {}", req.uri().path());
+
+                            //For print Request's Headers
+                            /*println!("The request's headers are:");
+                            for (ref header, _value) in req.headers() {
+                                println!("* {}", header);
+                            }*/
+
+                            Ok(response)
+                        };
+                        let mut websocket = accept_hdr(stream.unwrap(), callback).unwrap();
+                        let (tx, rx) = std::sync::mpsc::channel();
+
+                        // Create a watcher object, delivering raw events.
+                        // The notification back-end is selected based on the platform.
+
+                        let mut watcher = raw_watcher(tx).unwrap();
+
+                        // Add a path to be watched. All files and directories at that path and
+                        // below will be monitored for changes.
+
+                        watcher.watch("./output", RecursiveMode::Recursive).unwrap();
+                        println!("watching path : ./output");
+                        loop {
+                            match rx.recv() {
+                                Ok(RawEvent {
+                                    path: Some(path),
+                                    op: Ok(op),
+                                    cookie,
+                                }) => {
+                                    println!("{:?} {:?} ({:?})", op, path, cookie);
+                                    let filename =
+                                        path.file_name().unwrap().to_str().unwrap().to_string();
+                                    let file_path =
+                                        path.clone().into_os_string().into_string().unwrap();
+                                    if file_path.ends_with(".csv") {
+                                        //Create different message for client, based on operation
+                                        let operation;
+                                        match op {
+                                            notify::op::Op::WRITE => {
+                                                operation = "WRITE".to_string()
+                                            }
+                                            notify::op::Op::CREATE => {
+                                                operation = "CREATE".to_string()
+                                            }
+                                            notify::op::Op::REMOVE => {
+                                                operation = "REMOVE".to_string()
+                                            }
+                                            _ => operation = "DEFAULT".to_string(),
+                                        }
+                                        if operation == "REMOVE" {
+                                            let response = {
+                                                RemoveStruct {
+                                                    op: operation,
+                                                    file: filename,
+                                                }
+                                            };
+                                            let json = serde_json::to_string(&response).unwrap();
+                                            websocket
+                                                .write_message(tungstenite::Message::Text(json))
+                                                .unwrap();
+                                        } else {
+                                            let contents = read_file(&file_path);
+                                            let datasets = build_dataset(&contents);
+                                            let final_res = FinalResponse {
+                                                file: filename,
+                                                data: datasets,
+                                            };
+                                            let ws_message = WsMessage {
+                                                op: operation,
+                                                response: final_res,
+                                            };
+                                            let json = serde_json::to_string(&ws_message).unwrap();
+                                            websocket
+                                                .write_message(tungstenite::Message::Text(json))
+                                                .unwrap();
+                                        }
                                     }
-                                    if operation == "REMOVE"{
-                                        let response = {RemoveStruct{op:operation,file:filename}};
-                                        let json = serde_json::to_string(&response).unwrap();
-                                        websocket.write_message(tungstenite::Message::Text(json)).unwrap();
-                                    }else{
-                                        let contents = read_file(&file_path);
-                                        let datasets = build_dataset(&contents);
-                                        let final_res = FinalResponse{file:filename,data:datasets};
-                                        let ws_message = WsMessage{op:operation,response:final_res};
-                                        let json = serde_json::to_string(&ws_message).unwrap();
-                                        websocket.write_message(tungstenite::Message::Text(json)).unwrap();
-                                    }
+                                }
+                                Ok(event) => println!("broken event: {:?}", event),
+                                Err(e) => println!("watch error: {:?}", e),
                             }
-                            },
-                            Ok(event) => println!("broken event: {:?}", event),
-                            Err(e) => println!("watch error: {:?}", e),
                         }
-                    }
-                });
-            }});
-        
+                    });
+                }
+            });
+
             //starting the server
             rocket::build()
-                    .mount("/", routes![
+                .mount(
+                    "/",
+                    routes![
                         index,
                         serve_front_end,
                         serve_front_end_2,
                         get_csv_data,
                         get_single_data
-                    ]).attach(CORS)
+                    ],
+                )
+                .attach(CORS)
         }
-        
-    }
+    };
 }
