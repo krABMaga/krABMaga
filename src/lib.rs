@@ -366,6 +366,7 @@ pub use {
     indicatif::ProgressBar,
     rand, rand_pcg, rayon,
     rayon::prelude::*,
+    std,
     std::collections::HashMap,
     std::error::Error,
     std::fs,
@@ -426,16 +427,18 @@ pub use {
 pub extern crate mpi_fork_fnsp;
 
 #[cfg(feature = "web_plot")]
-pub extern crate walkdir;
+pub extern crate  walkdir;
 
 #[cfg(feature = "web_plot")]
-pub extern crate csv;
+pub extern crate  csv;
 
 #[cfg(feature = "web_plot")]
-pub extern crate notify;
+pub extern crate  notify;
 
 #[cfg(feature = "web_plot")]
 pub extern crate serde;
+#[cfg(feature = "web_plot")]
+pub use serde::{Serialize, Deserialize};
 
 #[cfg(feature = "web_plot")]
 pub extern crate serde_json;
@@ -444,33 +447,42 @@ pub extern crate serde_json;
 pub extern crate tungstenite;
 
 #[cfg(feature = "web_plot")]
+pub extern crate rocket;
+
+#[cfg(feature = "web_plot")]
 pub use {
-    rocket::http::Header,
-    rocket::fairing::{Fairing, Info, Kind},
-    rocket::fs::NamedFile,
-    std::path::{Path, PathBuf},
+    rocket::*,
+    serde_derive::*,
+}; 
+
+// #[cfg(feature = "web_plot")]
+// pub use {
+//     rocket::http::Header,
+//     rocket::fairing::{Fairing, Info, Kind},
+//     rocket::fs::NamedFile,
+//     std::path::{Path, PathBuf},
     
     
-    //TokioTungstenite for web socket
-    std::{net::TcpListener, thread::spawn},
+//     //TokioTungstenite for web socket
+//     std::{net::TcpListener, thread::spawn},
     
-    tungstenite::{
-        accept_hdr,
-        handshake::server::{Request, Response},
-    },
+//     tungstenite::{
+//         accept_hdr,
+//         handshake::server::{Request, Response},
+//     },
     
-    //WalkDir to inspect a directory
-    walkdir::WalkDir,
+//     //WalkDir to inspect a directory
+//     walkdir::WalkDir,
     
-    //csv
+//     //csv
     
-    //serde
-    rocket::serde::{Serialize, json::Json},
-    serde::*,
+//     //serde
+//     rocket::serde::json::Json,
     
-    //notify to inspect a directory
-    notify::{Watcher, RecursiveMode, RawEvent, raw_watcher},
-};
+//     //notify to inspect a directory
+//     notify::{Watcher, RecursiveMode, RawEvent, raw_watcher},
+// };
+
 
 #[doc(hidden)]
 #[cfg(any(feature = "bayesian"))]
@@ -981,6 +993,7 @@ macro_rules! simulate {
                         Ok(message) => {
                             match message {
                                 MessageType::Plot(name, series, x, y) => {
+
                                     for (n, writer) in &mut csv_writers {
                                         if name.replace("/", "-") == *n {
                                             writer.write_record(&[&series, &x.to_string(), &y.to_string()]).unwrap();
@@ -996,6 +1009,7 @@ macro_rules! simulate {
                             }
                         },
                         Err(_) => {
+                            log!(LogType::Critical, format!("Error on csv thread"));
                         }
                     };
                 };
@@ -1476,6 +1490,7 @@ mod no_exported {
 /// * `name` - filename to save the csv file
 /// * `dataframe` - dataframe with the configurations and results
 
+#[cfg(not(feature = "web_plot"))]
 pub fn write_csv<A: DataFrame>(name: &str, dataframe: &[A]) -> Result<(), Box<dyn Error>> {
     let csv_name = format!("{}.csv", name);
     let mut wtr = Writer::from_path(csv_name).expect("error on open the file path");
@@ -1569,14 +1584,102 @@ macro_rules! load_csv {
 }
 
 
-
+/// Setup project to download rocket project and run it
 #[macro_export]
-macro_rules! plots {
+macro_rules! simulate_rocket {
+    ($s:expr, $step:expr, $reps:expr) => {
+        // Create directory if it doesn't exist
+        std::fs::create_dir_all("./src/bin").expect("Can't create folder");
+        let file_path = std::path::PathBuf::from("./src/bin/").join("plots.rs");
+        // Create bin file to launch Rocket server
+        std::fs::write(file_path, "krabmaga::rocket_launcher!();");
+
+        if !std::path::Path::new("./src/bin/build").is_dir() {
+            println!("Git clone rocket project");
+            let _ = std::process::Command::new("git")
+                .args(["clone", "https://github.com/krABMaga/rocket-client", "./src/bin/rocket-client"])
+                .output()
+                .expect("failed to execute process"); 
+    
+    
+            println!("Install and build React application of frontend");  
+            let mut x = std::process::Command::new("bash")
+            .arg("-C")
+            .arg("./src/bin/rocket-client/setup_rocket.sh")
+            .output().expect("failed to execute process");
+        }
+        else {
+            println!("Rocket project already downloaded");
+        }
+        
+        use std::sync::mpsc::{self, TryRecvError};
+        let (tx, rx) = mpsc::channel();
+        
+        let rocket_emoji = char::from_u32(0x1F680).expect("Not a valid code point");
+
+        println!("Running rocket {}", rocket_emoji);
+        let server_thread = std::thread::spawn(move || {
+            let mut rocket_server = Command::new("cargo").stdout(std::process::Stdio::null())
+                .args(["run", "--release", "--features", "web_plot", "--bin", "plots", "-q"])
+                .spawn();
+                match rx.recv() {
+                    _ => {
+                        // kill Rocket server
+                        if let  Ok(mut rocket_proc) = rocket_server {
+                            rocket_proc.kill().expect("failed to kill process");
+                        }
+                    }              
+                };
+        });
+
+        // wait for rocket server to start
+        std::thread::sleep(std::time::Duration::from_secs(10));
+
+        // run simulation
+        let _ = simulate!($s, $step, $reps);
+
+        // send message to kill rocket server
+        tx.send(()).unwrap();
+        
+        println!("Rocket landed {}", rocket_emoji);
+
+    };
+}
+
+/// Set up rocket server to plot the results.
+#[macro_export]
+macro_rules! rocket_launcher {
     () => {
-        #[macro_use] extern crate rocket;
+
+        use krabmaga::{
+            rocket::http::Header,
+            rocket::fairing::{Fairing, Info, Kind},
+            rocket::fs::NamedFile,
+            rocket::serde::json::Json,
+            //TokioTungstenite for web socket
+            std::{net::TcpListener, thread::spawn},
+            std::path::{Path, PathBuf},
+            
+            tungstenite::{
+                accept_hdr,
+                handshake::server::{Request, Response},
+            },
+            
+            //WalkDir to inspect a directory
+            walkdir::WalkDir,
+            
+            //csv    
+            rocket::serde::{Serialize, Deserialize},
+            //notify to inspect a directory
+            notify::{Watcher, RecursiveMode, RawEvent, raw_watcher},
+            
+        };
+        
+        use krabmaga::*;
         
         //struct for the final response, The client will get a Vector of FinalResponse. Each response represtents the information of 1 file.
-        #[derive(Deserialize,Serialize,Debug)]
+        #[derive(Deserialize, Serialize, Debug)]
+        #[serde(crate = "self::serde")] // must be below the derive attribute
         struct FinalResponse{
             file : String,
             data : DataSet,
@@ -1584,6 +1687,7 @@ macro_rules! plots {
         
         //struct for a single ChartData
         #[derive(Debug,Deserialize,Serialize)]
+        #[serde(crate = "self::serde")] // must be below the derive attribute
         struct ChartData{
             //Example 'Wolfs'
             label:String,
@@ -1600,13 +1704,15 @@ macro_rules! plots {
         
         //struct for a complete Dataset
         #[derive(Debug,Deserialize,Serialize)]
+        #[serde(crate = "self::serde")] // must be below the derive attribute
         struct DataSet{
             datasets: Vec<ChartData>,
             labels: Vec<String>,
         }
         
         //struct for message to send to the client
-        #[derive(Debug,Deserialize,Serialize)]
+        #[derive(Debug, Deserialize,Serialize)]
+        #[serde(crate = "self::serde")] // must be below the derive attribute
         struct WsMessage{
             op: String,
             response: FinalResponse,
@@ -1614,6 +1720,7 @@ macro_rules! plots {
         
         //struct for message to send to the client for a Remove Operation
         #[derive(Debug,Deserialize,Serialize)]
+        #[serde(crate = "self::serde")] // must be below the derive attribute
         struct RemoveStruct{
             op: String,
             file: String,
@@ -1622,7 +1729,7 @@ macro_rules! plots {
         
         //Struct For CORS Settings
         pub struct CORS;
-        #[rocket::async_trait]
+        #[krabmaga::rocket::async_trait]
         impl Fairing for CORS {
             fn info(&self) -> Info {
                 Info {
@@ -1631,7 +1738,7 @@ macro_rules! plots {
                 }
             }
         
-            async fn on_response<'r>(&self, _request: &'r rocket::Request<'_>, response: &mut rocket::Response<'r>) {
+            async fn on_response<'r>(&self, _request: &'r krabmaga::rocket::Request<'_>, response: &mut krabmaga::rocket::Response<'r>) {
                 response.set_header(Header::new("Access-Control-Allow-Origin", "*"));
                 response.set_header(Header::new("Access-Control-Allow-Methods", "POST, GET, PATCH, OPTIONS"));
                 response.set_header(Header::new("Access-Control-Allow-Headers", "*"));
@@ -1825,7 +1932,7 @@ macro_rules! plots {
         
             //starting the server
             rocket::build()
-                    .mount("/", rocket::routes![
+                    .mount("/", routes![
                         index,
                         serve_front_end,
                         serve_front_end_2,
@@ -1833,5 +1940,6 @@ macro_rules! plots {
                         get_single_data
                     ]).attach(CORS)
         }
+        
     }
 }
