@@ -11,8 +11,6 @@ pub trait Agent: Downcast + DynClone + Send + Sync {
     /// * `state` - state of the simulation
     fn step(&mut self, state: &mut dyn State);
 
-    /// Return the id of the agent
-    fn get_id(&self) -> u32;
 
     /// Specifies whether this agent should be removed from the schedule after the current step.
     ///
@@ -40,6 +38,10 @@ pub trait Agent: Downcast + DynClone + Send + Sync {
     ) -> Option<Vec<(Box<dyn Agent>, ScheduleOptions)>> {
         None
     }
+}
+
+pub trait ReproducibilityEq {
+    fn equals(&self, other: &Self) -> bool;
 }
 
 dyn_clone::clone_trait_object!(Agent);

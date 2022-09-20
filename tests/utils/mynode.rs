@@ -10,9 +10,6 @@ pub struct MyNode {
 }
 
 impl Agent for MyNode {
-    fn get_id(&self) -> u32 {
-        self.id
-    }
 
     fn step(&mut self, _state: &mut dyn krabmaga::engine::state::State) {}
 }

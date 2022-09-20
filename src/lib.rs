@@ -1521,3 +1521,102 @@ macro_rules! load_csv {
         v
     }};
 }
+
+
+
+#[macro_export]
+macro_rules! check_reproducibility {
+    (
+        $state: expr,
+        $n_step: expr,
+        agents: { $( $agent:ident )* }
+    ) => {
+
+        use $crate::engine::agent::Agent;
+
+
+        //first execution
+        let mut schedule = Schedule::new();
+        let mut execution1: Vec<Vec<Box<dyn Agent>>> = Vec::new();
+        let mut state = $state.as_state_mut();
+        let n_step = $n_step;
+
+        state.init(&mut schedule);
+        execution1.push(Vec::new());
+        execution1[0] = schedule.get_all_events();
+
+        for i in 0..n_step {
+            schedule.step(state);
+            execution1.push(Vec::new());
+            execution1[i+1] = schedule.get_all_events();
+            if state.end_condition(&mut schedule) {
+                break;
+            }
+        }
+        
+        //second execution
+
+        let mut schedule = Schedule::new();
+        let mut execution2: Vec<Vec<Box<dyn Agent>>> = Vec::new();
+        
+        state.reset();
+        state.init(&mut schedule);
+
+        execution2.push(Vec::new());
+        execution2[0] = schedule.get_all_events();
+        
+        for i in 0..n_step {
+            schedule.step(state);
+            execution2.push(Vec::new());
+            execution2[i+1] = schedule.get_all_events();
+            if state.end_condition(&mut schedule) {
+                break;
+            }
+        }
+
+
+        // start comparison
+        let mut equal = true;
+        for i in 0..execution1.len() {
+            if execution1[i].len() != execution2[i].len() {
+                if i == 0 {
+                    println!("The first execution has {} agents, the second has {} agents", execution1[i].len(), execution2[i].len());
+                } else {
+                    println!("The first execution has {} agents at step {}, the second has {} agents", execution1[i].len(), i+1, execution2[i].len());
+                }
+                equal = false;
+                break;
+            }
+
+            for j in 0..execution1[i].len() {
+                $(
+                    if let Some(a1) = execution1[i][j].downcast_ref::<$agent>() {
+                        if let Some(a2) = execution2[i][j].downcast_ref::<$agent>() {
+                            if !a1.equals(a2) {
+                                equal = false;
+                                if i == 0 {
+                                    println!("Agents are not equal after the init function");
+                                    
+                                }
+                                else {
+                                    println!("Agents are not equal in the step {}", i+1);
+                                }
+                                println!("Agent 1: {}", a1);
+                                println!("Agent 2: {}", a2);
+                                break;
+                            }
+                        }
+                    }
+                )*
+            }
+
+            if !equal {
+                break;
+            }
+        }
+
+        if equal {
+            println!("The executions are equal");
+        }
+    };
+}
