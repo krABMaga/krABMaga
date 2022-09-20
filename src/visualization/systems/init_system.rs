@@ -42,7 +42,7 @@ cfg_if! {
 
             let camera_bundle = OrthographicCameraBundle {
                 camera: Camera {
-                    name: Some(CameraPlugin::CAMERA_2D.to_string()),
+                    name: Some(CameraPlugin::CAMERA_3D.to_string()),
                     ..Default::default()
                 },
                 orthographic_projection: OrthographicProjection {

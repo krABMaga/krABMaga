@@ -3,6 +3,7 @@ pub mod dense_object_grid_2d;
 #[doc(hidden)]
 pub mod field;
 pub mod field_2d;
+pub mod field_3d;
 pub mod grid_option;
 pub mod hnetwork;
 pub mod network;
