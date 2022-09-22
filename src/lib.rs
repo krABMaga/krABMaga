@@ -1600,7 +1600,9 @@ macro_rules! simulate_rocket {
         std::fs::create_dir_all("./src/bin").expect("Can't create folder");
         let file_path = std::path::PathBuf::from("./src/bin/").join("plots.rs");
         // Create bin file to launch Rocket server
-        std::fs::write(file_path, "krabmaga::rocket_launcher!();");
+        
+        let date = CURRENT_DATE.clone();
+        std::fs::write(file_path, format!("krabmaga::rocket_launcher!(\"{}\");", date));
 
         if !std::path::Path::new("./src/bin/build").is_dir() {
             println!("Git clone rocket project");
@@ -1668,7 +1670,7 @@ macro_rules! simulate_rocket {
 /// Set up rocket server to plot the results.
 #[macro_export]
 macro_rules! rocket_launcher {
-    () => {
+    ($date : expr) => {
         use krabmaga::{
             //notify to inspect a directory
             notify::{raw_watcher, RawEvent, RecursiveMode, Watcher},
