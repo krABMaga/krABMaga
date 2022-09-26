@@ -1772,14 +1772,14 @@ macro_rules! rocket_launcher {
 
         //next 3 function to serve the front end
         #[get("/<file..>")]
-        async fn serve_front_end(file: PathBuf) -> Option<NamedFile> {
+        async fn serve_static_files(file: PathBuf) -> Option<NamedFile> {
             NamedFile::open(Path::new("./src/bin/build/").join(file))
                 .await
                 .ok()
         }
 
         #[get("/Chart/<_file..>")]
-        async fn serve_front_end_2(_file: PathBuf) -> Option<NamedFile> {
+        async fn serve_index(_file: PathBuf) -> Option<NamedFile> {
             NamedFile::open("./src/bin/build/index.html").await.ok()
         }
 
@@ -1791,7 +1791,7 @@ macro_rules! rocket_launcher {
         //Endpoint for single chart display
         #[get("/buildsingledata/<filename>")]
         async fn get_single_data(filename: String) -> Json<Vec<FinalResponse>> {
-            let path = "./output";
+            let path = format!("./output/{}",$date);
             let mut final_res = Vec::new();
             for entry in WalkDir::new(path)
                 .follow_links(true)
@@ -1827,7 +1827,7 @@ macro_rules! rocket_launcher {
         //Get paths to the files and build datasets
         fn compute() -> Vec<FinalResponse> {
             let mut final_json: Vec<FinalResponse> = Vec::new();
-            let path = "./output";
+            let path = format!("./output/{}",$date);
             for entry in WalkDir::new(path)
                 .follow_links(true)
                 .into_iter()
@@ -1923,12 +1923,11 @@ macro_rules! rocket_launcher {
                         // The notification back-end is selected based on the platform.
 
                         let mut watcher = raw_watcher(tx).unwrap();
-
                         // Add a path to be watched. All files and directories at that path and
                         // below will be monitored for changes.
-
-                        watcher.watch("./output", RecursiveMode::Recursive).unwrap();
-                        println!("watching path : ./output");
+                        let mut pathtowatch = format!("./output/{}",$date);
+                        watcher.watch(pathtowatch, RecursiveMode::Recursive).unwrap();
+                        println!("watching path : ./output/{}",$date);
                         loop {
                             match rx.recv() {
                                 Ok(RawEvent {
@@ -1999,8 +1998,8 @@ macro_rules! rocket_launcher {
                     "/",
                     routes![
                         index,
-                        serve_front_end,
-                        serve_front_end_2,
+                        serve_static_files,
+                        serve_index,
                         get_csv_data,
                         get_single_data
                     ],
