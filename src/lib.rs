@@ -129,7 +129,7 @@
 //!If you don't start from our [Template](https://github.com/krABMaga/examples/tree/main/template), add this to your `Cargo.toml`:
 //!```toml
 //![dependencies]
-//!krABMaga = { git="https://github.com/krABMaga/krABMaga.git" }
+//!krABMaga = 0.1.*
 //!
 //![features]
 //!visualization = ["krABMaga/visualization"]
