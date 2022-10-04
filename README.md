@@ -82,7 +82,6 @@ If you don't start from our [Template](https://github.com/krABMaga/examples/tree
 ```toml
 [dependencies]
 krabmaga = 0.1.*
-```
 
 [features]
 visualization = ["krabmaga/visualization"]
