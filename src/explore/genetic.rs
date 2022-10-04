@@ -126,15 +126,70 @@ macro_rules! build_dataframe_explore {
 ///
 /// # Arguments
 ///
-/// * `init_population` - function that creates the population, must return an array of individual (an individual is the state of the simulation to compute)
+/// # Arguments
+/// * `init_population` - function that creates the population, must return an array of individual. An individual is the state of the simulation to compute
 /// * `fitness` - function that computes the fitness value, takes a single individual and the schedule, must return an f32
+/// * `selection` - function that select pair of individuals with some criterion and create a new individual for the next generation
 /// * `mutation` - function that perform the mutation, takes a single individual as parameter
 /// * `crossover` - function that creates the population, takes the entire population as parameter
+/// * `cmp` - function that compare two individuals, takes two individuals as parameter and return true if the first is better than the second
 /// * `state` - state of the simulation representing an individual
 /// * `desired_fitness` - desired fitness value
 /// * `generation_num` - max number of generations to compute
 /// * `step` - number of steps of the single simulation
-/// * `reps` - number of repetitions of the simulation using each individual (optional, default is 1)
+/// * `reps` - optional values for number of repetitions
+///
+/// # Example
+///
+/// ```rust
+/// pub const STEP: u64 = 100;
+/// pub const REPETITIONS: u32 = 20;
+///
+/// pub const DESIRED_FITNESS: f32 = 0.;
+/// pub const MAX_GENERATION: u32 = 2_000;
+///
+/// fn main() {
+///     let result = explore_ga_sequential!(
+///         init_population,
+///         fitness,
+///         selection,
+///         mutation,
+///         crossover,
+///         cmp,
+///         State,
+///         DESIRED_FITNESS,
+///         MAX_GENERATION,
+///         STEP,
+///         REPETITIONS,
+///     );
+///     if !result.is_empty() {
+///         let name = "explore_result".to_string();
+///         let _res = write_csv(&name, &result);
+///     }
+/// }
+///
+/// // Create the initial population. In genetic algorithms, an individual is represened as a String
+/// fn init_population() -> Vec<String> { ... }
+///
+/// // Compute the fitness value of an individual using results of each repetition
+/// // * computed_ind: Vec with couple of (state, fitness)
+/// //   of an individual for each repetition in the current generation
+/// fn fitness(computed_ind: &mut Vec<(EpidemicNetworkState, Schedule)>) -> f32 { ... }
+///
+/// // Select/Order the population based on the fitness value
+/// fn selection(population_fitness: &mut Vec<(String, f32)>) { ... }
+///
+/// // Perform the mutation of an individual
+/// fn mutation(individual: &mut String) { ... }
+///
+/// // Perform the crossover to generate the new population
+/// fn crossover(population: &mut Vec<String>) { ... }
+///
+/// // Compare two individuals
+/// fn cmp(fitness1: &f32, fitness2: &f32) -> bool { ... }
+///
+/// ```
+///
 #[macro_export]
 macro_rules! explore_ga_sequential {
     (
@@ -310,19 +365,74 @@ macro_rules! explore_ga_sequential {
 
 }
 
-/// Macro to perform parallel model exploration using a genetic algorithm.
+/// Macro to perform sequential model exploration using a genetic algorithm.
 ///
 /// # Arguments
 ///
-/// * `init_population` - function that creates the population, must return an array of individual (an individual is the state of the simulation to compute)
+/// # Arguments
+/// * `init_population` - function that creates the population, must return an array of individual. An individual is the state of the simulation to compute
 /// * `fitness` - function that computes the fitness value, takes a single individual and the schedule, must return an f32
+/// * `selection` - function that select pair of individuals with some criterion and create a new individual for the next generation
 /// * `mutation` - function that perform the mutation, takes a single individual as parameter
 /// * `crossover` - function that creates the population, takes the entire population as parameter
+/// * `cmp` - function that compare two individuals, takes two individuals as parameter and return true if the first is better than the second
 /// * `state` - state of the simulation representing an individual
 /// * `desired_fitness` - desired fitness value
 /// * `generation_num` - max number of generations to compute
 /// * `step` - number of steps of the single simulation
-/// * `reps` - number of repetitions of the simulation using each individual (optional, default is 1)
+/// * `reps` - optional values for number of repetitions
+///
+/// # Example
+///
+/// ```rust
+/// pub const STEP: u64 = 100;
+/// pub const REPETITIONS: u32 = 20;
+///
+/// pub const DESIRED_FITNESS: f32 = 0.;
+/// pub const MAX_GENERATION: u32 = 2_000;
+///
+/// fn main() {
+///     let result = explore_ga_parallel!(
+///         init_population,
+///         fitness,
+///         selection,
+///         mutation,
+///         crossover,
+///         cmp,
+///         State,
+///         DESIRED_FITNESS,
+///         MAX_GENERATION,
+///         STEP,
+///         REPETITIONS,
+///     );
+///     if !result.is_empty() {
+///         let name = "explore_result".to_string();
+///         let _res = write_csv(&name, &result);
+///     }
+/// }
+///
+/// // Create the initial population. In genetic algorithms, an individual is represened as a String
+/// fn init_population() -> Vec<String> { ... }
+///
+/// // Compute the fitness value of an individual using results of each repetition
+/// // * computed_ind: Vec with couple of (state, fitness)
+/// //   of an individual for each repetition in the current generation
+/// fn fitness(computed_ind: &mut Vec<(EpidemicNetworkState, Schedule)>) -> f32 { ... }
+///
+/// // Select/Order the population based on the fitness value
+/// fn selection(population_fitness: &mut Vec<(String, f32)>) { ... }
+///
+/// // Perform the mutation of an individual
+/// fn mutation(individual: &mut String) { ... }
+///
+/// // Perform the crossover to generate the new population
+/// fn crossover(population: &mut Vec<String>) { ... }
+///
+/// // Compare two individuals
+/// fn cmp(fitness1: &f32, fitness2: &f32) -> bool { ... }
+///
+/// ```
+///
 #[macro_export]
 macro_rules! explore_ga_parallel {
     (

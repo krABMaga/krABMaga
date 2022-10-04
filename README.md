@@ -3,10 +3,10 @@
   <h1> krABMaga </h1>
   <h4> <i>A modern developing art for reliable and efficient ABM simulation with the Rust language</i></h4>
   <img alt="Crates.io" src="https://img.shields.io/crates/l/krabmaga">
-  <img alt="Crates.io" src="https://img.shields.io/crates/v/krabmaga">
-  <img alt="docs.rs" src="https://img.shields.io/docsrs/krabmaga">
+  <a href="https://crates.io/crates/krabmaga"><img alt="Crates.io" src="https://img.shields.io/crates/v/krabmaga"> </a>
+  <a href="https://docs.rs/krabmaga/latest/krabmaga"><img alt="docs.rs" src="https://img.shields.io/docsrs/krabmaga"> </a>
   <img alt="Rust CI" src="https://github.com/krABMaga/krABMaga/workflows/Rust%20CI/badge.svg">
-  <img alt="codecov" src="https://codecov.io/gh/krABMaga/krABMaga/branch/main/graph/badge.svg?token=GWYP2UBPIZ)](https://codecov.io/gh/krABMaga/krABMaga">
+  <a href="https://codecov.io/gh/krABMaga/krABMaga"><img alt="codecov" src="https://codecov.io/gh/krABMaga/krABMaga/branch/main/graph/badge.svg?token=GWYP2UBPIZ"> </a>
 </div>
 
 (Notice that the *parallel* and *visualization* components are excluded from _codecov_ as are experimental ore release candidate)
