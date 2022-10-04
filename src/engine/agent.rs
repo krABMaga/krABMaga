@@ -11,7 +11,6 @@ pub trait Agent: Downcast + DynClone + Send + Sync {
     /// * `state` - state of the simulation
     fn step(&mut self, state: &mut dyn State);
 
-
     /// Specifies whether this agent should be removed from the schedule after the current step.
     ///
     /// # Arguments

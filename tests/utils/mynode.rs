@@ -10,7 +10,6 @@ pub struct MyNode {
 }
 
 impl Agent for MyNode {
-
     fn step(&mut self, _state: &mut dyn krabmaga::engine::state::State) {}
 }
 

@@ -152,7 +152,6 @@ impl Agent for Bird {
             .field1
             .set_object_location(*self, Real2D { x: loc_x, y: loc_y });
     }
-
 }
 
 impl Hash for Bird {

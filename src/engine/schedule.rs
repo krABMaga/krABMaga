@@ -369,12 +369,14 @@ cfg_if! {
                         break;
                     }
 
-                    match events.pop() {
+                    match events.peek() {
                         Some(item) => {
                             let (agent, priority) = item;
                             if priority.time > self.time {
                                 break;
                             }
+                                // events.push(agent, priority);
+                            let (agent, priority) = events.pop().expect("Error on pop from queue");
                             cevents.push(Pair::new(agent, priority));
                         },
                         None => panic!("Agent not found - inside loop"),

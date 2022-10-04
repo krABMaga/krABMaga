@@ -1522,8 +1522,6 @@ macro_rules! load_csv {
     }};
 }
 
-
-
 #[macro_export]
 macro_rules! check_reproducibility {
     (
@@ -1539,7 +1537,7 @@ macro_rules! check_reproducibility {
         let mut schedule = Schedule::new();
         let mut execution1: Vec<Vec<Box<dyn Agent>>> = Vec::new();
         let mut state = $state.as_state_mut();
-        let n_step = $n_step;
+        let n_step = $n_step as usize;
 
         state.init(&mut schedule);
         execution1.push(Vec::new());
@@ -1553,18 +1551,18 @@ macro_rules! check_reproducibility {
                 break;
             }
         }
-        
+
         //second execution
 
         let mut schedule = Schedule::new();
         let mut execution2: Vec<Vec<Box<dyn Agent>>> = Vec::new();
-        
+
         state.reset();
         state.init(&mut schedule);
 
         execution2.push(Vec::new());
         execution2[0] = schedule.get_all_events();
-        
+
         for i in 0..n_step {
             schedule.step(state);
             execution2.push(Vec::new());
@@ -1596,7 +1594,7 @@ macro_rules! check_reproducibility {
                                 equal = false;
                                 if i == 0 {
                                     println!("Agents are not equal after the init function");
-                                    
+
                                 }
                                 else {
                                     println!("Agents are not equal in the step {}", i+1);

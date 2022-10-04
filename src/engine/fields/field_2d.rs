@@ -268,7 +268,10 @@ cfg_if! {
         ///  Sparse matrix structure modelling agent interactions on a 2D real space with coordinates represented by 2D f64 tuples
         pub struct Field2D<O: Location2D<Real2D> + Clone + Hash + Eq + Copy + Display> {
             /// Matrix to write data. Vector of vectors that have a generic Object O inside
-            pub bags: RefCell<Vec<Vec<O>>>,
+            // pub bags: RefCell<Vec<Vec<O>>>,
+            pub bags: Vec<RefCell<Vec<Vec<O>>>>,
+            read: usize,
+            write: usize,
             /// Matrix to read data. Vector of vectors that have a generic Object O inside
             pub rbags: RefCell<Vec<Vec<O>>>,
             /// Number of agents inside the field
@@ -301,7 +304,11 @@ cfg_if! {
             /// * `t` - `true` if you want a Toroidal field, `false` otherwise
             pub fn new(w: f32, h: f32, d: f32, t: bool) -> Field2D<O> {
                 Field2D {
-                    bags: RefCell::new(std::iter::repeat_with(Vec::new).take((((w/d).ceil()+1.0) * ((h/d).ceil() +1.0))as usize).collect()),
+                    // bags: RefCell::new(std::iter::repeat_with(Vec::new).take((((w/d).ceil()+1.0) * ((h/d).ceil() +1.0))as usize).collect()),
+                    bags: vec![RefCell::new(std::iter::repeat_with(Vec::new).take((((w/d).ceil()+1.0) * ((h/d).ceil() +1.0))as usize).collect()),
+                               RefCell::new(std::iter::repeat_with(Vec::new).take((((w/d).ceil()+1.0) * ((h/d).ceil() +1.0))as usize).collect())],
+                    read: 0,
+                    write: 1,
                     rbags: RefCell::new(std::iter::repeat_with(Vec::new).take((((w/d).ceil()+1.0) * ((h/d).ceil() +1.0))as usize).collect()),
                     nagents: RefCell::new(0),
                     width: w,
@@ -394,7 +401,8 @@ cfg_if! {
                         let check = check_circle(&bag_id, self.discretization, self.width, self.height, &loc, dist, self.toroidal);
 
                         let index = ((bag_id.x * self.dh) + bag_id.y) as usize;
-                        let bags = self.rbags.borrow();
+                        // let bags = self.rbags.borrow();
+                        let bags = self.bags[self.read].borrow();
 
                         for elem in &bags[index]{
                             if (check == 0 && distance(&loc, &(elem.get_location()), self.width, self.height, self.toroidal) <= dist) || check == 1 {
@@ -449,7 +457,7 @@ cfg_if! {
                             y: t_transform(j, max_y),
                         };
                         let index = ((bag_id.x * self.dh) + bag_id.y) as usize;
-                        let bags = self.rbags.borrow_mut();
+                        let bags = self.bags[self.read].borrow_mut();
                         for elem in &bags[index] {
                             neighbors.push(*elem);
                         }
@@ -465,7 +473,7 @@ cfg_if! {
             pub fn get_objects(&self, loc: Real2D) -> Vec<O>{
                 let bag = self.discretize(&loc);
                 let index = ((bag.x * self.dh) + bag.y) as usize;
-                let rbags = self.rbags.borrow();
+                let rbags = self.bags[self.read].borrow();
                 rbags[index].clone()
             }
 
@@ -476,7 +484,7 @@ cfg_if! {
             pub fn get_objects_unbuffered(&self, loc: Real2D) -> Vec<O>{
                 let bag = self.discretize(&loc);
                 let index = ((bag.x * self.dh) + bag.y) as usize;
-                let bags = self.bags.borrow();
+                let bags = self.bags[self.write].borrow();
                 bags[index].clone()
             }
 
@@ -494,7 +502,7 @@ cfg_if! {
                 for i in 0 .. self.dw{
                     for j in 0 .. self.dh{
                         let index = ((i * self.dh) + j) as usize;
-                        let locs = &self.rbags.borrow()[index];
+                        let locs = &self.bags[self.read].borrow()[index];
                         if !locs.is_empty() {
                             let real_pos = self.not_discretize(&Int2D {x: i, y: j});
                             for obj in locs{
@@ -520,7 +528,7 @@ cfg_if! {
                 for i in 0 .. self.dw{
                     for j in 0 .. self.dh{
                         let index = ((i * self.dh) + j) as usize;
-                        let locs = &self.bags.borrow()[index];
+                        let locs = &self.bags[self.write].borrow()[index];
                         if !locs.is_empty() {
                             let real_pos = self.not_discretize(&Int2D {x: i, y: j});
                             for obj in locs{
@@ -538,7 +546,7 @@ cfg_if! {
                 for i in 0 ..  self.dw{
                     for j in 0 .. self.dh{
                         let index = ((i * self.dh) + j) as usize;
-                        if self.rbags.borrow()[index].is_empty() {
+                        if self.bags[self.read].borrow()[index].is_empty() {
 
                             empty_bags.push(self.not_discretize(&Int2D{x: i, y: j}));
                         }
@@ -565,7 +573,7 @@ cfg_if! {
             pub fn num_objects_at_location(&self, loc: Real2D) -> usize {
                 let bag = self.discretize(&loc);
                 let index = ((bag.x * self.dh) + bag.y) as usize;
-                let rbags = self.rbags.borrow();
+                let rbags = self.bags[self.read].borrow();
                 rbags[index].len()
             }
 
@@ -577,7 +585,7 @@ cfg_if! {
             pub fn set_object_location(&self, object: O, loc: Real2D) {
                 let bag = self.discretize(&loc);
                 let index = ((bag.x * self.dh) + bag.y) as usize;
-                let mut bags = self.bags.borrow_mut();
+                let mut bags = self.bags[self.write].borrow_mut();
                 bags[index].push(object);
                 if !self.density_estimation_check{
                     *self.nagents.borrow_mut() += 1;
@@ -595,7 +603,7 @@ cfg_if! {
             pub fn remove_object_location(&self, object: O, loc: Real2D) {
                 let bag = self.discretize(&loc);
                 let index = ((bag.x * self.dh) + bag.y) as usize;
-                let mut bags = self.bags.borrow_mut();
+                let mut bags = self.bags[self.write].borrow_mut();
                 if !bags[index].is_empty() {
                     let before = bags[index].len();
                     bags[index].retain(|&x| x != object);
@@ -613,20 +621,26 @@ cfg_if! {
 
             /// Swap read and write buffer
             fn lazy_update(&mut self){
-                unsafe {
-                    std::ptr::swap(
-                        self.bags.as_ptr(),
-                        self.rbags.as_ptr(),
-                    )
-                }
+                // unsafe {
+                //     std::ptr::swap(
+                //         self.bags.as_ptr(),
+                //         self.rbags.as_ptr(),
+                //     )
+                // }
+
+                let tmp = self.read;
+                self.read = self.write;
+                self.write = tmp;
+
+
                 if !self.density_estimation_check{
                     self.density_estimation =
                     ((*self.nagents.borrow_mut())as usize)/((self.dw * self.dh) as usize);
                     self.density_estimation_check = true;
-                    self.bags =  RefCell::new(std::iter::repeat_with(|| Vec::with_capacity(self.density_estimation)).take((self.dw * self.dh) as usize).collect());
+                    self.bags[self.write] =  RefCell::new(std::iter::repeat_with(|| Vec::with_capacity(self.density_estimation)).take((self.dw * self.dh) as usize).collect());
                 }
                 else {
-                    let mut bags =self.bags.borrow_mut();
+                    let mut bags =self.bags[self.write].borrow_mut();
                     for b in 0..bags.len(){
                         bags[b].clear();
                     }
