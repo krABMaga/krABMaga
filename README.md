@@ -33,7 +33,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-krabmaga = { git="https://github.com/krABMaga/krABMaga.git" }
+krabmaga = 0.1.*
 ```
 
 To get started using krABMaga, see [the examples](https://github.com/krABMaga/examples).
@@ -81,7 +81,7 @@ The visualization framework requires certain dependencies to run the simulation 
 If you don't start from our [Template](https://github.com/krABMaga/examples/tree/main/template), add this to your `Cargo.toml`:
 ```toml
 [dependencies]
-krabmaga = { git="https://github.com/krABMaga/krABMaga.git" }
+krabmaga = 0.1.*
 
 [features]
 visualization = ["krabmaga/visualization"]
@@ -101,10 +101,10 @@ With visualization, you have to set graphical settings (like dimension or backgr
 #[cfg(not(any(feature = "visualization", feature = "visualization_wasm")))]
 fn main() {
   let dim = (200., 200.);
+  let num_agents = 100;  
   let state = Flocker::new(dim, num_agents);
   let step = 10;
   let reps = 1;
-  let num_agents = 100;  
   let _ = simulate!(state, step, reps);
 }
 
