@@ -520,12 +520,12 @@ impl PlotData {
         use plotters::prelude::*;
 
         let date = CURRENT_DATE.clone();
-        let path = format!("output/{}/{}", date, self.name.replace("/", "-"));
+        let path = format!("output/{}/{}", date, self.name.replace('/', "-"));
 
         // Create directory if it doesn't exist
         fs::create_dir_all(&path).expect("Can't create folder");
 
-        let output_name = format!("{}/{}_{}.png", &path, self.name.replace("/", "-"), rep);
+        let output_name = format!("{}/{}_{}.png", &path, self.name.replace('/', "-"), rep);
 
         let root = BitMapBackend::new(&output_name, (1024, 768)).into_drawing_area();
         root.fill(&WHITE).expect("Can't fill the canvas");

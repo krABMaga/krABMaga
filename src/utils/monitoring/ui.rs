@@ -533,14 +533,13 @@ cfg_if! {
                             max_digits += 1;
                         }
                     }
-                    let size_bar: u16;
-                    match max_digits {
-                        1..=2 => size_bar = 3,
-                        3 => size_bar = 5,
-                        4 => size_bar = 7,
-                        5 => size_bar = 9,
-                        _ => size_bar = 11,
-                    }
+                    let size_bar: u16  = match max_digits {
+                        1..=2 => 3,
+                        3 => 5,
+                        4 => 7,
+                        5 => 9,
+                        _ => 11,
+                    };
 
                     let barchart = BarChart::default()
                         .block(

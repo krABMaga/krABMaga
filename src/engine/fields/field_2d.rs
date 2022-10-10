@@ -265,15 +265,14 @@ cfg_if! {
             }
         }
     } else {
-        ///  Sparse matrix structure modelling agent interactions on a 2D real space with coordinates represented by 2D f64 tuples
+        ///  Sparse matrix structure modelling agent interactions on a 2D real space with coordinates represented by 2D f32 tuples
         pub struct Field2D<O: Location2D<Real2D> + Clone + Hash + Eq + Copy + Display> {
             /// Matrix to write data. Vector of vectors that have a generic Object O inside
-            // pub bags: RefCell<Vec<Vec<O>>>,
             pub bags: Vec<RefCell<Vec<Vec<O>>>>,
             read: usize,
             write: usize,
             /// Matrix to read data. Vector of vectors that have a generic Object O inside
-            pub rbags: RefCell<Vec<Vec<O>>>,
+            // pub rbags: RefCell<Vec<Vec<O>>>,
             /// Number of agents inside the field
             pub nagents: RefCell<usize>,
             /// First dimension of the field
@@ -309,7 +308,7 @@ cfg_if! {
                                RefCell::new(std::iter::repeat_with(Vec::new).take((((w/d).ceil()+1.0) * ((h/d).ceil() +1.0))as usize).collect())],
                     read: 0,
                     write: 1,
-                    rbags: RefCell::new(std::iter::repeat_with(Vec::new).take((((w/d).ceil()+1.0) * ((h/d).ceil() +1.0))as usize).collect()),
+                    // rbags: RefCell::new(std::iter::repeat_with(Vec::new).take((((w/d).ceil()+1.0) * ((h/d).ceil() +1.0))as usize).collect()),
                     nagents: RefCell::new(0),
                     width: w,
                     height: h,
@@ -621,16 +620,7 @@ cfg_if! {
 
             /// Swap read and write buffer
             fn lazy_update(&mut self){
-                // unsafe {
-                //     std::ptr::swap(
-                //         self.bags.as_ptr(),
-                //         self.rbags.as_ptr(),
-                //     )
-                // }
-
-                let tmp = self.read;
-                self.read = self.write;
-                self.write = tmp;
+                std::mem::swap(&mut self.read, &mut self.write);
 
 
                 if !self.density_estimation_check{

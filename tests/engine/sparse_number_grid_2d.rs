@@ -45,10 +45,20 @@ fn sparse_number_grid_2d() {
     assert_eq!(bags.len(), 100);
 
     grid.update();
+    let bags = grid.get_empty_bags();
+    assert_eq!(bags.len(), 0);
 
     grid.apply_to_all_values(|_value| 1, GridOption::WRITE);
 
-    grid.update();
+    grid.iter_values_unbuffered(|_, val| {
+        assert_eq!(*val, 1);
+    });
+
+    grid.lazy_update();
+
+    grid.iter_values(|_, val| {
+        assert_eq!(*val, 1);
+    });
 
     grid.apply_to_all_values(
         |value| {

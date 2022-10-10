@@ -89,9 +89,12 @@ cfg_if! {
         /// This is useful to represent simulation spaces covered by a simple entity that can be represented with a non-agent structure.
         pub struct SparseNumberGrid2D<T: Copy + Clone + PartialEq> {
             /// Hashmap to write data. Key is location, value is the number.
-            pub locs: RefCell<HashMap<Int2D, T>>,
+            // pub locs: RefCell<HashMap<Int2D, T>>,
             /// Hashmap to read data. Key is the value, value is the location.
-            pub rlocs: RefCell<HashMap<Int2D, T>>,
+            // pub rlocs: RefCell<HashMap<Int2D, T>>,
+            pub locs: Vec<RefCell<HashMap<Int2D, T>>>,
+            read: usize,
+            write: usize,
             /// First dimension of the field
             pub width: i32,
             /// Second dimension of the field
@@ -106,8 +109,11 @@ cfg_if! {
             /// * `height` - second dimension of the field
             pub fn new(width: i32, height: i32) -> SparseNumberGrid2D<T> {
                 SparseNumberGrid2D {
-                    locs: RefCell::new(HashMap::new()),
-                    rlocs: RefCell::new(HashMap::new()),
+                    // locs: RefCell::new(HashMap::new()),
+                    // rlocs: RefCell::new(HashMap::new()),
+                    locs: vec![RefCell::new(HashMap::new()), RefCell::new(HashMap::new())],
+                    read: 0,
+                    write: 1,
                     width,
                     height,
                 }
@@ -129,21 +135,21 @@ cfg_if! {
 
                 match option {
                     GridOption::READ => {
-                        let mut rlocs = self.rlocs.borrow_mut();
+                        let mut rlocs = self.locs[self.read].borrow_mut();
                         for (_key, value) in rlocs.iter_mut() {
                             *value = closure(value);
                         }
                     },
                     GridOption::WRITE => {
-                        let mut locs = self.locs.borrow_mut();
+                        let mut locs = self.locs[self.write].borrow_mut();
                         for (_key, value) in locs.iter_mut() {
                             *value = closure(value);
                         }
                     },
                     //update the write state using the write values if exist, otherwise use the read values
                     GridOption::READWRITE => {
-                        let rlocs = self.rlocs.borrow();
-                        let mut locs = self.locs.borrow_mut();
+                        let rlocs = self.locs[self.read].borrow();
+                        let mut locs = self.locs[self.write].borrow_mut();
 
                         // for each bag in read
                         for (key, value) in rlocs.iter() {
@@ -169,7 +175,7 @@ cfg_if! {
                     &T//value
                 )
             {
-                let rlocs = self.rlocs.borrow();
+                let rlocs = self.locs[self.read].borrow();
                 for (key, val) in rlocs.iter(){
                     closure(key, val);
                 }
@@ -187,7 +193,7 @@ cfg_if! {
                     &T, //value
                 )
             {
-                let locs = self.locs.borrow();
+                let locs = self.locs[self.write].borrow();
                 for (key, val) in locs.iter(){
                     closure(key, val);
                 }
@@ -200,7 +206,7 @@ cfg_if! {
                 for i in 0 ..  self.width{
                     for j in 0 .. self.height{
                         let loc = Int2D{x: i, y: j};
-                        match self.rlocs.borrow().get(&loc){
+                        match self.locs[self.read].borrow().get(&loc){
                             Some(_bag) =>{},
                             None => {
                                 empty_bags.push(Int2D{x: i, y: j});
@@ -216,7 +222,7 @@ cfg_if! {
                 let mut rng = rand::thread_rng();
                 loop {
                     let loc = Int2D{x: rng.gen_range(0..self.width), y: rng.gen_range(0..self.height)};
-                    match self.rlocs.borrow().get(&loc){
+                    match self.locs[self.read].borrow().get(&loc){
                         Some(_bag) =>{},
                         None => {
                             return Some(loc)
@@ -231,7 +237,7 @@ cfg_if! {
             /// # Arguments
             /// * `value` - value to search for
             pub fn get_location(&self, value: T) -> Option<Int2D> {
-                let rlocs = self.rlocs.borrow();
+                let rlocs = self.locs[self.read].borrow();
                 for (key, val) in rlocs.iter() {
                     if *val == value {
                         return Some(*key);
@@ -247,7 +253,7 @@ cfg_if! {
             /// # Arguments
             /// * `value` - value to search for
             pub fn get_location_unbuffered(&self, value: T) -> Option<Int2D> {
-                let locs = self.locs.borrow();
+                let locs = self.locs[self.write].borrow();
                 for (key, val) in locs.iter() {
                     if *val == value {
                         return Some(*key);
@@ -262,7 +268,7 @@ cfg_if! {
             /// # Arguments
             /// * `loc` - location to get the value from
             pub fn get_value(&self, loc: &Int2D) -> Option<T> {
-                let rlocs = self.rlocs.borrow();
+                let rlocs = self.locs[self.read].borrow();
                 rlocs.get(loc).copied()
             }
 
@@ -274,7 +280,7 @@ cfg_if! {
             /// # Arguments
             /// * `loc` - location to get the value from
             pub fn get_value_unbuffered(&self, loc: &Int2D) -> Option<T> {
-                let locs = self.locs.borrow();
+                let locs = self.locs[self.write].borrow();
                 locs.get(loc).copied()
             }
 
@@ -288,7 +294,7 @@ cfg_if! {
             /// * `value` - value to set at the location
             /// * `loc` - location to set the value at
             pub fn set_value_location(&self, value: T, loc: &Int2D) {
-                let mut locs = self.locs.borrow_mut();
+                let mut locs = self.locs[self.write].borrow_mut();
                 locs.insert(*loc, value);
             }
 
@@ -300,7 +306,7 @@ cfg_if! {
             /// # Arguments
             /// * `loc` - location to remove the value
             pub fn remove_value_location(&self, loc: &Int2D) {
-                let mut locs = self.locs.borrow_mut();
+                let mut locs = self.locs[self.write].borrow_mut();
                 locs.remove(loc);
             }
 
@@ -309,21 +315,18 @@ cfg_if! {
         impl<T: Copy + Clone + PartialEq> Field for SparseNumberGrid2D<T> {
             /// Swap the state of the field and clear locs
             fn lazy_update(&mut self) {
-                unsafe {
-                    std::ptr::swap(
-                        self.rlocs.as_ptr(),
-                        self.locs.as_ptr(),
-                    )
-                }
-                self.locs.borrow_mut().clear();
+                std::mem::swap(&mut self.read, &mut self.write);
+                self.locs[self.write].borrow_mut().clear();
             }
 
             /// Swap the state of the field and updates the rlocs matrix
             fn update(&mut self) {
-                let mut rlocs = self.rlocs.borrow_mut();
-                for (key, value) in self.locs.borrow().iter() {
+                let mut rlocs = self.locs[self.read].borrow_mut();
+                rlocs.clear();
+                for (key, value) in self.locs[self.write].borrow().iter() {
                     rlocs.insert(*key, *value);
                 }
+                self.locs[self.write].borrow_mut().clear();
             }
         }
     }

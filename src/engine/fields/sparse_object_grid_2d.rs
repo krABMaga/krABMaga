@@ -204,9 +204,12 @@ cfg_if! {
         /// Field with double buffering for sparse matrix
         pub struct SparseGrid2D<O: Eq + Hash + Clone + Copy> {
             /// Hashmap to write data. Key is location, value is the number.
-            pub locs: RefCell<HashMap<Int2D, Vec<O>>>,
+            // pub locs: RefCell<HashMap<Int2D, Vec<O>>>,
             /// Hashmap to read data. Key is the value, value is the location.
-            pub rlocs: RefCell<HashMap<Int2D, Vec<O>>>,
+            // pub rlocs: RefCell<HashMap<Int2D, Vec<O>>>,
+            pub locs: Vec<RefCell<HashMap<Int2D, Vec<O>>>>,
+            read: usize,
+            write: usize,
             /// First dimension of the field
             pub width: i32,
             /// Second dimension of the field
@@ -220,8 +223,11 @@ cfg_if! {
             /// * `height` - second dimension of the field
             pub fn new(width: i32, height: i32) -> SparseGrid2D<O> {
                 SparseGrid2D {
-                    locs: RefCell::new(HashMap::new()),
-                    rlocs: RefCell::new(HashMap::new()),
+                    // locs: RefCell::new(HashMap::new()),
+                    // rlocs: RefCell::new(HashMap::new()),
+                    locs: vec![RefCell::new(HashMap::new()), RefCell::new(HashMap::new())],
+                    read: 0,
+                    write: 1,
                     width,
                     height,
                 }
@@ -242,7 +248,7 @@ cfg_if! {
             {
                 match option {
                     GridOption::READ => {
-                        let mut rlocs = self.rlocs.borrow_mut();
+                        let mut rlocs = self.locs[self.read].borrow_mut();
                         for (key,value) in rlocs.iter_mut() {
                             for obj in value{
                                 *obj = closure(key, obj).expect("error on closure");
@@ -250,7 +256,7 @@ cfg_if! {
                         }
                     },
                     GridOption::WRITE => {
-                        let mut locs = self.locs.borrow_mut();
+                        let mut locs = self.locs[self.write].borrow_mut();
                         for (key,value) in locs.iter_mut() {
                             for obj in value{
                                 *obj = closure(key, obj).expect("error on closure");
@@ -260,8 +266,8 @@ cfg_if! {
                     // TO CHECK
                     // works only with 1 element for bag
                     GridOption::READWRITE =>{
-                        let rlocs = self.rlocs.borrow();
-                        let mut locs = self.locs.borrow_mut();
+                        let rlocs = self.locs[self.read].borrow();
+                        let mut locs = self.locs[self.write].borrow_mut();
 
                         // for each bag in read
                         for (key, value) in rlocs.iter() {
@@ -286,7 +292,7 @@ cfg_if! {
             /// # Arguments
             /// * `value` - value to search for
             pub fn get_location(&self, object: &O) -> Option<Int2D> {
-                let rlocs = self.rlocs.borrow();
+                let rlocs = self.locs[self.read].borrow();
                 for (key, objs) in rlocs.iter() {
                     for obj in objs {
                         if *obj == *object {
@@ -304,7 +310,7 @@ cfg_if! {
             /// # Arguments
             /// * `value` - value to search for
             pub fn get_location_unbuffered(&self, object: &O) -> Option<Int2D> {
-                let locs = self.locs.borrow();
+                let locs = self.locs[self.write].borrow();
                 for (key, objs) in locs.iter() {
                     for obj in objs {
                         if *obj == *object {
@@ -320,7 +326,7 @@ cfg_if! {
             /// # Arguments
             /// * `loc` - location to get the ogject from
             pub fn get_objects(&self, loc: &Int2D) -> Option<Vec<O>> {
-                self.rlocs.borrow().get(loc).cloned()
+                self.locs[self.read].borrow().get(loc).cloned()
             }
 
             /// Get the object at a specific location from the write state.
@@ -328,7 +334,7 @@ cfg_if! {
             /// # Arguments
             /// * `loc` - location to get the object from
             pub fn get_objects_unbuffered(&self, loc: &Int2D) -> Option<Vec<O>> {
-                self.locs.borrow().get(loc).cloned()
+                self.locs[self.write].borrow().get(loc).cloned()
             }
 
 
@@ -338,7 +344,7 @@ cfg_if! {
                 for i in 0 ..  self.width{
                     for j in 0 .. self.height{
                         let loc = Int2D{x: i, y: j};
-                        match self.rlocs.borrow().get(&loc){
+                        match self.locs[self.read].borrow().get(&loc){
                             Some(_bag) =>{
                                 if _bag.is_empty(){
                                     empty_bags.push(loc);
@@ -358,7 +364,7 @@ cfg_if! {
                 let mut rng = rand::thread_rng();
                 loop {
                     let loc = Int2D{x: rng.gen_range(0..self.width), y: rng.gen_range(0..self.height)};
-                    match self.rlocs.borrow().get(&loc){
+                    match self.locs[self.read].borrow().get(&loc){
                         Some(_bag) =>{},
                         None => {
                             return Some(loc)
@@ -378,7 +384,7 @@ cfg_if! {
                     &O//value
                 )
             {
-                let rlocs = self.rlocs.borrow();
+                let rlocs = self.locs[self.read].borrow();
                 for (key, bag) in rlocs.iter(){
                     for obj in bag{
                         closure(key, obj);
@@ -398,7 +404,7 @@ cfg_if! {
                     &O, //value
                 )
             {
-                let locs = self.locs.borrow();
+                let locs = self.locs[self.write].borrow();
                 for (key, bag) in locs.iter(){
                     for obj in bag{
                         closure(key, obj);
@@ -416,7 +422,7 @@ cfg_if! {
             /// * `loc` - location to set the object at
             /// * `object` - object to insert
             pub fn set_object_location(&self, object: O, loc: &Int2D) {
-                let mut locs = self.locs.borrow_mut();
+                let mut locs = self.locs[self.write].borrow_mut();
                 match locs.get_mut(loc){
                     Some(bag) =>{
                         bag.push(object);
@@ -436,7 +442,7 @@ cfg_if! {
             /// * `obj` - object to remove
             /// * `loc` - location to remove the object
             pub fn remove_object_location(&self, object: O, loc: &Int2D) {
-                let mut locs = self.locs.borrow_mut();
+                let mut locs = self.locs[self.write].borrow_mut();
                 let bag = locs.get_mut(loc);
                 if let Some(bag) = bag {
                     bag.retain(|&obj| obj != object);
@@ -448,21 +454,18 @@ cfg_if! {
         impl<O: Eq + Hash + Clone + Copy> Field for SparseGrid2D<O> {
             /// Swap the state of the field and clear locs
             fn lazy_update(&mut self){
-                unsafe {
-                    std::ptr::swap(
-                        self.rlocs.as_ptr(),
-                        self.locs.as_ptr(),
-                    )
-                }
-                self.locs.borrow_mut().clear();
+                std::mem::swap(&mut self.read, &mut self.write);
+                self.locs[self.write].borrow_mut().clear();
             }
 
             /// Swap the state of the field and updates the rlocs matrix
             fn update(&mut self) {
-                let mut rlocs = self.rlocs.borrow_mut();
-                for (key, value) in self.locs.borrow().iter() {
+                let mut rlocs = self.locs[self.read].borrow_mut();
+                rlocs.clear();
+                for (key, value) in self.locs[self.write].borrow().iter() {
                     rlocs.insert(*key, value.clone());
                 }
+                self.locs[self.write].borrow_mut().clear();
             }
         }
     }

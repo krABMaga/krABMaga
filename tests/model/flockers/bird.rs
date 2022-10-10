@@ -81,7 +81,7 @@ impl Agent for Bird {
             }
 
             if count > 0 {
-                x_avoid /= cpount as f32;
+                x_avoid /= count as f32;
                 y_avoid /= count as f32;
                 x_cohe /= count as f32;
                 y_cohe /= count as f32;
@@ -159,8 +159,7 @@ impl Hash for Bird {
     where
         H: Hasher,
     {
-        self.i
-        // let state = Flocker::new(dim, num_agd.hash(state);
+        self.id.hash(state);
     }
 }
 

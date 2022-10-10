@@ -89,10 +89,14 @@ cfg_if! {
         /// This is useful to represent simulation spaces covered by a simple entity that can be represented with a non-agent structure.
         pub struct DenseNumberGrid2D<T: Copy + Clone + PartialEq> {
 
-            /// Matrix to write data. It is managed as a single Vector to improve performance.
-            pub locs: RefCell<Vec<Option<T>>>,
-            /// Matrix to read data.
-            pub rlocs: RefCell<Vec<Option<T>>>,
+            // /// Matrix to write data. It is managed as a single Vector to improve performance.
+            // pub locs: RefCell<Vec<Option<T>>>,
+            // /// Matrix to read data.
+            // pub rlocs: RefCell<Vec<Option<T>>>,
+
+            pub locs: Vec<RefCell<Vec<Option<T>>>>,
+            read: usize,
+            write: usize,
             /// First dimension of the field
             pub width: i32,
             /// Second dimension of the field
@@ -109,8 +113,13 @@ cfg_if! {
                 DenseNumberGrid2D {
                     // locs: RefCell::new(std::iter::repeat_with(Vec::new).take((width * height) as usize).collect()),
                     // rlocs: RefCell::new(std::iter::repeat_with(Vec::new).take((width * height)as usize).collect()),
-                    locs: RefCell::new(vec![None; (width * height) as usize]),
-                    rlocs: RefCell::new(vec![None; (width * height) as usize]),
+                    locs: vec![
+                        RefCell::new(vec![None; (width * height) as usize]),
+                        RefCell::new(vec![None; (width * height) as usize])
+                    ],
+                    // rlocs: RefCell::new(vec![None; (width * height) as usize]),
+                    read: 0,
+                    write: 1,
                     width: width.abs(),
                     height: height.abs(),
                 }
@@ -131,14 +140,7 @@ cfg_if! {
             {
                 match option {
                     GridOption::READ => {
-                        // let mut rlocs = self.rlocs.borrow_mut();
-                        // for i in 0 .. rlocs.len() {
-                        //     let mut vec = Vec::new();
-                        //     if rlocs[i].is_none() {continue};
-                        //     let result = closure(elem);
-                        //     rlocs[i] = vec;
-                        // }
-                        let mut rlocs = self.rlocs.borrow_mut();
+                        let mut rlocs = self.locs[self.read].borrow_mut();
                         for value in rlocs.iter_mut() {
                             if value.is_none() {continue};
                             let result = closure(&value.unwrap());
@@ -147,18 +149,8 @@ cfg_if! {
 
                     },
                     GridOption::WRITE => {
-                        // let mut locs = self.locs.borrow_mut();
-                        // let rlocs = self.rlocs.borrow();
-                        // for i in 0 .. rlocs.len() {
-                        //     if rlocs[i].is_empty() {continue};
-                        //     for elem in rlocs[i].iter() {
-                        //         let result = closure(elem);
-                        //         locs[i].push(result);
-                        //     }
-                        // }
-
-                        let mut locs = self.locs.borrow_mut();
-                        let rlocs = self.rlocs.borrow();
+                        let mut locs = self.locs[self.write].borrow_mut();
+                        let rlocs = self.locs[self.read].borrow();
                         for (i, value) in rlocs.iter().enumerate() {
                             if value.is_none() {continue};
                             let result = closure(&value.unwrap());
@@ -168,8 +160,8 @@ cfg_if! {
                     //works only with 1 element for bag
                     GridOption::READWRITE =>{
 
-                        let mut locs = self.locs.borrow_mut();
-                        let rlocs = self.rlocs.borrow_mut();
+                        let mut locs = self.locs[self.write].borrow_mut();
+                        let rlocs = self.locs[self.read].borrow_mut();
                         for (i, elem) in rlocs.iter().enumerate() {
                             if let Some(value) = locs[i] {
                                 let result = closure(&value);
@@ -190,7 +182,7 @@ cfg_if! {
             /// # Arguments
             /// * `value` - value to search for
             pub fn get_location(&self, value: T) -> Option<Int2D> {
-                let locs = self.rlocs.borrow();
+                let locs = self.locs[self.read].borrow();
                 for i in  0..self.width{
                     for j in 0..self.height{
                         let elem = locs[(i *  self.height + j) as usize];
@@ -209,7 +201,7 @@ cfg_if! {
             /// # Arguments
             /// * `value` - value to search for
             pub fn get_location_unbuffered(&self, value: T) -> Option<Int2D> {
-                let locs = self.locs.borrow();
+                let locs = self.locs[self.write].borrow();
                 for i in  0..self.width{
                     for j in 0..self.height{
                         let elem = locs[(i *  self.height + j) as usize];
@@ -227,7 +219,7 @@ cfg_if! {
                 for i in 0 ..  self.width{
                     for j in 0 .. self.height{
                         let index = ((i * self.height) +j) as usize;
-                        if self.rlocs.borrow()[index].is_none() {
+                        if self.locs[self.read].borrow()[index].is_none() {
                             empty_bags.push(Int2D{x: i, y: j});
                         }
                     }
@@ -254,7 +246,7 @@ cfg_if! {
             /// * `loc` - position to get the value
             pub fn get_value(&self, loc: &Int2D) -> Option<T> {
                 let index = ((loc.x * self.height) + loc.y) as usize;
-                let rlocs = self.rlocs.borrow();
+                let rlocs = self.locs[self.read].borrow();
                 rlocs[index]
             }
 
@@ -267,7 +259,7 @@ cfg_if! {
             /// * `loc` - position to get the values
             pub fn get_value_unbuffered(&self, loc: &Int2D) -> Option<T> {
                 let index = ((loc.x * self.height) + loc.y) as usize;
-                let locs = self.locs.borrow();
+                let locs = self.locs[self.write].borrow();
                 locs[index]
             }
 
@@ -286,7 +278,7 @@ cfg_if! {
                 for i in 0 .. self.width{
                     for j in 0 .. self.height{
                         let index = ((i * self.height) + j) as usize;
-                        let locs = self.rlocs.borrow()[index];
+                        let locs = self.locs[self.read].borrow()[index];
                         if let Some(value) = locs {
                             closure(&Int2D{x: i, y: j}, &value);
                         }
@@ -314,7 +306,7 @@ cfg_if! {
                 for i in 0 ..  self.width{
                     for j in 0 .. self.height{
                         let index = ((i * self.height) + j) as usize;
-                        let locs = self.locs.borrow()[index];
+                        let locs = self.locs[self.write].borrow()[index];
                         if let Some(value) = locs {
                             closure(&Int2D{x: i, y: j}, &value);
                         }
@@ -339,7 +331,7 @@ cfg_if! {
             /// * `loc` - position to write the value
             pub fn set_value_location(&self, value: T, loc: &Int2D) {
                 let index = ((loc.x * self.height) + loc.y) as usize;
-                let mut locs = self.locs.borrow_mut();
+                let mut locs = self.locs[self.write].borrow_mut();
                 locs[index] = Some(value);
 
                 // if !locs[index].is_empty() {
@@ -356,7 +348,7 @@ cfg_if! {
             /// # Arguments
             /// * `loc` - location to remove the object
             pub fn remove_value_location(&self, loc: &Int2D) {
-                let mut locs = self.locs.borrow_mut();
+                let mut locs = self.locs[self.write].borrow_mut();
                 let index = ((loc.x * self.height) + loc.y) as usize;
                 locs[index] = None;
             }
@@ -367,13 +359,10 @@ cfg_if! {
         impl<T: Copy + Clone + PartialEq> Field for DenseNumberGrid2D<T> {
             /// Swap read and write states of the field and clear write State
             fn lazy_update(&mut self){
-                unsafe {
-                    std::ptr::swap(
-                        self.locs.as_ptr(),
-                        self.rlocs.as_ptr(),
-                    )
-                }
-                let mut locs = self.locs.borrow_mut();
+
+                std::mem::swap(&mut self.read, &mut self.write);
+
+                let mut locs = self.locs[self.write].borrow_mut();
                 //set None all elements
                 for i in 0..locs.len(){
                     locs[i] = None;
@@ -387,8 +376,8 @@ cfg_if! {
             /// Copy values from write state into read one
             fn update(&mut self) {
                 // copy locs to rlocs
-                let mut locs = self.locs.borrow_mut();
-                let mut rlocs = self.rlocs.borrow_mut();
+                let mut locs = self.locs[self.write].borrow_mut();
+                let mut rlocs = self.locs[self.read].borrow_mut();
                 for i in 0..locs.len(){
                     rlocs[i] = locs[i];
                     locs[i] = None;
