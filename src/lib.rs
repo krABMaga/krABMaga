@@ -359,7 +359,7 @@ pub mod utils;
 #[doc(hidden)]
 pub use {
     ::lazy_static::*,
-    chrono,
+    cfg_if, chrono,
     core::fmt,
     csv::{Reader, Writer},
     hashbrown,
@@ -445,6 +445,15 @@ pub use {
     tokio,
     tokio::runtime::Runtime, // 0.3.5
 };
+
+/// Enum to represent the different types of computing backends
+/// that can be used to explore the model.
+/// By default, the model exploration is sequential.
+pub enum ComputingMode {
+    Parallel,
+    Distributed,
+    Cloud,
+}
 
 /// Options of `old_simulate!` macro
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]

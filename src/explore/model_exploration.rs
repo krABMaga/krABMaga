@@ -1,3 +1,121 @@
+#[macro_export]
+/// Macro to perform a model exploration.
+/// The macro will generate a dataframe with the results of the exploration.
+/// The dataframe can be saved in a csv file.
+///
+/// # Arguments
+/// * `step` - simulation step number,
+/// * `repconf` - number of repetitions
+/// * `state` - state of the simulation
+/// * `input` - multiple custom input, pair of a identifier and its type
+/// * `output` - multas u32iple custom input, pair of a identifier and its type
+/// * `explore_mode` - enum to choose how manage parameters combination (Supported option: Exaustive, Matched)
+///
+/// Last parameter is the computing mode to use.
+/// Without the last parameter, the macro will use the default computing mode (Sequential).
+/// The computing mode can be:
+/// * `ComputingMode::Parallel`: the exploration will be performed in parallel
+/// * `ComputingMode::Distributed`: the exploration will be performed distributing the computation
+///    on different machines
+/// * `ComputingMode::Cloud`: computation will be performed on the cloud.
+
+macro_rules! explore {
+    (
+        $nstep: expr, $rep_conf:expr, $state:ty,
+        input {$($input:ident: $input_ty: ty )*},
+        input_vec {$($input_vec:ident:  [$input_ty_vec:ty; $input_len:expr])*},
+        output [$($output:ident: $output_ty: ty )*],
+        $explore_mode: expr,
+        $computing_mode: expr,
+    ) => {{
+        use $crate::cfg_if::cfg_if;
+        use $crate::engine::schedule::Schedule;
+        use $crate::engine::state::State;
+        use $crate::ComputingMode;
+
+        let cp_mode : ComputingMode = $computing_mode;
+        match cp_mode {
+            ComputingMode::Parallel => {
+                cfg_if!{
+                    if #[cfg(not(any(feature = "distributed_mpi", feature = "cloud")))] {
+                        println!("Parallel exploration");
+                        explore_parallel!($nstep, $rep_conf, $state,
+                            input {$($input: $input_ty )*},
+                            output [$($output: $output_ty )*],
+                            $explore_mode,
+                        )
+                    } else {
+                        panic!("Parallel computing mode doesn't require distributed or cloud features");
+                    }
+                }
+            },
+            ComputingMode::Distributed => {
+                cfg_if!{
+                    if #[cfg(feature="distributed_mpi")] {
+                        explore_distributed_mpi!($nstep, $rep_conf, $state,
+                            input {$($input: $input_ty )*},
+                            input_vec {$($input_vec:  [$input_ty_vec; $input_len])*},
+                            output [$($output: $output_ty )*],
+                            $explore_mode,
+                        )
+
+                    } else {
+                        panic!("Distributed computing mode is not available. Please enable the feature 'distributed_mpi' to use this mode.");
+                    }
+                }
+
+            },
+            ComputingMode::Cloud => {
+                cfg_if!{
+                    if #[cfg(feature="aws")] {
+                        println!("Cloud exploration with AWS");
+                        println!("WARNING: this mode is not yet implemented");
+                        // explore_cloud!($nstep, $rep_conf, $state,
+                        //     input {$($input: $input_ty )*},
+                        //     output [$($output: $output_ty )*],
+                        //     $explore_mode,
+                        // );
+                    }
+                    else {
+                        panic!("Cloud computing mode is not available. Please enable the feature 'aws' to use this mode.");
+                    }
+                }
+            }
+
+            _ => { panic!("Computing mode not supported"); }
+
+        }
+    }};
+
+    (
+        $nstep: expr, $rep_conf:expr, $state:ty,
+        input {$($input:ident: $input_ty: ty )*},
+        output [$($output:ident: $output_ty: ty )*],
+        $explore_mode: expr,
+        $computing_mode: expr,
+    ) => {{
+        explore!($nstep, $rep_conf, $state,
+            input {$($input: $input_ty )*},
+            input_vec {},
+            output [$($output: $output_ty )*],
+            $explore_mode,
+            $computing_mode,
+        )
+    }};
+
+    (
+    $nstep: expr, $rep_conf:expr, $state:ty,
+    input {$($input:ident: $input_ty: ty )*},
+    output [$($output:ident: $output_ty: ty )*],
+    $mode: expr
+    ) => {{
+        use $crate::engine::schedule::Schedule;
+        use $crate::engine::state::State;
+        explore_sequential!($nstep, $rep_conf, $state, input {$($input: $input_ty )*}, output [$($output: $output_ty )*], $mode,)
+    }}
+
+}
+
 #[doc(hidden)]
 /// Internal function to run the simulation inside the explore macros
 ///
@@ -9,7 +127,7 @@ macro_rules! simulate_explore {
     ($step:expr, $state:expr) => {{
         let mut s = $state;
         let mut state = s.as_state_mut();
-        let n_step: u64 = $step;
+        let n_step: u32 = $step;
 
         let mut results: Vec<(f32, f32)> = Vec::new();
 
@@ -45,7 +163,7 @@ macro_rules! simulate_explore {
 /// * `repconf` - number of repetitions
 /// * `state` - state of the simulation
 /// * `input` - multiple custom input, pair of a identifier and its type
-/// * `output` - multiple custom input, pair of a identifier and its type
+/// * `output` - multas u32iple custom input, pair of a identifier and its type
 /// * `mode` - enum to choose which mode of execution is desired (Supported option: Exaustive, Matched)
 macro_rules! explore_sequential {
 
@@ -114,7 +232,7 @@ macro_rules! explore_sequential {
                     println!("Running simulation {}", j+1);
                     let result = simulate_explore!(nstep, state);
                     dataframe.push(
-                        FrameRow::new(i as u32, j + 1 as u32, $(state.$input.clone(),)* $(state.$output,)* result[0].0, result[0].1)
+                        FrameRow::new(i as u32, (j + 1) as u32, $(state.$input.clone(),)* $(state.$output,)* result[0].0, result[0].1)
                     );
                 }
             }

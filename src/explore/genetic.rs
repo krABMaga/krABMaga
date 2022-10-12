@@ -122,6 +122,144 @@ macro_rules! build_dataframe_explore {
 
 }
 
+#[macro_export]
+/// Macro to optimizes the simulation parameters by adopting an evolutionary
+/// searching strategy. Specifically, krABMaga provides a genetic algorithm-based approach.
+/// The macro will generate a dataframe with the results of the exploration.
+/// The dataframe can be saved in a csv file.
+///
+/// # Arguments
+///
+/// * `init_population` - function that creates the population, must return an array of individual (an individual is the state of the simulation to compute)
+/// * `fitness` - function that computes the fitness value, takes a single individual and the schedule, must return an f32
+/// * `mutation` - function that perform the mutation, takes a single individual as parameter
+/// * `crossover` - function that creates the population, takes the entire population as parameter
+/// * `state` - state of the simulation representing an individual
+/// * `desired_fitness` - desired fitness value
+/// * `generation_num` - max number of generations to compute
+/// * `step` - number of steps of the single simulation
+/// * `reps` - number of repetitions of the simulation using each individual (optional, default is 1)
+///
+/// Last parameter is the computing mode to use.
+/// Without the last parameter, the macro will use the default computing mode (Sequential).
+/// The computing mode can be:
+/// * `ComputingMode::Parallel`: the exploration will be performed in parallel
+/// * `ComputingMode::Distributed`: the exploration will be performed distributing the computation
+///    on different machines
+/// * `ComputingMode::Cloud`: computation will be performed on the cloud.
+///
+macro_rules! evolutionary_search {
+    (
+        $init_population:tt,
+        $fitness:tt,
+        $selection:tt,
+        $mutation:tt,
+        $crossover:tt,
+        $cmp:tt,
+        $state: ty,
+        $desired_fitness: expr,
+        $generation_num: expr,
+        $step: expr,
+        $($reps: expr,)?
+        ComputingMode::$computing_mode: tt
+    ) => {{
+        use $crate::cfg_if::cfg_if;
+        use $crate::engine::schedule::Schedule;
+        use $crate::engine::state::State;
+        use $crate::ComputingMode;
+
+        let cp_mode = ComputingMode::$computing_mode;
+        match cp_mode {
+            ComputingMode::Parallel => {
+                cfg_if!{
+                    if #[cfg(not(any(feature = "distributed_mpi", feature = "cloud")))] {
+                        println!("Parallel exploration");
+                        explore_ga_parallel!(
+                            $init_population,
+                            $fitness,
+                            $selection,
+                            $mutation,
+                            $crossover,
+                            $cmp,
+                            $state,
+                            $desired_fitness,
+                            $generation_num,
+                            $step,
+                            $($reps,)?
+                        )
+                    } else {
+                        panic!("Parallel computing mode doesn't require distributed or cloud features");
+                    }
+                }
+            },
+            ComputingMode::Distributed => {
+                cfg_if!{
+                    if #[cfg(feature = "distributed_mpi")] {
+                        explore_ga_distributed_mpi!(
+                            $init_population,
+                            $fitness,
+                            $selection,
+                            $mutation,
+                            $crossover,
+                            $cmp,
+                            $state,
+                            $desired_fitness,
+                            $generation_num,
+                            $step,
+                            $($reps,)?
+                        )
+                    } else {
+                        panic!("Distributed computing mode requires distributed_mpi feature");
+                    }
+                }
+            },
+            ComputingMode::Cloud => {
+                cfg_if!{
+                    if #[cfg(feature="aws")] {
+                        println!("Cloud GA exploration with AWS");
+                        println!("WARNING: this mode is not yet implemented");
+                    }
+                    else {
+                        panic!("Cloud computing mode is not available. Please enable the feature 'aws' to use this mode.");
+                    }
+                }
+            },
+        }
+    }};
+
+    (
+        $init_population:tt,
+        $fitness:tt,
+        $selection:tt,
+        $mutation:tt,
+        $crossover:tt,
+        $cmp:tt,
+        $state: ty,
+        $desired_fitness: expr,
+        $generation_num: expr,
+        $step: expr,
+        $($reps: expr,)?
+    ) => {{
+
+        use $crate::engine::schedule::Schedule;
+        use $crate::engine::state::State;
+
+        explore_ga_sequential!(
+            $init_population,
+            $fitness,
+            $selection,
+            $mutation,
+            $crossover,
+            $cmp,
+            $state,
+            $desired_fitness,
+            $generation_num,
+            $step,
+            $($reps,)?
+        )
+    }}
+}
+
 /// Macro to perform sequential model exploration using a genetic algorithm.
 ///
 /// # Arguments
