@@ -375,7 +375,6 @@ cfg_if! {
                             if priority.time > self.time {
                                 break;
                             }
-                                // events.push(agent, priority);
                             let (agent, priority) = events.pop().expect("Error on pop from queue");
                             cevents.push(Pair::new(agent, priority));
                         },

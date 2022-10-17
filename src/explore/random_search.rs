@@ -29,13 +29,11 @@
 ///         n_iter,
 ///         target,
 ///         costly_function,
-///         gen_sample,/// Macro to perform model exploration using the random search algorithm.
+///         gen_sample,
 ///         batch_size,
 ///         step,
 ///         reps
 ///     );
-///
-///     println!("Best {:?}", _best.0.density);
 /// }
 ///
 /// fn costly_function(state: &State) -> f32 { ... }

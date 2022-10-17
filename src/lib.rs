@@ -115,7 +115,7 @@
 //!cargo make run --release
 //!```
 //!
-//!In addition to the classical visualization, you can run your krABMaga simulation inside your browser using (*Web Assembly*)[https://webassembly.org].
+//!In addition to the classical visualization, you can run your krABMaga simulation inside your browser using (*Web Assembly*)<https://webassembly.org>.
 //!This is possible with the command:
 //!```sh
 //!# Requires 'cargo make' installed
@@ -129,7 +129,7 @@
 //!If you don't start from our [Template](https://github.com/krABMaga/examples/tree/main/template), add this to your `Cargo.toml`:
 //!```toml
 //![dependencies]
-//!krABMaga = { git="https://github.com/krABMaga/krABMaga.git" }
+//!krABMaga = 0.1.*
 //!
 //![features]
 //!visualization = ["krABMaga/visualization"]
@@ -144,7 +144,7 @@
 //!You can define two *main* functions using **cfg** directive, that can remove code based on which features are (not) enabled.  
 //!Without visualization, you have only to use *simulate!* to run simulation, passing a state, step number and how may time repeat your simulation.
 //!With visualization, you have to set graphical settings (like dimension or background) and call *start* method.
-//!```rs
+//!```rust
 //!// Main used when only the simulation should run, without any visualization.
 //!#[cfg(not(any(feature = "visualization", feature = "visualization_wasm")))]
 //!fn main() {
@@ -207,7 +207,7 @@
 //!
 //!`Simulation Terminal` is enabled by default using macro `simulate!`, so can be used passing a state, step number and how may time repeat your simulation..
 //!That macro has a fourth optional parameter, a boolean. When `false` is passed, `Simulation Terminal` is disabled.
-//!```rs
+//!```rust
 //!($s:expr, $step:expr, $reps:expr $(, $flag:expr)?) => {{
 //!      // Macro code
 //!}}
@@ -215,24 +215,24 @@
 //!
 //!You can create tabs and plot your data using two macro:
 //!- `addplot!` let you create a new plot that will be displayed in its own tab.
-//!```rs
+//!```rust
 //!addplot!(String::from("Chart Name"), String::from("xxxx"), String::from("yyyyy"));
 //!```
 //!- `plot!` to add a point to a plot. Points can be added during simulation execution, for example inside `after_step` method.
 //!  You have to pass plot name, series name, x value and y value. Coordinate values need to be `f64`.
-//!```rs
+//!```rust
 //!plot!(String::from("Chart name"), String::from("s1"), x, y);
 //!```
 //!
 //!On Terminal home page there is also a *log section*, you can plot log messages when some event needs to be noticed.
 //!You can navigate among all logs using ↑↓ arrows.
 //!To add a log use the macro `log!`, passing a `LogType` (an enum) and the log message.
-//!```rs
+//!```rust
 //! log!(LogType::Info, String::from("Log Message"));
 //!```
 //!
 //!Are available four type of Logs:
-//!```rs
+//!```rust
 //!pub enum LogType {
 //!    Info,
 //!    Warning,
@@ -329,7 +329,7 @@
 //!
 //!If you find this code useful in your research, please consider citing:
 //!
-//!```
+//!```bibtex
 //!@ARTICLE{AntelmiASIASIM2019,
 //!  author={Antelmi, A. and Cordasco, G. and D’Auria, M. and De Vinco, D. and Negro, A. and Spagnuolo, C.},
 //!  title={On Evaluating Rust as a Programming Language for the Future of Massive Agent-Based Simulations},
@@ -730,14 +730,22 @@ pub use std::sync::mpsc::{self, RecvError, TryRecvError};
 ///
 /// # Arguments
 ///
-/// *`s` - istance of state of simulation
+/// * `s` - Istance of state of simulation
 ///
-/// *`step`- number of steps to run
+/// * `step`- Number of steps to run
 ///
-/// *`reps`- number of repetitions to run
+/// * `reps`- Number of repetitions to run
 ///
-/// *`flag` - to abilitate TUI (optional, default true)
-#[cfg(not(feature = "visualization_wasm"))]
+/// * `flag` - if true, `Simulation Terminal` is used. By default is true.
+///
+/// # Example
+/// ```
+/// # use krabmaga::*;
+/// let step = 500;
+/// let reps = 10;
+/// let state = State::new();
+/// let _ = simulate!(state, step, reps);
+///  
 #[macro_export]
 macro_rules! simulate {
     ($s:expr, $step:expr, $reps:expr $(, $flag:expr)?) => {{
@@ -1103,6 +1111,16 @@ macro_rules! simulate {
 /// # Arguments
 ///
 /// * `description` - The description to be shown.
+///
+/// # Example
+/// ```
+/// # krabmaga::*;
+/// let s = format!("Also known as Wolf Sheep predation, it is the simulation implemented
+///                  to introduce \"dynamic scheduling\" feature into the krabmaga framework,
+///                  because it was the first model with the concepts of \"death\" and \"birth\":
+///                  there is an ecosystem that involves animals into their life-cycle.");
+/// description!(s);
+///
 #[macro_export]
 macro_rules! description {
     ($description:expr) => {{
@@ -1110,7 +1128,8 @@ macro_rules! description {
     }};
 }
 
-/// Add a point to a series of an existing plot.
+/// Add a point to a series of an existing plot. Crete the series at the first call.
+/// Can't add a point to a plot that doesn't exist.
 ///
 /// # Arguments
 ///
@@ -1121,6 +1140,29 @@ macro_rules! description {
 /// * `x` - x value
 ///
 /// * `y` - y value
+///
+/// # Example
+/// ```
+/// # krabmaga::*;
+/// // Create a plot
+/// addplot!(
+///     String::from("Agents"),
+///     String::from("X axis"),
+///     String::from("Y axis"),
+/// );
+///
+/// let x = 1;
+/// let y = 2;
+///
+/// // Add a point to the series "Series" of the plot "Agents"
+/// // The series "Series" is created with this call
+/// plot!(
+///    String::from("Agents"),
+///    String::from("Series"),
+///    x, y
+/// );
+/// ```
+///  
 #[macro_export]
 macro_rules! plot {
     ($name:expr, $serie:expr, $x:expr, $y:expr) => {{
@@ -1189,6 +1231,12 @@ macro_rules! plot_csv {
 }
 
 /// Create new plot for your simulation.
+/// Call this macro one time for each plot you want to create.
+/// We suggest to call this macro in the `init` function of your simulation.
+///
+/// You can add series to the plot using the `plot!` macro.
+/// This macro must be called before any call to `plot!`
+///
 ///
 /// # Arguments
 ///
@@ -1198,7 +1246,28 @@ macro_rules! plot_csv {
 ///  
 /// * `y_label`- label for the y axis.
 ///  
-/// * `to_be_stored`- if true, the plot will be saved in the output folder.
+/// * `to_be_stored`- if true, the plot will be saved in the output folder. By default is false.
+///
+/// # Example
+/// ```
+/// # krabmaga::*;
+/// // This plot will be saved in the output folder
+/// addplot!(
+///     String::from("Agents"),
+///     String::from("Steps"),
+///     String::from("Number of agents"),
+///     true
+/// );
+///
+/// // This plot won't be saved in the output folder
+/// addplot!(
+///     String::from("Dead/Born"),
+///     String::from("Steps"),
+///     String::from("Number of agents"),
+/// );
+///
+/// ```
+
 #[macro_export]
 macro_rules! addplot {
     ($name:expr, $xlabel:expr, $ylabel:expr $(, $to_be_stored: expr)? ) => {{
@@ -1230,6 +1299,22 @@ macro_rules! setup_csv {
 /// * `ltype` - LogType paramater to specify the type of log. See `LogType` enum for more information.
 ///
 /// * `message` - message to be logged.
+///
+/// * `to_be_stored`- if true, the log will be saved in the output folder. By default is false.
+///
+/// # Example
+/// ```
+/// # krabmaga::*;
+/// log!(LogType::Info, String::from("Simulation started!"));
+///
+/// let step = 10;
+/// log!(
+///     LogType::Warning,
+///     format!("Something goes wrong at step {}", step),
+///     true
+/// );
+/// ```
+///
 #[macro_export]
 macro_rules! log {
     ($ltype:expr, $message:expr $(, $to_be_stored: expr)? ) => {{
@@ -1257,6 +1342,7 @@ macro_rules! log {
 
 #[macro_export]
 /// Run simulation directly using this macro. Not based on `Simulation Terminal`.
+/// Return exectuion times of each repetition.
 ///
 /// # Arguments
 ///
@@ -1267,6 +1353,18 @@ macro_rules! log {
 /// * `reps` - number of repetitions
 ///  
 /// * `info` - type of info you want to display during and after simulation. See `Info` enum for more information.
+///
+/// # Example
+/// ```
+/// # krabmaga::*;
+/// // Create a simulation
+/// let mut state = State::new();
+/// let step = 100;
+/// let reps = 10;
+/// let info = Info::Normal;
+/// let times = simulate_old!(step, state, reps, info);
+/// ```
+///
 macro_rules! simulate_old {
     ($step:expr, $s:expr, $reps:expr, $info:expr) => {{
         let mut s = $s;
@@ -1460,12 +1558,27 @@ pub trait DataFrame {
 }
 
 ///Generate parameter values using a Uniform Distribution.
+///Use it to generate a list of values for parameter sweeping.
 ///
 /// # Arguments
 /// * `type` - The type of the values to sample.
 /// * `min` - The minimum value of the range.
 /// * `max` - The maximum value of the range.
 /// * `n` - The number of values to sample.
+///
+///
+///  # Example
+/// ```
+/// use krABMaga::*;
+///
+/// // Generate a list of 5 unsigned integers between 0 and 10
+/// let values_u32 = gen_param!(u32, 0, 10, 5);
+///
+/// // Generate a list of 5 floats between 0.0 and 10.0
+/// let values_f64 = gen_param!(f64, 0.0, 10.0, 5);
+///
+/// ```
+
 #[macro_export]
 macro_rules! gen_param {
     ( $type:ty, $min:expr, $max:expr, $n:expr) => {{
@@ -1508,6 +1621,18 @@ macro_rules! gen_param {
 /// * `input_file` - path to the csv
 ///
 /// * `x` and `x_ty`, couples of field names and their types.
+///
+/// # Example
+/// ```
+/// # use krABMaga::*;
+/// let file = "path/to/file.csv";
+///
+/// // result will be a (Vec<u32>, Vec<f64>)
+/// let result =  load_csv!(file, x:f64, y:f64);
+///
+/// // equivalent code
+/// let (all_x, all_y) = load_csv!(file, x:f64, y:f64);
+///
 #[macro_export]
 macro_rules! load_csv {
 

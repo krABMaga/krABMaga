@@ -162,9 +162,46 @@ macro_rules! simulate_explore {
 /// * `step` - simulation step number,
 /// * `repconf` - number of repetitions
 /// * `state` - state of the simulation
-/// * `input` - multiple custom input, pair of a identifier and its type
-/// * `output` - multas u32iple custom input, pair of a identifier and its type
+/// * `input {name: type}` - input paramaters of simulation
+/// * `output [name: type]` - output parameters of simulation
 /// * `mode` - enum to choose which mode of execution is desired (Supported option: Exaustive, Matched)
+///
+/// # Example
+///
+/// ```
+/// let param1 = gen_param!(u32, 0, 10, 5);
+/// let param2 = gen_param!(f64, 0, 10, 5);
+///
+/// // implement trait State
+/// struct State {  
+///   param: u32,
+///   param2: f64,
+///   result: f64,
+/// }
+///
+/// // input and input_vec are input of State constructor
+/// // outputs are fields of State to get results
+/// let result = explore_parallel!(
+///     STEP,
+///     rep_conf, // How many times run a configuration
+///     State,
+///     input {
+///        param: u32,
+///        param2: f64,
+///     },
+///     output [
+///       result: f64,
+///     ],
+///     ExploreMode::Matched,
+/// );
+///
+/// if !result.is_empty() {
+///     // I'm the master
+///     // build csv using all the results
+///     let name = "explore_result".to_string();
+///     let _res = write_csv(&name, &result);
+/// }
+/// ```
 macro_rules! explore_sequential {
 
         //exploration with explicit output parameters
@@ -254,9 +291,46 @@ macro_rules! explore_sequential {
 /// * `step` - simulation step number,
 /// * `repconf` - number of repetitions
 /// * `state` - state of the simulation
-/// * `input` - multiple custom input, pair of a identifier and its type
-/// * `output` - multiple custom input, pair of a identifier and its type
+/// * `input {name: type}` - input paramaters of simulation
+/// * `output [name: type]` - output parameters of simulation
 /// * `mode` - enum to choose which mode of execution is desired (Supported option: Exaustive, Matched)
+///
+/// # Example
+///
+/// ```
+/// let param1 = gen_param!(u32, 0, 10, 5);
+/// let param2 = gen_param!(f64, 0, 10, 5);
+///
+/// // implement trait State
+/// struct State {  
+///   param: u32,
+///   param2: f64,
+///   result: f64,
+/// }
+///
+/// // input and input_vec are input of State constructor
+/// // outputs are fields of State to get results
+/// let result = explore_parallel!(
+///     STEP,
+///     rep_conf, // How many times run a configuration
+///     State,
+///     input {
+///        param: u32,
+///        param2: f64,
+///     },
+///     output [
+///       result: f64,
+///     ],
+///     ExploreMode::Matched,
+/// );
+///
+/// if !result.is_empty() {
+///     // I'm the master
+///     // build csv using all the results
+///     let name = "explore_result".to_string();
+///     let _res = write_csv(&name, &result);
+/// }
+/// ```
 macro_rules! explore_parallel {
         ($nstep: expr, $rep_conf:expr, $state:ty,
             input {$($input:ident: $input_ty: ty )*},

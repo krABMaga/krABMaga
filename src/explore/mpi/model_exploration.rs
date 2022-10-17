@@ -77,13 +77,52 @@ macro_rules! extend_dataframe {
 
 /// Macro to perform distribued model exploration using basic parameter sweeping based on MPI
 ///
-/// `nstep` - number of steps of the single simulation
-/// `rep_conf` - how many times run a configuration
-/// `state` - struct name implementing trait State
-/// `input {name: type}` - input paramaters of simulation
-/// `input_vec { name : [type, size] }` - array params of simulations
-/// `output [name: type]` - output parameters of simulation
-/// `mode` - enum to choose which mode of execution is desired (Supported option: Exaustive, Matched)
+/// * `nstep` - number of steps of the single simulation
+/// * `rep_conf` - how many times run a configuration
+/// * `state` - struct name implementing trait State
+/// * `input {name: type}` - input paramaters of simulation
+/// * `input_vec { name : [type, size] }` - array params of simulations
+/// * `output [name: type]` - output parameters of simulation
+/// * `mode` - enum to choose which mode of execution is desired (Supported option: Exaustive, Matched)
+///
+/// # Example
+///
+/// ```
+/// let param = vec![1,2,3];
+/// let param_array  = vec![[1,2], [3,4], [5,6]];
+///
+/// // implement trait State
+/// struct State {  
+///   param: u32,
+///   param_array: [u32; 2],
+///   result: u32,
+/// }
+///
+/// // input and input_vec are input of State constructor
+/// // outputs are fields of State to get results
+/// let result = explore_distributed_mpi!(
+///     STEP,
+///     rep_conf, // How many times run a configuration
+///     State,
+///     input {
+///        param: u32,
+///     },
+///     input_vec {
+///         param_array: [u32; 2],
+///     },
+///     output [
+///        result: u32,
+///     ],
+///     ExploreMode::Matched,
+/// );
+///
+/// if !result.is_empty() {
+///     // I'm the master
+///     // build csv using all the results
+///     let name = "explore_result".to_string();
+///     let _res = write_csv(&name, &result);
+/// }
+/// ```
 #[macro_export]
 macro_rules! explore_distributed_mpi {
         ($nstep: expr, $rep_conf:expr, $state:ty,

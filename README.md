@@ -3,10 +3,10 @@
   <h1> krABMaga </h1>
   <h4> <i>A modern developing art for reliable and efficient ABM simulation with the Rust language</i></h4>
   <img alt="Crates.io" src="https://img.shields.io/crates/l/krabmaga">
-  <img alt="Crates.io" src="https://img.shields.io/crates/v/krabmaga">
-  <img alt="docs.rs" src="https://img.shields.io/docsrs/krabmaga">
+  <a href="https://crates.io/crates/krabmaga"><img alt="Crates.io" src="https://img.shields.io/crates/v/krabmaga"> </a>
+  <a href="https://docs.rs/krabmaga/latest/krabmaga"><img alt="docs.rs" src="https://img.shields.io/docsrs/krabmaga"> </a>
   <img alt="Rust CI" src="https://github.com/krABMaga/krABMaga/workflows/Rust%20CI/badge.svg">
-  <img alt="codecov" src="https://codecov.io/gh/krABMaga/krABMaga/branch/main/graph/badge.svg?token=GWYP2UBPIZ)](https://codecov.io/gh/krABMaga/krABMaga">
+  <a href="https://codecov.io/gh/krABMaga/krABMaga"><img alt="codecov" src="https://codecov.io/gh/krABMaga/krABMaga/branch/main/graph/badge.svg?token=GWYP2UBPIZ"> </a>
 </div>
 
 (Notice that the *parallel* and *visualization* components are excluded from _codecov_ as are experimental ore release candidate)
@@ -33,7 +33,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-krabmaga = { git="https://github.com/krABMaga/krABMaga.git" }
+krabmaga = 0.1.*
 ```
 
 To get started using krABMaga, see [the examples](https://github.com/krABMaga/examples).
@@ -81,7 +81,7 @@ The visualization framework requires certain dependencies to run the simulation 
 If you don't start from our [Template](https://github.com/krABMaga/examples/tree/main/template), add this to your `Cargo.toml`:
 ```toml
 [dependencies]
-krabmaga = { git="https://github.com/krABMaga/krABMaga.git" }
+krabmaga = 0.1.*
 
 [features]
 visualization = ["krabmaga/visualization"]
@@ -101,10 +101,10 @@ With visualization, you have to set graphical settings (like dimension or backgr
 #[cfg(not(any(feature = "visualization", feature = "visualization_wasm")))]
 fn main() {
   let dim = (200., 200.);
+  let num_agents = 100;  
   let state = Flocker::new(dim, num_agents);
   let step = 10;
   let reps = 1;
-  let num_agents = 100;  
   let _ = simulate!(state, step, reps);
 }
 
