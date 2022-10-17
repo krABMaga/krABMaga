@@ -257,7 +257,7 @@ macro_rules! explore_distributed_mpi {
 
 
                 for i in 0..num_procs {
-                    if i < n_conf%num_procs {
+                    if i < n_conf%num_procs || n_conf%num_procs == 0 {
                         let temp:usize = local_conf_size*(rep_conf as usize);
                         samples_count.push(temp as Count);
                     }

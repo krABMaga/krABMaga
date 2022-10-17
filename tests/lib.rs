@@ -66,7 +66,7 @@ fn simulate_ui_structs() {
     }
     {
         let logs = LOGS.lock().unwrap();
-        for log in logs.iter() {
+        for log in logs.iter().flatten() {
             match log.ltype {
                 LogType::Info => assert_eq!(log.body, "Info Log"),
                 LogType::Warning => assert_eq!(log.body, "Warning Log"),

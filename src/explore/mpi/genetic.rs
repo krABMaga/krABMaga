@@ -574,6 +574,9 @@ macro_rules! explore_ga_distributed_mpi {
                 // crossover the new population
                 $crossover(&mut population);
 
+                // Update population size, it can change after selection and crossover
+                population_size = population.len();
+
                 for i in 0..population.len() {
                     $mutation(&mut population[i]);
                 }

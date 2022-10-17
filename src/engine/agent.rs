@@ -39,5 +39,9 @@ pub trait Agent: Downcast + DynClone + Send + Sync {
     }
 }
 
+pub trait ReproducibilityEq {
+    fn equals(&self, other: &Self) -> bool;
+}
+
 dyn_clone::clone_trait_object!(Agent);
 impl_downcast!(Agent);

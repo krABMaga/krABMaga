@@ -48,8 +48,7 @@ pub fn renderer_system<I: VisualizationState<S> + Clone + 'static, S: State>(
                     &Box::new(state.as_state()),
                     &mut *visible,
                 );
-                visible.is_visible = false;
-
+                visible.is_visible = true;
                 // transform.translation.x = 0.5;
                 transform.translation.y += 0.5;
                 let SpriteType::Emoji(emoji_code) =

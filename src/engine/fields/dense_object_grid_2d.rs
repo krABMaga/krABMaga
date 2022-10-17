@@ -179,9 +179,12 @@ cfg_if! {
             pub struct DenseGrid2D<O: Eq + Hash + Clone + Copy> {
                 /// Matrix to write data. Vector of vectors that have a generic Object O inside
                 /// The outer vector represents the whole field, the inner vector represents the objects inside a cell
-                pub locs: RefCell<Vec<Vec<O>>>,
+                // pub locs: RefCell<Vec<Vec<O>>>,
                 /// Matrix to read data. Vector of vectors that have a generic Object O inside
-                pub rlocs: RefCell<Vec<Vec<O>>>,
+                // pub rlocs: RefCell<Vec<Vec<O>>>,
+                pub locs: Vec<RefCell<Vec<Vec<O>>>>,
+                read: usize,
+                write: usize,
                 /// First dimension of the field
                 pub width: i32,
                 /// Second dimension of the field
@@ -197,8 +200,14 @@ cfg_if! {
                 /// * `height` - second dimension of the field
                 pub fn new(width: i32, height: i32) -> DenseGrid2D<O> {
                     DenseGrid2D {
-                        locs: RefCell::new(std::iter::repeat_with(Vec::new).take((width * height) as usize).collect()),
-                        rlocs: RefCell::new(std::iter::repeat_with(Vec::new).take((width * height)as usize).collect()),
+                        // locs: RefCell::new(std::iter::repeat_with(Vec::new).take((width * height) as usize).collect()),
+                        // rlocs: RefCell::new(std::iter::repeat_with(Vec::new).take((width * height)as usize).collect()),
+                        locs: vec![
+                            RefCell::new(std::iter::repeat_with(Vec::new).take((width * height) as usize).collect()),
+                            RefCell::new(std::iter::repeat_with(Vec::new).take((width * height) as usize).collect()),
+                        ],
+                        read: 0,
+                        write: 1,
                         width: width.abs(),
                         height: height.abs(),
                     }
@@ -219,7 +228,7 @@ cfg_if! {
                 {
                     match option {
                         GridOption::READ => {
-                            let mut rlocs = self.rlocs.borrow_mut();
+                            let mut rlocs = self.locs[self.read].borrow_mut();
                             for i in 0 .. rlocs.len() {
                                 let bag_id = calculate_indexes_bag(i as i32, self.width, self.height).expect("error in calculate_indexes_bag");
                                 let mut vec = Vec::new();
@@ -234,8 +243,8 @@ cfg_if! {
                             }
                         },
                         GridOption::WRITE => {
-                            let mut locs = self.locs.borrow_mut();
-                            let rlocs = self.rlocs.borrow();
+                            let mut locs = self.locs[self.write].borrow_mut();
+                            let rlocs = self.locs[self.read].borrow();
                             for i in 0 .. rlocs.len() {
                                 let bag_id = calculate_indexes_bag(i as i32, self.width, self.height).expect("error in calculate_indexes_bag");
                                 if rlocs[i].is_empty() {continue};
@@ -249,8 +258,8 @@ cfg_if! {
                         },
                         //works only with 1 element for bag
                         GridOption::READWRITE =>{
-                            let mut locs = self.locs.borrow_mut();
-                            let rlocs = self.rlocs.borrow();
+                            let mut locs = self.locs[self.write].borrow_mut();
+                            let rlocs = self.locs[self.read].borrow();
                             // for each bag in read
                             for i in 0..rlocs.len() {
                                 // calculate the bag_id
@@ -292,7 +301,7 @@ cfg_if! {
                     for i in 0 ..  self.width{
                         for j in 0 .. self.height{
                             let index = ((i * self.height) +j) as usize;
-                            if self.rlocs.borrow()[index].is_empty() {
+                            if self.locs[self.read].borrow()[index].is_empty() {
                                 empty_bags.push(Int2D{x: i, y: j});
                             }
                         }
@@ -321,7 +330,7 @@ cfg_if! {
             /// # Arguments
             /// * `value` - value to search for
             pub fn get_location(&self, object: &O) -> Option<Int2D> {
-                let locs = self.rlocs.borrow();
+                let locs = self.locs[self.read].borrow();
                 for i in  0..self.width{
                     for j in 0..self.height{
                         let index = (i *  self.height + j) as usize;
@@ -340,7 +349,7 @@ cfg_if! {
             /// # Arguments
             /// * `value` - value to search for
             pub fn get_location_unbuffered(&self, object: &O) -> Option<Int2D> {
-                let locs = self.locs.borrow();
+                let locs = self.locs[self.write].borrow();
                 for i in  0..self.width{
                     for j in 0..self.height{
                         let index = (i *  self.height + j) as usize;
@@ -359,7 +368,7 @@ cfg_if! {
                 pub fn get_objects(&self, loc: &Int2D) -> Option<Vec<O>> {
                     let mut obj = Vec::new();
                     let index = ((loc.x * self.height) + loc.y) as usize;
-                    let rlocs = self.rlocs.borrow();
+                    let rlocs = self.locs[self.read].borrow();
                     if rlocs[index].is_empty() {
                         None
                     } else {
@@ -380,7 +389,7 @@ cfg_if! {
 
                     let mut obj = Vec::new();
                     let index = ((loc.x * self.height) + loc.y) as usize;
-                    let locs = self.locs.borrow();
+                    let locs = self.locs[self.write].borrow();
 
                     if locs[index].is_empty() {
                         None
@@ -407,7 +416,7 @@ cfg_if! {
                     for i in 0 .. self.width{
                         for j in 0 .. self.height{
                             let index = ((i * self.height) + j) as usize;
-                            let locs = &self.rlocs.borrow()[index];
+                            let locs = &self.locs[self.read].borrow()[index];
                             if !locs.is_empty() {
                                 for obj in locs{
                                     closure(&Int2D{x: i, y: j}, obj);
@@ -432,7 +441,7 @@ cfg_if! {
                     for i in 0 ..  self.width{
                         for j in 0 .. self.height{
                             let index = ((i * self.height) + j) as usize;
-                            let locs = &self.locs.borrow()[index];
+                            let locs = &self.locs[self.write].borrow()[index];
                             let loc = Int2D{x: i, y: j};
                             if !locs.is_empty() {
                                 for obj in locs{
@@ -455,7 +464,7 @@ cfg_if! {
                 /// * `loc` - location to insert the object
                 pub fn set_object_location(&self, object: O, loc: &Int2D) {
                     let index = ((loc.x * self.height) + loc.y) as usize;
-                    let mut locs = self.locs.borrow_mut();
+                    let mut locs = self.locs[self.write].borrow_mut();
 
                     if !locs[index].is_empty() {
                         locs[index].retain(|&obj| obj != object);
@@ -474,7 +483,7 @@ cfg_if! {
                 /// * `loc` - location to remove the object
                 pub fn remove_object_location(&self, object: O, loc: &Int2D) {
                     let index = ((loc.x * self.height) + loc.y) as usize;
-                    let mut locs = self.locs.borrow_mut();
+                    let mut locs = self.locs[self.write].borrow_mut();
 
                     if !locs[index].is_empty() {
                         locs[index].retain(|&obj| obj != object);
@@ -487,13 +496,9 @@ cfg_if! {
             impl<O: Eq + Hash + Clone + Copy> Field for DenseGrid2D<O> {
                 /// Swap the state of the field and clear locs
                 fn lazy_update(&mut self){
-                    unsafe {
-                        std::ptr::swap(
-                            self.locs.as_ptr(),
-                            self.rlocs.as_ptr(),
-                        )
-                    }
-                    let mut locs = self.locs.borrow_mut();
+                    std::mem::swap(&mut self.read, &mut self.write);
+
+                    let mut locs = self.locs[self.write].borrow_mut();
                     for i in 0..locs.len(){
                         locs[i].clear();
                     }
@@ -504,8 +509,8 @@ cfg_if! {
                     for i in 0 ..  self.width{
                         for j in 0 .. self.height{
                             let index = ((i * self.height) +j) as usize;
-                            let value = self.locs.borrow_mut();
-                            let mut r_value = self.rlocs.borrow_mut();
+                            let value = self.locs[self.write].borrow_mut();
+                            let mut r_value = self.locs[self.read].borrow_mut();
                             r_value.insert(index, value[index].clone());
                         }
                     }

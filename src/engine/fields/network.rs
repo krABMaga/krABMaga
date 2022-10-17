@@ -404,7 +404,7 @@ cfg_if! {
             //     for i in 0..n_nodes {
             //         let node = node_set[i] as O;
 
-            //         let mut choices_list = node_set
+            //         let mut choices_listget_ed = node_set
             //             .choose_multiple(&mut rng, init_edges)
             //             .collect::<Vec<_>>();
 
@@ -565,15 +565,20 @@ cfg_if! {
         /// A network is a collection of nodes and edges.
         pub struct Network<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> {
             /// Write state of edges
-            pub edges: RefCell<HashMap<u32, Vec<Edge<L>>>>,
+            // pub edges: RefCell<HashMap<u32, Vec<Edge<L>>>>,
             /// Read state of edges
-            pub redges: RefCell<HashMap<u32, Vec<Edge<L>>>>,
+            // pub redges: RefCell<HashMap<u32, Vec<Edge<L>>>>,
+            pub edges: Vec<RefCell<HashMap<u32, Vec<Edge<L>>>>>,
+            pub read: usize,
+            pub write: usize,
             /// Map from nodes to their id
-            pub nodes2id: RefCell<HashMap<O, u32>>,
+            // pub nodes2id: RefCell<HashMap<O, u32>>,
+            pub nodes2id: Vec<RefCell<HashMap<O, u32>>>,
             /// Map from id to nodes
-            pub id2nodes: RefCell<HashMap<u32, O>>,
+            // pub id2nodes: RefCell<HashMap<u32, O>>,
             /// Map from id to nodes. Used as a read state
-            pub rid2nodes: RefCell<HashMap<u32, O>>,
+            // pub rid2nodes: RefCell<HashMap<u32, O>>,
+            pub id2nodes: Vec<RefCell<HashMap<u32, O>>>,
             /// directed graph or not
             pub direct: bool,
         }
@@ -581,7 +586,7 @@ cfg_if! {
         impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display + Debug> Display for Network<O, L> {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error>
         {
-            let id2nodes = self.id2nodes.borrow();
+            let id2nodes = self.id2nodes[self.read].borrow();
             let nodes = id2nodes.keys();
             let mut formatter = String::new();
 
@@ -616,11 +621,16 @@ cfg_if! {
             /// * `d` - true if the network is directed
             pub fn new(d: bool) -> Network<O, L> {
                 Network {
-                    edges: RefCell::new(HashMap::new()),
-                    redges: RefCell::new(HashMap::new()),
-                    nodes2id: RefCell::new(HashMap::new()),
-                    id2nodes: RefCell::new(HashMap::new()),
-                    rid2nodes: RefCell::new(HashMap::new()),
+                    // edges: RefCell::new(HashMap::new()),
+                    // redges: RefCell::new(HashMap::new()),
+                    edges: vec![RefCell::new(HashMap::new()), RefCell::new(HashMap::new())],
+                    read: 0,
+                    write: 1,
+                    // nodes2id: RefCell::new(HashMap::new()),
+                    nodes2id: vec![RefCell::new(HashMap::new()), RefCell::new(HashMap::new())],
+                    // id2nodes: RefCell::new(HashMap::new()),
+                    // rid2nodes: RefCell::new(HashMap::new()),
+                    id2nodes: vec![RefCell::new(HashMap::new()), RefCell::new(HashMap::new())],
                     direct: d,
                 }
             }
@@ -632,7 +642,7 @@ cfg_if! {
             /// * `v` - target node
             /// * `edge_options` - edge options enum (label and/or weight)
             pub fn add_edge(&self, u: O, v: O, edge_options: EdgeOptions<L>) -> (bool, bool) {
-                let nodes2id = self.nodes2id.borrow_mut();
+                let nodes2id = self.nodes2id[self.write].borrow_mut();
                 let mut vbool = false;
 
                 let uid = match nodes2id.get(&u) {
@@ -645,7 +655,7 @@ cfg_if! {
                     None => return (false, false),
                 };
 
-                let mut edges = self.edges.borrow_mut();
+                let mut edges = self.edges[self.write].borrow_mut();
 
                 match edges.get_mut(uid) {
                     Some(uedges) => {
@@ -678,13 +688,13 @@ cfg_if! {
             /// # Arguments
             /// * `u` - node to add
             pub fn add_node(&self, u: O) {
-                let mut nodes2id = self.nodes2id.borrow_mut();
-                let mut id2nodes = self.id2nodes.borrow_mut();
+                let mut nodes2id = self.nodes2id[self.write].borrow_mut();
+                let mut id2nodes = self.id2nodes[self.write].borrow_mut();
                 let uid = nodes2id.len() as u32;
                 nodes2id.insert(u.clone(), uid);
                 id2nodes.insert(uid, u);
 
-                let mut edges = self.edges.borrow_mut();
+                let mut edges = self.edges[self.write].borrow_mut();
                 match edges.get(&uid) {
                     Some(_edges) => {}
                     None => {
@@ -703,9 +713,9 @@ cfg_if! {
             /// * `n_sample` - number of nodes to connect to
             /// * `my_seed` - seed for random number generator
             pub fn add_prob_edge(&self, u: O, n_sample: &usize, my_seed: u64) {
-                let id2nodes = self.id2nodes.borrow();
+                let id2nodes = self.id2nodes[self.write].borrow();
                 let mut dist: Vec<(&O, i32)> = Vec::new();
-                let edges = self.edges.borrow();
+                let edges = self.edges[self.write].borrow();
 
                 for k in edges.keys() {
                     if let Some(es) = self.get_edges(id2nodes.get(k).expect("error on get").clone()) {
@@ -733,7 +743,7 @@ cfg_if! {
 
             // pub fn update_edge(&self, u: &O, v: &O, edge_options: EdgeOptions<L>) -> Option<Edge<O, L>> {
             //     let e = Edge::new(u.clone(), v.clone(), edge_options);
-            //     let mut edges = self.edges.borrow_mut();
+            //     let mut edges = self.edges[self.write].borrow_mut();
             //     let ris = match edges.get_mut(u) {
             //         Some(uedges) => {
             //             uedges.retain(|entry| {
@@ -760,7 +770,7 @@ cfg_if! {
             // }
 
             // pub fn get_nodes(&self) -> Vec<&O> {
-            //     self.redges.borrow().keys().collect()
+            //     self.edges[self.read].borrow().keys().collect()
             // }
 
             /// Get an `Edge` from the network
@@ -769,15 +779,16 @@ cfg_if! {
             /// * `u` - source node
             /// * `v` - target node
             pub fn get_edge(&self, u: O, v: O) -> Option<Edge<L>> {
-                let nodes2id = self.nodes2id.borrow();
-                let id2nodes = self.id2nodes.borrow();
+                let nodes2id = self.nodes2id[self.read].borrow();
+                //CHECK
+                let id2nodes = self.id2nodes[self.read].borrow();
 
                 let uid = match nodes2id.get(&u) {
                     Some(u) => u,
                     None => return None,
                 };
 
-                let edges = self.redges.borrow();
+                let edges = self.edges[self.read].borrow();
                 match edges.get(uid) {
                     Some(uedges) => {
                         let vid = match nodes2id.get(&v) {
@@ -802,12 +813,12 @@ cfg_if! {
             /// # Arguments
             /// * `u` - node
             pub fn get_edges(&self, u: O) -> Option<Vec<Edge<L>>> {
-                let nodes2id = self.nodes2id.borrow();
+                let nodes2id = self.nodes2id[self.read].borrow();
                 let uid = match nodes2id.get(&u) {
                     Some(u) => u,
                     None => return None,
                 };
-                let edges = self.redges.borrow();
+                let edges = self.edges[self.read].borrow();
                 edges.get(uid).map(|es| (*(es.clone())).to_vec())
             }
 
@@ -817,7 +828,8 @@ cfg_if! {
             /// # Arguments
             /// * `uid` - id of the node
             pub fn get_object(&self, uid: u32) -> Option<O> {
-                self.rid2nodes.borrow_mut().get(&uid).cloned()
+                // self.id2nodes[self.read].borrow_mut().get(&uid).cloned()
+                self.id2nodes[self.read].borrow().get(&uid).cloned()
             }
 
             ///Generate an undirected network based on
@@ -833,7 +845,7 @@ cfg_if! {
                 init_edges: usize
             ) {
                 {
-                    let id2nodes = self.id2nodes.borrow_mut();
+                    let id2nodes = self.id2nodes[self.write].borrow_mut();
                     let n_nodes = id2nodes.len();
                     // clear the existing edges
                     self.remove_all_edges();
@@ -910,7 +922,7 @@ cfg_if! {
                 my_seed: u64,
             ) {
                 {
-                    let id2nodes = self.id2nodes.borrow_mut();
+                    let id2nodes = self.id2nodes[self.write].borrow_mut();
                     let n_nodes = id2nodes.len();
                     // clear the existing edges
                     self.remove_all_edges();
@@ -970,7 +982,7 @@ cfg_if! {
 
             /// Remove all Network edges
             pub fn remove_all_edges(&self) {
-                let mut edges = self.edges.borrow_mut();
+                let mut edges = self.edges[self.write].borrow_mut();
                 edges.clear();
             }
 
@@ -980,7 +992,7 @@ cfg_if! {
             /// * `u` - instance of the first node
             /// * `v` - instance of the second node
             pub fn remove_edge(&self, u: O, v: O) -> Option<Edge<L>> {
-                let nodes2id = self.nodes2id.borrow();
+                let nodes2id = self.nodes2id[self.read].borrow();
 
                 let uid = match nodes2id.get(&u) {
                     Some(u) => u,
@@ -992,7 +1004,8 @@ cfg_if! {
                     None => return None,
                 };
 
-                let mut edges = self.edges.borrow_mut();
+                // CHECK
+                let mut edges = self.edges[self.write].borrow_mut();
                 let u_edges = edges.get_mut(uid).expect("error on get_mut");
 
                 let index = match u_edges.iter().position(|entry| {
@@ -1023,8 +1036,9 @@ cfg_if! {
                 // let edges = self.edges.borrow();
                 // let nodes = edges.keys();
                 let mut ris = vec![];
-                let id2nodes = self.id2nodes.borrow();
-                let nodes2id = self.nodes2id.borrow();
+                //CHECK
+                let id2nodes = self.id2nodes[self.write].borrow();
+                let nodes2id = self.nodes2id[self.read].borrow();
 
                 let uid = match nodes2id.get(&u) {
                     Some(u) => u,
@@ -1050,8 +1064,9 @@ cfg_if! {
             pub fn remove_outgoing_edges(&self, u: O) -> Option<Vec<Edge<L>>> {
 
                 let mut ris = vec![];
-                let id2nodes = self.id2nodes.borrow();
-                let nodes2id = self.nodes2id.borrow();
+                //CHECK
+                let id2nodes = self.id2nodes[self.write].borrow();
+                let nodes2id = self.nodes2id[self.read].borrow();
 
                 let uid = match nodes2id.get(&u) {
                     Some(u) => u,
@@ -1078,7 +1093,7 @@ cfg_if! {
             pub fn remove_node(&self, u: O) -> bool {
                 let uid: u32;
                 {
-                    let nodes2id = self.nodes2id.borrow_mut();
+                    let nodes2id = self.nodes2id[self.write].borrow_mut();
 
                     uid = match nodes2id.get(&u) {
                     Some(u) => *u,
@@ -1089,7 +1104,7 @@ cfg_if! {
 
                 match self.remove_outgoing_edges(u.clone()) {
                     Some(_) => {
-                        let mut edges = self.edges.borrow_mut();
+                        let mut edges = self.edges[self.write].borrow_mut();
                         edges.remove(&uid);
                     }
                     None => return false,
@@ -1097,14 +1112,15 @@ cfg_if! {
 
                 match self.remove_incoming_edges(u.clone()) {
                     Some(_) => {
-                        let mut edges = self.edges.borrow_mut();
+                        let mut edges = self.edges[self.write].borrow_mut();
                         edges.remove(&uid);
                     }
                     None => return false,
                 };
 
-                let mut id2nodes = self.id2nodes.borrow_mut();
-                let mut nodes2id = self.nodes2id.borrow_mut();
+                //CHECK
+                let mut id2nodes = self.id2nodes[self.write].borrow_mut();
+                let mut nodes2id = self.nodes2id[self.write].borrow_mut();
 
                 id2nodes.remove(&uid);
                 nodes2id.remove(&u);
@@ -1116,8 +1132,8 @@ cfg_if! {
             /// # Arguments
             /// * `u` - instance of the node to update
             pub fn update_node(&self, u: O) {
-                let nodes2id = self.nodes2id.borrow_mut();
-                let mut id2nodes = self.id2nodes.borrow_mut();
+                let nodes2id = self.nodes2id[self.write].borrow_mut();
+                let mut id2nodes = self.id2nodes[self.write].borrow_mut();
                 let uid = match nodes2id.get(&u) {
                     Some(u) => u,
                     None => return,
@@ -1130,25 +1146,32 @@ cfg_if! {
             for Network<O, L>
         {
             fn update(&mut self) {
-                let edges = self.edges.borrow();
-                let mut redges = self.redges.borrow_mut();
+                let edges = self.edges[self.write].borrow_mut();
+                let mut redges = self.edges[self.read].borrow_mut();
                 *redges = edges.clone();
 
-                let id2nodes = self.id2nodes.borrow();
-                let mut rid2nodes = self.rid2nodes.borrow_mut();
-
+                let id2nodes = self.id2nodes[self.write].borrow_mut();
+                let mut rid2nodes = self.id2nodes[self.read].borrow_mut();
                 *rid2nodes = id2nodes.clone();
+
+                let nodes2id = self.nodes2id[self.write].borrow_mut();
+                let mut rnodes2id = self.nodes2id[self.read].borrow_mut();
+                *rnodes2id = nodes2id.clone();
             }
 
             fn lazy_update(&mut self) {
-                let edges = self.edges.borrow();
-                let mut redges = self.redges.borrow_mut();
+
+                let edges = self.edges[self.write].borrow_mut();
+                let mut redges = self.edges[self.read].borrow_mut();
                 *redges = edges.clone();
 
-                let id2nodes = self.id2nodes.borrow_mut();
-                let mut rid2nodes = self.rid2nodes.borrow_mut();
-
+                let id2nodes = self.id2nodes[self.write].borrow_mut();
+                let mut rid2nodes = self.id2nodes[self.read].borrow_mut();
                 *rid2nodes = id2nodes.clone();
+
+                let nodes2id = self.nodes2id[self.write].borrow_mut();
+                let mut rnodes2id = self.nodes2id[self.read].borrow_mut();
+                *rnodes2id = nodes2id.clone();
             }
         }
     }
