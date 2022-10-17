@@ -440,7 +440,6 @@ pub use {
     lambda_runtime,
     serde_json,
     serde_json::{json, Value},
-    std::fs,
     std::io::BufReader,
     tokio,
     tokio::runtime::Runtime, // 0.3.5
