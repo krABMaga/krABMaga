@@ -1,9 +1,11 @@
-use crate::{log, Log, LogType, DATA, DESCR, LOGS, MONITOR};
 use cfg_if::cfg_if;
 
 cfg_if! {
     if #[cfg(not(feature = "visualization_wasm"))]
     {
+
+        use std::time::Duration;
+        use crate::{log, Log, LogType, DATA, DESCR, LOGS, MONITOR};
 
         pub const SCALE_Y: f64 = 0.2;
         pub const SCALE_X: f64 = 10.;
@@ -90,6 +92,7 @@ cfg_if! {
             pub reps: Vec<(String, u64)>,
             pub step: u64,
             pub rep: u64,
+            pub rep_elapsed_time: Duration,
             pub tot_reps: u64,
             pub tot_steps: u64,
             pub tot_logs: usize,
@@ -108,6 +111,7 @@ cfg_if! {
                     reps: Vec::new(),
                     step: 0,
                     rep: 0,
+                    rep_elapsed_time: Duration::ZERO,
                     tot_reps: treps,
                     tot_steps: tsteps,
                     tot_logs: 0,
@@ -177,10 +181,11 @@ cfg_if! {
                 }
             }
 
-            pub fn on_tick(&mut self, step: u64, progress: f64) {
+            pub fn on_tick(&mut self, step: u64, progress: f64, elapsed: Duration) {
                 // Update progress
                 self.progress = progress;
                 self.step = step;
+                self.rep_elapsed_time= elapsed;
 
                 let cpu;
                 let mem;
@@ -213,6 +218,7 @@ cfg_if! {
                 self.reps
                     .insert(0, ((rep + 1).to_string(), step_second_for_rep));
                 self.rep = rep;
+
             }
 
             pub fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
@@ -414,7 +420,7 @@ cfg_if! {
                 let chunks = Layout::default()
                     .constraints(
                         [
-                            Constraint::Length(9),
+                            Constraint::Length(11),
                             Constraint::Min(8),
                             Constraint::Length(7),
                         ]
@@ -432,11 +438,13 @@ cfg_if! {
                 B: Backend,
             {
                 let chunks = Layout::default()
-                    .constraints([Constraint::Length(3), Constraint::Length(3)].as_ref())
+                    .constraints([Constraint::Length(3),  Constraint::Length(2), Constraint::Length(3)].as_ref())
                     .margin(1)
                     .split(area);
                 let block = Block::default().borders(Borders::ALL).title("Simulation");
                 f.render_widget(block, area);
+
+
                 let title = format!("Repetitions {}/{}:", self.rep + 1, self.tot_reps);
                 let line_gauge = LineGauge::default()
                     .block(Block::default().title(title))
@@ -445,7 +453,15 @@ cfg_if! {
                     .ratio((self.rep + 1) as f64 / (self.tot_reps) as f64);
                 f.render_widget(line_gauge, chunks[0]);
 
-                let label = format!("{:.2}%", self.progress * 100.);
+
+                let text = vec![
+                    Spans::from(format!("Time elapsed: {:.5}s", self.rep_elapsed_time.as_secs_f64())),
+                ];
+                let paragraph = Paragraph::new(text);
+                f.render_widget(paragraph, chunks[1]);
+
+
+                let label = format!("{}/{} - {:.2}%", self.step + 1, self.tot_steps, self.progress * 100.);
                 let gauge = Gauge::default()
                     .block(Block::default().title("Repetition Progress:"))
                     .gauge_style(
@@ -456,7 +472,7 @@ cfg_if! {
                     )
                     .label(label)
                     .ratio(self.progress);
-                f.render_widget(gauge, chunks[1]);
+                f.render_widget(gauge, chunks[2]);
             }
 
             fn draw_charts<B>(&mut self, f: &mut Frame<B>, area: Rect)

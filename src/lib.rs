@@ -692,7 +692,7 @@ pub struct Monitoring {
 #[derive(Clone)]
 pub enum MessageType {
     AfterRep(u64, u64),
-    AfterStep(u64, f64),
+    AfterStep(u64, f64, Duration),
     Clear,
     Consumed,
     EndOfSimulation,
@@ -754,6 +754,9 @@ macro_rules! simulate {
         $(
             flag = $flag;
         )?
+        use std::time::Duration;
+        use $crate::*;
+        use $crate::engine::{schedule::*, state::*};
 
         if flag {
 
@@ -819,13 +822,13 @@ macro_rules! simulate {
                 let tick_rate = Duration::from_millis(250);
                 let _ = enable_raw_mode();
                 let mut stdout = io::stdout();
-                let _ = execute!(stdout, EnterAlternateScreen, EnableMouseCapture);
+                let _ = execute!(stdout, EnterAlternateScreen, EnableMouseCapture).expect("Unable to enter alternate screen");
                 let backend = CrosstermBackend::new(stdout);
                 let mut terminal = Terminal::new(backend).unwrap();
                 let mut last_tick = Instant::now();
                 let mut ui = UI::new($step, $reps);
                 loop {
-                    terminal.draw(|f| ui.draw(f));
+                    terminal.draw(|f| ui.draw(f)).expect("Error on drawing UI");
                     let timeout = tick_rate
                     .checked_sub(last_tick.elapsed())
                     .unwrap_or_else(|| Duration::from_secs(0));
@@ -847,13 +850,13 @@ macro_rules! simulate {
                         }
                     }
                     if ui.should_quit {
-                        disable_raw_mode();
+                        disable_raw_mode().expect("Error on disabling raw mode");
                         execute!(
                             terminal.backend_mut(),
                             LeaveAlternateScreen,
                             DisableMouseCapture
-                        );
-                        terminal.show_cursor();
+                        ).expect("Error on leaving alternate screen");
+                        terminal.show_cursor().expect("Error on enabling cursor");
                         break;
                     }
 
@@ -868,26 +871,26 @@ macro_rules! simulate {
 
                             match op {
 
-                                MessageType::AfterStep(step, progress) => {
-                                    ui.on_tick(step, progress);
+                                MessageType::AfterStep(step, progress, elapsed) => {
+                                    ui.on_tick(step, progress, elapsed);
                                     {
                                         *c_tui_operation.lock().unwrap() = MessageType::Consumed;
                                     }
                                 },
 
                                 MessageType::Clear => {
-                                    terminal.clear();
+                                    terminal.clear().expect("Error on clearing terminal");
                                 },
 
                                 MessageType::Quit => {
-                                    terminal.clear();
-                                    disable_raw_mode();
+                                    terminal.clear().expect("Error on clearing terminal");
+                                    disable_raw_mode().expect("Error on disabling raw mode");
                                     execute!(
                                         terminal.backend_mut(),
                                         LeaveAlternateScreen,
                                         DisableMouseCapture
-                                    );
-                                    terminal.show_cursor();
+                                    ).expect("Error on leaving alternate screen");
+                                    terminal.show_cursor().expect("Error on enabling cursor");
                                     break;
                                 },
                                 _ => {},
@@ -984,13 +987,20 @@ macro_rules! simulate {
                     }
                     //clean data structure for UI
                     { DATA.lock().unwrap().clear(); }
-                    // terminal.clear();
+
                     {
                         let mut tui_operation = tui_operation.lock().unwrap();
                         *tui_operation = MessageType::Clear;
                     }
 
-                    sender_ui.send(()).expect("Simulation interrupted by user. Quitting...");
+                    // sender_ui.send(()).expect("Simulation interrupted by user. Quitting...");
+                    match sender_ui.send(()){
+                        Ok(_) => {},
+                        Err(_) => {
+                            log!(LogType::Critical, format!("Simulation interrupted by user. Quitting..."), true);
+                            break;
+                        }
+                    };
 
                     let start = std::time::Instant::now();
                     let mut schedule: Schedule = Schedule::new();
@@ -998,6 +1008,8 @@ macro_rules! simulate {
 
 
                     log!(LogType::Info, format!("#{} Simulation started", r), true);
+                    //get current time
+                    let mut start = std::time::Instant::now();
                     //simulation loop
                     for i in 0..n_step {
 
@@ -1008,27 +1020,45 @@ macro_rules! simulate {
                             let mut tui_operation = tui_operation.lock().unwrap();
                             *tui_operation = MessageType::AfterStep(
                                 i,
-                                (i + 1) as f64 / n_step as f64
+                                (i + 1) as f64 / n_step as f64,
+                                start.elapsed()
                             );
                         }
 
-                        sender_ui.send(()).expect("Simulation interrupted by user. Quitting...");
+                        // sender_ui.send(()).expect("Simulation interrupted by user. Quitting...");
+                        match sender_ui.send(()){
+                            Ok(_) => {},
+                            Err(_) => {
+                                log!(LogType::Critical, format!("Simulation interrupted by user. Quitting..."), true);
+                                break;
+                            }
+                        };
+
                         if state.end_condition(&mut schedule) {
                             {
                                 let mut tui_operation = tui_operation.lock().unwrap();
                                 *tui_operation = MessageType::Quit;
                             }
-                            sender_ui.send(()).expect("Simulation interrupted by user. Quitting...");
+                            // sender_ui.send(()).expect("Simulation interrupted by user. Quitting...");
+                            match sender_ui.send(()){
+                                Ok(_) => {},
+                                Err(_) => {
+                                    log!(LogType::Critical, format!("Simulation interrupted by user. Quitting..."), true);
+                                    break;
+                                }
+                            };
                             break;
                         }
 
                     } //end simulation loop
 
+                    let duration = start.elapsed();
+                    log!(LogType::Info, format!("#{} Simulation ended in {}s", r, duration.as_secs_f64()), true);
+
                     {
-                        CSV_SENDER.lock().unwrap().as_ref().unwrap().send(MessageType::EndOfSimulation);
+                        CSV_SENDER.lock().unwrap().as_ref().unwrap().send(MessageType::EndOfSimulation).expect("Error on communication with csv thread");
                     }
 
-                    log!(LogType::Info, format!("#{} Simulation ended", r), true);
 
                     {
                         let data = DATA.lock().unwrap();
@@ -1050,17 +1080,25 @@ macro_rules! simulate {
                         );
                     }
 
-                    sender_ui.send(()).expect("Simulation interrupted by user. Quitting...");
+                    match sender_ui.send(()){
+                        Ok(_) => {},
+                        Err(_) => {
+                            log!(LogType::Critical, format!("Simulation interrupted by user. Quitting..."), true);
+                            break;
+                        }
+                    };
+
                 } //end of repetitions
+
                 {
-                    CSV_SENDER.lock().unwrap().as_ref().unwrap().send(MessageType::Quit);
+                    CSV_SENDER.lock().unwrap().as_ref().unwrap().send(MessageType::Quit).expect("Error on communication with csv thread");
                 }
 
             });
 
-            sim_thread.join();
-            csv_thread.join();
-            let _ = sender_monitoring.send(());
+            sim_thread.join().expect("Simulation thread panicked");
+            csv_thread.join().expect("CSV thread panicked");
+            let _ = sender_monitoring.send(()).expect("Monitoring thread panicked");
 
 
             {
@@ -1081,26 +1119,10 @@ macro_rules! simulate {
 
             }
 
-            terminal_thread.join();
+            terminal_thread.join().expect("Terminal thread panicked");
 
         } else {
-
-            let mut s = $s;
-            let mut state = s.as_state_mut();
-            let n_step: u64 = $step;
-            //basic simulation without UI
-            for r in 0..$reps {
-                let mut schedule: Schedule = Schedule::new();
-                state.init(&mut schedule);
-                //simulation loop
-                for i in 0..n_step {
-                    schedule.step(state);
-                    if state.end_condition(&mut schedule) {
-                        break;
-                    }
-                } //end simulation loop
-            } //end of repetitions
-            println!("Simulation finished!");
+            simulate_old!($s, $step, $reps, Info::Verbose);
         } //enf if/else flag
 
     }}; // end pattern macro
@@ -1346,9 +1368,9 @@ macro_rules! log {
 ///
 /// # Arguments
 ///
-/// * `step` - number of steps to be simulated
-///
 /// * `s` - istance of state of simulation
+///
+/// * `step` - number of steps to be simulated
 ///  
 /// * `reps` - number of repetitions
 ///  
@@ -1362,26 +1384,29 @@ macro_rules! log {
 /// let step = 100;
 /// let reps = 10;
 /// let info = Info::Normal;
-/// let times = simulate_old!(step, state, reps, info);
+/// let times = simulate_old!(state, step, reps, info);
 /// ```
 ///
 macro_rules! simulate_old {
-    ($step:expr, $s:expr, $reps:expr, $info:expr) => {{
+    ($s:expr, $step:expr, $reps:expr $(, $info:expr)?) => {{
         let mut s = $s;
         let mut state = s.as_state_mut();
         let n_step: u64 = $step;
 
         let mut results: Vec<(Duration, f32)> = Vec::new();
-        let option = $info;
+        let mut option = Info::Normal;
+        $(
+            option = $info;
+        )?
 
         match option {
             Info::Verbose => {
-                // println!("\u{1F980} krABMaga v1.0\n");
-                // println!(
-                //     "{0: >10}|{1: >9}|    {2: >11}|{3: >10}|",
-                //     "#Rep", "Steps", "Steps/Seconds", "Time"
-                // );
-                // println!("--------------------------------------------------");
+                println!("\u{1F980} krABMaga v1.0\n");
+                println!(
+                    "{0: >10}|{1: >9}|    {2: >11}|{3: >10}|",
+                    "#Rep", "Steps", "Steps/Seconds", "Time"
+                );
+                println!("--------------------------------------------------");
             }
             Info::Normal => {
                 println!("{esc}c", esc = 27 as char);
@@ -1393,12 +1418,6 @@ macro_rules! simulate_old {
                 println!("----------------------------------------------------------------");
             }
         }
-        // print!("{:width$}|", 1, width = 14 - $reps.to_string().len());
-        // println!(
-        //     "{:width$}|",
-        //     n_step,
-        //     width = 15 - n_step.to_string().len() - $reps.to_string().len()
-        // );
 
         match option {
             Info::Verbose => {}
@@ -1436,16 +1455,16 @@ macro_rules! simulate_old {
                 }
             }
 
-            // let step_seconds =
-            //     format!("{:.0}", schedule.step as f32 / (run_duration.as_secs_f32()));
-            // let time = format!("{:.4}", run_duration.as_secs_f32());
-            // print!("{:width$}|", (r + 1), width = 14 - $reps.to_string().len());
-            // print!(
-            //     "{:width$}|",
-            //     schedule.step,
-            //     width = 15 - n_step.to_string().len() - $reps.to_string().len()
-            // );
-            // print!("{:width$}", "", width = 13 - step_seconds.len());
+            let step_seconds =
+                format!("{:.0}", schedule.step as f32 / (run_duration.as_secs_f32()));
+            let time = format!("{:.4}", run_duration.as_secs_f32());
+            print!("{:width$}|", (r + 1), width = 14 - $reps.to_string().len());
+            print!(
+                "{:width$}|",
+                schedule.step,
+                width = 15 - n_step.to_string().len() - $reps.to_string().len()
+            );
+            print!("{:width$}", "", width = 13 - step_seconds.len());
 
             results.push((
                 run_duration,
@@ -1454,9 +1473,9 @@ macro_rules! simulate_old {
 
             match option {
                 Info::Verbose => {
-                    // print!("{}|", step_seconds);
-                    // print!("{:width$}", "", width = 9 - time.len());
-                    // println!("{}s|", time);
+                    print!("{}|", step_seconds);
+                    print!("{:width$}", "", width = 9 - time.len());
+                    println!("{}s|", time);
                 }
                 Info::Normal => {
                     let mut avg_time = 0.0;
