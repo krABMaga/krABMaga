@@ -719,7 +719,7 @@ cfg_if! {
 
                 for k in edges.keys() {
                     if let Some(es) = self.get_edges(id2nodes.get(k).expect("error on get").clone()) {
-                        dist.push((&*id2nodes.get(k).expect("error on get"), es.len() as i32));
+                        dist.push((id2nodes.get(k).expect("error on get"), es.len() as i32));
                     }
                 }
 

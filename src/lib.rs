@@ -611,8 +611,8 @@ impl PlotData {
         scatter_ctx
             .configure_series_labels()
             .position(SeriesLabelPosition::UpperRight)
-            .background_style(&WHITE.mix(0.8))
-            .border_style(&BLACK)
+            .background_style(WHITE.mix(0.8))
+            .border_style(BLACK)
             .draw()
             .expect("Can't draw series labels");
 

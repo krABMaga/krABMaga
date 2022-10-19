@@ -31,7 +31,7 @@ cfg_if! {
             pub index: usize,
         }
 
-        impl<'a> TabsState {
+        impl TabsState {
             /// create a new instance
             pub fn new(titles: Vec<String>) -> TabsState {
                 TabsState { titles, index: 0 }
@@ -545,7 +545,7 @@ cfg_if! {
                     let max_str = max.to_string();
                     let mut max_digits = 0;
                     for c in max_str.chars() {
-                        if c.is_digit(10) {
+                        if c.is_ascii_digit() {
                             max_digits += 1;
                         }
                     }

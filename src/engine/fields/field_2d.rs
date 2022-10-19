@@ -615,7 +615,7 @@ cfg_if! {
             }
         }
 
-        impl<'a, O: Location2D<Real2D> + Clone + Hash + Eq + Copy + Display> Field for Field2D<O>{
+        impl<O: Location2D<Real2D> + Clone + Hash + Eq + Copy + Display> Field for Field2D<O>{
             fn update(&mut self){}
 
             /// Swap read and write buffer
@@ -625,7 +625,7 @@ cfg_if! {
 
                 if !self.density_estimation_check{
                     self.density_estimation =
-                    ((*self.nagents.borrow_mut())as usize)/((self.dw * self.dh) as usize);
+                    (*self.nagents.borrow_mut())/((self.dw * self.dh) as usize);
                     self.density_estimation_check = true;
                     self.bags[self.write] =  RefCell::new(std::iter::repeat_with(|| Vec::with_capacity(self.density_estimation)).take((self.dw * self.dh) as usize).collect());
                 }
