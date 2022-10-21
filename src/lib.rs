@@ -466,7 +466,6 @@ pub enum Info {
     Normal,
 }
 
-
 /// Model Exploration modes
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum ExploreMode {
@@ -752,10 +751,10 @@ pub use std::sync::mpsc::{self, RecvError, TryRecvError};
 /// let reps = 10;
 /// let state = State::new();
 /// let _ = simulate!(state, step, reps);
-/// 
+///
 /// // Run simulation without `Simulation Terminal`
-/// let _ = simulate!(state, step, reps, false); 
-/// 
+/// let _ = simulate!(state, step, reps, false);
+///
 /// ```
 #[macro_export]
 macro_rules! simulate {
@@ -1205,14 +1204,14 @@ macro_rules! description {
 ///    String::from("Series"),
 ///    x, y
 /// );
-/// 
+///
 /// // Nothing happens, plot "Agents2" doesn't exist
 /// plot!(
 ///   String::from("Agents2"),
 ///   String::from("Series"),
 ///   x, y
 /// );
-/// 
+///
 /// ```
 ///  
 #[macro_export]
@@ -1250,13 +1249,12 @@ macro_rules! plot {
                         .unwrap()
                         .send(MessageType::Plot($name.clone(), $serie.clone(), $x, $y))
                         .expect("Can't send to csv channel");
-                }                 
+                }
             )?
 
         }
     }};
 }
-
 
 /// Create new plot for your simulation.
 /// Call this macro one time for each plot you want to create.
@@ -1295,14 +1293,14 @@ macro_rules! plot {
 /// );
 ///
 /// ```
-/// 
+///
 /// # Save as csv
 /// There are alternative macro path to save the plot as csv file.
 /// In addition to the three mandatory parameters, there are two optional parameters:
 /// * `plot: bool` - if true, the plot will be saved as png file. By default is false.
 /// * `csv: bool` - if true, the plot will be saved as csv file. By default is false.
-/// 
-/// # Example 
+///
+/// # Example
 /// ```
 /// # krabmaga::*;
 /// // This plot will be saved as png and csv file
@@ -1313,7 +1311,7 @@ macro_rules! plot {
 ///     plot: true,
 ///     csv: true,
 /// );
-/// 
+///
 /// // This plot will be saved as png file
 /// addplot!(
 ///     String::from("Dead/Born"),
@@ -1321,7 +1319,7 @@ macro_rules! plot {
 ///     String::from("Number of agents"),
 ///     plot: true
 /// );
-/// 
+///
 /// // This plot will be saved as csv file
 /// addplot!(
 ///     String::from("Dead/Born"),
@@ -1329,13 +1327,13 @@ macro_rules! plot {
 ///     String::from("Number of agents"),
 ///     csv: true
 /// );
-/// 
+///
 /// ```
 #[macro_export]
 macro_rules! addplot {
     ($name:expr, $xlabel:expr, $ylabel:expr, plot: $save_plot:expr, csv: $save_csv:expr ) => {{
         let mut data = DATA.lock().unwrap();
-        
+
         if !data.contains_key(&$name) {
             data.insert($name, PlotData::new($name, $xlabel, $ylabel, $save_plot));
             if $save_csv {
@@ -1348,7 +1346,7 @@ macro_rules! addplot {
     ($name:expr, $xlabel:expr, $ylabel:expr, csv: $save_csv:expr ) => {{
         addplot!($name, $xlabel, $ylabel, plot: false, csv: $save_csv);
     }};
-    
+
     ($name:expr, $xlabel:expr, $ylabel:expr, plot: $save_plot:expr) => {{
         addplot!($name, $xlabel, $ylabel, plot: $save_plot, csv: false);
     }};
@@ -1367,7 +1365,6 @@ macro_rules! addplot {
     }};
 
 }
-
 
 /// Add a log to the simulation logger.
 ///
@@ -1397,9 +1394,9 @@ macro_rules! addplot {
 #[macro_export]
 macro_rules! log {
     ($ltype:expr, $message:expr $(, $to_be_stored: expr)? ) => {{
-    
+
         use $crate::*;
-        
+
         let to_be_stored = false;
         $(
             let to_be_stored = $to_be_stored;
@@ -1611,7 +1608,7 @@ mod no_exported {
 /// # Arguments
 /// * `name` - filename to save the csv file
 /// * `dataframe` - dataframe with the configurations and results
-/// 
+///
 /// # Example
 /// ```
 /// let result = explore!(
@@ -1625,7 +1622,7 @@ mod no_exported {
 ///     output [ result: f64, ],
 ///     ExploreMode::Matched,
 /// );
-/// 
+///
 /// if !result.is_empty() {
 ///     // build csv using all the results
 ///     let name = "explore_result".to_string();
@@ -1754,16 +1751,16 @@ macro_rules! load_csv {
 ///
 /// Run a simulation two times with same parameter. Compairs initial agents, their behavior for each step
 /// and the final state to determine whether a model is reproducible or not.
-/// 
+///
 /// To use this macro, agents must implement 'ReproducibilityEq' trait.
-/// 
+///
 /// # Arguments
 /// * `state` - an mutable reference to an istance of simulation state.
-/// 
+///
 /// * `n_step` - number of steps of the simulation.
-/// 
+///
 /// * `agents: { agent1, agent2, .. }` - list of the agent types of your model.
-/// 
+///
 /// # Example
 /// ```
 /// # use krABMaga::*;
@@ -1771,7 +1768,7 @@ macro_rules! load_csv {
 /// let dim: (i32, i32) = (50, 50);
 /// let initial_animals: (u32, u32) = ((200. * 0.6) as u32, (200. * 0.4) as u32);
 /// let mut state = WsgState::new(dim, initial_animals);
-/// 
+///
 /// check_reproducibility!(state, step, agents { Sheep Wolf });
 /// ```
 macro_rules! check_reproducibility {

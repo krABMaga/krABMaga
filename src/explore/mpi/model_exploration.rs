@@ -115,7 +115,7 @@ macro_rules! extend_dataframe {
 ///     ],
 ///     ExploreMode::Matched,
 /// );
-/// 
+///
 /// ```
 #[macro_export]
 macro_rules! explore_distributed_mpi {

@@ -170,7 +170,7 @@ macro_rules! build_dataframe_explore {
 ///         MAX_GENERATION,
 ///         STEP,
 ///         REPETITIONS, //optional
-///         // ComputingMode::Parallel, ComputingMode::Distributed or ComputingMode::Cloud 
+///         // ComputingMode::Parallel, ComputingMode::Distributed or ComputingMode::Cloud
 ///     );
 ///     if !result.is_empty() {
 ///         let name = "explore_result".to_string();

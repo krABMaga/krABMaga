@@ -18,7 +18,7 @@
 /// * `ComputingMode::Distributed`: the exploration will be performed distributing the computation
 ///    on different machines
 /// * `ComputingMode::Cloud`: computation will be performed on the cloud.
-/// 
+///
 /// # Example
 ///
 /// ```
@@ -49,11 +49,11 @@
 ///     ExploreMode::Matched,
 ///     // ComputingMode::Parallel, ComputingMode::Distributed, ComputingMode::Cloud
 /// );
-/// 
-/// 
-/// 
+///
+///
+///
 /// ````
-/// 
+///
 macro_rules! explore {
     (
         $nstep: expr, $rep_conf:expr, $state:ty,
