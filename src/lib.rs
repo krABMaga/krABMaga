@@ -449,25 +449,30 @@ pub use {
 /// that can be used to explore the model.
 /// By default, the model exploration is sequential.
 pub enum ComputingMode {
+    /// Parallel exploration using Rayon. No features are required.
     Parallel,
+    /// Distributed exploration using MPI. The `distributed_mpi` feature is required.
     Distributed,
+    /// Computing on AWS Lambda. The `aws` feature is required.
     Cloud,
 }
 
-/// Options of `old_simulate!` macro
+/// Options of `simulate_old!` macro to specify how to display results.
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Info {
+    /// Display the time of each run.
     Verbose,
+    /// Display average time of runs.
     Normal,
 }
 
-///
+
 /// Model Exploration modes
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum ExploreMode {
-    /// Exaustive: Brute force parameter exploration
-    /// Matched: explore every input with the same indexes
+    /// Brute force parameter exploration
     Exaustive,
+    /// Explore every input with the same indexes
     Matched,
 }
 
@@ -622,8 +627,8 @@ impl PlotData {
     }
 }
 
-/// Available log types to use for `Simulation Terminal` log mechanism.
-#[derive(Copy, Clone, Debug)]
+/// Available log types to use for `Simulation Terminal` log mechanism. Change color of logs in the terminal.
+/// #[derive(Copy, Clone, Debug)]
 pub enum LogType {
     Info,
     Warning,
@@ -665,8 +670,9 @@ lazy_static! {
     #[doc(hidden)]
     pub static ref DATA: Mutex<HashMap<String, PlotData>> = Mutex::new(HashMap::new());
     // /// static HashMap to manage plots of the whole simulation. Used to create tabs and plot inside `UI` module.
-    // #[doc(hidden)]
+    #[doc(hidden)]
     pub static ref CSV_SENDER: Mutex<Option<Sender<MessageType>>> = Mutex::new(None);
+    #[doc(hidden)]
     pub static ref PLOT_NAMES: Mutex<std::collections::HashSet<(String, String, String)>> = Mutex::new(std::collections::HashSet::new());
     /// static Vec to store all Logs and make it availables inside terminal.
     #[doc(hidden)]
@@ -691,6 +697,7 @@ pub struct Monitoring {
 #[doc(hidden)]
 #[derive(Clone)]
 pub enum MessageType {
+    Init,
     AfterRep(u64, u64),
     AfterStep(u64, f64, Duration),
     Clear,
@@ -745,7 +752,11 @@ pub use std::sync::mpsc::{self, RecvError, TryRecvError};
 /// let reps = 10;
 /// let state = State::new();
 /// let _ = simulate!(state, step, reps);
-///  
+/// 
+/// // Run simulation without `Simulation Terminal`
+/// let _ = simulate!(state, step, reps, false); 
+/// 
+/// ```
 #[macro_export]
 macro_rules! simulate {
     ($s:expr, $step:expr, $reps:expr $(, $flag:expr)?) => {{
@@ -947,12 +958,23 @@ macro_rules! simulate {
                     csv_writers
                 };
 
-                let mut csv_writers = open_files(&0);
+
                 let mut rep_counter = 0;
+                // let mut csv_writers = open_files(&0);
+                let mut csv_writers = match csv_recv.recv().expect("Error receving init csv message") {
+                    MessageType::Quit => {
+                        return;
+                    },
+                    _ => open_files(&0)
+                };
+
                 loop {
                     match csv_recv.recv(){
                         Ok(message) => {
                             match message {
+                                MessageType::Init => {
+                                    csv_writers = open_files(&rep_counter);
+                                },
                                 MessageType::Plot(name, series, x, y) => {
                                     for (n, writer) in &mut csv_writers {
                                         if name.replace("/", "-") == *n {
@@ -963,7 +985,6 @@ macro_rules! simulate {
                                 },
                                 MessageType::EndOfSimulation => {
                                     rep_counter += 1;
-                                    csv_writers = open_files(&rep_counter);
                                 },
                                 _ => break,
                             }
@@ -1005,7 +1026,9 @@ macro_rules! simulate {
                     let start = std::time::Instant::now();
                     let mut schedule: Schedule = Schedule::new();
                     state.init(&mut schedule);
-
+                    {
+                        CSV_SENDER.lock().unwrap().as_ref().unwrap().send(MessageType::Init).expect("Error on communication with csv thread");
+                    }
 
                     log!(LogType::Info, format!("#{} Simulation started", r), true);
                     //get current time
@@ -1058,7 +1081,6 @@ macro_rules! simulate {
                     {
                         CSV_SENDER.lock().unwrap().as_ref().unwrap().send(MessageType::EndOfSimulation).expect("Error on communication with csv thread");
                     }
-
 
                     {
                         let data = DATA.lock().unwrap();
@@ -1151,13 +1173,13 @@ macro_rules! description {
 }
 
 /// Add a point to a series of an existing plot. Crete the series at the first call.
-/// Can't add a point to a plot that doesn't exist.
+/// Can't add a point to a plot that doesn't exist, use addplot!() instead.
 ///
 /// # Arguments
 ///
-/// * `name` - name of the plot
+/// * `name` - Name of the plot.
 ///
-/// * `series` - name of the series
+/// * `series` - Name of the series
 ///
 /// * `x` - x value
 ///
@@ -1183,39 +1205,19 @@ macro_rules! description {
 ///    String::from("Series"),
 ///    x, y
 /// );
+/// 
+/// // Nothing happens, plot "Agents2" doesn't exist
+/// plot!(
+///   String::from("Agents2"),
+///   String::from("Series"),
+///   x, y
+/// );
+/// 
 /// ```
 ///  
 #[macro_export]
 macro_rules! plot {
-    ($name:expr, $serie:expr, $x:expr, $y:expr) => {{
-        let mut data = DATA.lock().unwrap();
-        if data.contains_key(&$name) {
-            let mut pdata = data.get_mut(&$name).unwrap();
-            if !pdata.series.contains_key(&$serie) {
-                pdata.series.insert($serie.clone(), Vec::new());
-            }
-            let serie = pdata.series.get_mut(&$serie).unwrap();
-            serie.push(($x, $y));
-
-            if $x < pdata.min_x {
-                pdata.min_x = $x
-            };
-            if $x > pdata.max_x {
-                pdata.max_x = $x
-            };
-            if $y < pdata.min_y {
-                pdata.min_y = $y
-            };
-            if $y > pdata.max_y {
-                pdata.max_y = $y
-            };
-        }
-    }};
-}
-
-#[macro_export]
-macro_rules! plot_csv {
-    ($name:expr, $serie:expr, $x:expr, $y:expr) => {{
+    ($name:expr, $serie:expr, $x:expr, $y:expr $(, csv: $save_csv:expr)?) => {{
         let mut data = DATA.lock().unwrap();
         if data.contains_key(&$name) {
             let mut pdata = data.get_mut(&$name).unwrap();
@@ -1238,19 +1240,23 @@ macro_rules! plot_csv {
                 pdata.max_y = $y
             };
 
-            //send Plot Messsage on send csv channel
-            {
-                let send = CSV_SENDER
-                    .lock()
-                    .unwrap()
-                    .as_ref()
-                    .unwrap()
-                    .send(MessageType::Plot($name.clone(), $serie.clone(), $x, $y))
-                    .expect("Can't send to csv channel");
-            }
+            $(
+                //send Plot Messsage on send csv channel
+                if $save_csv  {
+                    let send = CSV_SENDER
+                        .lock()
+                        .unwrap()
+                        .as_ref()
+                        .unwrap()
+                        .send(MessageType::Plot($name.clone(), $serie.clone(), $x, $y))
+                        .expect("Can't send to csv channel");
+                }                 
+            )?
+
         }
     }};
 }
+
 
 /// Create new plot for your simulation.
 /// Call this macro one time for each plot you want to create.
@@ -1264,16 +1270,16 @@ macro_rules! plot_csv {
 ///
 /// * `name`- name of the plot.
 ///  
-/// * `x_label`- label for the x axis.
+/// * `x_label` - label for the x axis.
 ///  
-/// * `y_label`- label for the y axis.
+/// * `y_label` - label for the y axis.
 ///  
-/// * `to_be_stored`- if true, the plot will be saved in the output folder. By default is false.
+/// * `to_be_stored` - if true, the plot will be saved in the output folder. By default is false.
 ///
 /// # Example
 /// ```
 /// # krabmaga::*;
-/// // This plot will be saved in the output folder
+/// // This plot will be saved in the output folder as "Agents.png"
 /// addplot!(
 ///     String::from("Agents"),
 ///     String::from("Steps"),
@@ -1289,9 +1295,64 @@ macro_rules! plot_csv {
 /// );
 ///
 /// ```
-
+/// 
+/// # Save as csv
+/// There are alternative macro path to save the plot as csv file.
+/// In addition to the three mandatory parameters, there are two optional parameters:
+/// * `plot: bool` - if true, the plot will be saved as png file. By default is false.
+/// * `csv: bool` - if true, the plot will be saved as csv file. By default is false.
+/// 
+/// # Example 
+/// ```
+/// # krabmaga::*;
+/// // This plot will be saved as png and csv file
+/// addplot!(
+///     String::from("Agents"),
+///     String::from("Steps"),
+///     String::from("Number of agents"),
+///     plot: true,
+///     csv: true,
+/// );
+/// 
+/// // This plot will be saved as png file
+/// addplot!(
+///     String::from("Dead/Born"),
+///     String::from("Steps"),
+///     String::from("Number of agents"),
+///     plot: true
+/// );
+/// 
+/// // This plot will be saved as csv file
+/// addplot!(
+///     String::from("Dead/Born"),
+///     String::from("Steps"),
+///     String::from("Number of agents"),
+///     csv: true
+/// );
+/// 
+/// ```
 #[macro_export]
 macro_rules! addplot {
+    ($name:expr, $xlabel:expr, $ylabel:expr, plot: $save_plot:expr, csv: $save_csv:expr ) => {{
+        let mut data = DATA.lock().unwrap();
+        
+        if !data.contains_key(&$name) {
+            data.insert($name, PlotData::new($name, $xlabel, $ylabel, $save_plot));
+            if $save_csv {
+                let mut names = PLOT_NAMES.lock().unwrap();
+                names.insert(($name, $xlabel, $ylabel));
+            }
+        }
+    }};
+
+    ($name:expr, $xlabel:expr, $ylabel:expr, csv: $save_csv:expr ) => {{
+        addplot!($name, $xlabel, $ylabel, plot: false, csv: $save_csv);
+    }};
+    
+    ($name:expr, $xlabel:expr, $ylabel:expr, plot: $save_plot:expr) => {{
+        addplot!($name, $xlabel, $ylabel, plot: $save_plot, csv: false);
+    }};
+
     ($name:expr, $xlabel:expr, $ylabel:expr $(, $to_be_stored: expr)? ) => {{
 
         let mut to_be_stored = false;
@@ -1304,15 +1365,9 @@ macro_rules! addplot {
             data.insert($name, PlotData::new($name, $xlabel, $ylabel, to_be_stored));
         }
     }};
+
 }
 
-#[macro_export]
-macro_rules! setup_csv {
-    ($name:expr, $xlabel:expr, $ylabel:expr  ) => {{
-        let mut names = PLOT_NAMES.lock().unwrap();
-        names.insert(($name, $xlabel, $ylabel));
-    }};
-}
 
 /// Add a log to the simulation logger.
 ///
@@ -1320,16 +1375,18 @@ macro_rules! setup_csv {
 ///
 /// * `ltype` - LogType paramater to specify the type of log. See `LogType` enum for more information.
 ///
-/// * `message` - message to be logged.
+/// * `message` - Message to be logged.
 ///
 /// * `to_be_stored`- if true, the log will be saved in the output folder. By default is false.
 ///
 /// # Example
 /// ```
 /// # krabmaga::*;
+/// // This log won't be saved in the output folder
 /// log!(LogType::Info, String::from("Simulation started!"));
 ///
 /// let step = 10;
+/// // This log will be saved in the output folder
 /// log!(
 ///     LogType::Warning,
 ///     format!("Something goes wrong at step {}", step),
@@ -1340,8 +1397,9 @@ macro_rules! setup_csv {
 #[macro_export]
 macro_rules! log {
     ($ltype:expr, $message:expr $(, $to_be_stored: expr)? ) => {{
-        //TODO: Avoid From String
-
+    
+        use $crate::*;
+        
         let to_be_stored = false;
         $(
             let to_be_stored = $to_be_stored;
@@ -1363,7 +1421,7 @@ macro_rules! log {
 }
 
 #[macro_export]
-/// Run simulation directly using this macro. Not based on `Simulation Terminal`.
+/// Run simulations using this macro. Not based on `Simulation Terminal`.
 /// Return exectuion times of each repetition.
 ///
 /// # Arguments
@@ -1383,7 +1441,7 @@ macro_rules! log {
 /// let mut state = State::new();
 /// let step = 100;
 /// let reps = 10;
-/// let info = Info::Normal;
+/// let info = Info::Normal; //Info::Verbose
 /// let times = simulate_old!(state, step, reps, info);
 /// ```
 ///
@@ -1545,16 +1603,35 @@ mod no_exported {
     }
 }
 
-///Create a csv file with the experiment results
+///Create a csv file with the experiment results.
 ///
-///"DataFrame" trait allow the function to know field names and
-///
-///params list + output list for each configuration runned
+///`DataFrame` trait allows the function to know field names,
+/// parameter list and output list for each configuration runned
 ///
 /// # Arguments
 /// * `name` - filename to save the csv file
 /// * `dataframe` - dataframe with the configurations and results
-
+/// 
+/// # Example
+/// ```
+/// let result = explore!(
+///     STEP,
+///     rep_conf, // How many times run a configuration
+///     State,
+///     input {
+///        param: u32,
+///        param2: f64,
+///     },
+///     output [ result: f64, ],
+///     ExploreMode::Matched,
+/// );
+/// 
+/// if !result.is_empty() {
+///     // build csv using all the results
+///     let name = "explore_result".to_string();
+///     let _res = write_csv(&name, &result);
+/// }
+/// ```
 pub fn write_csv<A: DataFrame>(name: &str, dataframe: &[A]) -> Result<(), Box<dyn Error>> {
     let csv_name = format!("{}.csv", name);
     let mut wtr = Writer::from_path(csv_name).expect("error on open the file path");
@@ -1597,7 +1674,6 @@ pub trait DataFrame {
 /// let values_f64 = gen_param!(f64, 0.0, 10.0, 5);
 ///
 /// ```
-
 #[macro_export]
 macro_rules! gen_param {
     ( $type:ty, $min:expr, $max:expr, $n:expr) => {{
@@ -1675,6 +1751,29 @@ macro_rules! load_csv {
 }
 
 #[macro_export]
+///
+/// Run a simulation two times with same parameter. Compairs initial agents, their behavior for each step
+/// and the final state to determine whether a model is reproducible or not.
+/// 
+/// To use this macro, agents must implement 'ReproducibilityEq' trait.
+/// 
+/// # Arguments
+/// * `state` - an mutable reference to an istance of simulation state.
+/// 
+/// * `n_step` - number of steps of the simulation.
+/// 
+/// * `agents: { agent1, agent2, .. }` - list of the agent types of your model.
+/// 
+/// # Example
+/// ```
+/// # use krABMaga::*;
+/// let step = 200;
+/// let dim: (i32, i32) = (50, 50);
+/// let initial_animals: (u32, u32) = ((200. * 0.6) as u32, (200. * 0.4) as u32);
+/// let mut state = WsgState::new(dim, initial_animals);
+/// 
+/// check_reproducibility!(state, step, agents { Sheep Wolf });
+/// ```
 macro_rules! check_reproducibility {
     (
         $state: expr,

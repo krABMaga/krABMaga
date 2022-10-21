@@ -5,7 +5,7 @@ cfg_if! {
     {
 
         use std::time::Duration;
-        use crate::{log, Log, LogType, DATA, DESCR, LOGS, MONITOR};
+        use crate::{log, LogType, DATA, DESCR, LOGS, MONITOR};
 
         pub const SCALE_Y: f64 = 0.2;
         pub const SCALE_X: f64 = 10.;
