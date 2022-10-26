@@ -97,7 +97,15 @@ fn hnetwork_nodes() {
     net.add_node(2);
     net.update();
     net.add_edge(&[1, 2], EdgeOptions::Simple);
+    net.add_edge(&[1, 2], EdgeOptions::Simple);
+    net.add_edge(&[2, 1], EdgeOptions::Simple);
     net.update();
+
+    let edges = net.get_edges(1).unwrap();
+    assert_eq!(edges.len(), 1);
+
+    let id = net.get_id(&1).unwrap();
+    assert_eq!(id, 0);
 
     net.add_node(3);
     net.add_node(4);

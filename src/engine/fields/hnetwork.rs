@@ -78,6 +78,39 @@ where
 impl<L: Clone + Hash + Display> Eq for HEdge<L> {}
 
 /// A generalization of a `Network`, to connect with an edge multiple nodes
+/// Your Node type can be a simple one like `u32` or a more complex one like a struct.
+/// If you want to use a struct as a node, you have to implement several traits.
+/// To correctly use the `HNetwork` struct, `Hash` and `PartialEq` traits have
+/// to work with ID of the node:
+///
+/// # Example
+/// ```
+/// #[derive(Clone, Debug, Eq)]
+/// struct Node {
+///    id: u32,
+///    flag: bool,
+/// }
+///
+/// // implement Hash and PartialEq traits
+/// impl Hash for Node {
+///    fn hash<H: Hasher>(&self, state: &mut H) {
+///       self.id.hash(state);
+///   }
+/// }
+///
+/// impl PartialEq for Node {
+///   fn eq(&self, other: &Self) -> bool {
+///      self.id == other.id
+///     }
+/// }
+///
+/// impl Display for Node {
+///    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+///       write!(f, "Node: {}", self.id)
+///   }
+/// }
+///
+/// ```
 pub struct HNetwork<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> {
     /// Write state of hyper-edges
     pub edges: RefCell<HashMap<u32, Vec<HEdge<L>>>>,
@@ -108,6 +141,24 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> HNetwork<O, L> {
     /// # Arguments
     /// * `nodes` - nodes of the hyper-edge you want to add
     /// * `edge_options` - Enum to set edge information
+    ///
+    /// # Returns
+    /// * `bool` - `true` if the hyper-edge is added, `false` otherwise
+    ///
+    /// # Example
+    /// ```
+    /// let mut net = HNetwork::<u32, String>::new();
+    /// net.add_node(1);
+    /// net.add_node(2);
+    /// net.add_node(3);
+    ///
+    /// assert!(net.add_edge(&[1, 2, 3], EdgeOptions::Simple));
+    ///
+    /// // You can't add the same hyper-edge twice
+    /// // The order of nodes is not important
+    /// assert!(!net.add_edge(&[2, 3, 1], EdgeOptions::Simple));
+    ///
+    /// ```
     pub fn add_edge(&self, nodes: &[O], edge_options: EdgeOptions<L>) -> bool {
         if nodes.is_empty() {
             return false;
@@ -129,6 +180,9 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> HNetwork<O, L> {
         for id in ids {
             match edges.get_mut(id) {
                 Some(uedges) => {
+                    if uedges.contains(&HEdge::new(ids, edge_options.clone())) {
+                        return false;
+                    }
                     uedges.push(HEdge::new(ids, edge_options.clone()));
                 }
                 None => {
@@ -144,6 +198,18 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> HNetwork<O, L> {
     /// Add a new node
     /// # Arguments
     /// * `u` - node you want to add
+    ///
+    /// # Example
+    /// ```
+    /// let mut net = HNetwork::<u32, String>::new();
+    /// net.add_node(0);
+    ///
+    /// net.update();
+    ///
+    /// assert!(net.get_node(0).is_some());
+    ///
+    /// ```
+    ///
     pub fn add_node(&self, u: O) {
         let mut nodes2id = self.nodes2id.borrow_mut();
         let mut id2nodes = self.id2nodes.borrow_mut();
@@ -165,6 +231,26 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> HNetwork<O, L> {
     ///
     /// # Arguments
     /// * `nodes` - nodes of the hyper-edge you want to get
+    ///
+    /// # Returns
+    /// * `Option<HEdge<L>>` - `Some(HEdge<L>)` if the hyper-edge is found, `None` otherwise
+    ///
+    /// # Example
+    /// ```
+    /// let mut net = HNetwork::<u32, String>::new();
+    /// net.add_node(1);
+    /// net.add_node(2);
+    /// net.add_node(3);
+    ///
+    /// net.add_edge(&[1, 2, 3], EdgeOptions::Simple);
+    ///
+    /// net.update();
+    ///
+    /// assert!(net.get_edge(&[1, 2, 3]).is_some());
+    /// assert!(net.get_edge(&[3, 1, 2]).is_some());
+    ///
+    /// assert!(net.get_edge(&[1, 2]).is_none());
+    /// ```
     pub fn get_edge(&self, nodes: &[O]) -> Option<HEdge<L>> {
         if nodes.is_empty() {
             return None;
@@ -199,6 +285,24 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> HNetwork<O, L> {
     ///
     /// # Arguments
     /// * `u` - node you want to get the edges
+    ///
+    /// # Example
+    /// ```
+    /// let mut net = HNetwork::<u32, String>::new();
+    /// net.add_node(1);
+    /// net.add_node(2);
+    /// net.add_node(3);
+    ///
+    /// net.add_edge(&[1, 2, 3], EdgeOptions::Simple);
+    /// net.add_edge(&[1, 2], EdgeOptions::Simple);
+    ///
+    /// net.update();
+    ///
+    /// assert_eq!(net.get_edges(1).unwrap().len(), 2);
+    /// assert_eq!(net.get_edges(2).unwrap().len(), 2);
+    /// assert_eq!(net.get_edges(3).unwrap().len(), 1);
+    /// ```
+    ///
     pub fn get_edges(&self, u: O) -> Option<Vec<HEdge<L>>> {
         let nodes2id = self.nodes2id.borrow();
         let uid = match nodes2id.get(&u) {
@@ -212,12 +316,70 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> HNetwork<O, L> {
     /// Get a node from its id
     ///
     /// # Arguments
-    /// * `uid` - id of the node you want to get
+    /// * `uid` - id of the node you want to get.
+    ///   PS: the id is not the same as the node itself, it is assigned by the network
+    ///   when you add a node. You can get the id of a node with `get_id`.
+    ///
+    /// # Example
+    /// ```
+    /// let mut net = HNetwork::<u32, String>::new();
+    /// net.add_node(10);
+    ///
+    /// net.update();
+    ///
+    /// assert_eq!(net.get_node(0).unwrap(), 10);
+    /// assert_eq!(net.get_node(10), None);
+    /// ```
     pub fn get_object(&self, uid: u32) -> Option<O> {
         self.rid2nodes.borrow_mut().get(&uid).cloned()
     }
 
+    /// Get the id of a node
+    ///
+    /// # Arguments
+    /// * `u` - node you want to get the id
+    ///
+    /// # Example
+    /// ```
+    /// let mut net = HNetwork::<u32, String>::new();
+    /// net.add_node(10);
+    ///
+    /// net.update();
+    ///
+    /// assert_eq!(net.get_id(10).unwrap(), 0);
+    /// assert_eq!(net.get_id(0), None);
+    /// ```
+    ///
+    pub fn get_id(&self, u: &O) -> Option<u32> {
+        self.nodes2id.borrow().get(u).cloned()
+    }
     /// Remove all the edges of the network
+    ///
+    /// # Example
+    /// ```
+    /// let mut net = HNetwork::<u32, String>::new();
+    /// net.add_node(1);
+    /// net.add_node(2);
+    /// net.add_node(3);
+    ///
+    /// net.add_edge(&[1, 2, 3], EdgeOptions::Simple);
+    /// net.add_edge(&[1, 2], EdgeOptions::Simple);
+    ///
+    /// net.update();
+    ///
+    /// assert_eq!(net.get_edges(1).unwrap().len(), 2);
+    /// assert_eq!(net.get_edges(2).unwrap().len(), 2);
+    /// assert_eq!(net.get_edges(3).unwrap().len(), 1);
+    ///
+    /// net.clear_edges();
+    /// net.update();
+    ///
+    /// assert!(net.get_edges(1).is_none());
+    /// assert!(net.get_edges(2).is_none());
+    /// assert!(net.get_edges(3).is_none());    
+    ///
+    /// ```
+    ///
     pub fn remove_all_edges(&self) {
         let mut edges = self.edges.borrow_mut();
         edges.clear();
@@ -227,6 +389,27 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> HNetwork<O, L> {
     ///
     /// # Arguments
     /// * `nodes` - nodes of the hyper-edge you want to remove
+    ///
+    /// # Returns
+    /// * `Option<HEdge<L>>` - `Some(HEdge<L>)` if the hyper-edge is found and removed, `None` otherwise
+    ///
+    /// # Example
+    /// ```
+    /// let mut net = HNetwork::<u32, String>::new();
+    /// net.add_node(1);
+    /// net.add_node(2);
+    /// net.add_node(3);
+    ///
+    /// net.add_edge(&[1, 2, 3], EdgeOptions::Simple);
+    /// net.add_edge(&[1, 2], EdgeOptions::Simple);
+    /// net.remove_edge(&[1, 2, 3]);
+    ///
+    /// net.update();
+    ///
+    /// assert!(net.get_edge(&[1, 2, 3]).is_none());
+    /// assert!(net.get_edge(&[1, 2]).is_some());
+    /// ```
+    ///
     pub fn remove_edge(&self, nodes: &[O]) -> Option<HEdge<L>> {
         if nodes.is_empty() {
             return None;
@@ -266,7 +449,30 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> HNetwork<O, L> {
     /// Remove an edge passing an `HEdge` object
     ///
     /// # Arguments
-    /// * `to_rempoe` - `HEdge` you want to remove
+    /// * `to_remove` - `HEdge` you want to remove
+    ///
+    /// # Returns
+    /// * `Option<HEdge<L>>` - `Some(HEdge<L>)` if the hyper-edge is found and removed, `None` otherwise
+    ///
+    /// # Example
+    /// ```
+    /// let mut net = HNetwork::<u32, String>::new();
+    /// net.add_node(1);
+    /// net.add_node(2);
+    /// net.add_node(3);
+    ///
+    /// net.add_edge(&[1, 2, 3], EdgeOptions::Simple);
+    /// net.add_edge(&[1, 2], EdgeOptions::Simple);
+    ///
+    /// net.update();
+    ///
+    /// let edge = net.get_edge(&[1, 2, 3]).unwrap();
+    /// net.remove_edge_obj(&edge);
+    ///
+    /// net.update();
+    /// assert!(net.get_edge(&[1, 2, 3]).is_none());
+    ///
+    /// ```
     fn remove_edge_with_hedge(&self, to_remove: &HEdge<L>) -> Option<HEdge<L>> {
         let mut removed: Option<HEdge<L>> = None;
         let mut all_edges = self.edges.borrow_mut();
@@ -293,6 +499,30 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> HNetwork<O, L> {
     ///
     /// # Arguments
     /// * `u` - node you want to remove
+    ///
+    /// # Returns
+    /// * `bool` - `true` if the node is found and removed, `false` otherwise
+    ///
+    /// # Example
+    /// ```
+    /// let mut net = HNetwork::<u32, String>::new();
+    /// net.add_node(1);
+    /// net.add_node(2);
+    ///
+    /// net.add_edge(&[1, 2], EdgeOptions::Simple);
+    ///
+    /// net.update();
+    ///
+    /// assert!(net.get_edge(&[1, 2]).is_some());
+    ///
+    /// net.remove_node(1);
+    /// net.update();
+    ///
+    /// assert!(net.get_edge(&[1, 2]).is_none());
+    /// assert!(net.get_node(1).is_none());
+    ///
+    /// ```
+    ///  
     pub fn remove_object(&self, u: O) -> bool {
         let uid: u32;
         {
@@ -317,10 +547,36 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> HNetwork<O, L> {
         true
     }
 
-    /// Update a node
+    /// Update node info.
+    /// This method worsk if nodes are `Struct` with `Hash`, `Eq` and `PartialEq`
+    /// traits implemented. All the methods has to consider only di id of the node.
+    ///
+    /// Primitive types are not supported with this method, because their update changes
+    /// the hash value, and the node is not found in the network.
     ///
     /// # Arguments
-    /// * `u` - node you want to update
+    /// * `u` - instance of the node to update
+    ///
+    /// # Example
+    /// ```
+    /// #[derive(Clone, Debug, Eq)]
+    /// struct Node {
+    ///    id: u32,
+    ///    flag: bool,
+    /// }
+    ///
+    /// // implement Hash and PartialEq traits for Node
+    ///
+    /// let mut net = HNetwork::<Node, String>::new(true);
+    /// let n = Node { id: 0, flag: false };
+    ///
+    /// net.add_node(n.clone());
+    /// net.update_node(Node { id: 0, flag: true });
+    ///
+    /// net.update();
+    ///
+    /// assert!(net.get_node(0).unwrap().flag);
+    /// ```
     pub fn update_node(&self, u: O) {
         let nodes2id = self.nodes2id.borrow_mut();
         let mut id2nodes = self.id2nodes.borrow_mut();

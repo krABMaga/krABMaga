@@ -39,7 +39,13 @@ pub trait Agent: Downcast + DynClone + Send + Sync {
     }
 }
 
+/// Trait use to compare agents.
+///
+/// Must be implemented to use `check_reproducibility!` macro.
+/// There aren't constraints about what must be compared by an agent because it depends on your model.
 pub trait ReproducibilityEq {
+    /// Function used to compare two agents.
+    /// Return true if the agent are the same, false otherwise.
     fn equals(&self, other: &Self) -> bool;
 }
 

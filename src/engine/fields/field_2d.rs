@@ -353,11 +353,36 @@ cfg_if! {
             }
 
 
-            /// Return the set of objects within a certain distance
+            /// Return the set of objects within a certain distance.
             ///
             /// # Arguments
             /// * `loc` - `Real2D` coordinates of the object
             /// * `dist` - Distance to look for objects
+            ///
+            /// # Example
+            /// ```
+            /// struct Object {
+            ///    id: u32
+            /// }
+            ///
+            /// let DISCRETIZATION = 0.5;
+            /// let TOROIDAL = true;
+            /// let mut field = Field2D::new(10.0,  10.0, DISCRETIZATION, TOROIDAL);
+            /// field.set_object_location(&Object{id: 0}, Real2D {x: 0.0, y: 0.0} );
+            /// field.set_object_location(&Object{id: 1}, Real2D {x: 3.0, y: 3.0} );
+            ///
+            /// field.lazy_update();
+            ///
+            /// let objects = field.get_objects_within_distance(&Real2D {x: 0.0, y: 0.0}, 2.0);
+            /// assert_eq!(objects.len(), 1);
+            ///
+            /// let objects = field.get_objects_within_distance(&Real2D {x: 0.0, y: 0.0}, 5.0);
+            /// assert_eq!(objects.len(), 2);
+            ///
+            /// let objects = field.get_objects_within_distance(&Real2D {x: 6.0, y: 6.0}, 1.0);
+            /// assert_eq!(objects.len(), 0);
+            ///
+            /// ```
             pub fn get_neighbors_within_distance(&self, loc: Real2D, dist: f32) -> Vec<O> {
                 let mut neighbors: Vec<O>;
 
@@ -419,6 +444,31 @@ cfg_if! {
             /// # Arguments
             /// * `loc` - `Real2D` coordinates of the object
             /// * `dist` - Distance to look for objects
+            ///
+            /// # Example
+            /// ```
+            /// struct Object {
+            ///   id: u32
+            /// }
+            ///
+            /// let DISCRETIZATION = 0.5;
+            /// let TOROIDAL = true;
+            /// let mut field = Field2D::new(10.0,  10.0, DISCRETIZATION, TOROIDAL);
+            /// field.set_object_location(&Object{id: 0}, Real2D {x: 0.0, y: 0.0} );
+            /// field.set_object_location(&Object{id: 1}, Real2D {x: 3.0, y: 3.0} );
+            ///
+            /// field.lazy_update();
+            ///
+            /// let objects = field.get_objects_within_relax_distance(&Real2D {x: 0.0, y: 0.0}, 2.0);
+            /// assert_eq!(objects.len(), 1);
+            ///
+            /// let objects = field.get_objects_within_relax_distance(&Real2D {x: 0.0, y: 0.0}, 5.0);
+            /// assert_eq!(objects.len(), 2);
+            ///
+            /// let objects = field.get_objects_within_relax_distance(&Real2D {x: 6.0, y: 6.0}, 1.0);
+            /// assert_eq!(objects.len(), 0);
+            ///
+            /// ```
             pub fn get_neighbors_within_relax_distance(&self, loc: Real2D, dist: f32) -> Vec<O> {
                 let mut neighbors;
 
@@ -469,6 +519,28 @@ cfg_if! {
             ///
             /// # Arguments
             /// * `loc` - `Real2D` coordinates of the object
+            ///
+            /// # Example
+            /// ```
+            /// struct Object {
+            ///  id: u32
+            /// }
+            ///
+            /// let DISCRETIZATION = 0.5;
+            /// let TOROIDAL = true;
+            /// let mut field = Field2D::new(10.0,  10.0, DISCRETIZATION, TOROIDAL);
+            ///
+            /// field.set_object_location(&Object{id: 0}, Real2D {x: 5.0, y: 5.0} );
+            /// field.set_object_location(&Object{id: 1}, Real2D {x: 5.0, y: 5.0} );
+            ///
+            /// let none = field.get_objects(&Real2D {x: 5.0, y: 5.0});
+            /// assert_eq!(none.len(), 0);
+            ///
+            /// field.lazy_update();
+            /// let objects = field.get_objects(&Real2D {x: 5.0, y: 5.0});
+            /// assert_eq!(objects.len(), 2);
+            ///
+            /// ```
             pub fn get_objects(&self, loc: Real2D) -> Vec<O>{
                 let bag = self.discretize(&loc);
                 let index = ((bag.x * self.dh) + bag.y) as usize;
@@ -480,6 +552,28 @@ cfg_if! {
             ///
             /// # Arguments
             /// * `loc` - `Real2D` coordinates of the object
+            ///
+            /// # Example
+            /// ```
+            /// struct Object {
+            ///     id: u32
+            /// }
+            ///
+            /// let DISCRETIZATION = 0.5;
+            /// let TOROIDAL = true;
+            /// let mut field = Field2D::new(10.0,  10.0, DISCRETIZATION, TOROIDAL);
+            ///
+            /// field.set_object_location(&Object{id: 0}, Real2D {x: 5.0, y: 5.0} );
+            /// field.set_object_location(&Object{id: 1}, Real2D {x: 5.0, y: 5.0} );
+            ///
+            /// let objects = field.get_objects_unbuffered(&Real2D {x: 5.0, y: 5.0});
+            /// assert_eq!(objects.len(), 2);
+            ///
+            /// field.lazy_update();
+            /// let objects = field.get_objects_unbuffered(&Real2D {x: 5.0, y: 5.0});
+            /// assert_eq!(objects.len(), 0);
+            ///
+            /// ```
             pub fn get_objects_unbuffered(&self, loc: Real2D) -> Vec<O>{
                 let bag = self.discretize(&loc);
                 let index = ((bag.x * self.dh) + bag.y) as usize;
@@ -491,6 +585,37 @@ cfg_if! {
             ///
             /// # Arguments
             /// * `closure` - closure to apply to each element of the matrix
+            ///
+            /// # Example
+            /// ```
+            /// struct Object {
+            ///    id: u32
+            /// }
+            ///
+            /// let DISCRETIZATION = 0.5;
+            /// let TOROIDAL = true;
+            /// let mut field = Field2D::new(10.0,  10.0, DISCRETIZATION, TOROIDAL);
+            ///
+            /// field.set_object_location(&Object{id: 0}, Real2D {x: 5.0, y: 5.0} );
+            /// field.set_object_location(&Object{id: 1}, Real2D {x: 4.0, y: 4.0} );
+            /// field.set_object_location(&Object{id: 2}, Real2D {x: 1.5, y: 1.5} );
+            ///
+            /// field.lazy_update();
+            ///
+            /// field.iter_objects(|&loc, obj| {
+            ///    if loc.x == 5.0 && loc.y == 5.0 {
+            ///         assert_eq!(obj.id, 0);
+            ///    } else if loc.x == 4.0 && loc.y == 4.0 {
+            ///         assert_eq!(obj.id, 1);
+            ///    } else if loc.x == 1.5 && loc.y == 1.5 {
+            ///         assert_eq!(obj.id, 2);
+            ///    } else {
+            ///         panic!("Unexpected object");
+            ///    }
+            /// });
+            ///
+            /// ```
+            ///
             pub fn iter_objects<F>(&self, closure: F)
             where
                 F: Fn(
@@ -517,6 +642,38 @@ cfg_if! {
             ///
             /// # Arguments
             /// * `closure` - closure to apply to each element of the matrix
+            ///
+            /// # Example
+            /// ```
+            /// struct Object {
+            ///    id: u32
+            /// }
+            ///
+            /// let DISCRETIZATION = 0.5;
+            /// let TOROIDAL = true;
+            /// let mut field = Field2D::new(10.0,  10.0, DISCRETIZATION, TOROIDAL);
+            ///
+            /// field.set_object_location(&Object{id: 0}, Real2D {x: 5.0, y: 5.0} );
+            /// field.set_object_location(&Object{id: 1}, Real2D {x: 4.0, y: 4.0} );
+            /// field.set_object_location(&Object{id: 2}, Real2D {x: 1.5, y: 1.5} );
+            ///
+            /// // no update required, working on the write state
+            ///
+            /// field.iter_objects_unbuffered(|&loc, obj| {
+            ///    if loc.x == 5.0 && loc.y == 5.0 {
+            ///         assert_eq!(obj.id, 0);
+            ///    } else if loc.x == 4.0 && loc.y == 4.0 {
+            ///         assert_eq!(obj.id, 1);
+            ///    } else if loc.x == 1.5 && loc.y == 1.5 {
+            ///         assert_eq!(obj.id, 2);
+            ///    } else {
+            ///         panic!("Unexpected object");
+            ///    }
+            /// });
+            ///
+            /// field.lazy_update();
+            ///
+            /// ```
             pub fn iter_objects_unbuffered<F>(&self, closure: F)
             where
                 F: Fn(
@@ -540,6 +697,33 @@ cfg_if! {
 
 
             /// Return all the empty bags from read state.
+            ///
+            /// # Example
+            /// ```
+            /// struct Object {
+            ///   id: u32
+            /// }
+            ///
+            /// let DISCRETIZATION = 0.5;
+            /// let TOROIDAL = true;
+            /// let mut field = Field2D::new(10.0,  10.0, DISCRETIZATION, TOROIDAL);
+            ///
+            /// let empty_bags = field.get_empty_bags();
+            /// assert_eq!(empty_bags.len(), 400);  // 400 = (10.0 / 0.5) * (10.0 / 0.5)
+            ///
+            /// field.set_object_location(&Object{id: 0}, Real2D {x: 5.0, y: 5.0} );
+            /// field.set_object_location(&Object{id: 1}, Real2D {x: 4.0, y: 4.0} );
+            /// field.set_object_location(&Object{id: 2}, Real2D {x: 1.5, y: 1.5} );
+            ///
+            /// let empty_bags = field.get_empty_bags();
+            /// assert_eq!(empty_bags.len(), 400);  // 400 = (10.0 / 0.5) * (10.0 / 0.5)
+            ///
+            /// field.lazy_update();
+            ///
+            /// let empty_bags = field.get_empty_bags();
+            /// assert_eq!(empty_bags.len(), 397);
+            /// ```
+            ///
             pub fn get_empty_bags(&self) -> Vec<Real2D>{
                 let mut empty_bags = Vec::new();
                 for i in 0 ..  self.dw{
@@ -555,6 +739,28 @@ cfg_if! {
             }
 
             /// Return a random empty bag from read state. `None` if no bags are available.
+            ///
+            /// # Example
+            /// ```
+            /// struct Object {
+            ///  id: u32
+            /// }
+            ///
+            /// let DISCRETIZATION = 0.5;
+            /// let TOROIDAL = true;
+            /// let mut field = Field2D::new(10.0,  10.0, DISCRETIZATION, TOROIDAL);
+            ///
+            /// let empty_bag = field.get_random_empty_bag();
+            /// assert!(empty_bag.is_some());
+            ///
+            /// field.set_object_location(&Object{id: 0}, Real2D {x: 5.0, y: 5.0} );
+            /// field.lazy_update();
+            ///
+            /// let empty_bag2 = field.get_random_empty_bag();
+            /// assert!(empty_bag.is_some());
+            /// assert_ne!(empty_bag.unwrap(), empty_bag2.unwrap());
+            ///
+            /// ```
             pub fn get_random_empty_bag(&self) -> Option<Real2D>{
                 let empty_bags = self.get_empty_bags();
                 if empty_bags.is_empty() {
@@ -568,7 +774,32 @@ cfg_if! {
             /// Return number of object at a specific location
             ///
             /// # Arguments
-            /// * `loc` - `Real2D` coordinates of the object
+            /// * `loc` - `Real2D` coordinates of the location to check
+            ///
+            /// # Example
+            /// ```
+            /// struct Object {
+            ///     id: u32
+            /// }
+            ///
+            /// let DISCRETIZATION = 0.5;
+            /// let TOROIDAL = true;
+            /// let mut field = Field2D::new(10.0,  10.0, DISCRETIZATION, TOROIDAL);
+            ///
+            /// field.set_object_location(&Object{id: 0}, Real2D {x: 5.0, y: 5.0} );
+            /// field.set_object_location(&Object{id: 1}, Real2D {x: 1.5, y: 1.5} );
+            /// field.set_object_location(&Object{id: 2}, Real2D {x: 4.0, y: 4.0} );
+            ///
+            /// field.lazy_update();
+            ///
+            /// let one = field.get_number_of_objects_at_location(&Real2D {x: 5.0, y: 5.0});
+            /// assert_eq!(one, 1);
+            /// let two = field.get_number_of_objects_at_location(&Real2D {x: 1.5, y: 1.5});
+            /// assert_eq!(two, 2);
+            /// let zero = field.get_number_of_objects_at_location(&Real2D {x: 8.0, y: 8.0});
+            /// assert_eq!(zero, 0);
+            /// ```
+            ///
             pub fn num_objects_at_location(&self, loc: Real2D) -> usize {
                 let bag = self.discretize(&loc);
                 let index = ((bag.x * self.dh) + bag.y) as usize;
@@ -580,7 +811,30 @@ cfg_if! {
             ///
             /// # Arguments
             /// * `obj` - Object to insert
-            /// * `loc` - `Real2D` coordinates of the object
+            /// * `loc` - `Real2D` coordinates where to insert the object
+            ///
+            /// # Example
+            /// ```
+            /// struct Object {
+            ///    id: u32
+            /// }
+            ///
+            /// let DISCRETIZATION = 0.5;
+            /// let TOROIDAL = true;
+            /// let mut field = Field2D::new(10.0,  10.0, DISCRETIZATION, TOROIDAL);
+            ///
+            /// field.set_object_location(&Object{id: 0}, Real2D {x: 5.0, y: 5.0} );
+            ///
+            /// let obj = field.get_objects_unbuffered(&Real2D {x: 5.0, y: 5.0});
+            /// assert_eq!(obj.len(), 1);
+            /// assert_eq!(obj[0].id, 0);
+            ///
+            /// field.lazy_update();
+            /// let obj = field.get_objects(&Real2D {x: 5.0, y: 5.0});
+            /// assert_eq!(obj.len(), 1);
+            /// assert_eq!(obj[0].id, 0);
+            ///
+            /// ```
             pub fn set_object_location(&self, object: O, loc: Real2D) {
                 let bag = self.discretize(&loc);
                 let index = ((bag.x * self.dh) + bag.y) as usize;
@@ -599,6 +853,35 @@ cfg_if! {
             /// # Arguments
             /// * `object` - Object to remove
             /// * `loc` - `Real2D` coordinates of the object
+            ///
+            /// # Example
+            /// ```
+            /// struct Object {
+            ///   id: u32
+            /// }
+            ///
+            /// let DISCRETIZATION = 0.5;
+            /// let TOROIDAL = true;
+            /// let mut field = Field2D::new(10.0,  10.0, DISCRETIZATION, TOROIDAL);
+            ///
+            /// field.set_object_location(&Object{id: 0}, Real2D {x: 5.0, y: 5.0} );
+            /// field.set_object_location(&Object{id: 1}, Real2D {x: 1.5, y: 1.5} );
+            /// field.set_object_location(&Object{id: 2}, Real2D {x: 5.0, y: 5.0} );
+            ///
+            /// field.remove_object_location(&Object{id: 0}, Real2D {x: 5.0, y: 5.0} );
+            /// field.remove_object_location(&Object{id: 1}, Real2D {x: 1.5, y: 1.5} );
+            ///
+            /// field.lazy_update();
+            ///
+            /// let obj = field.get_objects(&Real2D {x: 5.0, y: 5.0});
+            /// assert_eq!(obj.len(), 1);
+            /// assert_eq!(obj[0].id, 2);
+            ///
+            /// let no_obj = field.get_objects(&Real2D {x: 1.5, y: 1.5});
+            /// assert_eq!(no_obj.len(), 0);
+            ///
+            /// ```
+            ///
             pub fn remove_object_location(&self, object: O, loc: Real2D) {
                 let bag = self.discretize(&loc);
                 let index = ((bag.x * self.dh) + bag.y) as usize;
