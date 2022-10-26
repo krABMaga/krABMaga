@@ -103,8 +103,58 @@ fn network_gets_fault() {
     feature = "parallel"
 )))]
 #[test]
+fn network_update_nodes() {
+    #[derive(Clone, Debug, Eq)]
+    struct TestNode {
+        id: u16,
+        flag: bool,
+    }
+
+    impl PartialEq for TestNode {
+        fn eq(&self, other: &Self) -> bool {
+            self.id == other.id
+        }
+    }
+
+    impl std::hash::Hash for TestNode {
+        fn hash<H>(&self, state: &mut H)
+        where
+            H: std::hash::Hasher,
+        {
+            self.id.hash(state);
+        }
+    }
+
+    impl std::fmt::Display for TestNode {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "TestNode({})", self.id)
+        }
+    }
+
+    let mut net: Network<TestNode, String> = Network::new(false);
+
+    net.add_node(TestNode { id: 1, flag: false });
+    net.update_node(TestNode { id: 1, flag: true });
+
+    net.update();
+    let node = net.get_object(0);
+    assert!(node.is_some());
+    let node = node.unwrap();
+    assert_eq!(node.id, 1);
+    assert_eq!(node.flag, true);
+}
+
+#[cfg(not(any(
+    feature = "visualization",
+    feature = "visualization_wasm",
+    feature = "parallel"
+)))]
+#[test]
 fn network_directed() {
     let mut net: Network<u16, String> = Network::new(true);
+
+    let (added, _) = net.add_edge(1, 2, EdgeOptions::Simple);
+    assert!(!added);
 
     for i in 0..NUM_NODES {
         net.add_node(i);
@@ -150,6 +200,10 @@ fn network_directed() {
 #[test]
 fn network_undirected() {
     let mut net: Network<u16, String> = Network::new(false);
+
+    let (added1, added2) = net.add_edge(1, 2, EdgeOptions::Simple);
+    assert!(!added1);
+    assert!(!added2);
 
     for i in 0..NUM_NODES {
         net.add_node(i);

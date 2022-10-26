@@ -213,15 +213,48 @@ cfg_if! {
                     }
                 }
 
-                /// Apply a closure to all values.
+                /// Apply a closure to all objects.
+                /// You have to return an object.
+                /// You can return the same object or a new/updated one or `None` to remove it.
                 ///
                 /// # Arguments
-                /// * `closure` - closure to apply to all values
+                /// * `closure` - closure to apply to all objects
                 /// * `option` - option to read or write
-                /// ## `option` possible values
-                /// * `READ` - update the values from rlocs
-                /// * `WRITE` - update the values from locs
+                /// ## `option` possible variants
+                /// * `READ` - update the objects from rlocs
+                /// * `WRITE` - update the objects from locs
                 /// * `READWRITE` - check locs and rlocs simultaneously to apply the closure
+                ///
+                /// # Example
+                ///
+                /// ```
+                /// struct Object{
+                ///     id: i32,
+                ///     flag: bool,
+                /// }
+                ///
+                /// let mut grid = DenseGrid2D::<Object>::new(10, 10);
+                /// for i in 0..10 {
+                ///    for j in 0..10 {
+                ///       grid.set_object_location(Object::new(i*10 + j), &Int2D::new(i, j));
+                ///    }
+                /// }
+                ///
+                /// grid.apply_to_all_values(|loc, obj| {
+                ///     let mut obj = *obj
+                ///     obj.flag = true;
+                ///     Some(obj)
+                /// }, GridOption::WRITE); // Or READWRITE
+                ///
+                /// grid.lazy_update();
+                ///
+                /// grid.apply_to_all_values(|loc, obj| {
+                ///     assert!(obj.flag);
+                ///     None    // return None to delete object
+                /// }, GridOption::READ);  // Or READWRITE
+                ///
+                /// ```
+                ///
                 pub fn apply_to_all_values<F>(&self, closure: F, option: GridOption)
                 where
                     F: Fn(&Int2D, &O) -> Option<O>,
@@ -296,6 +329,32 @@ cfg_if! {
                 }
 
                 /// Return all the empty bags from read state.
+                ///
+                /// # Example
+                /// ```
+                /// struct Object{
+                ///    id: i32,
+                /// }
+                ///
+                /// let mut grid = DenseGrid2D::<Object>::new(10, 10);
+                /// let empty = grid.get_empty_bags();
+                /// assert_eq!(empty.len(), 100);
+                ///
+                /// for i in 0..10 {
+                ///   for j in 0..10 {
+                ///      grid.set_object_location(Object::new(i*10 + j), &Int2D::new(i, j));
+                ///   }
+                /// }
+                ///
+                /// // Before an update, the grid is not updated, so the empty bags are still available
+                /// let empty = grid.get_empty_bags();
+                /// assert_eq!(empty.len(), 100);
+                ///
+                /// grid.lazy_update();
+                /// let empty = grid.get_empty_bags();
+                /// assert_eq!(empty.len(), 0);
+                ///
+                /// ```
                 pub fn get_empty_bags(&self) -> Vec<Int2D>{
                     let mut empty_bags = Vec::new();
                     for i in 0 ..  self.width{
@@ -310,6 +369,25 @@ cfg_if! {
                 }
 
                 /// Return a random empty bag from read state. `None` if no bags are available.
+                ///
+                /// # Example
+                /// ```
+                /// struct Object{
+                ///   id: i32,
+                /// }
+                ///
+                /// let mut grid = DenseGrid2D::<Object>::new(10, 10);
+                /// let empty = grid.get_random_empty_bag();
+                /// assert(empty.is_some());
+                ///
+                /// grid.set_object_location(Object::new(1), &empty.unwrap());
+                /// grid.lazy_update();
+                ///
+                /// let empty2 = grid.get_random_empty_bag();
+                /// assert(empty2.is_some());
+                /// assert_ne!(empty.unwrap(), empty2.unwrap());
+                ///
+                /// ```
                 pub fn get_random_empty_bag(&self) -> Option<Int2D>{
 
                     let empty_bags = self.get_empty_bags();
@@ -324,47 +402,108 @@ cfg_if! {
                 }
 
 
-                            /// Return the position of the first element that matches the given value.
-            /// Return None if no element matches.
-            ///
-            /// # Arguments
-            /// * `value` - value to search for
-            pub fn get_location(&self, object: &O) -> Option<Int2D> {
-                let locs = self.locs[self.read].borrow();
-                for i in  0..self.width{
-                    for j in 0..self.height{
-                        let index = (i *  self.height + j) as usize;
-                        if locs[index].contains(object) {
-                            return Some(Int2D {x: i, y: j });
+                /// Return the position of the first element that matches the given value.
+                /// Return None if no element matches.
+                ///
+                /// # Arguments
+                /// * `value` - value to search for
+                ///
+                /// # Example
+                /// ```
+                /// struct Object{
+                ///  id: i32,
+                /// }
+                ///
+                /// let mut grid = DenseGrid2D::<u16>::new(10, 10);
+                /// grid.set_object_location(Object::new(1), &Int2D::new(5, 5));
+                /// grid.set_object_location(Object::new(1), &Int2D::new(6, 6));
+                ///
+                /// grid.lazy_update();
+                /// let pos = grid.get_location(&Object::new(1));
+                /// assert_eq!(pos, Some(Int2D::new(5, 5)));
+                ///
+                /// let none = grid.get_location(&Object::new(3));
+                /// assert_eq!(none, None);
+                /// ```
+                ///
+                pub fn get_location(&self, object: &O) -> Option<Int2D> {
+                    let locs = self.locs[self.read].borrow();
+                    for i in  0..self.width{
+                        for j in 0..self.height{
+                            let index = (i *  self.height + j) as usize;
+                            if locs[index].contains(object) {
+                                return Some(Int2D {x: i, y: j });
+                            }
                         }
                     }
+                    None
+
                 }
-                None
 
-            }
-
-            /// Return the position of the first element that matches the given value from write state.
-            /// Return None if no element matches.
-            ///
-            /// # Arguments
-            /// * `value` - value to search for
-            pub fn get_location_unbuffered(&self, object: &O) -> Option<Int2D> {
-                let locs = self.locs[self.write].borrow();
-                for i in  0..self.width{
-                    for j in 0..self.height{
-                        let index = (i *  self.height + j) as usize;
-                        if locs[index].contains(object) {
-                            return Some(Int2D {x: i, y: j });
+                /// Return the position of the first element that matches the given value from write state.
+                /// Return None if no element matches.
+                ///
+                /// # Arguments
+                /// * `value` - value to search for
+                ///
+                /// # Example
+                /// ```
+                /// struct Object{
+                ///  id: i32,
+                /// }
+                ///
+                /// let mut grid = DenseGrid2D::<u16>::new(10, 10);
+                /// grid.set_object_location(Object::new(1), &Int2D::new(5, 5));
+                /// grid.set_object_location(Object::new(1), &Int2D::new(6, 6));
+                ///
+                /// // Work on write state, so on unupdated state
+                /// let pos = grid.get_location_unbuffered(&Object::new(1));
+                /// assert_eq!(pos, Some(Int2D::new(5, 5)));
+                ///
+                /// let none = grid.get_location_unbuffered(&Object::new(2));
+                /// assert_eq!(none, None);
+                ///
+                /// grid.lazy_update();
+                /// let pos = grid.get_location_unbuffered(&Object::new(1));
+                /// assert_eq!(pos, None);
+                /// ```
+                ///
+                pub fn get_location_unbuffered(&self, object: &O) -> Option<Int2D> {
+                    let locs = self.locs[self.write].borrow();
+                    for i in  0..self.width{
+                        for j in 0..self.height{
+                            let index = (i *  self.height + j) as usize;
+                            if locs[index].contains(object) {
+                                return Some(Int2D {x: i, y: j });
+                            }
                         }
                     }
+                    None
                 }
-                None
-            }
 
                 /// Return all the objects in a specific position. `None` if position is empty.
                 ///
                 /// # Arguments
                 /// * `loc` - location to get the objects
+                ///
+                /// # Example
+                /// ```
+                /// struct Object{
+                /// id: i32,
+                /// }
+                ///
+                /// let mut grid = DenseGrid2D::<Object>::new(10, 10);
+                /// grid.set_object_location(Object::new(1), &Int2D::new(5, 5));
+                /// grid.set_object_location(Object::new(2), &Int2D::new(5, 5));
+                /// grid.set_object_location(Object::new(3), &Int2D::new(5, 5));
+                ///
+                /// grid.lazy_update();
+                /// let objects = grid.get_objects_at(&Int2D::new(5, 5));
+                /// assert_eq!(objects.unwrap().len(), 3);
+                ///
+                /// let none = grid.get_objects_at(&Int2D::new(6, 6));
+                /// assert_eq!(none, None);
+                /// ```
                 pub fn get_objects(&self, loc: &Int2D) -> Option<Vec<O>> {
                     let mut obj = Vec::new();
                     let index = ((loc.x * self.height) + loc.y) as usize;
@@ -385,6 +524,26 @@ cfg_if! {
                 ///
                 /// # Arguments
                 /// * `loc` - location to get the objects
+                ///
+                /// # Example
+                /// ```
+                /// struct Object{
+                ///     id: i32,
+                /// }
+                ///
+                /// let mut grid = DenseGrid2D::<Object>::new(10, 10);
+                /// grid.set_object_location(Object::new(1), &Int2D::new(5, 5));
+                /// grid.set_object_location(Object::new(2), &Int2D::new(5, 5));
+                /// grid.set_object_location(Object::new(3), &Int2D::new(5, 5));
+                ///
+                /// let objects = grid.get_objects_at_unbuffered(&Int2D::new(5, 5));
+                /// assert_eq!(objects.unwrap().len(), 3);
+                ///
+                /// grid.lazy_update();
+                /// let none = grid.get_objects_at_unbuffered(&Int2D::new(5, 5));
+                /// assert_eq!(none, None);
+                ///
+                /// ```
                 pub fn get_objects_unbuffered(&self, loc: &Int2D) -> Option<Vec<O>> {
 
                     let mut obj = Vec::new();
@@ -406,6 +565,27 @@ cfg_if! {
                 ///
                 /// # Arguments
                 /// * `closure` - closure to apply to each element of the matrix
+                ///
+                /// # Example
+                /// ```
+                /// struct Object{
+                ///    id: i32,
+                /// }
+                ///
+                /// let mut grid = DenseGrid2D::<Object>::new(10, 10);
+                /// for i in 0..10{
+                ///    for j in 0..10{
+                ///       grid.set_object_location(Object::new(i * j), &Int2D::new(i, j));
+                ///    }
+                /// }
+                ///
+                /// grid.lazy_update();
+                /// grid.iter_objects(|loc, obj| {
+                ///     assert_eq!(loc.x * loc.y, obj.id);
+                ///     // Do something
+                /// });
+                ///
+                /// ```
                 pub fn iter_objects<F>(&self, closure: F)
                 where
                     F: Fn(
@@ -431,6 +611,26 @@ cfg_if! {
                 ///
                 /// # Arguments
                 /// * `closure` - closure to apply to each element of the matrix
+                ///
+                /// # Example
+                /// ```
+                /// struct Object{
+                ///   id: i32,
+                /// }
+                ///
+                /// let mut grid = DenseGrid2D::<Object>::new(10, 10);
+                /// for i in 0..10{
+                ///     for j in 0..10{
+                ///         grid.set_object_location(Object::new(i * j), &Int2D::new(i, j));
+                ///     }
+                /// }
+                ///
+                /// grid.iter_objects_unbuffered(|loc, obj| {
+                ///     assert_eq!(loc.x * loc.y, obj.id);
+                ///     // Do something
+                /// });
+                ///
+                /// ```
                 pub fn iter_objects_unbuffered<F>(&self, closure: F)
                 where
                     F: Fn(
@@ -462,6 +662,29 @@ cfg_if! {
                 /// # Arguments
                 /// * `obj` - object to insert
                 /// * `loc` - location to insert the object
+                ///
+                /// # Example
+                /// ```
+                /// struct Object{
+                ///    id: i32,
+                /// }
+                ///
+                /// let mut grid = DenseGrid2D::<Object>::new(10, 10);
+                ///
+                /// grid.set_object_location(Object::new(1), &Int2D::new(5, 5));
+                /// grid.set_object_location(Object::new(2), &Int2D::new(5, 5));
+                ///
+                /// let none = grid.get_objects(&Int2D::new(5, 5));
+                /// assert_eq!(none, None);
+                ///
+                /// grid.lazy_update();
+                /// let objects = grid.get_objects(&Int2D::new(5, 5));
+                /// assert_eq!(objects.unwrap().len(), 2);
+                /// assert_eq!(objects.unwrap()[0].id, 1);
+                /// assert_eq!(objects.unwrap()[1].id, 2);
+                ///
+                /// ```
+                ///
                 pub fn set_object_location(&self, object: O, loc: &Int2D) {
                     let index = ((loc.x * self.height) + loc.y) as usize;
                     let mut locs = self.locs[self.write].borrow_mut();
@@ -481,6 +704,28 @@ cfg_if! {
                 /// # Arguments
                 /// * `obj` - object to remove
                 /// * `loc` - location to remove the object
+                ///
+                /// # Example
+                /// ```
+                /// struct Object{
+                ///   id: i32,
+                /// }
+                ///
+                /// let mut grid = DenseGrid2D::<Object>::new(10, 10);
+                /// grid.set_object_location(Object::new(1), &Int2D::new(5, 5));
+                /// grid.set_object_location(Object::new(2), &Int2D::new(5, 5));
+                ///
+                /// grid.remove_object_location(&Object::new(1), &Int2D::new(5, 5));
+                /// let objects = grid.get_objects_unbuffered(&Int2D::new(5, 5));
+                /// assert_eq!(objects.unwrap().len(), 1);
+                /// assert_eq!(objects.unwrap()[0].id, 2);
+                ///
+                /// grid.lazy_update();
+                /// let objects = grid.get_objects(&Int2D::new(5, 5));
+                /// assert_eq!(objects.unwrap().len(), 1);
+                /// assert_eq!(objects.unwrap()[0].id, 2);
+                ///
+                /// ```
                 pub fn remove_object_location(&self, object: O, loc: &Int2D) {
                     let index = ((loc.x * self.height) + loc.y) as usize;
                     let mut locs = self.locs[self.write].borrow_mut();

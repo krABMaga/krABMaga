@@ -116,12 +116,6 @@ macro_rules! extend_dataframe {
 ///     ExploreMode::Matched,
 /// );
 ///
-/// if !result.is_empty() {
-///     // I'm the master
-///     // build csv using all the results
-///     let name = "explore_result".to_string();
-///     let _res = write_csv(&name, &result);
-/// }
 /// ```
 #[macro_export]
 macro_rules! explore_distributed_mpi {

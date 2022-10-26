@@ -18,7 +18,42 @@
 /// * `ComputingMode::Distributed`: the exploration will be performed distributing the computation
 ///    on different machines
 /// * `ComputingMode::Cloud`: computation will be performed on the cloud.
-
+///
+/// # Example
+///
+/// ```
+/// let param1 = gen_param!(u32, 0, 10, 5);
+/// let param2 = gen_param!(f64, 0, 10, 5);
+///
+/// // implement trait State
+/// struct State {  
+///   param: u32,
+///   param2: f64,
+///   result: f64,
+/// }
+///
+/// // input and input_vec are input of State constructor
+/// // outputs are fields of State to get results
+/// // ComputingMode by default is Sequential
+/// explore!(
+///     STEP,
+///     rep_conf, // How many times run a configuration
+///     State,
+///     input {
+///        param: u32,
+///        param2: f64,
+///     },
+///     output [
+///       result: f64,
+///     ],
+///     ExploreMode::Matched,
+///     // ComputingMode::Parallel, ComputingMode::Distributed, ComputingMode::Cloud
+/// );
+///
+///
+///
+/// ````
+///
 macro_rules! explore {
     (
         $nstep: expr, $rep_conf:expr, $state:ty,
@@ -26,7 +61,7 @@ macro_rules! explore {
         input_vec {$($input_vec:ident:  [$input_ty_vec:ty; $input_len:expr])*},
         output [$($output:ident: $output_ty: ty )*],
         $explore_mode: expr,
-        $computing_mode: expr,
+        $computing_mode: expr
     ) => {{
         use $crate::cfg_if::cfg_if;
         use $crate::engine::schedule::Schedule;
@@ -92,14 +127,14 @@ macro_rules! explore {
         input {$($input:ident: $input_ty: ty )*},
         output [$($output:ident: $output_ty: ty )*],
         $explore_mode: expr,
-        $computing_mode: expr,
+        $computing_mode: expr
     ) => {{
         explore!($nstep, $rep_conf, $state,
             input {$($input: $input_ty )*},
             input_vec {},
             output [$($output: $output_ty )*],
             $explore_mode,
-            $computing_mode,
+            $computing_mode
         )
     }};
 
@@ -181,7 +216,7 @@ macro_rules! simulate_explore {
 ///
 /// // input and input_vec are input of State constructor
 /// // outputs are fields of State to get results
-/// let result = explore_parallel!(
+/// explore_sequrntial!(
 ///     STEP,
 ///     rep_conf, // How many times run a configuration
 ///     State,
@@ -194,13 +229,6 @@ macro_rules! simulate_explore {
 ///     ],
 ///     ExploreMode::Matched,
 /// );
-///
-/// if !result.is_empty() {
-///     // I'm the master
-///     // build csv using all the results
-///     let name = "explore_result".to_string();
-///     let _res = write_csv(&name, &result);
-/// }
 /// ```
 macro_rules! explore_sequential {
 
@@ -323,13 +351,6 @@ macro_rules! explore_sequential {
 ///     ],
 ///     ExploreMode::Matched,
 /// );
-///
-/// if !result.is_empty() {
-///     // I'm the master
-///     // build csv using all the results
-///     let name = "explore_result".to_string();
-///     let _res = write_csv(&name, &result);
-/// }
 /// ```
 macro_rules! explore_parallel {
         ($nstep: expr, $rep_conf:expr, $state:ty,

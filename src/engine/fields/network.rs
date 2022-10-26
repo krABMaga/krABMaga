@@ -166,7 +166,7 @@ cfg_if! {
                 for k in edges.keys() {
                     match self.get_edges(id2nodes.get_read(k).expect("error on get_read").clone()) {
                         Some(es) => {
-                            dist.push((&*id2nodes.get_read(k).expect("error on get_read"), es.len() as i32));
+                            dist.push((id2nodes.get_read(k).expect("error on get_read"), es.len() as i32));
                         }
                         None => {}
                     }
@@ -537,14 +537,21 @@ cfg_if! {
                 true
             }
 
-            pub fn update_node(&self, u: O){
-                let nodes2id = self.nodes2id.borrow();
-                let uid = match nodes2id.get(&u){
-                    Some(u)=> u,
-                    None => return
-                };
+            pub fn update_node(&self, uid: u32, u: O){
+                let mut nodes2id = self.nodes2id.borrow_mut();
+                // let uid = match nodes2id.get(&u){
+                //     Some(u)=> u,
+                //     None => return
+                // };
+
                 match self.id2nodes.get_write(&uid){
-                    Some(mut value) => *value = u,
+                    Some(mut value) => {
+
+                        if let Some(_) = nodes2id.remove(&value){
+                            nodes2id.insert(u.clone(), uid);
+                        }
+                        *value = u
+                    },
                     None => return
                 };
             }
@@ -562,7 +569,42 @@ cfg_if! {
         }
 
     } else { // not for visualization or parallel feature
+
         /// A network is a collection of nodes and edges.
+        /// Your Node type can be a simple one like `u32` or a more complex one like a struct.
+        /// If you want to use a struct as a node, you have to implement several traits.
+        /// To correctly use the `Network` struct, `Hash` and `PartialEq` traits have
+        /// to work with ID of the node:
+        ///
+        /// # Example
+        /// ```
+        /// #[derive(Clone, Debug, Eq)]
+        /// struct Node {
+        ///    id: u32,
+        ///    flag: bool,
+        /// }
+        ///
+        /// // implement Hash and PartialEq traits
+        /// impl Hash for Node {
+        ///    fn hash<H: Hasher>(&self, state: &mut H) {
+        ///       self.id.hash(state);
+        ///   }
+        /// }
+        ///
+        /// impl PartialEq for Node {
+        ///   fn eq(&self, other: &Self) -> bool {
+        ///      self.id == other.id
+        ///     }
+        /// }
+        ///
+        /// impl Display for Node {
+        ///    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+        ///       write!(f, "Node: {}", self.id)
+        ///   }
+        /// }
+        ///
+        /// ```
+        ///
         pub struct Network<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> {
             /// Write state of edges
             // pub edges: RefCell<HashMap<u32, Vec<Edge<L>>>>,
@@ -619,6 +661,10 @@ cfg_if! {
             /// Create a new Network. Network can directed or not.
             /// # Arguments
             /// * `d` - true if the network is directed
+            ///
+            /// # Generic Arguments
+            /// * `O` - type of nodes.
+            /// * `L` - type of labels.
             pub fn new(d: bool) -> Network<O, L> {
                 Network {
                     // edges: RefCell::new(HashMap::new()),
@@ -641,6 +687,53 @@ cfg_if! {
             /// * `u` - source node
             /// * `v` - target node
             /// * `edge_options` - edge options enum (label and/or weight)
+            ///
+            /// # Returns
+            /// * `(bool, bool)` - first bool is true if the edge is added, false otherwise.
+            /// Second bool is true if the reverse edge is added, false otherwise.
+            /// If the network is directed, the second bool is always false.
+            ///
+            /// # Example: Directed network
+            /// ```
+            /// let mut net = Network::<u32, String>::new(true);
+            /// let (added, _) = net.add_edge(1, 2, EdgeOptions::Simple);
+            ///
+            /// // nodes aren't added automatically
+            /// assert!(!added);
+            ///
+            /// // add nodes
+            /// net.add_node(1);
+            /// net.add_node(2);
+            ///
+            /// // add edge
+            /// let (added, _) = net.add_edge(1, 2, EdgeOptions::Simple);
+            /// assert!(added);
+            ///
+            /// // add reverse edge manually
+            /// let (added, _) = net.add_edge(2, 1, EdgeOptions::Simple);
+            /// assert!(added);
+            ///
+            /// ```
+            ///
+            /// # Example: Undirected network
+            /// ```
+            /// let mut net = Network::<u32, String>::new(false);
+            /// let (added1, added2) = net.add_edge(1, 2, EdgeOptions::Simple);
+            ///
+            /// // nodes aren't added automatically
+            /// assert!(!added1);
+            /// assert!(!added2);
+            ///
+            /// // add nodes
+            /// net.add_node(1);
+            /// net.add_node(2);
+            ///
+            /// // add edge
+            /// let (added1, added2) = net.add_edge(1, 2, EdgeOptions::Simple);
+            /// assert!(added1);
+            /// assert!(added2);
+            /// ```
+            ///
             pub fn add_edge(&self, u: O, v: O, edge_options: EdgeOptions<L>) -> (bool, bool) {
                 let nodes2id = self.nodes2id[self.write].borrow_mut();
                 let mut vbool = false;
@@ -683,10 +776,23 @@ cfg_if! {
                 (ubool, vbool)
             }
 
-            /// Add a new node to the network
+            /// Add a new node to the network.
             ///
             /// # Arguments
             /// * `u` - node to add
+            ///
+            /// # Example
+            /// ```
+            /// let mut net = Network::<u32, String>::new(true);
+            /// net.add_node(0);
+            ///
+            /// net.update();
+            ///
+            /// let node = net.get_object(0);
+            /// assert_eq!(node, Some(&0));
+            ///
+            /// ```
+            ///
             pub fn add_node(&self, u: O) {
                 let mut nodes2id = self.nodes2id[self.write].borrow_mut();
                 let mut id2nodes = self.id2nodes[self.write].borrow_mut();
@@ -704,83 +810,62 @@ cfg_if! {
                 }
             }
 
-            /// Part of "preferential attachment" process.
-            ///
-            /// Add a edges to a new node. New network members prefer to make a connection to the more popular existing members.
-            ///
-            /// # Arguments
-            /// * `u` - node to connect
-            /// * `n_sample` - number of nodes to connect to
-            /// * `my_seed` - seed for random number generator
-            pub fn add_prob_edge(&self, u: O, n_sample: &usize, my_seed: u64) {
-                let id2nodes = self.id2nodes[self.write].borrow();
-                let mut dist: Vec<(&O, i32)> = Vec::new();
-                let edges = self.edges[self.write].borrow();
-
-                for k in edges.keys() {
-                    if let Some(es) = self.get_edges(id2nodes.get(k).expect("error on get").clone()) {
-                        dist.push((&*id2nodes.get(k).expect("error on get"), es.len() as i32));
-                    }
-                }
-
-                // let mut rng = Pcg64::seed_from_u64(my_seed);
-                let mut rng = StdRng::seed_from_u64(my_seed);
-                let amount: usize = if edges.len() < *n_sample {
-                    edges.len()
-                } else {
-                    *n_sample
-                };
-
-                let choices_list = dist
-                    .choose_multiple_weighted(&mut rng, amount, |dist| dist.1)
-                    .expect("error on choose_multiple_weighted")
-                    .collect::<Vec<_>>();
-
-                for choice in choices_list {
-                    self.add_edge(u.clone(), choice.0.clone(), EdgeOptions::Simple);
-                }
-            }
-
-            // pub fn update_edge(&self, u: &O, v: &O, edge_options: EdgeOptions<L>) -> Option<Edge<O, L>> {
-            //     let e = Edge::new(u.clone(), v.clone(), edge_options);
-            //     let mut edges = self.edges[self.write].borrow_mut();
-            //     let ris = match edges.get_mut(u) {
-            //         Some(uedges) => {
-            //             uedges.retain(|entry| {
-            //                 !((entry.u == e.u && entry.v == e.v) || (entry.v == e.u && entry.u == e.v))
-            //             });
-            //             uedges.push(e.clone());
-            //             Some(e.clone())
-            //         }
-            //         None => None,
-            //     };
-
-            //     if !self.direct {
-            //         match edges.get_mut(v) {
-            //             Some(uedges) => {
-            //                 uedges.retain(|entry| {
-            //                     !((entry.u == e.u && entry.v == e.v) || (entry.v == e.u && entry.u == e.v))
-            //                 });
-            //                 uedges.push(e.clone());
-            //             }
-            //             None => panic!("Error! undirected edge not found"),
-            //         }
-            //     }
-            //     ris
-            // }
-
-            // pub fn get_nodes(&self) -> Vec<&O> {
-            //     self.edges[self.read].borrow().keys().collect()
-            // }
 
             /// Get an `Edge` from the network
             ///
             /// # Arguments
             /// * `u` - source node
             /// * `v` - target node
+            ///
+            /// If the network is directed, the edge is searched from `u` to `v`.
+            ///
+            /// If the network is undirected, the edge is searched from `u` to `v` and from `v` to `u`.
+            /// The first edge found is returned.
+            ///
+            /// # Returns
+            /// * `Option<Edge<L>>` - `Edge` if it exists, `None` otherwise
+            ///
+            /// # Example: Directed network
+            /// ```
+            /// let mut net = Network::<u32, String>::new(true);
+            ///
+            /// net.add_node(0);
+            /// net.add_node(1);
+            /// net.add_edge(0, 1, EdgeOptions::Simple);
+            ///
+            /// net.update();
+            ///
+            /// let edge = net.get_edge(0, 1);
+            /// assert!(edge.is_some());
+            ///
+            /// let edge = net.get_edge(1, 0);
+            /// assert!(edge.is_none());
+            ///
+            /// ```
+            ///
+            /// # Example: Undirected network
+            /// ```
+            /// let mut net = Network::<u32, String>::new(false);
+            ///
+            /// net.add_node(0);
+            /// net.add_node(1);
+            /// net.add_edge(0, 1, EdgeOptions::Simple);
+            ///
+            /// let none = net.get_edge(1, 0);
+            /// assert!(none.is_none());
+            ///
+            /// net.update();
+            ///
+            /// let edge = net.get_edge(0, 1);
+            /// assert!(edge.is_some());
+            ///
+            /// let edge = net.get_edge(1, 0);
+            /// assert!(edge.is_some());
+            ///
+            /// ```
             pub fn get_edge(&self, u: O, v: O) -> Option<Edge<L>> {
                 let nodes2id = self.nodes2id[self.read].borrow();
-                //CHECK
+
                 let id2nodes = self.id2nodes[self.read].borrow();
 
                 let uid = match nodes2id.get(&u) {
@@ -812,6 +897,65 @@ cfg_if! {
             ///
             /// # Arguments
             /// * `u` - node
+            ///
+            /// # Returns
+            /// * `Option<Vec<Edge<L>>>` - `Vec` of `Edge`s if the node exists, `None` otherwise.
+            ///
+            /// # Example: Directed network
+            /// ```
+            /// let mut net = Network::<u32, String>::new(true);
+            ///
+            /// net.add_node(0);
+            /// net.add_node(1);
+            /// net.add_node(2);
+            /// net.add_node(3);
+            /// net.add_edge(0, 1, EdgeOptions::Simple);
+            /// net.add_edge(0, 2, EdgeOptions::Simple);
+            ///
+            /// net.update();
+            ///
+            /// let edges = net.get_edges(0);
+            /// assert_eq!(edges.unwrap().len(), 2);
+            ///
+            /// let edges = net.get_edges(1);
+            /// assert_eq!(edges.unwrap().len(), 1);
+            ///
+            /// let edges = net.get_edges(3);
+            /// assert!(edges.unwrap().is_empty());
+            ///
+            /// let edges = net.get_edges(4);
+            /// assert!(edges.is_none());
+            ///
+            /// ```
+            ///
+            /// # Example: Undirected network
+            /// ```
+            /// let mut net = Network::<u32, String>::new(false);
+            ///
+            /// net.add_node(0);
+            /// net.add_node(1);
+            /// net.add_node(2);
+            /// net.add_node(3);
+            /// net.add_edge(0, 1, EdgeOptions::Simple);
+            /// net.add_edge(0, 2, EdgeOptions::Simple);
+            ///
+            /// net.update();
+            ///
+            /// let edges = net.get_edges(0);
+            /// // 2 edges from 0 to 1 and 2, and 2 edges from 1 and 2 to 0
+            /// assert_eq!(edges.unwrap().len(), 4);
+            ///
+            /// let edges = net.get_edges(1);
+            /// // 1 edge from 1 to 0, and 1 edge from 0 to 1
+            /// assert_eq!(edges.unwrap().len(), 2);
+            ///
+            /// let edges = net.get_edges(3);
+            /// assert!(edges.unwrap().is_empty());
+            ///
+            /// let edges = net.get_edges(4);
+            /// assert!(edges.is_none());
+            ///
+            /// ```
             pub fn get_edges(&self, u: O) -> Option<Vec<Edge<L>>> {
                 let nodes2id = self.nodes2id[self.read].borrow();
                 let uid = match nodes2id.get(&u) {
@@ -827,17 +971,89 @@ cfg_if! {
             ///
             /// # Arguments
             /// * `uid` - id of the node
+            ///
+            /// # Returns
+            /// * `Option<O>` - node if the id exists, `None` otherwise.
+            ///
+            /// # Example
+            /// ```
+            /// id: u32,
+            ///
+            /// let mut net = Network::<u32, String>::new(true);
+            ///
+            /// net.add_node(1);
+            ///
+            /// net.update();
+            ///
+            /// // PS: the id is not the same as the node, it is an internal id
+            /// // that is used to store the node in the network
+            /// let node = net.get_object(0);
+            /// assert_eq!(node.unwrap(), 1);
+            ///
+            /// let none = net.get_object(1);
+            /// assert!(none.is_none());
+            ///
             pub fn get_object(&self, uid: u32) -> Option<O> {
                 // self.id2nodes[self.read].borrow_mut().get(&uid).cloned()
                 self.id2nodes[self.read].borrow().get(&uid).cloned()
             }
 
-            ///Generate an undirected network based on
-            ///Barabási-Albert’s preferential attachment model.
+            /// Get the id of a node. Returns `None` if the node is not found
+            ///
+            /// # Arguments
+            /// * `u` - node
+            ///
+            /// # Returns
+            /// * `Option<u32>` - id of the node if the node exists, `None` otherwise.
+            ///
+            /// # Example
+            /// ```
+            /// let mut net = Network::<u32, String>::new(true);
+            ///
+            /// net.add_node(1);
+            ///
+            /// net.update();
+            ///
+            /// // PS: the id is not the same as the node, it is an internal id
+            /// // that is used to store the node in the network
+            /// let id = net.get_id(1);
+            /// assert_eq!(id.unwrap(), 0);
+            ///
+            /// let none = net.get_id(0);
+            /// assert!(none.is_none());
+            ///
+            /// ```
+            ///
+            pub fn get_id(&self, u: O) -> Option<u32> {
+                self.nodes2id[self.read].borrow().get(&u).cloned()
+            }
+
+            /// Generate an undirected network based on
+            /// Barabási-Albert’s preferential attachment model.
+            /// Create the edges, but not the nodes.
+            ///
             ///
             /// # Arguments
             /// * `node_set` - nodes of the network
             /// * `init_edges` - initial edges for each node
+            ///
+            /// # Example
+            /// ```
+            /// let mut net = Network::<u32, String>::new(false);
+            /// let node_set: &[u32] = &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+            ///
+            /// for node in node_set {
+            ///    net.add_node(*node);
+            /// }
+            ///
+            /// net.update();
+            ///
+            /// // 1 edge for each node
+            /// net.preferential_attachment_BA(node_set, 1);
+            ///
+            /// // Network is ready to be used
+            /// ```
+            ///
             #[allow(non_snake_case)]
             pub fn preferential_attachment_BA(
                 &mut self,
@@ -906,14 +1122,55 @@ cfg_if! {
                 self.update();
             }
 
-            ///Generate an undirected network based on
-            ///Barabási-Albert’s preferential attachment model
-            ///with defined seed.
+            /// Generate an undirected network based on
+            /// Barabási-Albert’s preferential attachment model
+            /// with defined seed.
+            /// Create the edges, but not the nodes.
             ///
             /// # Arguments
             /// * `node_set` - nodes of the network
             /// * `init_edges` - initial edges for each node
             /// * `my_seed` - seed for the random number generator
+            ///
+            /// # Example
+            /// ```
+            /// let mut net = Network::<u32, String>::new(false);
+            /// let mut net2 = Network::<u32, String>::new(false);
+            ///
+            /// let node_set: &[u32] = &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+            ///
+            /// for node in node_set {
+            ///   net.add_node(*node);
+            ///   net2.add_node(*node);
+            /// }
+            ///
+            /// net.update();
+            /// net2.update();
+            ///
+            /// // 1 edge for each node
+            /// net.preferential_attachment_BA_with_seed(node_set, 1, 5);
+            /// net2.preferential_attachment_BA_with_seed(node_set, 1, 5);
+            ///
+            /// // networks are the same
+            /// for node in node_set {
+            ///    let edges = match net.get_edges(*node) {
+            ///        Some(edges) => edges,
+            ///        None => Vec::new(),
+            ///    };
+            ///    let edges2 = match net2.get_edges(*node) {
+            ///        Some(edges) => edges,
+            ///        None => Vec::new(),
+            ///    };
+            ///    assert_eq!(edges.len(), edges2.len());
+            ///    for i in 0..edges.len() {
+            ///        let e1 = &edges[i];
+            ///        let e2 = &edges2[i];
+            ///        assert_eq!(e1.u, e2.u);
+            ///        assert_eq!(e1.v, e2.v);
+            ///    }
+            /// }
+            ///
+            /// ```
             #[allow(non_snake_case)]
             pub fn preferential_attachment_BA_with_seed(
                 &mut self,
@@ -981,6 +1238,27 @@ cfg_if! {
 
 
             /// Remove all Network edges
+            ///
+            /// # Example
+            /// ```
+            /// let mut net = Network::<u32, String>::new(false);
+            ///
+            /// net.add_node(0);
+            /// net.add_node(1);
+            /// net.add_node(2);
+            ///
+            /// net.add_edge(0, 1, EdgeOptions::Simple);
+            /// net.add_edge(0, 2, EdgeOptions::Simple);
+            /// net.add_edge(1, 2, EdgeOptions::Simple);
+            ///
+            /// net.remove_all_edges();
+            /// net.update();
+            ///
+            /// assert!(net.get_edges(0).unwrap().is_empty());
+            /// assert!(net.get_edges(1).unwrap().is_empty());
+            /// assert!(net.get_edges(2).unwrap().is_empty());
+            /// ```
+            ///
             pub fn remove_all_edges(&self) {
                 let mut edges = self.edges[self.write].borrow_mut();
                 edges.clear();
@@ -991,6 +1269,44 @@ cfg_if! {
             /// # Arguments
             /// * `u` - instance of the first node
             /// * `v` - instance of the second node
+            ///
+            /// # Returns
+            /// * `Option<Edge<L>` - the removed edge, if it existed.
+            ///
+            /// # Example: Directed Network
+            /// ```
+            /// let mut net = Network::<u32, String>::new(true);
+            ///
+            /// net.add_node(0);
+            /// net.add_node(1);
+            ///
+            /// net.add_edge(0, 1, EdgeOptions::Simple);
+            /// net.add_edge(1, 0, EdgeOptions::Simple);
+            ///
+            /// net.remove_edge(0, 1);
+            /// net.update();
+            ///
+            /// assert!(net.get_edges(0).unwrap().is_empty());
+            /// assert_eq!(net.get_edges(1).unwrap().len(), 1);
+            ///
+            /// ```
+            ///
+            /// # Example: Undirected Network
+            /// ```
+            /// let mut net = Network::<u32, String>::new(false);
+            ///
+            /// net.add_node(0);
+            /// net.add_node(1);
+            ///
+            /// net.add_edge(0, 1, EdgeOptions::Simple);
+            ///
+            /// net.remove_edge(0, 1);
+            /// net.update();
+            ///
+            /// assert!(net.get_edges(0).unwrap().is_empty());
+            /// assert!(net.get_edges(1).unwrap().is_empty());
+            ///
+            /// ```
             pub fn remove_edge(&self, u: O, v: O) -> Option<Edge<L>> {
                 let nodes2id = self.nodes2id[self.read].borrow();
 
@@ -1004,7 +1320,7 @@ cfg_if! {
                     None => return None,
                 };
 
-                // CHECK
+
                 let mut edges = self.edges[self.write].borrow_mut();
                 let u_edges = edges.get_mut(uid).expect("error on get_mut");
 
@@ -1019,6 +1335,7 @@ cfg_if! {
 
                 if !self.direct {
                     let v_edges = edges.get_mut(vid).expect("error on get_mut");
+                    println!(" HELLO ");
                     v_edges.retain(|entry| {
                         !((entry.u == *uid && entry.v == *vid) || (entry.u == *vid && entry.v == *uid))
                     });
@@ -1032,11 +1349,57 @@ cfg_if! {
             ///
             /// # Arguments
             /// * `u` - instance of the node
+            ///
+            /// # Returns
+            /// * `Vec<Edge<L>>` - the removed edges, if they existed.
+            ///
+            /// # Example: Directed Network
+            /// ```
+            /// let mut net = Network::<u32, String>::new(true);
+            ///
+            /// net.add_node(0);
+            /// net.add_node(1);
+            /// net.add_node(2);
+            ///
+            /// net.add_edge(1, 0, EdgeOptions::Simple);
+            /// net.add_edge(2, 0, EdgeOptions::Simple);
+            /// net.add_edge(0, 1, EdgeOptions::Simple);
+            ///
+            /// net.remove_incoming_edges(0);
+            /// net.update();
+            ///
+            /// assert_eq!(net.get_edges(0).unwrap().len(), 1);
+            /// assert!(net.get_edges(1).unwrap().is_empty());
+            /// assert!(net.get_edges(2).unwrap().is_empty());
+            ///
+            /// ```
+            ///
+            /// # Example: Undirected Network
+            /// Removing incoming edges of a node in an undirected network is equivalent
+            /// to removing all edges of the node
+            ///
+            /// ```
+            /// let mut net = Network::<u32, String>::new(false);
+            ///
+            /// net.add_node(0);
+            /// net.add_node(1);
+            /// net.add_node(2);
+            ///
+            /// net.add_edge(1, 0, EdgeOptions::Simple);
+            /// net.add_edge(2, 0, EdgeOptions::Simple);
+            /// net.add_edge(1, 2, EdgeOptions::Simple);
+            ///
+            /// net.remove_incoming_edges(0);
+            /// net.update();
+            ///
+            /// assert!(net.get_edges(0).unwrap().is_empty());
+            /// assert_eq!(net.get_edges(1).unwrap().len(), 1);
+            /// assert_eq!(net.get_edges(2).unwrap().len(), 1);
+            ///
+            /// ```
             pub fn remove_incoming_edges(&self, u: O) -> Option<Vec<Edge<L>>> {
-                // let edges = self.edges.borrow();
-                // let nodes = edges.keys();
+
                 let mut ris = vec![];
-                //CHECK
                 let id2nodes = self.id2nodes[self.write].borrow();
                 let nodes2id = self.nodes2id[self.read].borrow();
 
@@ -1061,10 +1424,55 @@ cfg_if! {
             ///
             /// # Arguments
             /// * `u` - instance of the node
+            ///
+            /// # Returns
+            /// * `Option<Vec<Edge<L>>>` - the removed edges, if they existed.
+            ///
+            /// # Example: Directed Network
+            /// ```
+            /// let mut net = Network::<u32, String>::new(true);
+            ///
+            /// net.add_node(0);
+            /// net.add_node(1);
+            /// net.add_node(2);
+            ///
+            /// net.add_edge(0, 1, EdgeOptions::Simple);
+            /// net.add_edge(0, 2, EdgeOptions::Simple);
+            /// net.add_edge(2, 0, EdgeOptions::Simple);
+            ///
+            /// net.remove_outgoing_edges(0);
+            /// net.update();
+            ///
+            /// assert!(net.get_edges(0).unwrap().is_empty());
+            /// assert_eq!(net.get_edges(2).unwrap()len(), 1);
+            ///
+            /// ```
+            ///
+            /// # Example: Undirected Network
+            /// Removing outgoing edges of a node in an undirected network is equivalent
+            /// to removing all edges of the node
+            /// ```
+            /// let mut net = Network::<u32, String>::new(false);
+            ///
+            /// net.add_node(0);
+            /// net.add_node(1);
+            /// net.add_node(2);
+            ///
+            /// net.add_edge(0, 1, EdgeOptions::Simple);
+            /// net.add_edge(0, 2, EdgeOptions::Simple);
+            /// net.add_edge(1, 2, EdgeOptions::Simple);
+            ///
+            /// net.remove_outgoing_edges(0);
+            /// net.update();
+            ///
+            /// assert!(net.get_edges(0).unwrap().is_empty());
+            /// assert_eq!(net.get_edges(1).unwrap().len(), 1);
+            /// assert_eq!(net.get_edges(2).unwrap().len(), 1);
+            /// ```
+            ///
             pub fn remove_outgoing_edges(&self, u: O) -> Option<Vec<Edge<L>>> {
 
                 let mut ris = vec![];
-                //CHECK
                 let id2nodes = self.id2nodes[self.write].borrow();
                 let nodes2id = self.nodes2id[self.read].borrow();
 
@@ -1086,10 +1494,53 @@ cfg_if! {
             }
 
 
-            /// Remove a specific node
-            ///
+            /// Remove a specific node.
+            /// All edges connected to the node are removed.
             /// # Arguments
             /// * `u` - instance of the node
+            ///
+            /// # Returns
+            /// * `bool` - true if the node was removed, false otherwise
+            ///
+            /// # Example: Directed Network
+            /// ```
+            /// let mut net = Network::<u32, String>::new(true);
+            ///
+            /// net.add_node(0);
+            /// net.add_node(1);
+            /// net.add_node(2);
+            ///
+            /// net.add_edge(0, 1, EdgeOptions::Simple);
+            /// net.add_edge(0, 2, EdgeOptions::Simple);
+            /// net.add_edge(2, 0, EdgeOptions::Simple);
+            ///
+            /// net.remove_node(0);
+            /// net.update();
+            ///
+            /// assert!(net.get_edges(0).is_none());
+            /// assert!(net.get_edges(2).unwrap().is_empty());
+            ///
+            /// ```
+            ///
+            /// # Example: Undirected Network
+            /// ```
+            /// let mut net = Network::<u32, String>::new(false);
+            ///
+            /// net.add_node(0);
+            /// net.add_node(1);
+            /// net.add_node(2);
+            ///
+            /// net.add_edge(0, 1, EdgeOptions::Simple);
+            /// net.add_edge(0, 2, EdgeOptions::Simple);
+            ///
+            /// net.remove_node(0);
+            /// net.update();
+            ///
+            /// assert!(net.get_edges(0).is_none());
+            /// assert_eq!(net.get_edges(1).unwrap().is_empty());
+            /// assert_eq!(net.get_edges(2).unwrap().is_empty());
+            ///
+            /// ```
             pub fn remove_node(&self, u: O) -> bool {
                 let uid: u32;
                 {
@@ -1118,7 +1569,6 @@ cfg_if! {
                     None => return false,
                 };
 
-                //CHECK
                 let mut id2nodes = self.id2nodes[self.write].borrow_mut();
                 let mut nodes2id = self.nodes2id[self.write].borrow_mut();
 
@@ -1127,13 +1577,42 @@ cfg_if! {
                 true
             }
 
-            /// Update node info
+            /// Update node info.
+            /// This method worsk if nodes are `Struct` with `Hash`, `Eq` and `PartialEq`
+            /// traits implemented. All the methods has to consider only di id of the node.
+            ///
+            /// Primitive types are not supported with this method, because their update changes
+            /// the hash value, and the node is not found in the network.
             ///
             /// # Arguments
             /// * `u` - instance of the node to update
+            ///
+            /// # Example
+            /// ```
+            /// #[derive(Clone, Debug, Eq)]
+            /// struct Node {
+            ///    id: u32,
+            ///    flag: bool,
+            /// }
+            ///
+            /// // implement Hash and PartialEq traits for Node
+            ///
+            /// let mut net = Network::<Node, String>::new(true);
+            /// let n = Node { id: 0, flag: false };
+            ///
+            /// net.add_node(n.clone());
+            ///
+            /// net.update_node(Node { id: 0, flag: true });
+            /// net.update();
+            ///
+            /// assert!(net.get_node(0).unwrap().flag);
+            /// ```
             pub fn update_node(&self, u: O) {
+
                 let nodes2id = self.nodes2id[self.write].borrow_mut();
                 let mut id2nodes = self.id2nodes[self.write].borrow_mut();
+
+
                 let uid = match nodes2id.get(&u) {
                     Some(u) => u,
                     None => return,

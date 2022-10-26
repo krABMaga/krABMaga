@@ -134,6 +134,24 @@ cfg_if! {
             /// * `READ` - update the values from rlocs
             /// * `WRITE` - update the values from locs
             /// * `READWRITE` - check locs and rlocs simultaneously to apply the closure
+            ///
+            /// # Example
+            /// ```
+            /// let mut grid = DenseNumberGrid2D::<u16>::new(10, 10);
+            /// for i in 0..10 {
+            ///    for j in 0..10 {
+            ///       grid.set_value_location(i as u16, &Int2D::new(i, j));
+            ///   }
+            /// }
+            ///
+            /// // Need WRITE or READWRITE option to update the values
+            /// // because Read state isn't updated
+            /// grid.apply_to_all_values(|x| x + 1, GridOption::WRITE);
+            ///
+            /// grid.lazy_update();
+            /// grid.apply_to_all_values(|x| x - 1, GridOption::READ);
+            ///
+            /// ```
             pub fn apply_to_all_values<F>(&self, closure: F, option: GridOption)
             where
                 F: Fn(&T) -> T,
@@ -181,6 +199,21 @@ cfg_if! {
             ///
             /// # Arguments
             /// * `value` - value to search for
+            ///
+            /// # Example
+            /// ```
+            /// let mut grid = DenseNumberGrid2D::<u16>::new(10, 10);
+            /// grid.set_value_location(1, &Int2D::new(5, 5));
+            /// grid.set_value_location(1, &Int2D::new(6, 6));
+            ///
+            /// grid.lazy_update();
+            /// let pos = grid.get_location(1);
+            /// assert_eq!(pos, Some(Int2D::new(5, 5)));
+            ///
+            /// let none = grid.get_location(2);
+            /// assert_eq!(none, None);
+            /// ```
+            ///
             pub fn get_location(&self, value: T) -> Option<Int2D> {
                 let locs = self.locs[self.read].borrow();
                 for i in  0..self.width{
@@ -200,6 +233,25 @@ cfg_if! {
             ///
             /// # Arguments
             /// * `value` - value to search for
+            ///
+            /// # Example
+            /// ```
+            /// let mut grid = DenseNumberGrid2D::<u16>::new(10, 10);
+            /// grid.set_value_location(1, &Int2D::new(5, 5));
+            /// grid.set_value_location(1, &Int2D::new(6, 6));
+            ///
+            /// // Work on write state, so on unupdated state
+            /// let pos = grid.get_location_unbuffered(1);
+            /// assert_eq!(pos, Some(Int2D::new(5, 5)));
+            ///
+            /// let none = grid.get_location_unbuffered(2);
+            /// assert_eq!(none, None);
+            ///
+            /// grid.lazy_update();
+            /// let pos = grid.get_location_unbuffered(1);
+            /// assert_eq!(pos, None);
+            /// ```
+            ///
             pub fn get_location_unbuffered(&self, value: T) -> Option<Int2D> {
                 let locs = self.locs[self.write].borrow();
                 for i in  0..self.width{
@@ -213,7 +265,28 @@ cfg_if! {
                 None
             }
 
-            /// Return all the empty bags in rlocs
+            /// Return all the empty bags of the read state.
+            ///
+            /// # Example
+            /// ```
+            /// let mut grid = DenseNumberGrid2D::<u16>::new(10, 10);
+            /// let empty = grid.get_empty_bags();
+            /// assert_eq!(empty.len(), 100);
+            ///
+            /// for i in 0..10 {
+            ///   for j in 0..10 {
+            ///      grid.set_value_location(1, &Int2D::new(i, j));
+            ///   }
+            /// }
+            ///
+            /// // Before an update, the grid is not updated, so the empty bags are still available
+            /// let empty = grid.get_empty_bags();
+            /// assert_eq!(empty.len(), 100);
+            ///
+            /// grid.lazy_update();
+            /// let empty = grid.get_empty_bags();
+            /// assert_eq!(empty.len(), 0);
+            ///
             pub fn get_empty_bags(&self) -> Vec<Int2D>{
                 let mut empty_bags = Vec::new();
                 for i in 0 ..  self.width{
@@ -227,7 +300,22 @@ cfg_if! {
                 empty_bags
             }
 
-            /// Return a random empty bag in rlocs. `None` if no bags are available
+            /// Return a random empty bag in rlocs. `None` if no bags are available.
+            ///
+            /// # Example
+            /// ```
+            /// let mut grid = DenseNumberGrid2D::<u16>::new(10, 10);
+            /// let empty = grid.get_random_empty_bag();
+            /// assert(empty.is_some());
+            ///
+            /// grid.set_value_location(1, &empty.unwrap());
+            /// grid.lazy_update();
+            ///
+            /// let empty2 = grid.get_random_empty_bag();
+            /// assert(empty2.is_some());
+            /// assert_ne!(empty.unwrap(), empty2.unwrap());
+            ///
+            /// ```
             pub fn get_random_empty_bag(&self) -> Option<Int2D>{
 
                 let empty_bags = self.get_empty_bags();
@@ -240,23 +328,51 @@ cfg_if! {
                 Some(empty_bags[index])
             }
 
-            /// Return the first value of a specific position. `None` if position is empty.
+            /// Return the value in a specific position. `None` if position is empty.
             ///
             /// # Arguments
-            /// * `loc` - position to get the value
+            /// * `loc` - location to get the value from
+            ///
+            /// # Example
+            /// ```
+            /// let mut grid = DenseNumberGrid2D::<u16>::new(10, 10);
+            /// grid.set_value_location(1, &Int2D::new(5, 5));
+            ///
+            /// let value = grid.get_value(&Int2D::new(5, 5));
+            /// assert_eq!(value, None);
+            ///
+            /// grid.lazy_update();
+            ///
+            /// let value = grid.get_value(&Int2D::new(5, 5));
+            /// assert_eq!(value, Some(1));
+            /// ```
+            ///
             pub fn get_value(&self, loc: &Int2D) -> Option<T> {
                 let index = ((loc.x * self.height) + loc.y) as usize;
                 let rlocs = self.locs[self.read].borrow();
                 rlocs[index]
             }
 
-            /// Return all values of a specific position from write state. `None` if position is empty.
+            /// Return value of a specific position from write state. `None` if position is empty.
             ///
             /// Useful when you want to get some value written in the current step.
             /// For example, you want to get the value of a cell that is being written with a `set_value_location()`.
             ///
             /// # Arguments
-            /// * `loc` - position to get the values
+            /// * `loc` - location to get the value from
+            ///
+            /// # Example
+            /// ```
+            /// let mut grid = DenseNumberGrid2D::<u16>::new(10, 10);
+            /// grid.set_value_location(1, &Int2D::new(5, 5));
+            /// let value = grid.get_value_unbuffered(&Int2D::new(5, 5));
+            /// assert_eq!(value, Some(1));
+            ///
+            /// grid.lazy_update();
+            /// let value = grid.get_value_unbuffered(&Int2D::new(5, 5));
+            /// assert_eq!(value, None);
+            ///
+            /// ```
             pub fn get_value_unbuffered(&self, loc: &Int2D) -> Option<T> {
                 let index = ((loc.x * self.height) + loc.y) as usize;
                 let locs = self.locs[self.write].borrow();
@@ -268,6 +384,23 @@ cfg_if! {
             ///
             /// # Arguments
             /// * `closure` - closure to apply to all values
+            ///
+            /// # Example
+            /// ```
+            /// let mut grid = DenseNumberGrid2D::<u16>::new(10, 10);
+            /// for i in 0..10 {
+            ///     for j in 0..10 {
+            ///         grid.set_value_location(1, &Int2D::new(i, j));
+            ///     }
+            /// }
+            ///
+            /// grid.lazy_update();
+            /// grid.iter_values(|&loc, &value| {
+            ///     // do something with loc and value
+            ///     // can't modify the grid here
+            /// };
+            ///
+            /// ```
             pub fn iter_values<F>(&self, closure: F)
                 where
                     F: Fn(
@@ -296,6 +429,23 @@ cfg_if! {
             ///
             /// # Arguments
             /// * `closure` - closure to apply to all values
+            ///
+            /// # Example
+            ///
+            /// ```rust
+            /// let mut grid = DenseNumberGrid2D::<u16>::new(10, 10);
+            /// for i in 0..10 {
+            ///     for j in 0..10 {
+            ///       grid.set_value_location(1, &Int2D::new(i, j));
+            ///     }
+            /// }
+            ///
+            /// // can't modify the grid here
+            /// grid.iter_values_unbuffered(|&loc, &value| {
+            ///    some_function(loc, value);
+            /// };
+            ///
+            /// ```
             pub fn iter_values_unbuffered<F>(&self, closure: F)
             where
                 F: Fn(
@@ -323,12 +473,22 @@ cfg_if! {
             /// Write a value in a specific position.
             /// Thanks to the double buffering, you havent to worry about remove value of previous step.
             ///
-            /// If the position is empty, the value is pushed in the bag.
-            /// If the position is not empty, the value is pushed in the bag and the old value is dropped.
-            ///
             /// # Arguments
-            /// * `value` - value to write
-            /// * `loc` - position to write the value
+            /// * `value` - value to set at the location
+            /// * `loc` - location to set the value at
+            ///
+            /// # Example
+            /// ```
+            /// let mut grid = DenseNumberGrid2D::<u16>::new(10, 10);
+            /// grid.set_value_location(1, &Int2D::new(5, 5));
+            /// grid.set_value_location(2, &Int2D::new(5, 5));
+            ///
+            /// grid.lazy_update();
+            ///
+            /// let value = grid.get_value(&Int2D::new(5, 5));
+            /// assert_ne!(value, Some(1));
+            /// assert_eq!(value, Some(2));
+            /// ```
             pub fn set_value_location(&self, value: T, loc: &Int2D) {
                 let index = ((loc.x * self.height) + loc.y) as usize;
                 let mut locs = self.locs[self.write].borrow_mut();
@@ -346,7 +506,23 @@ cfg_if! {
             /// this function only if the value was written/set in this step.
             ///
             /// # Arguments
-            /// * `loc` - location to remove the object
+            /// * `loc` - location to remove the value from
+            ///
+            /// # Example
+            /// ```
+            /// let mut grid = DenseNumberGrid2D::<u16>::new(10, 10);
+            /// grid.set_value_location(1, &Int2D::new(5, 5));
+            /// grid.remove_value_location(&Int2D::new(5, 5));
+            ///
+            /// let value = grid.get_value_unbuffered(&Int2D::new(5, 5));
+            /// assert_eq!(value, None);
+            ///
+            /// grid.lazy_update();
+            /// let value = grid.get_value(&Int2D::new(5, 5));
+            /// assert_eq!(value, None);
+            ///
+            /// ```
+            ///
             pub fn remove_value_location(&self, loc: &Int2D) {
                 let mut locs = self.locs[self.write].borrow_mut();
                 let index = ((loc.x * self.height) + loc.y) as usize;

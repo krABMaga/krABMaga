@@ -1,7 +1,9 @@
 name: Sync site
 
 on:
-  push:
+  pull_request:
+    types:
+      - closed
     branches:
       - main
     paths-ignore:
@@ -11,11 +13,12 @@ on:
       - 'src/utils/**'
 
 jobs:
-  sync:
+  if_merged:
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - name: Dispatch event
-        uses: peter-evans/repository-dispatch@v1
+        uses: peter-evans/repository-dispatch@v2
         with:
           token: ${{ secrets.SITE_REPO_ACCESS_TOKEN }}
           repository: krABMaga/krABMaga.github.io

@@ -148,6 +148,58 @@ macro_rules! build_dataframe_explore {
 ///    on different machines
 /// * `ComputingMode::Cloud`: computation will be performed on the cloud.
 ///
+/// # Example
+///
+/// ```rust
+/// pub const STEP: u64 = 100;
+/// pub const REPETITIONS: u32 = 20;
+///
+/// pub const DESIRED_FITNESS: f32 = 0.;
+/// pub const MAX_GENERATION: u32 = 2_000;
+///
+/// fn main() {
+///     let result = explore_ga_sequential!(
+///         init_population,
+///         fitness,
+///         selection,
+///         mutation,
+///         crossover,
+///         cmp,
+///         State,
+///         DESIRED_FITNESS,
+///         MAX_GENERATION,
+///         STEP,
+///         REPETITIONS, //optional
+///         // ComputingMode::Parallel, ComputingMode::Distributed or ComputingMode::Cloud
+///     );
+///     if !result.is_empty() {
+///         let name = "explore_result".to_string();
+///         let _res = write_csv(&name, &result);
+///     }
+/// }
+///
+/// // Create the initial population. In genetic algorithms, an individual is represened as a String
+/// fn init_population() -> Vec<String> { ... }
+///
+/// // Compute the fitness value of an individual using results of each repetition
+/// // * computed_ind: Vec with couple of (state, fitness)
+/// //   of an individual for each repetition in the current generation
+/// fn fitness(computed_ind: &mut Vec<(EpidemicNetworkState, Schedule)>) -> f32 { ... }
+///
+/// // Select/Order the population based on the fitness value
+/// fn selection(population_fitness: &mut Vec<(String, f32)>) { ... }
+///
+/// // Perform the mutation of an individual
+/// fn mutation(individual: &mut String) { ... }
+///
+/// // Perform the crossover to generate the new population
+/// fn crossover(population: &mut Vec<String>) { ... }
+///
+/// // Compare two individuals
+/// fn cmp(fitness1: &f32, fitness2: &f32) -> bool { ... }
+///
+/// ```
+///
 macro_rules! evolutionary_search {
     (
         $init_population:tt,
@@ -238,7 +290,7 @@ macro_rules! evolutionary_search {
         $desired_fitness: expr,
         $generation_num: expr,
         $step: expr,
-        $($reps: expr,)?
+        $($reps: expr)?
     ) => {{
 
         use $crate::engine::schedule::Schedule;

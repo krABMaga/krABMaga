@@ -8,3 +8,8 @@ Cargo.lock
 .vscode
 /bin
 /output
+
+
+# tarpaulin output
+cobertura.xml
+tarpaulin-report.html
