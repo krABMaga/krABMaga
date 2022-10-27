@@ -60,8 +60,6 @@ memoffset = { version = "0.6.4", optional = true}
 # Bayesian
 friedrich = { version = "0.4.1", optional = true }
 statrs = { version = "0.15.0", optional = true } 
-argmin = { version = "0.5.0", optional = true }
-finitediff = { version = "0.1.4", optional = true }
 
 # Visualization features
 bevy_prototype_lyon = {version="0.4.0", optional=true, default-features = false}
@@ -101,8 +99,6 @@ aws = [
 bayesian = [
     "friedrich",
     "statrs", 
-    "argmin",
-    "finitediff"
 ]
 
 parallel = [

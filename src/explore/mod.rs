@@ -1,5 +1,5 @@
 pub mod aws;
-pub mod bayesian_opt;
+pub mod bayesian;
 pub mod genetic;
 pub mod model_exploration;
 pub mod mpi;

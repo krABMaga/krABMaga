@@ -428,7 +428,7 @@ pub extern crate mpi_fork_fnsp;
 
 #[doc(hidden)]
 #[cfg(any(feature = "bayesian"))]
-pub use {argmin, finitediff, friedrich, statrs};
+pub use {friedrich, statrs};
 
 #[doc(hidden)]
 #[cfg(feature = "aws")]
