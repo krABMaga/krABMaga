@@ -38,7 +38,7 @@ use {
 /// }
 ///
 /// // function to generate samples
-/// fn generate_samples(_x_values: &Vec<Vec<f64>>) -> Vec<Vec<f64>> {
+/// fn generate_samples(_x_values: &[Vec<f64>]) -> Vec<Vec<f64>> {
 ///   let batch_size = 500;
 ///   let num_params = 2;
 ///   (0..batch_size)
@@ -58,7 +58,7 @@ use {
 /// // we want to find the minimum of the function: x^2 + y^2
 /// // so we return the inverse of the function,
 /// // because the bayesian optimization algorithm tries to maximize the objective function
-/// fn objective_square(x: &Vec<f64>) -> f64 {
+/// fn objective_square(x: &[f64]) -> f64 {
 ///   let total = (x[0]).powf(2.) + (x[1]).powf(2.);
 ///   -1.* total
 /// }
@@ -82,7 +82,7 @@ use {
 /// // we want to find the minimum of the function: x^2 + y^2
 /// // so we return the inverse of the function,
 /// // because the bayesian optimization algorithm tries to maximize the objective function
-/// fn objective_square(x: &Vec<f64>) -> f64 {
+/// fn objective_square(x: &[f64]) -> f64 {
 ///     let total = (x[0]).powf(2.) + (x[1]).powf(2.);
 ///     -1.* total
 /// }
@@ -267,7 +267,7 @@ pub fn generate_samples(batch_size: usize, scale: f64, num_of_params: usize) -> 
 #[cfg(any(feature = "bayesian"))]
 pub fn acquisition_function(
     x_init: &Vec<Vec<f64>>,
-    x_samples: &Vec<Vec<f64>>,
+    x_samples: &[Vec<f64>],
     gp: &GaussianProcess<Gaussian, ConstantPrior>,
 ) -> Vec<f64> {
     let scores = x_samples
@@ -298,10 +298,9 @@ pub fn expected_improvement(
     x: &Vec<f64>,
     gp: &GaussianProcess<Gaussian, ConstantPrior>,
 ) -> f64 {
-    let mean_y_new: f64;
     let mut sigma_y_new: f64;
 
-    mean_y_new = gp.predict(x);
+    let mean_y_new = gp.predict(x);
     sigma_y_new = gp.predict_variance(x); //standard deviation
     sigma_y_new = sigma_y_new.sqrt();
     if sigma_y_new == 0. {
