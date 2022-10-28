@@ -6,37 +6,114 @@ use {
     statrs::distribution::{Continuous, ContinuousCDF, Normal},
 };
 
-/// Macro to perform bayesian optimization with default functions.
+/// Macro to perform bayesian optimization.
+/// You should use this macro to optimize your simulation, but can be used
+/// to optimize any function.
+/// # Arguments: Main pattern
+/// * `init_parameters` : a function that returns a vector of initial parameters. Returns a vector of vectors of f64.
+/// * `objective_function` : a function that returns the objective value of a parameter. This function should be
+///                 the execution of your simulation and the evaluation of the results. Returns a f64.
+///                 The bayesian optimization will try to maximize this function. If you want to minimize it,
+///                 return the negative value of your objective function.
+/// * `gen_samples` : a function that returns a vector of samples
+/// * `n_iter` : number of iterations
 ///
-/// # Arguments
-///
-/// * `x_init` - initial x values
-///
-/// * `y_init` - costs of x_init elements
-///
-/// * `objective_function` - function to evaluate the goodness of a solution.
-///
+/// # Arguments: Optional pattern
+/// * `init_parameters` : a function that returns a vector of initial parameters
+/// * `objective_function` : a function that returns the objective value of a parameter. This function should be
+///                 the execution of your simulation and the evaluation of the results. Returns a f64.
+///                 The bayesian optimization will try to maximize this function. If you want to minimize it,
+///                 return the negative value of your objective function.
+/// * `num_of_params` : number of parameters. This is used to generate random samples
 /// * `n_iter` - number of iterations of bayesian optimization algorithm
-///
-/// * `batch_size` - how many samples for each iteration
-///
+/// * `batch_size` - number of samples for each iteration
 /// * `scale` - factor of scaling to generate samples
+///
+/// # Example: Main pattern
+/// ```
+/// # use {krabmaga::bayesian_search, krabmaga::explore::bayesian::*};   
+/// // function to initialize parameters
+/// fn init_parameters() -> Vec<Vec<f64>> {
+///     vec![vec![-2., -2.], vec![8., 1.], vec![-1., 5.], vec![4., -2.]]
+/// }
+///
+/// // function to generate samples
+/// fn generate_samples(_x_values: &Vec<Vec<f64>>) -> Vec<Vec<f64>> {
+///   let batch_size = 500;
+///   let num_params = 2;
+///   (0..batch_size)
+///      .into_iter()
+///      .map(|_| {
+///        let mut t_x = Vec::with_capacity(num_params);
+///        let mut rng = rand::thread_rng();
+///        for _ in 0..num_params {
+///          t_x.push(rand::Rng::gen_range(&mut rng, -10.0..=10.0));
+///        }
+///        t_x
+///       })
+///     .collect()
+/// }
+///
+/// // function to evaluate the objective function
+/// // we want to find the minimum of the function: x^2 + y^2
+/// // so we return the inverse of the function,
+/// // because the bayesian optimization algorithm tries to maximize the objective function
+/// fn objective_square(x: &Vec<f64>) -> f64 {
+///   let total = (x[0]).powf(2.) + (x[1]).powf(2.);
+///   -1.* total
+/// }
+/// let (x, y) = bayesian_search!(init_parameters, objective_square, generate_samples, 20);
+///
+/// println!("---\nFinal res: Point {:?}, val {y}", x);
+/// assert!(x[0].abs() < 1. && x[1].abs() < 1.);
+///
+/// ```
+///
+/// # Example: Optional pattern
+/// ```
+/// # use {krabmaga::bayesian_search, krabmaga::explore::bayesian::*};
+///
+/// // initialize parameters
+/// fn init_parameters() -> Vec<Vec<f64>> {
+///     vec![vec![-2., -2.], vec![8., 1.], vec![-1., 5.], vec![4., -2.]]
+/// }
+///
+/// // function to evaluate the objective function
+/// // we want to find the minimum of the function: x^2 + y^2
+/// // so we return the inverse of the function,
+/// // because the bayesian optimization algorithm tries to maximize the objective function
+/// fn objective_square(x: &Vec<f64>) -> f64 {
+///     let total = (x[0]).powf(2.) + (x[1]).powf(2.);
+///     -1.* total
+/// }
+///
+/// let num_of_params = 2;
+/// let n_iter = 20;
+/// let batch_size = 500;
+/// let scale = 10.;
+///
+/// let (x, y) = bayesian_search!(init_parameters, objective_square, num_of_params, n_iter, batch_size, scale);
+///
+/// println!("---\nFinal res: Point {:?}, val {y}", x);
+/// assert!(x[0].abs() < 1. && x[1].abs() < 1.);
+///
+/// ```
+
 #[cfg(any(feature = "bayesian"))]
 #[macro_export]
 macro_rules! bayesian_search {
     (
-        $x_init: expr,
+        $init_parameters: tt,
         $objective_function: tt,
         $gen_params: tt,
         $n_iter: expr
-
     ) => {{
         use $crate::{
             friedrich::gaussian_process::GaussianProcess, friedrich::kernel::Gaussian,
             friedrich::prior::ConstantPrior,
         };
 
-        let mut x_init: Vec<Vec<f64>> = $x_init;
+        let mut x_init: Vec<Vec<f64>> = $init_parameters();
         let mut y_init: Vec<f64> = Vec::with_capacity(x_init.len());
         for x in &x_init {
             y_init.push($objective_function(x));
@@ -89,7 +166,7 @@ macro_rules! bayesian_search {
     }};
 
     (
-        $x_init: expr,
+        $init_parameters: tt,
         $objective_function: tt,
         $num_of_params: expr,
         $n_iter: expr,
@@ -102,7 +179,7 @@ macro_rules! bayesian_search {
             friedrich::prior::ConstantPrior,
         };
 
-        let mut x_init: Vec<Vec<f64>> = $x_init;
+        let mut x_init: Vec<Vec<f64>> = $init_parameters();
         let mut y_init: Vec<f64> = Vec::with_capacity(x_init.len());
         for x in &x_init {
             y_init.push($objective_function(x));
@@ -123,6 +200,8 @@ macro_rules! bayesian_search {
 
         // init gaussian process
         let mut gp = GaussianProcess::default(x_init.clone(), y_init.clone());
+
+        // init n_iter
 
         for i in 0..$n_iter {
             println!("-----\nIteration {i}");
@@ -156,6 +235,13 @@ macro_rules! bayesian_search {
     }};
 }
 
+/// Function to generate samples for the bayesian optimization algorithm.
+///
+/// # Arguments
+/// * `batch_size` - number of samples to generate
+/// * `scale` - scale of the samples
+/// * `num_of_params` - number of parameters of the objective function
+///
 #[cfg(any(feature = "bayesian"))]
 pub fn generate_samples(batch_size: usize, scale: f64, num_of_params: usize) -> Vec<Vec<f64>> {
     (0..batch_size)
@@ -171,6 +257,13 @@ pub fn generate_samples(batch_size: usize, scale: f64, num_of_params: usize) -> 
         .collect()
 }
 
+/// Acquisition function for the bayesian optimization algorithm.
+/// returns the point with the highest expected improvement.
+///
+/// # Arguments
+/// * `x_init` - initial samples
+/// * `x_samples` - samples to evaluate
+/// * `gp` - gaussian process to use for the prediction
 #[cfg(any(feature = "bayesian"))]
 pub fn acquisition_function(
     x_init: &Vec<Vec<f64>>,
@@ -193,6 +286,12 @@ pub fn acquisition_function(
     x_samples[max_index].clone()
 }
 
+/// Expected improvement function for the bayesian optimization algorithm.
+///
+/// # Arguments
+/// * `x_init` - initial samples
+/// * `x` - sample to evaluate
+/// * `gp` - gaussian process to use for the prediction
 #[cfg(any(feature = "bayesian"))]
 pub fn expected_improvement(
     x_init: &Vec<Vec<f64>>,
