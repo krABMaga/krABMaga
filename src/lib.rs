@@ -428,7 +428,7 @@ pub extern crate mpi_fork_fnsp;
 
 #[doc(hidden)]
 #[cfg(any(feature = "bayesian"))]
-pub use {argmin, finitediff, friedrich, statrs};
+pub use {friedrich, statrs};
 
 #[doc(hidden)]
 #[cfg(feature = "aws")]
@@ -1143,7 +1143,22 @@ macro_rules! simulate {
             terminal_thread.join().expect("Terminal thread panicked");
 
         } else {
-            simulate_old!($s, $step, $reps, Info::Verbose);
+            let mut s = $s;
+            let mut state = s.as_state_mut();
+            let n_step: u64 = $step;
+            //basic simulation without UI
+            for r in 0..$reps {
+                let mut schedule: Schedule = Schedule::new();
+                state.init(&mut schedule);
+                //simulation loop
+                for i in 0..n_step {
+                    schedule.step(state);
+                    if state.end_condition(&mut schedule) {
+                        break;
+                    }
+                } //end simulation loop
+            } //end of repetitions
+            println!("Simulation finished!");
         } //enf if/else flag
 
     }}; // end pattern macro
