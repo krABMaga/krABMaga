@@ -115,7 +115,7 @@
 //!cargo make run --release
 //!```
 //!
-//!In addition to the classical visualization, you can run your krABMaga simulation inside your browser using (*Web Assembly*)<https://webassembly.org>.
+//!In addition to the classical visualization, you can run your krABMaga simulation inside your browser using [*Web Assembly*](https://webassembly.org).
 //!This is possible with the command:
 //!```sh
 //!# Requires 'cargo make' installed
