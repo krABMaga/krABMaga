@@ -5,7 +5,7 @@ use {krabmaga::bayesian_search, krabmaga::explore::bayesian::*};
 #[cfg(any(feature = "bayesian"))]
 #[test]
 fn bayesian() {
-    let (x, y) = bayesian_search!(init_parameters, objective_square, 2, 10, 500, 10.);
+    let (x, y) = bayesian_search!(init_parameters, objective_square, 2, 20, 500, 10.);
 
     println!("---\nFinal res: Point {:?}, val {y}", x);
     assert!(x[0].abs() < 1. && x[1].abs() < 1.);

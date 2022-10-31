@@ -692,6 +692,9 @@ cfg_if! {
                 let bag = locs.get_mut(loc);
                 if let Some(bag) = bag {
                     bag.retain(|&obj| obj != object);
+                    if bag.is_empty(){
+                        locs.remove(loc);
+                    }
                 }
             }
 
