@@ -81,7 +81,7 @@ jobs:
         
      - name: Run Tests
        run: |
-        cargo tarpaulin --implicit-test-threads  --out Xml --exclude-files src/utils/* src/visualization/* src/lib.rs --features bayesian
+        cargo tarpaulin --implicit-test-threads  --out Xml --exclude-files src/utils/* src/visualization/* src/lib.rs src/explore/bayesian.rs
 
      - uses: codecov/codecov-action@v2
        with:
