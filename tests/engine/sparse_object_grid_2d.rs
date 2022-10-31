@@ -126,7 +126,7 @@ fn sparse_object_grid_2d_bags() {
     );
 
     let obj = grid.get_objects_unbuffered(&loc);
-    assert_eq!(obj.unwrap().len(), 0);
+    assert!(obj.is_none());
 
     grid.lazy_update();
     let vec = grid.get_empty_bags();
