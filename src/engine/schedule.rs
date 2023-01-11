@@ -320,7 +320,7 @@ cfg_if! {
                 let a = AgentImpl::new(agent, my_id);
                 let removed = self.events.remove(&a);
                 match removed {
-                    //some if finded and removed
+                    //some if found and removed
                     Some(_) => {
 
                         // println!("Agent {} -- {} removed from the queue",a, my_id);
@@ -406,7 +406,7 @@ cfg_if! {
 }
 
 #[doc(hidden)]
-// A struct used to specify schedule options to pass to an agent's clone when an agent reproduces.
+/// A struct used to specify schedule options to pass to an agent's clone when an agent reproduces.
 pub struct ScheduleOptions {
     pub ordering: i32,
     pub repeating: bool,

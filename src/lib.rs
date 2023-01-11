@@ -20,7 +20,7 @@
 //!<!-- no toc -->
 //!- [Table of contents](#table-of-contents)
 //!- [Dependencies](#dependencies)
-//!- [How to run your first example simulaton](#how-to-run-your-first-example-simulaton)
+//!- [How to run your first example simulation](#how-to-run-your-first-example-simulation)
 //!- [How to write your first model](#how-to-write-your-first-model)
 //!- [Available features](#available-features)
 //!- [Macros for playing with Simulation Terminal](#macros-for-playing-with-simulation-terminal)
@@ -40,13 +40,13 @@
 //!- 🍎 MacOS: No dependencies needed.
 //!- 🐧 Linux: A few dependencies are needed. Check [here](https://github.com/bevyengine/bevy/blob/main/docs/linux_dependencies.md) for a list based on your distribution.
 //!---
-//!# How to run your first example simulaton
+//!# How to run your first example simulation
 //!First of all, install latest version of [Rust](https://www.rust-lang.org/tools/install). Follow steps to setup Rust toolchain (*cargo*, *rustc* and *rustup*).
 //!
 //!Now, you can download/clone all available krABMaga examples from our github repository called [examples](https://github.com/krABMaga/examples).
 //!
-//!To run a simulation, go to root directory of a model, for example `/path/to/examples/flockers`. With command `ls`, you should be able to see a typcal krABMaga simulation struct:
-//!- `src`: main folder with code. It contains `main.rs` file and two directories for model and visulization components.
+//!To run a simulation, go to root directory of a model, for example `/path/to/examples/flockers`. With command `ls`, you should be able to see a typical krABMaga simulation struct:
+//!- `src`: main folder with code. It contains `main.rs` file and two directories for model and visualization components.
 //!- `Cargo.toml`: Configuration file for Rust project, with dependencies and features.
 //!- `assets`: an images folder. It contains all the icons that can be used for visualization.
 //!- `Makefile.toml`: another configuration file, necessary to a correct execution of visualization.
@@ -138,7 +138,7 @@
 //!
 //!We **strongly** recommend to use [Template](https://github.com/krABMaga/examples/tree/main/template) or any other example as base of a new project, especially if you want to provide any visualization.
 //!
-//!Each krABMaga model needs structs that implements our *Traits*, one for *State* and the other for *Agent*. In the *State* struct you have to put *Agent* field(s), because it represents the ecosystem of a simulation. More details for each krABMaga componenet are in the [Architecture](#architecture) section.
+//!Each krABMaga model needs structs that implements our *Traits*, one for *State* and the other for *Agent*. In the *State* struct you have to put *Agent* field(s), because it represents the ecosystem of a simulation. More details for each krABMaga component are in the [Architecture](#architecture) section.
 //!
 //!The simplest part is `main.rs`, because is similar for each example.
 //!You can define two *main* functions using **cfg** directive, that can remove code based on which features are (not) enabled.  
@@ -198,7 +198,7 @@
 //!| **visualization-wasm** | Based on `Web Assembly`, give you the possibility to execute your visualized simulation inside your own browser. |   | 🦀 |   |
 //!| **distributed-mpi** | Enable distributed model exploration using MPI. At each iteration, the amount of configurations are balanced among your nodes.  |   |  🦀 |   |
 //!| **bayesian**  | Use ML Rust libraries to use/create function to use `Bayesian Optimization`.|   | 🦀  |   |
-//!| **parallel**  | Speed-up a single simulation parallelizing agent scheduling during a step.| 🦀  |   |   |
+//!| **parallel**  | Speed-up a single simulation by parallelizing agent scheduling during a step.| 🦀  |   |   |
 //!
 //!</div>
 //!
@@ -244,7 +244,7 @@
 //!---
 //!# How to contribute
 //!
-//!If you want to test, add or change something inside krABMaga engine, you can clone [main repo](https://github.com/krABMaga/krABMaga) locally, and change dependecy inside `Cargo.toml` of your examples:
+//!If you want to test, add or change something inside krABMaga engine, you can clone [main repo](https://github.com/krABMaga/krABMaga) locally, and change dependency inside `Cargo.toml` of your examples:
 //!
 //!```toml
 //![dependencies]
@@ -557,7 +557,7 @@ impl PlotData {
             .y_desc(self.ylabel.clone())
             .x_desc(self.xlabel.clone())
             .draw()
-            .expect("Cant't draw mesh");
+            .expect("Can't draw mesh");
 
         let mut marker_id = 0;
         let mut color_id = 0;
@@ -648,7 +648,7 @@ impl fmt::Display for LogType {
 
 #[doc(hidden)]
 pub struct Log {
-    /// One of 4 availbale types
+    /// One of 4 available types
     pub ltype: LogType,
     /// Log message to display
     pub body: String,
@@ -673,7 +673,7 @@ lazy_static! {
     pub static ref CSV_SENDER: Mutex<Option<Sender<MessageType>>> = Mutex::new(None);
     #[doc(hidden)]
     pub static ref PLOT_NAMES: Mutex<std::collections::HashSet<(String, String, String)>> = Mutex::new(std::collections::HashSet::new());
-    /// static Vec to store all Logs and make it availables inside terminal.
+    /// static Vec to store all Logs and make it available inside terminal.
     #[doc(hidden)]
     pub static ref LOGS: Mutex<Vec<Vec<Log>>> = Mutex::new(Vec::new());
     /// static String to save Model description to show as a popup. Press 's' on `Simulation Terminal.
@@ -736,7 +736,7 @@ pub use std::sync::mpsc::{self, RecvError, TryRecvError};
 ///
 /// # Arguments
 ///
-/// * `s` - Istance of state of simulation
+/// * `s` - Instance of state of simulation
 ///
 /// * `step`- Number of steps to run
 ///
@@ -960,7 +960,7 @@ macro_rules! simulate {
 
                 let mut rep_counter = 0;
                 // let mut csv_writers = open_files(&0);
-                let mut csv_writers = match csv_recv.recv().expect("Error receving init csv message") {
+                let mut csv_writers = match csv_recv.recv().expect("Error receiving init csv message") {
                     MessageType::Quit => {
                         return;
                     },
@@ -1187,7 +1187,7 @@ macro_rules! description {
 }
 
 /// Add a point to a series of an existing plot. Crete the series at the first call.
-/// Can't add a point to a plot that doesn't exist, use addplot!() instead.
+/// Can't add a point to a plot that doesn't exist, use `addplot!()` instead.
 ///
 /// # Arguments
 ///
@@ -1385,7 +1385,7 @@ macro_rules! addplot {
 ///
 /// # Arguments
 ///
-/// * `ltype` - LogType paramater to specify the type of log. See `LogType` enum for more information.
+/// * `ltype` - LogType parameter to specify the type of log. See `LogType` enum for more information.
 ///
 /// * `message` - Message to be logged.
 ///
@@ -1434,11 +1434,11 @@ macro_rules! log {
 
 #[macro_export]
 /// Run simulations using this macro. Not based on `Simulation Terminal`.
-/// Return exectuion times of each repetition.
+/// Return execution times of each repetition.
 ///
 /// # Arguments
 ///
-/// * `s` - istance of state of simulation
+/// * `s` - instance of state of simulation
 ///
 /// * `step` - number of steps to be simulated
 ///  
@@ -1618,7 +1618,7 @@ mod no_exported {
 ///Create a csv file with the experiment results.
 ///
 ///`DataFrame` trait allows the function to know field names,
-/// parameter list and output list for each configuration runned
+/// parameter list and output list for each configuration run
 ///
 /// # Arguments
 /// * `name` - filename to save the csv file
@@ -1764,13 +1764,13 @@ macro_rules! load_csv {
 
 #[macro_export]
 ///
-/// Run a simulation two times with same parameter. Compairs initial agents, their behavior for each step
+/// Run a simulation two times with same parameter. Compares initial agents, their behavior for each step
 /// and the final state to determine whether a model is reproducible or not.
 ///
 /// To use this macro, agents must implement 'ReproducibilityEq' trait.
 ///
 /// # Arguments
-/// * `state` - an mutable reference to an istance of simulation state.
+/// * `state` - an mutable reference to an instance of simulation state.
 ///
 /// * `n_step` - number of steps of the simulation.
 ///

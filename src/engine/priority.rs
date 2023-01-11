@@ -9,7 +9,7 @@ pub struct Priority {
 }
 
 impl Priority {
-    /// create a new istance of Priority
+    /// create a new instance of Priority
     pub fn new(the_time: f32, the_ordering: i32) -> Priority {
         Priority {
             time: the_time,

@@ -15,7 +15,7 @@ macro_rules! extend_dataframe_explore {
             type Out = UserDatatype;
             fn equivalent_datatype() -> Self::Out {
 
-                //count input and output parameters to create slice for blocklen
+                //count input and output parameters to create slice for block length
                 let v_in = count_tts!($($input)*);
 
                 let mut vec = Vec::with_capacity(v_in);
@@ -41,7 +41,7 @@ macro_rules! extend_dataframe_explore {
     };
 }
 
-/// Macro to perform distribued model exploration using a genetic algorithm based on MPI
+/// Macro to perform distributed model exploration using a genetic algorithm based on MPI
 ///
 /// # Arguments
 /// * `init_population` - function that creates the population, must return an array of individual. An individual is the state of the simulation to compute
@@ -94,7 +94,7 @@ macro_rules! extend_dataframe_explore {
 ///     }
 /// }
 ///
-/// // Create the initial population. In genetic algorithms, an individual is represened as a String
+/// // Create the initial population. In genetic algorithms, an individual is represented as a String
 /// fn init_population() -> Vec<String> { ... }
 ///
 /// // Compute the fitness value of an individual using results of each repetition
@@ -133,7 +133,7 @@ macro_rules! explore_ga_distributed_mpi {
     ) => {{
 
         // MPI initialization
-        let mut universe = mpi_fork_fnsp::initialize().expect("Error initialing mpi enviroment");
+        let mut universe = mpi_fork_fnsp::initialize().expect("Error initialing mpi environment");
         let world = universe.world();
         let root_rank = 0;
         let root_process = world.process_at_rank(root_rank);
@@ -188,7 +188,7 @@ macro_rules! explore_ga_distributed_mpi {
             population = $init_population();
             population_size = population.len();
 
-            // dummy initilization
+            // dummy initialization
 
             /*
                 if fitness desired has to be minimum, set fitness to a very high value

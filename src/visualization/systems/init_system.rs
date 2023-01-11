@@ -18,7 +18,7 @@ cfg_if! {
             wrappers::{ActiveSchedule, ActiveState},
         };
 
-        /// The main startup system which boostraps a simple orthographic camera, centers it to aim at the simulation,
+        /// The main startup system which bootstraps a simple orthographic camera, centers it to aim at the simulation,
         /// then calls the user provided init callback.
         pub fn init_system<I: VisualizationState<S> + 'static, S: State>(
             on_init: Res<I>,

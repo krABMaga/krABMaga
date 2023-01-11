@@ -25,7 +25,7 @@ cfg_if! {
         };
 
 
-        /// Struct to memorize the informations about the top tabs
+        /// Struct to memorize the information about the top tabs
         pub struct TabsState {
             pub titles: Vec<String>,
             pub index: usize,
@@ -52,7 +52,7 @@ cfg_if! {
             }
         }
 
-        /// Struct that manage all the informations in the TUI
+        /// Struct that manage all the information in the TUI
         ///
         /// tabs : manage the top bars
         ///
@@ -76,7 +76,7 @@ cfg_if! {
         ///
         /// steps : number of step of the simulation
         ///
-        /// tot_reps : number of total repetions
+        /// tot_reps : number of total repetitions
         ///
         /// tot_steps : number of total steps
         pub struct UI {
