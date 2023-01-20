@@ -21,7 +21,7 @@ macro_rules! extend_dataframe {
             type Out = UserDatatype;
             fn equivalent_datatype() -> Self::Out {
 
-                //count input and output parameters to create slice for blocklen
+                //count input and output parameters to create slice for block lengths
                 let v_in = count_tts!($($input)*);
                 let v_out = count_tts!($($output)*);
 
@@ -75,15 +75,15 @@ macro_rules! extend_dataframe {
     };
 }
 
-/// Macro to perform distribued model exploration using basic parameter sweeping based on MPI
+/// Macro to perform distributed model exploration using basic parameter sweeping based on MPI
 ///
 /// * `nstep` - number of steps of the single simulation
 /// * `rep_conf` - how many times run a configuration
 /// * `state` - struct name implementing trait State
-/// * `input {name: type}` - input paramaters of simulation
+/// * `input {name: type}` - input parameters of simulation
 /// * `input_vec { name : [type, size] }` - array params of simulations
 /// * `output [name: type]` - output parameters of simulation
-/// * `mode` - enum to choose which mode of execution is desired (Supported option: Exaustive, Matched)
+/// * `mode` - enum to choose which mode of execution is desired (Supported option: Exhaustive, Matched)
 ///
 /// # Example
 ///
@@ -126,8 +126,8 @@ macro_rules! explore_distributed_mpi {
         $mode: expr,
         ) => {{
 
-            // mpi initilization
-            let universe = mpi::initialize().expect("Error: can't initialize mpi enviroment");
+            // mpi initialization
+            let universe = mpi::initialize().expect("Error: can't initialize mpi environment");
             let world = universe.world();
             let root_rank = 0;
             let root_process = world.process_at_rank(root_rank);

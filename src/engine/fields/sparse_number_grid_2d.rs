@@ -102,7 +102,7 @@ cfg_if! {
         }
 
         impl<T: Copy + Clone + PartialEq> SparseNumberGrid2D<T> {
-            /// create a new instance of SparseNumberenseGrid2D
+            /// create a new instance of SparseNumberGrid2D
             ///
             /// # Arguments
             /// * `width` - first dimension of the field
@@ -216,7 +216,7 @@ cfg_if! {
                 }
             }
 
-            /// Iterate over all valuse inside the field and apply the closure.
+            /// Iterate over all values inside the field and apply the closure.
             /// Useful when you want to access to all the objects changed/executed into the current step.
             ///
             /// # Arguments

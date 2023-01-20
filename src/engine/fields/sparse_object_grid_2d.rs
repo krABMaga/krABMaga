@@ -216,7 +216,7 @@ cfg_if! {
             pub height: i32,
         }
         impl<O: Eq + Hash + Clone + Copy> SparseGrid2D<O> {
-            /// create a new instance of SparseNumberenseGrid2D
+            /// create a new instance of SparseGrid2D
             /// # Arguments
             ///
             /// * `width` - first dimension of the field
