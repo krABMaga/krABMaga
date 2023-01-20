@@ -54,7 +54,8 @@ futures = {version = "0.3", optional = true}
 
 # Model exploration MPI features
 # We used this crate because "rsmpi" has some bugs, so we updated to this fork
-mpi-fork-fnsp = { version="0.6", optional = true }
+# mpi-fork-fnsp = { version="0.6", optional = true }
+mpi = { version = "0.6", optional=true, features = ["user-operations", "derive"] }
 memoffset = { version = "0.6.4", optional = true}
 
 # Bayesian
@@ -81,9 +82,10 @@ plotters = "0.3.1"
 
 # Must be kept separate and asked to the user due to missing support for conditional compilation of features
 # https://github.com/rust-lang/cargo/issues/7914
+# "mpi-fork-fnsp" old dependency, fork of mpi
 [features]
 distributed_mpi = [
-    "mpi-fork-fnsp",
+    "mpi",
     "memoffset"
 ]
 aws = [

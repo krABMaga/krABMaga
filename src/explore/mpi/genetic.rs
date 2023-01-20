@@ -133,7 +133,7 @@ macro_rules! explore_ga_distributed_mpi {
     ) => {{
 
         // MPI initialization
-        let mut universe = mpi_fork_fnsp::initialize().expect("Error initialing mpi enviroment");
+        let mut universe = mpi::initialize().expect("Error initialing mpi enviroment");
         let world = universe.world();
         let root_rank = 0;
         let root_process = world.process_at_rank(root_rank);
@@ -146,7 +146,6 @@ macro_rules! explore_ga_distributed_mpi {
 
         let mut reps = 1;
         $(reps = $reps;)?
-        explore_
         let mut generation: u32 = 0;
         let mut best_fitness: Option<f32> = None;
         let mut best_generation = 0;
@@ -175,7 +174,10 @@ macro_rules! explore_ga_distributed_mpi {
         let mut population_params: Vec<String> = Vec::new();
 
         // only master modifies these four variables
-        let mut master_fitness;explore_
+        let mut master_fitness;
+        let mut master_index;
+        let mut master_individual;
+        let mut best_individual_string = String::new();
 
         let mut best_individual: Option<BufferGA> = None;
         let mut pop_fitness: Vec<(String, f32)> = Vec::new();
@@ -183,7 +185,12 @@ macro_rules! explore_ga_distributed_mpi {
 
         // my best for each proc through generations
         let mut my_best_fitness: Option<f32> = None;
-        let mut my_best_index: i32 = 0;explore_
+        let mut my_best_index: i32 = 0;
+        let mut my_best_individual = String::new();
+
+        //becomes true when the algorithm get desider fitness
+        let mut flag = false;
+
         if world.rank() == root_rank {
             population = $init_population();
             population_size = population.len();
@@ -233,7 +240,7 @@ macro_rules! explore_ga_distributed_mpi {
                 let mut send_index = 0;
                 // for each processor
                 for i in 0..num_procs {
-                    let mut sub_population_size = 0;explore_
+                    let mut sub_population_size = 0;
 
                     // calculate the workload subdivision
                     if remainder > 0 {
@@ -284,7 +291,8 @@ macro_rules! explore_ga_distributed_mpi {
 
                 }
             }
-            computed_ind
+            // computed_ind
+            let mut my_population: Vec<String> = Vec::new();
             if world.rank() == root_rank {
 
                 for i in 0..my_pop_size {
