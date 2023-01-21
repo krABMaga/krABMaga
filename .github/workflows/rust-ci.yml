@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, macos-latest ]
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
         rust:
           - stable
           - nightly
@@ -44,6 +44,12 @@ jobs:
         with:
           command: build
           args: --all --examples --features visualization
+
+      - name: BuildMpi
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --all --examples --features distributed_mpi
 
       - name: Test
         uses: actions-rs/cargo@v1
