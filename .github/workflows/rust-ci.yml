@@ -50,11 +50,11 @@ jobs:
           command: build
           args: --release --features "visualization, visualization_wasm"
 
-      - name: BuildMpi
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release --features distributed_mpi
+      # - name: BuildMpi
+      #   uses: actions-rs/cargo@v1
+      #   with:
+      #     command: build
+      #     args: --release --features distributed_mpi
 
       - name: BuildBayesian
         uses: actions-rs/cargo@v1
