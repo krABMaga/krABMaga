@@ -10,109 +10,101 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  jobs1:
-    build:
-      runs-on: ${{ matrix.os }}
-      strategy:
-        fail-fast: false
-        matrix:
-          os: [ ubuntu-latest, macos-latest, windows-latest ]
-          rust:
-            - stable
-            - nightly
+  stdbuild:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
+        rust:
+          - stable
+          - nightly
 
-      steps:
-        - name: Ubuntu Required Deps
-          if: matrix.os == 'ubuntu-latest'
-          run: |
-            sudo apt update
-            sudo apt install pkg-config libx11-dev libasound2-dev libudev-dev
-            sudo apt install libxcb-randr0-dev libxcb-xtest0-dev libxcb-xinerama0-dev libxcb-shape0-dev libxcb-xkb-dev
-            sudo apt install libxcb-render0-dev libxcb-xfixes0-dev libxcb1-dev
-        - uses: actions/checkout@v2
+    steps:
+      - name: Ubuntu Required Deps
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt update
+          sudo apt install pkg-config libx11-dev libasound2-dev libudev-dev
+          sudo apt install libxcb-randr0-dev libxcb-xtest0-dev libxcb-xinerama0-dev libxcb-shape0-dev libxcb-xkb-dev
+          sudo apt install libxcb-render0-dev libxcb-xfixes0-dev libxcb1-dev
+      - uses: actions/checkout@v2
 
-        - uses: actions-rs/toolchain@v1
-          with:
-            profile: minimal
-            toolchain: ${{ matrix.rust }}
-            override: true
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          override: true
 
-        - uses: Swatinem/rust-cache@v1
-    
-        - name: Build
-          uses: actions-rs/cargo@v1
-          with:
-            command: build
-            args: --release 
+      - uses: Swatinem/rust-cache@v1
+   
+      - name: Build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release 
 
-        - name: BuildVisualization
-          uses: actions-rs/cargo@v1
-          with:
-            command: build
-            args: --release --features "visualization, visualization_wasm"
+      - name: BuildVisualization
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --features "visualization, visualization_wasm"
 
-        # - name: BuildMpi
-        #   uses: actions-rs/cargo@v1
-        #   with:
-        #     command: build
-        #     args: --release --features distributed_mpi
+      - name: BuildBayesian
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --features bayesian
 
-        - name: BuildBayesian
-          uses: actions-rs/cargo@v1
-          with:
-            command: build
-            args: --release --features bayesian
-
-        - name: Test
-          uses: actions-rs/cargo@v1
-          with:
-            command: test
-            args: --features parallel
-            
-        - name: TestNoFeatures
-          uses: actions-rs/cargo@v1
-          with:
-            command: test
-
-  jobs2:
-    build:
-      runs-on: ${{ matrix.os }}
-      strategy:
-        matrix:
-          include:
-            - os: ubuntu-latest
-              rust: stable
-              mpi: openmpi
-            - os: macos-latest
-              rust: stable
-              mpi: openmpi
-            - os: windows-2022
-              rust: stable
-              mpi: msmpi
-              
-      name: ${{ matrix.os }} MPI
-      steps:
-        - name: Checkout
-          uses: actions/checkout@v3
-        - name: Setup MPI
-          uses: mpi4py/setup-mpi@v1
-          with:
-            mpi: ${{ matrix.mpi }}
-
-        - uses: actions-rs/toolchain@v1
-          with:
-            profile: minimal
-            toolchain: ${{ matrix.rust }}
-            override: true
-
-        - uses: Swatinem/rust-cache@v1
-
-        - name: Build
-          uses: actions-rs/cargo@v1
-          with:
-            command: build
-            args: --release --features distributed_mpi
+      - name: Test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --features parallel
           
+      - name: TestNoFeatures
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+
+  mpibuild:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            rust: stable
+            mpi: openmpi
+          - os: macos-latest
+            rust: stable
+            mpi: openmpi
+          - os: windows-2022
+            rust: stable
+            mpi: msmpi
+            
+    name: ${{ matrix.os }} example
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup MPI
+        uses: mpi4py/setup-mpi@v1
+        with:
+          mpi: ${{ matrix.mpi }}
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          override: true
+
+      - uses: Swatinem/rust-cache@v1
+
+      - name: Build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --features distributed_mpi
+  
   coverage:
     runs-on: ubuntu-latest
     steps:

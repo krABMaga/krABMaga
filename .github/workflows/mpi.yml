@@ -1,42 +1,42 @@
-# on: [push, pull_request]
+on: [push, pull_request]
 
-# name: MPI
+name: MPI
 
-# jobs:
-#   build:
-#     runs-on: ${{ matrix.os }}
-#     strategy:
-#       matrix:
-#         include:
-#           - os: ubuntu-latest
-#             rust: stable
-#             mpi: openmpi
-#           - os: macos-latest
-#             rust: stable
-#             mpi: openmpi
-#           - os: windows-2022
-#             rust: stable
-#             mpi: msmpi
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            rust: stable
+            mpi: openmpi
+          - os: macos-latest
+            rust: stable
+            mpi: openmpi
+          - os: windows-2022
+            rust: stable
+            mpi: msmpi
             
-#     name: ${{ matrix.os }} example
-#     steps:
-#       - name: Checkout
-#         uses: actions/checkout@v3
-#       - name: Setup MPI
-#         uses: mpi4py/setup-mpi@v1
-#         with:
-#           mpi: ${{ matrix.mpi }}
+    name: ${{ matrix.os }} example
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup MPI
+        uses: mpi4py/setup-mpi@v1
+        with:
+          mpi: ${{ matrix.mpi }}
 
-#       - uses: actions-rs/toolchain@v1
-#         with:
-#           profile: minimal
-#           toolchain: ${{ matrix.rust }}
-#           override: true
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          override: true
 
-#       - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v1
 
-#       - name: Build
-#         uses: actions-rs/cargo@v1
-#         with:
-#           command: build
-#           args: --release --features distributed_mpi
+      - name: Build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --features distributed_mpi
