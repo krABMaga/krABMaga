@@ -8,6 +8,7 @@
   <img alt="Rust CI" src="https://github.com/krABMaga/krABMaga/workflows/Rust%20CI/badge.svg">
   <a href="https://codecov.io/gh/krABMaga/krABMaga"><img alt="codecov" src="https://codecov.io/gh/krABMaga/krABMaga/branch/main/graph/badge.svg?token=GWYP2UBPIZ"> </a>
 </div>
+
 (Notice that the *parallel* and *visualization* components are excluded from _codecov_ as are experimental ore release candidate)
 
 **krABMaga** (Previously named Rust-AB) is a discrete events simulation engine for developing ABM simulation that is written in Rust language. 
