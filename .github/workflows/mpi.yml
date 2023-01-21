@@ -1,14 +1,23 @@
 on: [push, pull_request]
 
-name: MPI test
+name: MPI
 
 jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        mpi: [ 'mpich', 'openmpi', 'intelmpi']
-    name: ${{ matrix.mpi }} example
+        include:
+          - os: ubuntu-latest
+            rust: stable
+            mpi: libmpich-dev
+          - os: macos-latest
+            rust: stable
+            mpi: open-mpi
+          - os: windows-2022
+            rust: stable
+            
+    name: ${{ matrix.os }} example
     steps:
       - name: Checkout
         uses: actions/checkout@v3
