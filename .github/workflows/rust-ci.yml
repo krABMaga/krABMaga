@@ -20,7 +20,7 @@ jobs:
           - stable
           - nightly
 
-    name: ${{ matrix.os }} build 
+    name: ${{ matrix.os }} ${{ matrix.rust }} build 
     steps:
       - name: Ubuntu Required Deps
         if: matrix.os == 'ubuntu-latest'
