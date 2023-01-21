@@ -19,7 +19,6 @@ jobs:
         rust:
           - stable
           - nightly
-          - beta
 
     steps:
       - name: Ubuntu Required Deps
@@ -38,18 +37,30 @@ jobs:
           override: true
 
       - uses: Swatinem/rust-cache@v1
-
+   
       - name: Build
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --all --examples --features visualization
+          args: --release 
+
+      - name: BuildVisualization
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --features "visualization, visualization-wasm"
 
       - name: BuildMpi
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --all --examples --features distributed_mpi
+          args: --release --features distributed_mpi
+
+      - name: BuildBayesian
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --features bayesian
 
       - name: Test
         uses: actions-rs/cargo@v1
