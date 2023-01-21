@@ -10,12 +10,13 @@ jobs:
         include:
           - os: ubuntu-latest
             rust: stable
-            mpi: libmpich-dev
+            mpi: openmpi
           - os: macos-latest
             rust: stable
-            mpi: open-mpi
+            mpi: openmpi
           - os: windows-2022
             rust: stable
+            mpi: msmpi
             
     name: ${{ matrix.os }} example
     steps:
