@@ -1,0 +1,57 @@
+name:                           coverage
+
+on:                             [push]
+jobs:
+  test:
+    name:                       coverage
+    runs-on:                    ubuntu-latest
+    container:
+      image:                    xd009642/tarpaulin:develop-nightly
+      options:                  --security-opt seccomp=unconfined
+    steps:
+      - name:                   Checkout repository
+        uses:                   actions/checkout@v3
+
+      - name:                   Generate code coverage
+        run: |
+          cargo +nightly tarpaulin --verbose --all-features --workspace --timeout 120 --out Xml --exclude-files src/utils/* src/visualization/* src/lib.rs src/explore/bayesian.rs
+
+      - name:                   Upload to codecov.io
+        uses:                   codecov/codecov-action@v2
+        with:
+          token:                ${{secrets.CODECOV_TOKEN}} # not required for public repos
+          files: ./cobertura.xml 
+          fail_ci_if_error:     true
+
+
+
+# coverage_krabmaga:
+#     runs-on: ubuntu-latest
+#     steps:
+#      - uses: actions/checkout@v2
+#      - uses: actions-rs/toolchain@v1
+#        with:
+#         toolchain: stable
+#         override: true
+#         components: llvm-tools-preview
+
+#      - uses: Swatinem/rust-cache@v1
+#        with:
+#         key: coverage 
+
+#      - name: Cargo Clean
+#        run: |
+#         cargo clean
+#      - name: Setup
+#        run: |
+#         rustup update
+#         cargo install cargo-tarpaulin
+        
+#      - name: Run Tests
+#        run: |
+#         cargo tarpaulin --implicit-test-threads  --out Xml --exclude-files src/utils/* src/visualization/* src/lib.rs src/explore/bayesian.rs
+#      - uses: codecov/codecov-action@v2
+#        with:
+#         token: ${{ secrets.CODECOV_TOKEN }}
+#         files: ./cobertura.xml 
+#         verbose: true 
