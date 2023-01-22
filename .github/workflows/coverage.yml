@@ -17,7 +17,7 @@ jobs:
           cargo +nightly tarpaulin --verbose --workspace --timeout 120 --out Xml --exclude-files src/utils/* src/visualization/* src/lib.rs src/explore/bayesian.rs
 
       - name:                   Upload to codecov.io
-        uses:                   codecov/codecov-action@v2
+        uses:                   codecov/codecov-action@v3
         with:
           token:                ${{secrets.CODECOV_TOKEN}} # not required for public repos
           files: ./cobertura.xml 
