@@ -31,42 +31,25 @@ jobs:
           sudo apt install libxcb-render0-dev libxcb-xfixes0-dev libxcb1-dev
       - uses: actions/checkout@v3
 
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: ${{ matrix.rust }}
-          override: true
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@${{matrix.rust}}
 
       - uses: Swatinem/rust-cache@v2
    
       - name: Build
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release 
+        run: cargo build --release
 
       - name: BuildVisualization
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release --features "visualization, visualization_wasm"
+        run: cargo build --release --features "visualization, visualization_wasm"
 
       - name: BuildBayesian
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release --features bayesian
+        run: cargo build --release --features bayesian
 
       - name: Test
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --features parallel
+        run: cargo test --features parallel
           
       - name: TestNoFeatures
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
+        run: cargo test
 
   mpibuild:
     runs-on: ${{ matrix.os }}
