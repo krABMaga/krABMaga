@@ -88,26 +88,24 @@ jobs:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
         with:
-          components: llvm-tools-preview
+          components: llvm-tools-preview, cargo-tarpaulin
     
-     - uses: Swatinem/rust-cache@v2
-       with:
+      - uses: Swatinem/rust-cache@v2
+        with:
         key: coverage 
 
-     - name: Cargo Clean
-       run: |
-        cargo clean
-     - name: Setup
-       run: |
-        rustup update
-        cargo install cargo-tarpaulin
+      -name: Cargo Clean
+        run: cargo clean
+      #  - name: Setup
+      #    run: |
+      #     rustup update
+      #     cargo install cargo-tarpaulin
         
-     - name: Run Tests
-       run: |
-        cargo tarpaulin --implicit-test-threads  --out Xml --exclude-files src/utils/* src/visualization/* src/lib.rs src/explore/bayesian.rs
+      - name: Run Tests
+        run: cargo tarpaulin --implicit-test-threads  --out Xml --exclude-files src/utils/* src/visualization/* src/lib.rs src/explore/bayesian.rs
 
-     - uses: codecov/codecov-action@v2
-       with:
-        token: ${{ secrets.CODECOV_TOKEN }}
-        files: ./cobertura.xml 
-        verbose: true 
+      - uses: codecov/codecov-action@v2
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./cobertura.xml 
+          verbose: true 
