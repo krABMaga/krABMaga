@@ -32,7 +32,9 @@ jobs:
       - uses: actions/checkout@v3
 
       - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@ ${{ matrix.rust }}
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
 
       - uses: Swatinem/rust-cache@v2
    
@@ -74,31 +76,20 @@ jobs:
         uses: mpi4py/setup-mpi@v1
         with:
           mpi: ${{ matrix.mpi }}
-
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: ${{ matrix.rust }}
-          override: true
-
       - uses: Swatinem/rust-cache@v2
-
-      - name: Build
-        uses: actions-rs/cargo@v1
+      - uses: dtolnay/rust-toolchain@master
         with:
-          command: build
-          args: --release --features distributed_mpi
+          toolchain: ${{ matrix.rust }}
+      - run: cargo build --release --features distributed_mpi
   
   coverage:
     runs-on: ubuntu-latest
     steps:
-     - uses: actions/checkout@v3
-     - uses: actions-rs/toolchain@v1
-       with:
-        toolchain: stable
-        override: true
-        components: llvm-tools-preview
-
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+    
      - uses: Swatinem/rust-cache@v2
        with:
         key: coverage 
