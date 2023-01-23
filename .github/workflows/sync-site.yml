@@ -19,11 +19,11 @@ on:
         required: true
         default: 'warning'
       tags:
-        description: 'Test scenario tags'
+        description: 'Manual update of site'
 
 jobs:
   if_merged:
-    if: github.event.pull_request.merged == true
+    if: github.event.pull_request.merged == true && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - name: Dispatch event
