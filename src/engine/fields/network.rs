@@ -538,11 +538,14 @@ cfg_if! {
             }
 
             pub fn update_node(&self, u: O){
-                let nodes2id = self.nodes2id.borrow();
-                let uid = match nodes2id.get(&u){
-                    Some(u)=> u,
-                    None => return
-                };
+                let uid: u32;
+                {
+                    let nodes2id = self.nodes2id.borrow();
+                    uid = match nodes2id.get(&u){
+                        Some(u)=> *u,
+                        None => return
+                    };
+                }
                 let mut nodes2id = self.nodes2id.borrow_mut();
 
                 match self.id2nodes.get_write(&uid){
