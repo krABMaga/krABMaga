@@ -98,7 +98,7 @@ cfg_if! {
                         .expect("Error: can't parse window name"),
                     width: self.width,
                     height: self.height,
-                    vsync: true,
+                    // vsync: true,
                     resize_constraints: window_constraints,
                     ..Default::default()
                 };
@@ -135,17 +135,18 @@ cfg_if! {
                 .insert_resource(Initializer(cloned_init_call, Default::default()))
                 .init_resource::<Time>()
                 .init_resource::<FixedTimestepState>()
-                .add_startup_system(init_system::<I, S>.system())
-                .add_startup_system(set_initial_timestep.system())
+                // .add_startup_system(init_system::<I, S>.system())
+                .add_startup_system(init_system::<I, S>)
+                .add_startup_system(set_initial_timestep)
                 .add_plugin(FrameTimeDiagnosticsPlugin::default())
                 .add_system_set(
                     SystemSet::new()
-                        .with_run_criteria(FixedTimestep::step.system())
-                        .with_system(renderer_system::<I, S>.system().label("render"))
-                        .with_system(simulation_system::<S>.system().before("render")),
+                        .with_run_criteria(FixedTimestep::step)
+                        .with_system(renderer_system::<I, S>.label("render"))
+                        .with_system(simulation_system::<S>.before("render")),
                 )
-                .add_system(ui_system::<I, S>.system().before("render"))
-                .add_system(camera_system.system())
+                .add_system(ui_system::<I, S>.before("render"))
+                .add_system(camera_system)
                 .add_system_to_stage(CoreStage::First, time_system.exclusive_system());
 
                 app
