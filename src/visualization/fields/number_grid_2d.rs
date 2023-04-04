@@ -76,11 +76,11 @@ pub trait BatchRender<S: State> {
             ..Default::default()
         };
         commands
-            .spawn()
+            .spawn(sprite_bundle)
             .insert(Marker::<Self> {
                 marker: PhantomData,
-            })
-            .insert_bundle(sprite_bundle);
+            });
+            // .insert_bundle(sprite_bundle);
     }
 
     // Must override to specify how to fetch the texture of self from the state. Your state struct
@@ -92,6 +92,7 @@ pub trait BatchRender<S: State> {
         mut assets: ResMut<Assets<Image>>,
         mut query: Query<(&Marker<Self>, &mut Handle<Image>)>,
         state_wrapper: Res<ActiveState<S>>,
+        // state_wrapper: ActiveState<S>,
     ) where
         Self: 'static + Sized + Sync + Send,
     {

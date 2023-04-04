@@ -54,12 +54,12 @@ cfg_if! {
                         sprite_bundle.transform.scale.y = scale.1;
 
                         commands
-                            .spawn()
+                            .spawn(sprite_bundle)
                             .insert(Marker::<Self> {
                                 marker: PhantomData,
                             })
-                            .insert(obj.clone())
-                            .insert_bundle(sprite_bundle);
+                            .insert(obj.clone());
+                            // .insert_bundle(sprite_bundle);
                     }
                 } else if dense_grid.is_some() {
                     for obj in dense_grid
@@ -79,12 +79,12 @@ cfg_if! {
                         sprite_bundle.transform.scale.y = scale.1;
 
                         commands
-                            .spawn()
+                            .spawn(sprite_bundle)
                             .insert(Marker::<Self> {
                                 marker: PhantomData,
                             })
-                            .insert(obj.clone())
-                            .insert_bundle(sprite_bundle);
+                            .insert(obj.clone());
+                            // .insert_bundle(sprite_bundle);
                     }
                 }
             }
@@ -102,6 +102,7 @@ cfg_if! {
                 mut query: Query<(&Marker<Self>, &O, &mut Transform, &mut Handle<Image>)>,
                 mut sprite_render_factory: AssetHandleFactoryResource,
                 state_wrapper: Res<ActiveState<S>>,
+                // state_wrapper: ActiveState<S>,
             ) where
                 Self: 'static + Sized + Sync + Send,
             {

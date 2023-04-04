@@ -4,14 +4,16 @@ cfg_if! {
         use crate::engine::{schedule::Schedule, state::State};
 
         use crate::visualization::visualization_state::VisualizationState;
-
+        use crate::bevy::ecs::system::Resource;
         use std::sync::{Arc, Mutex};
 
         use std::marker::PhantomData;
 
         // A wrapper of the currently active state, used as a Bevy resource.
+        #[derive(Resource)]
         pub struct ActiveState<S: State>(pub Arc<Mutex<S>>);
         // A wrapper of the currently active schedule, used as a Bevy resource.
+        #[derive(Resource)]
         pub struct ActiveSchedule(pub Arc<Mutex<Schedule>>);
         // Initialization method to set up state and agents, wrapped as a Bevy resource.
         pub struct Initializer<I: VisualizationState<S> + 'static, S: State>(

@@ -13,7 +13,9 @@ cfg_if! {
 
         pub fn camera_system(
             resize_event: Res<Events<WindowResized>>,
+            // resize_event: Events<WindowResized>,
             sim: Res<SimulationDescriptor>,
+            // sim: SimulationDescriptor,
             mut query: Query<(&Camera, &mut Transform)>,
         ) {
             let mut reader = resize_event.get_reader();

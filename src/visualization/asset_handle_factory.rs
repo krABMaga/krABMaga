@@ -7,12 +7,13 @@ cfg_if! {
         use bevy::ecs::system::SystemParam;
 
         use bevy::prelude::{AssetServer, Assets, Handle, Image, Res, ResMut, SpriteBundle};
-
+        use crate::bevy::ecs::system::Resource;
         use hashbrown::HashMap;
 
         // A simple lazy loader of sprites, mainly for use with the Emoji sprite feature offered by the framework.
         // This allows loading sprites only once, storing a handle pointing to the sprite resource itself and returning clones
         // of the handle, for optimization purposes.
+        #[derive(Resource)]
         pub struct AssetHandleFactory {
             emoji_loaders: HashMap<String, Handle<Image>>,
         }
@@ -75,7 +76,16 @@ cfg_if! {
             marker: PhantomData<&'s usize>,
         }
 
+        // pub struct AssetHandleFactoryResource {
+        //     pub sprite_factory: AssetHandleFactory,
+        //     pub asset_server: AssetServer,
+        //     pub assets: Assets<Image>,
+        //     #[system_param(ignore)]
+        //     marker: PhantomData<&'s usize>,
+        // }
+
         impl<'w, 's> AssetHandleFactoryResource<'w, 's> {
+        // impl AssetHandleFactoryResource {
             // A proxy method that exposes [AssetHandleFactory get_emoji_loader](AssetHandleFactory#get_emoji_loader)
             pub fn get_emoji_loader(&mut self, emoji_code: String) -> SpriteBundle {
                 self.sprite_factory

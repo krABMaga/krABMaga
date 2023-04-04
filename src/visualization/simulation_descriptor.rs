@@ -2,6 +2,9 @@
 use cfg_if::cfg_if;
 cfg_if! {
     if #[cfg(any(feature = "visualization", feature = "visualization_wasm"))] {
+        use crate::bevy::ecs::system::Resource;
+
+        #[derive(Resource)]
         pub struct SimulationDescriptor {
             pub title: String,
             pub width: f32,

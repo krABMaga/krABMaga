@@ -16,8 +16,11 @@ cfg_if! {
         /// The simulation system steps the schedule once per frame, effectively synchronizing frames and schedule steps.
         pub fn simulation_system<S: State>(
             schedule_wrapper: ResMut<ActiveSchedule>,
+            // schedule_wrapper: ActiveSchedule,
             state_wrapper: ResMut<ActiveState<S>>,
+            // state_wrapper: ActiveState<S>,
             sim_data: Res<SimulationDescriptor>,
+            // sim_data: SimulationDescriptor,
         ) {
             if !sim_data.paused {
                 schedule_wrapper

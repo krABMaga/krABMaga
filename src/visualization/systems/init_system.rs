@@ -6,7 +6,7 @@ cfg_if! {
         use bevy::prelude::{Commands, Camera2dBundle, Res, ResMut, WindowDescriptor};
         use bevy::render::camera::WindowOrigin;
         use crate::bevy::prelude::Transform;
-        use crate::bevy::render::camera::{DepthCalculation};
+        // use crate::bevy::render::camera::{DepthCalculation};
         // use bevy::render::camera::CameraPlugin;
         use crate::bevy::utils::default;
         // use crate::bevy::ui::entity::UiCameraConfig;
@@ -23,14 +23,19 @@ cfg_if! {
 
         /// The main startup system which bootstraps a simple orthographic camera, centers it to aim at the simulation,
         /// then calls the user provided init callback.
-        pub fn init_system<I: VisualizationState<S> + 'static, S: State>(
+        pub fn init_system<I: VisualizationState<S> + 'static + bevy::prelude::Resource, S: State>(
             on_init: Res<I>,
+            // on_init: I,
             mut sprite_factory: AssetHandleFactoryResource,
             mut commands: Commands,
             state_resource: ResMut<ActiveState<S>>,
+            // state_resource: ActiveState<S>,
             schedule_resource: ResMut<ActiveSchedule>,
-            window: Res<WindowDescriptor>,
+            // schedule_resource: ActiveSchedule,
+            window: WindowDescriptor,
+            // window: WindowDescriptor,
             mut sim: ResMut<SimulationDescriptor>,
+            // mut sim: SimulationDescriptor,
         ) {
             // Right handed coordinate system, equal to how it is implemented in [`OrthographicProjection::new_2d()`].
             let far = 1000.;
@@ -65,7 +70,7 @@ cfg_if! {
                     far,
                     scaling_mode: ScalingMode::WindowSize,
                     window_origin: WindowOrigin::BottomLeft,
-                    depth_calculation: DepthCalculation::ZDifference,
+                    // depth_calculation: DepthCalculation::ZDifference,
             ..default()
                 }
                 .into(),

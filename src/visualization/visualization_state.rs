@@ -71,11 +71,16 @@ cfg_if! {
                 transform.rotation = Quat::from_rotation_z(rotation);
 
                 sprite_bundle.transform = transform;
+                // commands
+                //     .spawn()
+                //     .insert(agent_render)
+                //     .insert(transform)
+                //     .insert_bundle(sprite_bundle);
                 commands
-                    .spawn()
+                    .spawn(sprite_bundle)
                     .insert(agent_render)
-                    .insert(transform)
-                    .insert_bundle(sprite_bundle);
+                    .insert(transform);
+                    // .insert_bundle(sprite_bundle);
             }
 
             // The user must specify which AgentRender is associated to which Agent through this method

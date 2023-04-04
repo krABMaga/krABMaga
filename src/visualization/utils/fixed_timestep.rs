@@ -16,7 +16,8 @@ cfg_if! {
         pub struct FixedTimestep;
 
         impl FixedTimestep {
-            pub fn step(mut time: ResMut<Time>, mut accumulator: ResMut<FixedTimestepState>) -> ShouldRun {
+            // pub fn step(mut time: ResMut<Time>, mut accumulator: ResMut<FixedTimestepState>) -> ShouldRun {
+            pub fn step(mut time: Time, mut accumulator: FixedTimestepState) -> ShouldRun {
                 if accumulator.sub_step().is_some() {
                     time.advance_step();
                     ShouldRun::YesAndCheckAgain

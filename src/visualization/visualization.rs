@@ -108,9 +108,21 @@ cfg_if! {
                 state.init(&mut schedule);
                 let cloned_init_call = init_call.clone();
 
-                app.insert_resource(window_descriptor)
-                    .add_plugins(DefaultPlugins)
+                // app.insert_resource(window_descriptor)
+                //     .add_plugins(DefaultPlugins)
+                //     .add_plugin(EguiPlugin);
+
+                app.add_plugins(DefaultPlugins.set(WindowPlugin {
+                    window: WindowDescriptor {
+                        // width: 400.0,
+                        ..default()
+                    },
+                    ..default()
+                    }));
+
+                app.add_plugins(DefaultPlugins)
                     .add_plugin(EguiPlugin);
+                    
 
                 // Required for network visualization
                 app.add_plugin(ShapePlugin);
@@ -153,7 +165,8 @@ cfg_if! {
             }
         }
 
-        fn set_initial_timestep(mut time: ResMut<Time>) {
+        // fn set_initial_timestep(mut time: ResMut<Time>) {
+        fn set_initial_timestep(mut time: Time) {
             time.set_steps_per_second(60.);
         }
 
