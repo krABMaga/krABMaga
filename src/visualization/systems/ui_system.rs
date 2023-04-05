@@ -21,21 +21,15 @@ use crate::visualization::{
 
 pub fn ui_system<I: VisualizationState<S> + Clone + 'static + bevy::prelude::Resource, S: State>(
     mut egui_context: ResMut<EguiContext>,
-    // mut egui_context: EguiContext,
     mut sim_data: ResMut<SimulationDescriptor>,
-    // mut sim_data: SimulationDescriptor,
     active_schedule_wrapper: ResMut<ActiveSchedule>,
-    // active_schedule_wrapper: ActiveSchedule,
     active_state_wrapper: ResMut<ActiveState<S>>,
-    // active_state_wrapper: ActiveState<S>,
     on_init: Res<I>,
-    // on_init: I,
     mut sprite_factory: AssetHandleFactoryResource,
     query: Query<Entity, Without<Camera>>,
     diagnostics: Res<Diagnostics>,
     mut commands: Commands,
     mut time: ResMut<Time>,
-    // mut time: Time,
 ) {
     egui::SidePanel::left("main").show(egui_context.ctx_mut(), |ui| {
         ui.vertical_centered(|ui| {

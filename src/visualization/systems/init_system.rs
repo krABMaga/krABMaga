@@ -2,16 +2,11 @@ use cfg_if::cfg_if;
 cfg_if! {
     if #[cfg(any(feature = "visualization", feature = "visualization_wasm"))] {
 
-        // use bevy::prelude::{Commands, OrthographicCameraBundle, Res, ResMut, WindowDescriptor};
-        use bevy::prelude::{Commands, Camera2dBundle, Res, ResMut, WindowDescriptor};
-        // use bevy::window::Window;
+        use bevy::prelude::{Commands, Camera2dBundle, Res, ResMut};
         use bevy::window::Windows;
         use bevy::render::camera::WindowOrigin;
         use crate::bevy::prelude::Transform;
-        // use crate::bevy::render::camera::{DepthCalculation};
-        // use bevy::render::camera::CameraPlugin;
         use crate::bevy::utils::default;
-        // use crate::bevy::ui::entity::UiCameraConfig;
         use crate::bevy::render::camera::ScalingMode;
         use crate::engine::state::State;
         use crate::bevy::render::camera::OrthographicProjection;
@@ -31,12 +26,11 @@ cfg_if! {
             mut commands: Commands,
             state_resource: ResMut<ActiveState<S>>,
             schedule_resource: ResMut<ActiveSchedule>,
-            // window: WindowDescriptor,
             windows: Res<Windows>,
             mut sim: ResMut<SimulationDescriptor>,
         ) {
             if let Some(window) = windows.get_primary() {
-        
+
             // Right handed coordinate system, equal to how it is implemented in [`OrthographicProjection::new_2d()`].
             let far = 1000.;
             // Offset the whole simulation to the left to take the width of the UI panel into account.
@@ -48,42 +42,18 @@ cfg_if! {
             initial_transform.scale.x = scale_x;
             initial_transform.scale.y = sim.height / window.height();
 
-            // let camera_bundle = OrthographicCameraBundle::new_2d() {
-            //     camera: Camera::default(),
-            //     orthographic_projection: OrthographicProjection {
-            //         far,
-            //         depth_calculation: DepthCalculation::ZDifference,
-            //         window_origin: WindowOrigin::BottomLeft, // Main difference with the new_2d constructor: by default, this is Center
-            //         ..Default::default()
-            //     },
-            //     visible_entities: Default::default(),
-            //     frustum: Default::default(),
-            //     transform: initial_transform,
-            //     global_transform: Default::default(),
-            // };
-
-            // 0.6 to 0.7
-            // commands.spawn_bundle(OrthographicCameraBundle::new_2d());
-            // 0.7 to 0.8
             commands.spawn(Camera2dBundle {
                 projection: OrthographicProjection {
                     far,
                     scaling_mode: ScalingMode::WindowSize,
                     window_origin: WindowOrigin::BottomLeft,
-                    // depth_calculation: DepthCalculation::ZDifference,
             ..default()
                 }
                 .into(),
                 transform: initial_transform,
                 ..default()
             });
-            // commands.spawn_bundle(Camera2dBundle::default());
-                // .insert(UiCameraConfig {
-                //     show_ui: false,
-                //     ..default()
-                // });
 
-            // commands.spawn_bundle(camera_bundle);
             on_init.on_init(
                 &mut commands,
                 &mut sprite_factory,

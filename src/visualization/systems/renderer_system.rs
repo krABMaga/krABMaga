@@ -25,15 +25,11 @@ pub fn renderer_system<I: VisualizationState<S> + Clone + 'static + bevy::prelud
         &mut Handle<Image>,
     )>,
     state_wrapper: ResMut<ActiveState<S>>,
-    // state_wrapper: ActiveState<S>,
     schedule_wrapper: Res<ActiveSchedule>,
-    // schedule_wrapper: ActiveSchedule,
     mut sprite_factory: AssetHandleFactoryResource,
     mut commands: Commands,
     mut vis_state: ResMut<I>,
-    // mut vis_state: I,
     sim_data: Res<SimulationDescriptor>,
-    // sim_data: SimulationDescriptor,
 ) {
     if !sim_data.paused {
         vis_state.before_render(

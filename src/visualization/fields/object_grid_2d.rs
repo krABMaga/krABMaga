@@ -8,7 +8,6 @@ cfg_if! {
         };
 
         use crate::visualization::{
-            // agent_render::SpriteType,
             asset_handle_factory::AssetHandleFactoryResource,
             wrappers::ActiveState,
         };
@@ -59,7 +58,6 @@ cfg_if! {
                                 marker: PhantomData,
                             })
                             .insert(obj.clone());
-                            // .insert_bundle(sprite_bundle);
                     }
                 } else if dense_grid.is_some() {
                     for obj in dense_grid
@@ -84,7 +82,6 @@ cfg_if! {
                                 marker: PhantomData,
                             })
                             .insert(obj.clone());
-                            // .insert_bundle(sprite_bundle);
                     }
                 }
             }
@@ -102,7 +99,6 @@ cfg_if! {
                 mut query: Query<(&Marker<Self>, &O, &mut Transform, &mut Handle<Image>)>,
                 mut sprite_render_factory: AssetHandleFactoryResource,
                 state_wrapper: Res<ActiveState<S>>,
-                // state_wrapper: ActiveState<S>,
             ) where
                 Self: 'static + Sized + Sync + Send,
             {

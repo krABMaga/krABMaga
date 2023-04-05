@@ -119,7 +119,8 @@ visualization = [
     "bevy/bevy_gltf",
     "bevy/png",
     "image",
-    "bevy_egui"
+    "bevy_egui",
+    "bevy_egui/default_fonts"
 ]
 visualization_wasm = [
     "bevy_prototype_lyon",
@@ -130,6 +131,7 @@ visualization_wasm = [
     "bevy/png",
     "image",
     "bevy_egui",
+    "bevy_egui/default_fonts"
 ]
 
 [package.metadata.docs.rs]

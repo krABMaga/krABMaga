@@ -91,27 +91,11 @@ cfg_if! {
                 window_constraints.min_width = 600.;
                 window_constraints.min_height = 300.;
 
-                let window_descriptor = WindowDescriptor {
-                    title: self
-                        .window_name
-                        .parse()
-                        .expect("Error: can't parse window name"),
-                    width: self.width,
-                    height: self.height,
-                    // vsync: true,
-                    resize_constraints: window_constraints,
-                    ..Default::default()
-                };
-
                 let mut app = App::new();
                 let mut schedule = Schedule::new();
                 state.init(&mut schedule);
                 let cloned_init_call = init_call.clone();
 
-                // app.insert_resource(window_descriptor)
-                //     .add_plugins(DefaultPlugins)
-                //     .add_plugin(EguiPlugin);
-            
                 app.add_plugins(DefaultPlugins.set(WindowPlugin {
                     window: WindowDescriptor {
                         // width: 400.0,
@@ -120,7 +104,7 @@ cfg_if! {
                     ..default()
                     }))
                     .add_plugin(EguiPlugin);
-                    
+
 
                 // Required for network visualization
                 app.add_plugin(ShapePlugin);
@@ -137,15 +121,6 @@ cfg_if! {
                     paused: true,
                     ui_width: 300.,
                 })
-                // ;
-                // app.insert_resource(SimulationDescriptor::new(
-                //     self.window_name.parse().expect("Error: can't parse window name"),
-                //     self.sim_width,
-                //     self.sim_height,
-                //     (self.width * 0.5) - (self.width - self.sim_width as f32) / 2.,
-                //     (self.height * 0.5) - (self.height - self.sim_height as f32) / 2.,
-                //     300.,
-                // ));
                 .insert_resource(ClearColor(self.background_color))
                 .insert_resource(AssetHandleFactory::new())
                 .insert_resource(init_call)
@@ -154,7 +129,6 @@ cfg_if! {
                 .insert_resource(Initializer(cloned_init_call, Default::default()))
                 .init_resource::<Time>()
                 .init_resource::<FixedTimestepState>()
-                // .add_startup_system(init_system::<I, S>.system())
                 .add_startup_system(init_system::<I, S>)
                 .add_startup_system(set_initial_timestep)
                 .add_plugin(FrameTimeDiagnosticsPlugin::default())
@@ -166,7 +140,6 @@ cfg_if! {
                 )
                 .add_system(ui_system::<I, S>.before("render"))
                 .add_system(camera_system)
-                // .add_system_to_stage(CoreStage::First, time_system.exclusive_system());
                 .add_system_to_stage(CoreStage::First, time_system);
 
                 app
@@ -174,7 +147,6 @@ cfg_if! {
         }
 
         fn set_initial_timestep(mut time: ResMut<Time>) {
-        // fn set_initial_timestep(mut time: Time) {
             time.set_steps_per_second(60.);
         }
 

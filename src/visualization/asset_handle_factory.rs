@@ -76,16 +76,7 @@ cfg_if! {
             marker: PhantomData<&'s usize>,
         }
 
-        // pub struct AssetHandleFactoryResource {
-        //     pub sprite_factory: AssetHandleFactory,
-        //     pub asset_server: AssetServer,
-        //     pub assets: Assets<Image>,
-        //     #[system_param(ignore)]
-        //     marker: PhantomData<&'s usize>,
-        // }
-
         impl<'w, 's> AssetHandleFactoryResource<'w, 's> {
-        // impl AssetHandleFactoryResource {
             // A proxy method that exposes [AssetHandleFactory get_emoji_loader](AssetHandleFactory#get_emoji_loader)
             pub fn get_emoji_loader(&mut self, emoji_code: String) -> SpriteBundle {
                 self.sprite_factory
