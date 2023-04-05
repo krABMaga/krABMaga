@@ -67,7 +67,7 @@ cfg_if! {
         }
 
         // A bundle of resources related to sprite assets, commonly used to edit the graphical representation of an agent.
-        #[derive(SystemParam)]
+        #[derive(Resource, SystemParam)]
         pub struct AssetHandleFactoryResource<'w, 's> {
             pub sprite_factory: ResMut<'w, AssetHandleFactory>,
             pub asset_server: Res<'w, AssetServer>,

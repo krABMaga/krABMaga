@@ -4,6 +4,8 @@ cfg_if! {
 
         // use bevy::prelude::{Commands, OrthographicCameraBundle, Res, ResMut, WindowDescriptor};
         use bevy::prelude::{Commands, Camera2dBundle, Res, ResMut, WindowDescriptor};
+        // use bevy::window::Window;
+        use bevy::window::Windows;
         use bevy::render::camera::WindowOrigin;
         use crate::bevy::prelude::Transform;
         // use crate::bevy::render::camera::{DepthCalculation};
@@ -25,28 +27,26 @@ cfg_if! {
         /// then calls the user provided init callback.
         pub fn init_system<I: VisualizationState<S> + 'static + bevy::prelude::Resource, S: State>(
             on_init: Res<I>,
-            // on_init: I,
             mut sprite_factory: AssetHandleFactoryResource,
             mut commands: Commands,
             state_resource: ResMut<ActiveState<S>>,
-            // state_resource: ActiveState<S>,
             schedule_resource: ResMut<ActiveSchedule>,
-            // schedule_resource: ActiveSchedule,
-            window: WindowDescriptor,
             // window: WindowDescriptor,
+            windows: Res<Windows>,
             mut sim: ResMut<SimulationDescriptor>,
-            // mut sim: SimulationDescriptor,
         ) {
+            if let Some(window) = windows.get_primary() {
+        
             // Right handed coordinate system, equal to how it is implemented in [`OrthographicProjection::new_2d()`].
             let far = 1000.;
             // Offset the whole simulation to the left to take the width of the UI panel into account.
             let ui_offset = -sim.ui_width;
             // Scale the simulation so it fills the portion of the screen not covered by the UI panel.
-            let scale_x = sim.width / (window.width + ui_offset);
+            let scale_x = sim.width / (window.width() + ui_offset);
             // The translation x must depend on the scale_x to keep the left offset constant between window resizes.
             let mut initial_transform = Transform::from_xyz(ui_offset * scale_x, 0., far - 0.1);
             initial_transform.scale.x = scale_x;
-            initial_transform.scale.y = sim.height / window.height;
+            initial_transform.scale.y = sim.height / window.height();
 
             // let camera_bundle = OrthographicCameraBundle::new_2d() {
             //     camera: Camera::default(),
@@ -99,6 +99,6 @@ cfg_if! {
             )
         }
 
-
+    }
     }
 }

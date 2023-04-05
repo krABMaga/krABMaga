@@ -111,44 +111,42 @@ cfg_if! {
                 // app.insert_resource(window_descriptor)
                 //     .add_plugins(DefaultPlugins)
                 //     .add_plugin(EguiPlugin);
-
+            
                 app.add_plugins(DefaultPlugins.set(WindowPlugin {
                     window: WindowDescriptor {
                         // width: 400.0,
                         ..default()
                     },
                     ..default()
-                    }));
-
-                app.add_plugins(DefaultPlugins)
+                    }))
                     .add_plugin(EguiPlugin);
                     
 
                 // Required for network visualization
                 app.add_plugin(ShapePlugin);
 
-                // app.add_startup_system(SimulationDescriptor {
-                //     title: self
-                //         .window_name
-                //         .parse()
-                //         .expect("Error: can't parse window name"),
-                //     width: self.sim_width,
-                //     height: self.sim_height,
-                //     center_x: (self.width * 0.5) - (self.width - self.sim_width as f32) / 2.,
-                //     center_y: (self.height * 0.5) - (self.height - self.sim_height as f32) / 2.,
-                //     paused: true,
-                //     ui_width: 300.,
-                // });
-                app.insert_resource(SimulationDescriptor::new(
-                    self.window_name.parse().expect("Error: can't parse window name"),
-                    self.sim_width,
-                    self.sim_height,
-                    (self.width * 0.5) - (self.width - self.sim_width as f32) / 2.,
-                    (self.height * 0.5) - (self.height - self.sim_height as f32) / 2.,
-                    300.,
-                ));
-
-                app.insert_resource(ClearColor(self.background_color))
+                app.insert_resource(SimulationDescriptor {
+                    title: self
+                        .window_name
+                        .parse()
+                        .expect("Error: can't parse window name"),
+                    width: self.sim_width,
+                    height: self.sim_height,
+                    center_x: (self.width * 0.5) - (self.width - self.sim_width as f32) / 2.,
+                    center_y: (self.height * 0.5) - (self.height - self.sim_height as f32) / 2.,
+                    paused: true,
+                    ui_width: 300.,
+                })
+                // ;
+                // app.insert_resource(SimulationDescriptor::new(
+                //     self.window_name.parse().expect("Error: can't parse window name"),
+                //     self.sim_width,
+                //     self.sim_height,
+                //     (self.width * 0.5) - (self.width - self.sim_width as f32) / 2.,
+                //     (self.height * 0.5) - (self.height - self.sim_height as f32) / 2.,
+                //     300.,
+                // ));
+                .insert_resource(ClearColor(self.background_color))
                 .insert_resource(AssetHandleFactory::new())
                 .insert_resource(init_call)
                 .insert_resource(ActiveState(Arc::new(Mutex::new(state))))
