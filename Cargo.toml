@@ -1,6 +1,6 @@
 [package]
 name = "krabmaga"
-version = "0.3.0"
+version = "0.3.1"
 authors = [
     "Carmine Spagnuolo <spagnuolocarmine@gmail.com>", 
     "Alessia Antelmi <aantelmi@unisa.it>", 
@@ -51,7 +51,6 @@ aws-config = {version = "0.4", optional = true}
 aws-sdk-sqs = {version = "0.4", optional = true}
 aws-sdk-lambda = {version = "0.4", optional = true}
 futures = {version = "0.3", optional = true}
-winit = "0.28.3"
 
 # Model exploration MPI features
 # We used this crate because "rsmpi" has some bugs, so we updated to this fork
