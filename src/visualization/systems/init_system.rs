@@ -65,7 +65,7 @@ cfg_if! {
             // 0.6 to 0.7
             // commands.spawn_bundle(OrthographicCameraBundle::new_2d());
             // 0.7 to 0.8
-            commands.spawn_bundle(Camera2dBundle {
+            commands.spawn(Camera2dBundle {
                 projection: OrthographicProjection {
                     far,
                     scaling_mode: ScalingMode::WindowSize,

@@ -70,7 +70,7 @@ cfg_if! {
 
             // Create the application and start it immediately. Requires a startup callback defined as a struct
             // that implements [OnStateInit], along with the state and the schedule, which you manually create.
-            pub fn start<I: VisualizationState<S> + 'static + Clone, S: State>(
+            pub fn start<I: VisualizationState<S> + 'static + bevy::prelude::Resource + Clone, S: State>(
                 self,
                 init_call: I,
                 state: S,
@@ -81,7 +81,7 @@ cfg_if! {
 
             // Sets up the application, exposing the [AppBuilder]. Useful if you want to directly interface Bevy
             // and add plugins, resources or systems yourself.
-            pub fn setup<I: VisualizationState<S> + Clone + 'static, S: State>(
+            pub fn setup<I: VisualizationState<S> + Clone + 'static + bevy::prelude::Resource, S: State>(
                 &self,
                 init_call: I,
                 mut state: S,
@@ -127,19 +127,28 @@ cfg_if! {
                 // Required for network visualization
                 app.add_plugin(ShapePlugin);
 
-                app.insert_resource(SimulationDescriptor {
-                    title: self
-                        .window_name
-                        .parse()
-                        .expect("Error: can't parse window name"),
-                    width: self.sim_width,
-                    height: self.sim_height,
-                    center_x: (self.width * 0.5) - (self.width - self.sim_width as f32) / 2.,
-                    center_y: (self.height * 0.5) - (self.height - self.sim_height as f32) / 2.,
-                    paused: true,
-                    ui_width: 300.,
-                })
-                .insert_resource(ClearColor(self.background_color))
+                // app.add_startup_system(SimulationDescriptor {
+                //     title: self
+                //         .window_name
+                //         .parse()
+                //         .expect("Error: can't parse window name"),
+                //     width: self.sim_width,
+                //     height: self.sim_height,
+                //     center_x: (self.width * 0.5) - (self.width - self.sim_width as f32) / 2.,
+                //     center_y: (self.height * 0.5) - (self.height - self.sim_height as f32) / 2.,
+                //     paused: true,
+                //     ui_width: 300.,
+                // });
+                app.insert_resource(SimulationDescriptor::new(
+                    self.window_name.parse().expect("Error: can't parse window name"),
+                    self.sim_width,
+                    self.sim_height,
+                    (self.width * 0.5) - (self.width - self.sim_width as f32) / 2.,
+                    (self.height * 0.5) - (self.height - self.sim_height as f32) / 2.,
+                    300.,
+                ));
+
+                app.insert_resource(ClearColor(self.background_color))
                 .insert_resource(AssetHandleFactory::new())
                 .insert_resource(init_call)
                 .insert_resource(ActiveState(Arc::new(Mutex::new(state))))
@@ -159,14 +168,15 @@ cfg_if! {
                 )
                 .add_system(ui_system::<I, S>.before("render"))
                 .add_system(camera_system)
-                .add_system_to_stage(CoreStage::First, time_system.exclusive_system());
+                // .add_system_to_stage(CoreStage::First, time_system.exclusive_system());
+                .add_system_to_stage(CoreStage::First, time_system);
 
                 app
             }
         }
 
-        // fn set_initial_timestep(mut time: ResMut<Time>) {
-        fn set_initial_timestep(mut time: Time) {
+        fn set_initial_timestep(mut time: ResMut<Time>) {
+        // fn set_initial_timestep(mut time: Time) {
             time.set_steps_per_second(60.);
         }
 

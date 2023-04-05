@@ -16,7 +16,8 @@ cfg_if! {
         #[derive(Resource)]
         pub struct ActiveSchedule(pub Arc<Mutex<Schedule>>);
         // Initialization method to set up state and agents, wrapped as a Bevy resource.
-        pub struct Initializer<I: VisualizationState<S> + 'static, S: State>(
+        #[derive(Resource)]
+        pub struct Initializer<I: VisualizationState<S> + 'static + bevy::prelude::Resource, S: State>(
             pub I,
             pub PhantomData<Arc<Mutex<S>>>,
         );

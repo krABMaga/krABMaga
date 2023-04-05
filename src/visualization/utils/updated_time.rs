@@ -278,8 +278,8 @@ cfg_if! {
             }
         }
 
-        // pub(crate) fn time_system(mut time: ResMut<Time>, mut accumulator: ResMut<FixedTimestepState>) {
-        pub(crate) fn time_system(mut time: Time, mut accumulator: FixedTimestepState) {
+        pub(crate) fn time_system(mut time: ResMut<Time>, mut accumulator: ResMut<FixedTimestepState>) {
+        // pub(crate) fn time_system(mut time: Time, mut accumulator: FixedTimestepState) {
             time.update();
             accumulator.add_time(
                 time.delta().mul_f64(time.relative_speed_f64()),
