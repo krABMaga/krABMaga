@@ -1,6 +1,6 @@
 [package]
 name = "krabmaga"
-version = "0.3.0"
+version = "0.3.1"
 authors = [
     "Carmine Spagnuolo <spagnuolocarmine@gmail.com>", 
     "Alessia Antelmi <aantelmi@unisa.it>", 
@@ -63,13 +63,10 @@ friedrich = { version = "0.4.1", optional = true }
 statrs = { version = "0.15.0", optional = true } 
 
 # Visualization features
-bevy_prototype_lyon = {version="0.4.0", optional=true, default-features = false}
+bevy_prototype_lyon = {version="0.7.0", optional=true, default-features = false}
 image = {version="0.24.2", optional=true, default-features = false}
-bevy_egui = {version="0.10",optional=true, default-features = false}
-[dependencies.bevy]
-version= "0.6"
-default-features = false
-optional=true
+bevy_egui = {version="0.19.0",optional=true, default-features = false}
+bevy = {version= "0.9.1", optional = true, features = ["x11"]}
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = {version="0.2.6", features=["wasm-bindgen"], default-features = false}
@@ -116,7 +113,8 @@ visualization = [
     "bevy/bevy_gltf",
     "bevy/png",
     "image",
-    "bevy_egui"
+    "bevy_egui",
+    "bevy_egui/default_fonts"
 ]
 visualization_wasm = [
     "bevy_prototype_lyon",
@@ -127,6 +125,7 @@ visualization_wasm = [
     "bevy/png",
     "image",
     "bevy_egui",
+    "bevy_egui/default_fonts"
 ]
 
 [package.metadata.docs.rs]

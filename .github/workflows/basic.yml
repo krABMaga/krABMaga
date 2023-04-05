@@ -17,6 +17,13 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
+      - run: |
+          sudo apt update
+          sudo apt install pkg-config libx11-dev libasound2-dev libudev-dev
+          sudo apt install libxcb-randr0-dev libxcb-xtest0-dev libxcb-xinerama0-dev libxcb-shape0-dev libxcb-xkb-dev
+          sudo apt install libxcb-render0-dev libxcb-xfixes0-dev libxcb1-dev
+          sudo apt install libudev-dev libasound2-dev portaudio19-dev build-essential libpulse-dev libdbus-1-dev
+          sudo apt install libfontconfig libfontconfig1-dev
       - run: cargo check --release --features "visualization, bayesian"
 
   fmt:
@@ -47,4 +54,11 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt
+      - run: |
+          sudo apt update
+          sudo apt install pkg-config libx11-dev libasound2-dev libudev-dev
+          sudo apt install libxcb-randr0-dev libxcb-xtest0-dev libxcb-xinerama0-dev libxcb-shape0-dev libxcb-xkb-dev
+          sudo apt install libxcb-render0-dev libxcb-xfixes0-dev libxcb1-dev
+          sudo apt install libudev-dev libasound2-dev portaudio19-dev build-essential libpulse-dev libdbus-1-dev
+          sudo apt install libfontconfig libfontconfig1-dev
       - run: cargo clippy --features "visualization, bayesian"

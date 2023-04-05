@@ -11,10 +11,10 @@ cfg_if! {
             asset_handle_factory::AssetHandleFactoryResource,
             simulation_descriptor::SimulationDescriptor,
         };
-
+        use crate::bevy::ecs::system::Resource;
         // A simple trait which lets the developer set up the visualization components of his simulation.
         // This method will be called in a Bevy startup system.
-        pub trait VisualizationState<S: State>: Send + Sync {
+        pub trait VisualizationState<S: State >: Send + Sync + Resource {
             fn on_init(
                 &self,
                 commands: &mut Commands,
@@ -72,10 +72,9 @@ cfg_if! {
 
                 sprite_bundle.transform = transform;
                 commands
-                    .spawn()
+                    .spawn(sprite_bundle)
                     .insert(agent_render)
-                    .insert(transform)
-                    .insert_bundle(sprite_bundle);
+                    .insert(transform);
             }
 
             // The user must specify which AgentRender is associated to which Agent through this method

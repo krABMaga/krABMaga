@@ -5,7 +5,7 @@ cfg_if! {
 
         use bevy::ecs::schedule::ShouldRun;
         use bevy::prelude::ResMut;
-
+        use crate::bevy::ecs::system::Resource;
         use crate::visualization::utils::updated_time::Time;
 
         /// This util allows specifying the number of simulation steps to execute every second.
@@ -13,10 +13,12 @@ cfg_if! {
         /// second (by default, 1 step per second). When the simulation system runs, we check if we've
         /// accumulated at least a step, if we did, we consume as many steps as possible.
         /// TODO swap to https://github.com/bevyengine/bevy/pull/3002 when Bevy 0.6 is released.
+        // #[derive(Resource)]
         pub struct FixedTimestep;
 
         impl FixedTimestep {
             pub fn step(mut time: ResMut<Time>, mut accumulator: ResMut<FixedTimestepState>) -> ShouldRun {
+            // pub fn step(mut time: Time, mut accumulator: FixedTimestepState) -> ShouldRun {
                 if accumulator.sub_step().is_some() {
                     time.advance_step();
                     ShouldRun::YesAndCheckAgain
@@ -26,7 +28,7 @@ cfg_if! {
             }
         }
 
-        #[derive(Debug, Clone)]
+        #[derive(Debug, Clone, Resource)]
         pub struct FixedTimestepState {
             time: Duration,
             steps: u32,

@@ -8,9 +8,10 @@ cfg_if! {
         /// with slight fixes to add compatibility with Bevy 0.5, as well as a safety check in the time system
         /// to prevent the app from freezing when the steps per second value is too high.
         use bevy::utils::{Duration, Instant};
+        use crate::bevy::ecs::system::Resource;
 
         /// Tracks time elapsed since the previous update and since the app was started.
-        #[derive(Debug, Clone)]
+        #[derive(Debug, Clone, Resource)]
         pub struct Time {
             delta: Duration,
             delta_seconds: f32,
@@ -278,6 +279,7 @@ cfg_if! {
         }
 
         pub(crate) fn time_system(mut time: ResMut<Time>, mut accumulator: ResMut<FixedTimestepState>) {
+        // pub(crate) fn time_system(mut time: Time, mut accumulator: FixedTimestepState) {
             time.update();
             accumulator.add_time(
                 time.delta().mul_f64(time.relative_speed_f64()),

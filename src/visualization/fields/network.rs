@@ -82,7 +82,7 @@ cfg_if! {
                             is_static,
                         } = Self::get_edge_info(edge, network);
 
-                        let mut spawn_command = commands.spawn_bundle(GeometryBuilder::build_as(
+                        let mut spawn_command = commands.spawn(GeometryBuilder::build_as(
                             &Line(
                                 Vec2::new(source_loc.x, source_loc.y),
                                 Vec2::new(target_loc.x, target_loc.y),
@@ -100,7 +100,7 @@ cfg_if! {
                 }
             }
 
-            /// If the nodes connected by the edge have moved, we regenerate the path mesh related to the edge.
+            // If the nodes connected by the edge have moved, we regenerate the path mesh related to the edge.
             fn render(state_wrapper: Res<ActiveState<S>>, mut query: Query<(&mut Path, &EdgeRender)>) {
                 let state = state_wrapper.0.lock().expect("error on lock");
                 let network = Self::get_network(&*state);

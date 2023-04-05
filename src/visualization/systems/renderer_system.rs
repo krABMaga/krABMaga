@@ -17,7 +17,7 @@ use crate::visualization::{
 };
 
 // The system that updates the visual representation of each agent of our simulation.
-pub fn renderer_system<I: VisualizationState<S> + Clone + 'static, S: State>(
+pub fn renderer_system<I: VisualizationState<S> + Clone + 'static + bevy::prelude::Resource, S: State>(
     mut query: Query<(
         &mut Box<dyn AgentRender>,
         &mut Transform,

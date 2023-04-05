@@ -2,9 +2,6 @@ use crate::engine::{
     fields::{field::Field, grid_option::GridOption},
     location::Int2D,
 };
-
-use crate::rand::Rng;
-
 use cfg_if::cfg_if;
 
 cfg_if! {
@@ -13,6 +10,7 @@ cfg_if! {
     } else {
         use std::cell::RefCell;
         use hashbrown::HashMap;
+        use crate::rand::Rng;
     }
 }
 

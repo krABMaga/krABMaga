@@ -1,12 +1,10 @@
 use crate::engine::fields::field::Field;
 use cfg_if::cfg_if;
 use core::fmt::Debug;
-use core::fmt::Error;
 use hashbrown::HashMap;
 use rand::prelude::*;
 use std::cell::RefCell;
 use std::fmt::Display;
-use std::fmt::Formatter;
 use std::hash::Hash;
 
 use rand::rngs::StdRng;
@@ -15,6 +13,8 @@ cfg_if! {
     if #[cfg(any(feature = "parallel", feature = "visualization", feature = "visualization_wasm"))]{
         use crate::utils::dbdashmap::DBDashMap;
     } else {
+        use core::fmt::Error;
+        use std::fmt::Formatter;
     }
 }
 
