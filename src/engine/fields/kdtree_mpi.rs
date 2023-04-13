@@ -375,7 +375,59 @@ impl<O: Clone + Copy + PartialEq + std::fmt::Display> Kdtree<O> {
             }
         }
 
-        neighbors
+        neighbors 
+
+        /* let mut neighbors: Vec<O>;
+
+                neighbors = Vec::new();
+
+                if distance <= 0.0 {
+                    return neighbors;
+                }
+
+                if distance <= 0.0 {
+                    return neighbors;
+                }
+
+                let disc_dist = (distance/self.discretization).floor() as i32;
+                let disc_loc = self.discretize(&loc);
+                let max_x = (self.width/self.discretization).ceil() as i32;
+                let max_y =  (self.height/self.discretization).ceil() as i32;
+
+                let mut min_i = disc_loc.x - disc_dist;
+                let mut max_i = disc_loc.x + disc_dist;
+                let mut min_j = disc_loc.y - disc_dist;
+                let mut max_j = disc_loc.y + disc_dist;
+
+                if self.toroidal {
+                    min_i = cmp::max(0, min_i);
+                    max_i = cmp::min(max_i, max_x-1);
+                    min_j = cmp::max(0, min_j);
+                    max_j = cmp::min(max_j, max_y-1);
+                }
+
+                for i in min_i..max_i+1 {
+                    for j in min_j..max_j+1 {
+                        let bag_id = Int2D {
+                            x: t_transform(i, max_x),
+                            y: t_transform(j, max_y),
+                        };
+
+                        let check = check_circle(&bag_id, self.discretization, self.width, self.height, &loc, dist, self.toroidal);
+
+                        let index = ((bag_id.x * self.dh) + bag_id.y) as usize;
+                        // let bags = self.rbags.borrow();
+                        let bags = self.bags[self.read].borrow();
+
+                        for elem in &bags[index]{
+                            if (check == 0 && distance(&loc, &(elem.get_location()), self.width, self.height, self.toroidal) <= dist) || check == 1 {
+                                neighbors.push(*elem);
+                            }
+                        }
+
+                    }
+                }
+                neighbors */
     }
 
     /* pub fn get_all_agents(&mut self) -> Vec<(O, f32,f32)>{
