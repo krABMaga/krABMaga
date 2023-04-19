@@ -1,5 +1,6 @@
 
 #![allow(warnings)]
+use crate::engine::location::Int2D;
 use crate::engine::location::Real2D;
 use crate::engine::fields::field::Field;
 use crate::mpi::topology::Communicator;
@@ -14,6 +15,13 @@ use mpi::point_to_point::Source;
 use mpi::Threading;
 use mpi::ffi::MPI_Finalize;
 use core::mem::size_of;
+use std::cell::RefCell;
+use std::cmp;
+
+pub trait Location2D<Real2D> {
+    fn get_location(self) -> Real2D;
+    fn set_location(&mut self, loc: Real2D);
+}
 
 
 #[derive(Clone, Equivalence)]
@@ -51,53 +59,57 @@ enum Axis {
 }
 
 #[derive(Clone)]
-pub struct Kdtree<O: Clone + Copy + PartialEq + std::fmt::Display> {
+pub struct Kdtree<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display> {
     pub id: u32,
     pub pos_x: f32,
     pub pos_y: f32,
     width: f32,
     height: f32,
-    pub locs: Vec<(O, f32, f32)>,
-    pub rlocs: Vec<(O, f32, f32)>,
+    pub locs: Vec<RefCell<Vec<Vec<O>>>>,
+    pub nagents: RefCell<usize>,
+    read: usize,
+    write: usize,
+    pub dh: i32,
+    pub dw: i32,
+    discretization: f32,
     subtrees: Vec<Block>,
     processors: u32,
-    is_leaf: bool,
+    pub density_estimation:usize,
+    pub density_estimation_check:bool,
 }
 
-/* lazy_static!{
-    pub static ref universe:Universe = mpi::initialize().expect("Error initialing mpi environment");
-    static ref root_rank:u32 = 0;
-}  */
-
-/* static universe:Universe = mpi::initialize().expect("Error initialing mpi environment");
-static world:SystemCommunicator = universe.world();
-static root_rank:u32 = 0; */
-
-
-impl<O: Clone + Copy + PartialEq + std::fmt::Display> Kdtree<O> {
+impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display> Kdtree<O> {
     pub fn new(
         id: u32,
         pos_x: f32,
         pos_y: f32,
         width: f32,
         height: f32,
+        discretization: f32,
     ) -> Self {
        Kdtree {
             id,
             pos_x,
             pos_y,
-            locs: Vec::new(),
-            rlocs: Vec::new(),
+            locs: vec![RefCell::new(std::iter::repeat_with(Vec::new).take((((width/discretization).ceil()+1.0) * ((height/discretization).ceil() +1.0))as usize).collect()),
+            RefCell::new(std::iter::repeat_with(Vec::new).take((((width/discretization).ceil()+1.0) * ((height/discretization).ceil() +1.0))as usize).collect())],
             subtrees: Vec::new(),
+            nagents: RefCell::new(0),
+            read: 0,
+            write: 1,
+            dh: ((height/discretization).ceil() as i32 +1),
+            dw: ((width/discretization).ceil() as i32 +1),
+            discretization,
             width,
             height,
             processors: 0,
-            is_leaf: true,
+            density_estimation:0,
+            density_estimation_check:false
         }
     }
 
-    pub fn create_tree(id:u32, x:f32, y:f32, width: f32, height:f32) -> Self{
-        let mut tree = Kdtree::new(id, x, y, width, height);
+    pub fn create_tree(id:u32, x:f32, y:f32, width: f32, height:f32, discretization:f32,) -> Self{
+        let mut tree = Kdtree::new(id, x, y, width, height, discretization);
         //let (_universe, threading) = mpi::initialize_with_threading(mpi::Threading::Multiple).unwrap();
         tree.first_subdivision();
         tree
@@ -116,70 +128,91 @@ impl<O: Clone + Copy + PartialEq + std::fmt::Display> Kdtree<O> {
         if self.processors == 0{
             self.processors = world.size() as u32;
         }
+
+        if world.size()==1{
+            println!("Running distributed (MPI) Kdtree with {} processors", self.processors);
+            println!("generato id {} per {};{} w:{} h:{}", self.id, self.pos_x, self.pos_y, self.width, self.height);
+        }
+
+        if world.size() != 1 
         
-        if world.rank() == 0 {
+        {if world.rank() == 0 {
             println!("Running distributed (MPI) Kdtree with {} processors", self.processors);
         
+    
+            if (self.processors != 1)
+            //Root subdivision
+            {
+                let nodes = self.split(&Axis::Vertical);
+                temp_subtrees.push(nodes.0);
+                temp_subtrees.push(nodes.1);
 
-        //Root subdivision
-        let nodes = self.split(&Axis::Vertical);
-        self.is_leaf=false;
-        temp_subtrees.push(nodes.0);
-        temp_subtrees.push(nodes.1);
+                if (self.processors > 2)
+                {
+                    for i in 0..FIRST_SUB_DIMENSION/2{
+                    let mut id = self.id.clone();
+                    let x = temp_subtrees[i].split(&Axis::Horizontal);
+                    temp_subtrees[i]=x.0;
+                    temp_subtrees.push(x.1);
+                    }
+                
+                    count+=FIRST_SUB_DIMENSION as u32;
+                    let mut axis = Axis::Vertical;
 
-        for i in 0..FIRST_SUB_DIMENSION/2{
-            let mut id = self.id.clone();
-            let x = temp_subtrees[i].split(&Axis::Horizontal);
-            temp_subtrees[i]=x.0;
-            temp_subtrees.push(x.1);
-
-        }
-     
-        count+=FIRST_SUB_DIMENSION as u32;
-        let mut axis = Axis::Vertical;
-
-        //Progressive subdivision
-        while count<self.processors{
-            for n in 0..temp_subtrees.len(){
-                if count >= temp_subtrees[n*2].processors{break;}
-                let nodes=temp_subtrees[n*2].split(&axis);
-                temp_subtrees[n*2] = nodes.0;
-                temp_subtrees.insert((n*2)+1, nodes.1);
-                count+=1;
+                    //Progressive subdivision
+                    while count<self.processors{
+                        for n in 0..temp_subtrees.len(){
+                            if count >= self.processors{break;}
+                            let nodes=temp_subtrees[n*2].split(&axis);
+                            temp_subtrees[n*2] = nodes.0;
+                            temp_subtrees.insert((n*2)+1, nodes.1);
+                            count+=1;
+                        }
+                        if axis == Axis::Vertical {axis=Axis::Horizontal;}
+                        else {axis=Axis::Vertical;}
+                    }
+                }
             }
-            if axis == Axis::Vertical {axis=Axis::Horizontal;}
-            else {axis=Axis::Vertical;}
-        }
-        let mut subtree_id = self.id;
-        for subtree in temp_subtrees.iter_mut(){
-            let mut block = Block{id: subtree_id, x: subtree.pos_x, y: subtree.pos_y, width: subtree.width, height: subtree.height};
-            self.subtrees.push(block);
-            println!("generato id {} per {};{} w:{} h:{}", subtree_id, subtree.pos_x, subtree.pos_y, subtree.width, subtree.height);
-            
+            /* for subtree in temp_subtrees.iter(){
+                println!("Trovato subtree con dimensioni w:{} h:{}", subtree.width, subtree.height)
+            } */
+            let mut subtree_id = self.id;
+            for subtree in temp_subtrees.iter_mut(){
+                let mut block = Block{id: subtree_id, x: subtree.pos_x, y: subtree.pos_y, width: subtree.width, height: subtree.height};
+                self.subtrees.push(block);
+                println!("generato id {} per {};{} w:{} h:{}", subtree_id, subtree.pos_x, subtree.pos_y, subtree.width, subtree.height);
+                
 
-            subtree_id+=1;
-            //world.process_at_rank(subtree_id as i32).send(&mut block);
+                subtree_id+=1;
+                //world.process_at_rank(subtree_id as i32).send(&mut block);
 
-            /* world.process_at_rank(0 as i32).broadcast_into(&mut subtree_id);
-            println!("Process {} received value {}",world.rank(), &subtree_id);
-            world.process_at_rank(0 as i32).broadcast_into(&mut block);
-            println!("Process {} received value {};{}",world.rank(), &block.x, &block.y); */
-            
-        }
+                /* world.process_at_rank(0 as i32).broadcast_into(&mut subtree_id);
+                println!("Process {} received value {}",world.rank(), &subtree_id);
+                world.process_at_rank(0 as i32).broadcast_into(&mut block);
+                println!("Process {} received value {};{}",world.rank(), &block.x, &block.y); */
+                
+            }
 
-        for i in 1.. world.size(){
-            world.process_at_rank(i).send(&self.subtrees);
+            for i in 1.. world.size(){
+                world.process_at_rank(i).send(&self.subtrees);
+            }
         }
-        
-    }
-    else {
-        let (subtrees, _) = world.process_at_rank(0).receive_vec::<Block>();
-        self.subtrees=subtrees;
-        /* println!("{} Ricevo elemento...", world.rank());
-        let id = world.any_process().receive::<u32>();
-        println!("Process {} received value {}", world.rank(), id.0);
-        self.id = id.0; */
-    }
+        else {
+            let (subtrees, _) = world.process_at_rank(0).receive_vec::<Block>();
+            self.subtrees=subtrees;
+            for subtree in self.subtrees.iter(){
+                if subtree.id as i32 == world.rank(){
+                    self.width = subtree.width;
+                    self.height = subtree.height;
+                    self.pos_x = subtree.x;
+                    self.pos_y = subtree.y;
+                }
+            }
+            /* println!("{} Ricevo elemento...", world.rank());
+            let id = world.any_process().receive::<u32>();
+            println!("Process {} received value {}", world.rank(), id.0);
+            self.id = id.0; */
+        }}
     } 
 
     
@@ -210,13 +243,12 @@ impl<O: Clone + Copy + PartialEq + std::fmt::Display> Kdtree<O> {
         }
         let agents: Vec<(O,f32,f32)>=Vec::new();
         let p = self.processors;
-        let mut n2 = Kdtree::new(id, node_x, node_y, node_w, node_h);
-        self.is_leaf=false;
+        let mut n2 = Kdtree::new(id, node_x, node_y, node_w, node_h, self.discretization);
 
         return (n1,n2);
     }
 
-    fn split_on_median(&mut self, median:f32, direction:bool, id_node:&str) -> (Kdtree<O>, Kdtree<O>){
+    /* fn split_on_median(&mut self, median:f32, direction:bool, id_node:&str) -> (Kdtree<O>, Kdtree<O>){
 
         let mut id = self.id.clone();
         let mut node_x = self.pos_x;
@@ -256,11 +288,15 @@ impl<O: Clone + Copy + PartialEq + std::fmt::Display> Kdtree<O> {
         println!("La divisione ha generato l'albero {} in {};{} con w: {} e h:{} e is_leaf: {}", n1.id, n1.pos_x,n1.pos_y,n1.width,n1.height, n1.is_leaf);
         println!("La divisione ha generato l'albero {} in {};{} con w: {} e h:{} e is_leaf: {}", n2.id, n2.pos_x,n2.pos_y,n2.width,n2.height, n2.is_leaf);
         return (n1,n2);
-    }
+    } */
 
 
 
     pub fn get_block_by_location (&self, x: f32, y: f32) -> u32{
+        let world = universe.world();
+        if world.size() == 1{
+            return 0;
+        }
         for block in self.subtrees.iter(){
             if block.x <= x
             && x < block.x + block.width
@@ -281,7 +317,7 @@ impl<O: Clone + Copy + PartialEq + std::fmt::Display> Kdtree<O> {
         false
     }
 
-    pub fn insert(&mut self, agent: O, x: f32, y: f32) {
+    pub fn insert(&mut self, agent: O, loc: Real2D) {
         /* let mut block_id:u32;
         let world = universe.world();
 
@@ -294,7 +330,15 @@ impl<O: Clone + Copy + PartialEq + std::fmt::Display> Kdtree<O> {
         //let world = universe.world();
 
         //println!("Inserisco agente {};{} nel Vec del processo {} con id {} ", x, y, world.rank(), self.id);
-        self.locs.push((agent,x,y));
+        //self.locs.push((agent,x,y));
+
+        let bag = self.discretize(&loc);
+        let index = ((bag.x * self.dh) + bag.y) as usize;
+        let mut bags = self.locs[self.write].borrow_mut();
+        bags[index].push(agent);
+        if !self.density_estimation_check{
+            *self.nagents.borrow_mut() += 1;
+        }
         
     } 
 
@@ -336,14 +380,14 @@ impl<O: Clone + Copy + PartialEq + std::fmt::Display> Kdtree<O> {
         }
     }
 
-    pub fn query_by_location(&mut self, x: f32, y:f32) -> Option<O>{
+    /* pub fn query_by_location(&mut self, x: f32, y:f32) -> Option<O>{
         let mut option:Option<O> = None;
         let world = universe.world();
 
         let mut block_id = self.get_block_by_location(x, y);
         world.process_at_rank(0 as i32).broadcast_into(&mut block_id);
         if world.rank() == block_id as i32 {
-            for r in self.rlocs.iter(){
+            for r in self.locs.iter(){
                 if r.1==x && r.2==y{
                     option=Some(r.0);
                     return option;
@@ -352,44 +396,32 @@ impl<O: Clone + Copy + PartialEq + std::fmt::Display> Kdtree<O> {
         }
 
         option      
+    } */
+
+    fn discretize(&self, loc: &Real2D) -> Int2D {
+        let x_floor = (loc.x/self.discretization).floor();
+        let x_floor = x_floor as i32;
+
+        let y_floor = (loc.y/self.discretization).floor();
+        let y_floor = y_floor as i32;
+
+        Int2D {
+            x: x_floor,
+            y: y_floor,
+        }
     }
     
-    pub fn get_neighbors_within_distance(&self, loc:Real2D, distance:f32) -> Vec<&(O,f32,f32)>{
-        let mut neighbors:Vec<&(O, f32, f32)> = Vec::new(); 
-        //println!("rlocs: {}", self.rlocs.len());
-        /* let world = universe.world();
+    pub fn get_neighbors_within_distance(&self, loc:Real2D, dist:f32) -> Vec<O>{
 
-        let mut block_id = self.get_block_by_location(loc.x, loc.y);
-        //world.process_at_rank(0 as i32).broadcast_into(&mut block_id);
-        if world.rank() == block_id as i32 {
-            for r in self.rlocs.iter(){
-                if f32::abs(r.1 - loc.x)<distance && f32::abs(r.2 - loc.y)<distance{
-                    neighbors.push(r.clone());
-                }
-            }
-        } */
-
-        for r in self.rlocs.iter(){
-            if f32::abs(r.1 - loc.x)<distance && f32::abs(r.2 - loc.y)<distance{
-                neighbors.push(r);
-            }
-        }
-
-        neighbors 
-
-        /* let mut neighbors: Vec<O>;
+        let mut neighbors: Vec<O>;
 
                 neighbors = Vec::new();
 
-                if distance <= 0.0 {
+                if dist <= 0.0 {
                     return neighbors;
                 }
 
-                if distance <= 0.0 {
-                    return neighbors;
-                }
-
-                let disc_dist = (distance/self.discretization).floor() as i32;
+                let disc_dist = (dist/self.discretization).floor() as i32;
                 let disc_loc = self.discretize(&loc);
                 let max_x = (self.width/self.discretization).ceil() as i32;
                 let max_y =  (self.height/self.discretization).ceil() as i32;
@@ -399,12 +431,11 @@ impl<O: Clone + Copy + PartialEq + std::fmt::Display> Kdtree<O> {
                 let mut min_j = disc_loc.y - disc_dist;
                 let mut max_j = disc_loc.y + disc_dist;
 
-                if self.toroidal {
-                    min_i = cmp::max(0, min_i);
-                    max_i = cmp::min(max_i, max_x-1);
-                    min_j = cmp::max(0, min_j);
-                    max_j = cmp::min(max_j, max_y-1);
-                }
+                
+                min_i = cmp::max(0, min_i);
+                max_i = cmp::min(max_i, max_x-1);
+                min_j = cmp::max(0, min_j);
+                max_j = cmp::min(max_j, max_y-1);
 
                 for i in min_i..max_i+1 {
                     for j in min_j..max_j+1 {
@@ -413,21 +444,21 @@ impl<O: Clone + Copy + PartialEq + std::fmt::Display> Kdtree<O> {
                             y: t_transform(j, max_y),
                         };
 
-                        let check = check_circle(&bag_id, self.discretization, self.width, self.height, &loc, dist, self.toroidal);
+                        let check = check_circle(&bag_id, self.discretization, self.width, self.height, &loc, dist, true);
 
                         let index = ((bag_id.x * self.dh) + bag_id.y) as usize;
                         // let bags = self.rbags.borrow();
-                        let bags = self.bags[self.read].borrow();
+                        let bags = self.locs[self.read].borrow();
 
                         for elem in &bags[index]{
-                            if (check == 0 && distance(&loc, &(elem.get_location()), self.width, self.height, self.toroidal) <= dist) || check == 1 {
+                            if (check == 0 && distance(&loc, &(elem.get_location()), self.width, self.height, true) <= dist) || check == 1 {
                                 neighbors.push(*elem);
                             }
                         }
 
                     }
                 }
-                neighbors */
+                neighbors  
     }
 
     /* pub fn get_all_agents(&mut self) -> Vec<(O, f32,f32)>{
@@ -448,7 +479,7 @@ impl<O: Clone + Copy + PartialEq + std::fmt::Display> Kdtree<O> {
 
     
 
-    fn balance(&self, agents: &mut Vec<(O,i32,i32)>, direction:bool) -> (Vec<Vec<(O,i32,i32)>>, Vec<i32>){
+    /* fn balance(&self, agents: &mut Vec<(O,i32,i32)>, direction:bool) -> (Vec<Vec<(O,i32,i32)>>, Vec<i32>){
         let len = agents.len();
         let mut medians: Vec<i32> = Vec::new();
         /*for i in 0..len{
@@ -480,29 +511,126 @@ impl<O: Clone + Copy + PartialEq + std::fmt::Display> Kdtree<O> {
         vec.push(agents.to_vec());
         vec.push(vec_right);
         return (vec,medians);
-    }
+    } */
 
 }
 
-impl<O: Clone + Copy + PartialEq + std::fmt::Display> Drop for Kdtree<O>{
+impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display> Drop for Kdtree<O>{
     fn drop(&mut self) {
     }
 }
 
-impl<O: Eq + Clone + Copy + std::fmt::Display> Field for Kdtree<O> {
+impl<O: Location2D<Real2D> + Eq + Clone + Copy + std::fmt::Display> Field for Kdtree<O> {
     fn lazy_update(&mut self){
-        unsafe {
-            std::ptr::swap(
-                &mut self.locs,
-                &mut self.rlocs,
-            )
-        }
-        self.locs.clear();
+        std::mem::swap(&mut self.read, &mut self.write);
+
+
+                if !self.density_estimation_check{
+                    self.density_estimation =
+                    (*self.nagents.borrow_mut())/((self.dw * self.dh) as usize);
+                    self.density_estimation_check = true;
+                    self.locs[self.write] =  RefCell::new(std::iter::repeat_with(|| Vec::with_capacity(self.density_estimation)).take((self.dw * self.dh) as usize).collect());
+                }
+                else {
+                    let mut bags =self.locs[self.write].borrow_mut();
+                    for b in 0..bags.len(){
+                        bags[b].clear();
+                    }
+                }
     }
 
     fn update(&mut self){
-        let mut rlocs_clone=self.rlocs.clone();
-        self.locs.append(&mut rlocs_clone);
         
+        
+    }
+}
+
+fn t_transform(n: i32, size: i32) -> i32 {
+    if n >= 0 {
+        n % size
+    } else {
+        (n % size) + size
+    }
+}
+
+fn check_circle(
+    bag: &Int2D,
+    discretization: f32,
+    width: f32,
+    height: f32,
+    loc: &Real2D,
+    dis: f32,
+    tor: bool,
+) -> i8 {
+    let nw = Real2D {
+        x: (bag.x as f32) * discretization,
+        y: (bag.y as f32) * discretization,
+    };
+    let ne = Real2D {
+        x: nw.x,
+        y: (nw.y + discretization).min(height),
+    };
+    let sw = Real2D {
+        x: (nw.x + discretization).min(width),
+        y: nw.y,
+    };
+    let se = Real2D { x: sw.x, y: ne.y };
+
+    if distance(&nw, loc, width, height, tor) <= dis
+        && distance(&ne, loc, width, height, tor) <= dis
+        && distance(&sw, loc, width, height, tor) <= dis
+        && distance(&se, loc, width, height, tor) <= dis
+    {
+        1
+    } else if distance(&nw, loc, width, height, tor) > dis
+        && distance(&ne, loc, width, height, tor) > dis
+        && distance(&sw, loc, width, height, tor) > dis
+        && distance(&se, loc, width, height, tor) > dis
+    {
+        -1
+    } else {
+        0
+    }
+}
+
+fn distance(loc1: &Real2D, loc2: &Real2D, dim1: f32, dim2: f32, tor: bool) -> f32 {
+    let dx;
+    let dy;
+
+    if tor {
+        dx = toroidal_distance(loc1.x, loc2.x, dim1);
+        dy = toroidal_distance(loc1.y, loc2.y, dim2);
+    } else {
+        dx = loc1.x - loc2.x;
+        dy = loc1.y - loc2.y;
+    }
+    (dx * dx + dy * dy).sqrt()
+}
+
+pub fn toroidal_distance(val1: f32, val2: f32, dim: f32) -> f32 {
+    if (val1 - val2).abs() <= dim / 2.0 {
+        return val1 - val2;
+    }
+
+    let d = toroidal_transform(val1, dim) - toroidal_transform(val2, dim);
+
+    if d * 2.0 > dim {
+        d - dim
+    } else if d * 2.0 < -dim {
+        d + dim
+    } else {
+        d
+    }
+}
+
+pub fn toroidal_transform(val: f32, dim: f32) -> f32 {
+    if val >= 0.0 && val < dim {
+        val
+    } else {
+        let mut val = val % dim;
+        if val < 0.0 {
+            val += dim;
+        }
+        val
     }
 }
