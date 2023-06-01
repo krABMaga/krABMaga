@@ -1635,11 +1635,11 @@ macro_rules! simulate_old_mpi {
                 }
                 //pb.inc(1);
                 //println!("Processo rank {} ha eseguito lo step ", world.rank());
-                world.barrier();
-                /* if world.rank() == 0{
+                /* world.barrier();
+                if world.rank() == 0{
                     println!("Sincronizzato step");
                 }
-                world.barrier(); */
+                world.barrier();  */
             }
             //pb.finish_with_message("\u{1F980}");
 
@@ -1698,8 +1698,13 @@ macro_rules! simulate_old_mpi {
                         print!("{}|", avg_step_seconds);
                         print!("{:width$}", "", width = 9 - avg_time.len());
                         println!("{}s|", avg_time);
+                        
+                        
                     }
                 }
+            }
+            unsafe {
+                mpi::ffi::MPI_Finalize();
             }
         }
         
