@@ -729,7 +729,7 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
         neighbors  
     }
 
-    pub fn get_distributed_neighbors_within_relax_distance(&mut self, loc:Real2D, dist:f32) -> Vec<O>{
+    pub fn get_distributed_neighbors_within_relax_distance(&mut self, loc:Real2D, dist:f32, agent: O) -> Vec<O>{
         let world = universe.world();
 
         let mut neighbors: Vec<O>;
@@ -777,7 +777,7 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
         if neighbors.len() == 0 {
             println!("loc {}", loc);
         }
-        let mut dummy = neighbors[0];
+        let mut dummy = agent;
 
         if (self.received_neighbors.len() == 0){
             // println!("dio can {}", self.prec_neighbors[0][0]);

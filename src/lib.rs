@@ -1,3 +1,4 @@
+#![allow(warnings)]
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/krABMaga/krABMaga.github.io/main/static/images/krabmaga_docs.png"
 )]
