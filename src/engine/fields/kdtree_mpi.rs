@@ -446,6 +446,7 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
         let index = ((bag.x * self.dh) + bag.y) as usize;
         let mut bags = self.locs[self.write].borrow_mut();
         bags[index].push(agent);
+        
         for region in &self.halo_regions{
             if (region.x <= loc.x && loc.x <= region.x + region.width && region.y <= loc.y && loc.y <= region.y + region.height ){
                 self.neighbors[region.id as usize].push(agent);
@@ -731,75 +732,6 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
     pub fn get_distributed_neighbors_within_relax_distance(&mut self, loc:Real2D, dist:f32) -> Vec<O>{
         let world = universe.world();
 
-        if (self.received_neighbors.len() == 0){
-            //received_messages is the vector where i store all messages sent from my neighbors
-            //send_vec is the vector of messages i will send to each neighbor. 
-            //send_agent_vec is a vector of vectors of agents. Each vector will be sent to the specific index neighbor
-            let mut received_messages:Vec<usize> = vec![0; world.size() as usize];
-            let mut send_vec: Vec<usize> = vec![0; world.size() as usize];
-            let mut send_agent_vec: Vec<Vec<O>> = vec![vec![];world.size() as usize];
-
-            //inside region we have vectors of tuple, one for each region. Each tuple is composed of (region_id , neighbor_id). 
-            for region in self.neighbors_halo_regions.iter(){
-                for neighbor in region.iter(){
-                    send_vec[neighbor.1 as usize] += self.prec_neighbors[neighbor.0 as usize].len();
-                    send_agent_vec[neighbor.1 as usize].extend(self.prec_neighbors[neighbor.0 as usize].iter())
-                }
-            }
-
-            //I make a receive of messages from all my neighbors and send to all my neighbors. A message contains the number of agents i will receive.
-            for neighbor in &self.neighbor_trees{
-                mpi::request::scope(|scope| {
-                    let ln = &send_vec[*neighbor as usize];
-                    let rreq = WaitGuard::from(world.process_at_rank(*neighbor).immediate_receive_into_with_tag(scope, &mut received_messages[*neighbor as usize], *neighbor));
-                    //println!("Process {} is ready to receive the message", world.rank());
-
-                    let sreq = WaitGuard::from(world.process_at_rank(*neighbor).immediate_ready_send_with_tag(scope, ln , world.rank()));
-                    //println!("Process {} has sent value {} to {}", world.rank(), ln, neighbor);
-                });
-            }
-
-            //For each received message, i initialize a vector that will be used as buffer for upcoming agents. A vector for each neighbor.
-            let mut vec:Vec<Vec<O>> = vec![vec![]; world.size() as usize];
-            if received_messages.len()>0{
-                for i in &self.neighbor_trees{
-                    if received_messages[*i as usize] != 0{
-                        //println!("Sono {} e mi aspetto di ricevere {} agenti da {}", world.rank(), received_messages[*i as usize], i);
-                        vec[*i as usize].append(&mut vec![self.prec_neighbors[0][0]; received_messages[*i as usize] + 10]);
-                    }
-                    else {
-                        //println!("Sono nell'else");
-                        vec[*i as usize].append((&mut vec![]));
-                    }
-    
-                }
-            }
-            
-
-            // I receive the agents from my neighbors and send my agents to them.
-            mpi::request::multiple_scope(world.size() as usize, |scope, coll| {
-
-                for (id, buffer) in vec.iter_mut().enumerate(){
-                    if received_messages[id as usize] != 0{
-                        let rreq = world.process_at_rank(id as i32).immediate_receive_into_with_tag(scope, &mut buffer[..], world.rank()+50);
-                        coll.add(rreq);
-                        //println!("Process {} is ready to receive {} agents from {}", world.rank(), received_messages[id as usize], id);
-                    }
-                }
-
-                for id in self.neighbor_trees.iter(){
-                    let mut sreq = world.process_at_rank(*id).immediate_send_with_tag(scope, &send_agent_vec[*id as usize][..], *id+50);
-                    coll.add(sreq);
-                    //println!("Process {} has sent the vector of size {} to {}", world.rank(), &send_agent_vec[*id as usize].len(), id); 
-                }
-                
-                
-                let mut out = vec![];
-                coll.wait_all(&mut out);
-            }); 
-           self.received_neighbors = vec.into_iter().flatten().collect();
-        }
-
         let mut neighbors: Vec<O>;
 
         neighbors = Vec::new();
@@ -841,6 +773,83 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
 
             }
         }
+
+        if neighbors.len() == 0 {
+            println!("loc {}", loc);
+        }
+        let mut dummy = neighbors[0];
+
+        if (self.received_neighbors.len() == 0){
+            // println!("dio can {}", self.prec_neighbors[0][0]);
+            //received_messages is the vector where i store all messages sent from my neighbors
+            //send_vec is the vector of messages i will send to each neighbor. 
+            //send_agent_vec is a vector of vectors of agents. Each vector will be sent to the specific index neighbor
+            let mut received_messages:Vec<usize> = vec![0; world.size() as usize];
+            let mut send_vec: Vec<usize> = vec![0; world.size() as usize];
+            let mut send_agent_vec: Vec<Vec<O>> = vec![vec![];world.size() as usize];
+
+            //inside region we have vectors of tuple, one for each region. Each tuple is composed of (region_id , neighbor_id). 
+            for region in self.neighbors_halo_regions.iter(){
+                for neighbor in region.iter(){
+                    send_vec[neighbor.1 as usize] += self.prec_neighbors[neighbor.0 as usize].len();
+                    send_agent_vec[neighbor.1 as usize].extend(self.prec_neighbors[neighbor.0 as usize].iter())
+                }
+            }
+
+            //I make a receive of messages from all my neighbors and send to all my neighbors. A message contains the number of agents i will receive.
+            for neighbor in &self.neighbor_trees{
+                mpi::request::scope(|scope| {
+                    let ln = &send_vec[*neighbor as usize];
+                    let rreq = WaitGuard::from(world.process_at_rank(*neighbor).immediate_receive_into_with_tag(scope, &mut received_messages[*neighbor as usize], *neighbor));
+                    //println!("Process {} is ready to receive the message", world.rank());
+
+                    let sreq = WaitGuard::from(world.process_at_rank(*neighbor).immediate_ready_send_with_tag(scope, ln , world.rank()));
+                    //println!("Process {} has sent value {} to {}", world.rank(), ln, neighbor);
+                });
+            }
+
+            //For each received message, i initialize a vector that will be used as buffer for upcoming agents. A vector for each neighbor.
+            let mut vec:Vec<Vec<O>> = vec![vec![]; world.size() as usize];
+            // println!("Sono {} e ho ricevuto {:?} world.size {:?}", world.rank(), received_messages, world.size());
+            if received_messages.len()>0{
+                for i in &self.neighbor_trees{
+                    if received_messages[*i as usize] != 0{
+                        //println!("Sono {} e mi aspetto di ricevere {} agenti da {}", world.rank(), received_messages[*i as usize], i);
+                        vec[*i as usize].append(&mut vec![dummy; received_messages[*i as usize] + 10]);
+                    }
+                    else {
+                        //println!("Sono nell'else");
+                        vec[*i as usize].append((&mut vec![]));
+                    }
+    
+                }
+            }
+            
+
+            // I receive the agents from my neighbors and send my agents to them.
+            mpi::request::multiple_scope(world.size() as usize, |scope, coll| {
+
+                for (id, buffer) in vec.iter_mut().enumerate(){
+                    if received_messages[id as usize] != 0{
+                        let rreq = world.process_at_rank(id as i32).immediate_receive_into_with_tag(scope, &mut buffer[..], world.rank()+50);
+                        coll.add(rreq);
+                        //println!("Process {} is ready to receive {} agents from {}", world.rank(), received_messages[id as usize], id);
+                    }
+                }
+
+                for id in self.neighbor_trees.iter(){
+                    let mut sreq = world.process_at_rank(*id).immediate_send_with_tag(scope, &send_agent_vec[*id as usize][..], *id+50);
+                    coll.add(sreq);
+                    //println!("Process {} has sent the vector of size {} to {}", world.rank(), &send_agent_vec[*id as usize].len(), id); 
+                }
+                
+                
+                let mut out = vec![];
+                coll.wait_all(&mut out);
+            }); 
+           self.received_neighbors = vec.into_iter().flatten().collect();
+        }
+
 
         let mut b = false;
 
@@ -885,6 +894,7 @@ impl<O: Location2D<Real2D> + Eq + Clone + Copy + std::fmt::Display> Field for Kd
     fn lazy_update(&mut self){
         self.prec_neighbors=Vec::new();
         self.prec_neighbors.append(&mut self.neighbors);
+        // println!("size prec_neighbors {:?}", self.prec_neighbors[0].len());
         self.neighbors = vec![vec![]; 4];
         self.received_neighbors.clear();
         std::mem::swap(&mut self.read, &mut self.write);
