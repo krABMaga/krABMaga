@@ -417,6 +417,9 @@ pub use {
 };
 
 #[cfg(feature = "distributed_mpi")]
+pub extern crate mpi;
+
+#[cfg(feature = "distributed_mpi")]
 pub use {
     memoffset::{offset_of, span_of},
     mpi::datatype::DynBufferMut,
@@ -425,10 +428,10 @@ pub use {
     mpi::environment::Universe,
     mpi::Count,
     mpi::{datatype::UserDatatype, traits::*, Address},
+    mpi::traits::Equivalence,
 };
 
-#[cfg(feature = "distributed_mpi")]
-pub extern crate mpi;
+
 
 #[cfg(any(feature = "distributed_mpi"))]
 lazy_static!{
@@ -1630,7 +1633,7 @@ macro_rules! simulate_old_mpi {
             let start = std::time::Instant::now();
             //let pb = ProgressBar::new(n_step);
             for i in 0..n_step {
-                println!("Processo rank {} sta eseguendo lo step ", world.rank());
+                // println!("Processo rank {} sta eseguendo lo step ", world.rank());
                 schedule.step(state);
                 if state.end_condition(&mut schedule) {
                     break;
@@ -1638,10 +1641,10 @@ macro_rules! simulate_old_mpi {
                 //pb.inc(1);
                 //println!("Processo rank {} ha eseguito lo step ", world.rank());
                 world.barrier();
-                if world.rank() == 0{
-                    println!("Sincronizzato step");
-                }
-                world.barrier(); 
+                // if world.rank() == 0{
+                //     println!("Sincronizzato step");
+                // }
+                // world.barrier(); 
             }
             //pb.finish_with_message("\u{1F980}");
 

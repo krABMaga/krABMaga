@@ -774,13 +774,13 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
             }
         }
 
-        if neighbors.len() == 0 {
-            println!("loc {}", loc);
-        }
+        // if neighbors.len() == 0 {
+        //     println!("loc {}", loc);
+        // }
+
         let mut dummy = agent;
 
         if (self.received_neighbors.len() == 0){
-            // println!("dio can {}", self.prec_neighbors[0][0]);
             //received_messages is the vector where i store all messages sent from my neighbors
             //send_vec is the vector of messages i will send to each neighbor. 
             //send_agent_vec is a vector of vectors of agents. Each vector will be sent to the specific index neighbor
@@ -864,6 +864,8 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
         if b {
             if self.received_neighbors.len() > 0
             {
+                println!("i have already n neighbors {} ", neighbors.len());
+                println!("Sono {} e ho ricevuto {} agenti", world.rank(), self.received_neighbors.len());
                 for neighbor in &self.received_neighbors{
                     if (distance(&loc, &(neighbor.get_location()), self.width, self.height, true) <= dist){
                             neighbors.push(*neighbor);

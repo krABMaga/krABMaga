@@ -23,19 +23,19 @@ pub struct Real2D {
     pub y: f32,
 }
 
-/* unsafe impl Equivalence for Real2D{
-    type Out = UserDatatype;
-    fn equivalent_datatype() -> Self::Out {
-        UserDatatype::structured(
-            &[1, 1],
-            &[
-                (size_of::<f32>() * 2) as mpi::Address,
-                size_of::<f32>() as mpi::Address,
-            ],
-            &[f32::equivalent_datatype(); 2],
-        )
-    }
-} */
+// unsafe impl Equivalence for Real2D{
+//     type Out = UserDatatype;
+//     fn equivalent_datatype() -> Self::Out {
+//         UserDatatype::structured(
+//             &[1, 1],
+//             &[
+//                 (size_of::<f32>() * 2) as mpi::Address,
+//                 size_of::<f32>() as mpi::Address,
+//             ],
+//             &[f32::equivalent_datatype(); 2],
+//         )
+//     }
+// }
 
 impl fmt::Display for Real2D {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
