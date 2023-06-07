@@ -450,6 +450,7 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
         for region in &self.halo_regions{
             if (region.x <= loc.x && loc.x <= region.x + region.width && region.y <= loc.y && loc.y <= region.y + region.height ){
                 self.neighbors[region.id as usize].push(agent);
+                //println!("Sono {} e Agente {} l'ho inserito nella region {}", world.rank(), agent, region.id);
                 break;
             }
         }
@@ -578,7 +579,7 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
                 neighbors  
     }
 
-    pub fn get_distributed_neighbors_within_distance(&mut self, loc:Real2D, dist:f32) -> Vec<O>{
+    /* pub fn get_distributed_neighbors_within_distance(&mut self, loc:Real2D, dist:f32) -> Vec<O>{ 
         let world = universe.world();
 
         if (self.received_neighbors.len() == 0){
@@ -727,16 +728,22 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
             }
         }  */
         neighbors  
-    }
+    }*/
 
     pub fn get_distributed_neighbors_within_relax_distance(&mut self, loc:Real2D, dist:f32, agent: O) -> Vec<O>{
         let world = universe.world();
+
+        let total_count: usize = self.locs[self.write].borrow().iter().map(|inner| inner.len()).sum();
+        let total_count_read: usize = self.locs[self.read].borrow().iter().map(|inner| inner.len()).sum();
+
+        //println!("Sono {} e write vale {} e read vale {}", world.rank(), total_count,total_count_read);
 
         let mut neighbors: Vec<O>;
 
         neighbors = Vec::new();
 
         if dist <= 0.0 {
+            println!("RITORNO");
             return neighbors;
         }
 
@@ -801,7 +808,7 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
                 mpi::request::scope(|scope| {
                     let ln = &send_vec[*neighbor as usize];
                     let rreq = WaitGuard::from(world.process_at_rank(*neighbor).immediate_receive_into_with_tag(scope, &mut received_messages[*neighbor as usize], *neighbor));
-                    //println!("Process {} is ready to receive the message", world.rank());
+                    //println!("Process {} is ready to receive the message from {}", world.rank(), neighbor);
 
                     let sreq = WaitGuard::from(world.process_at_rank(*neighbor).immediate_ready_send_with_tag(scope, ln , world.rank()));
                     //println!("Process {} has sent value {} to {}", world.rank(), ln, neighbor);
@@ -815,7 +822,7 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
                 for i in &self.neighbor_trees{
                     if received_messages[*i as usize] != 0{
                         //println!("Sono {} e mi aspetto di ricevere {} agenti da {}", world.rank(), received_messages[*i as usize], i);
-                        vec[*i as usize].append(&mut vec![dummy; received_messages[*i as usize] + 10]);
+                        vec[*i as usize].append(&mut vec![dummy; received_messages[*i as usize]]);
                     }
                     else {
                         //println!("Sono nell'else");
@@ -824,7 +831,8 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
     
                 }
             }
-            
+
+
 
             // I receive the agents from my neighbors and send my agents to them.
             mpi::request::multiple_scope(world.size() as usize, |scope, coll| {
@@ -838,8 +846,11 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
                 }
 
                 for id in self.neighbor_trees.iter(){
-                    let mut sreq = world.process_at_rank(*id).immediate_send_with_tag(scope, &send_agent_vec[*id as usize][..], *id+50);
+                    if send_agent_vec[*id as usize].len() != 0{
+                        let mut sreq = world.process_at_rank(*id).immediate_send_with_tag(scope, &send_agent_vec[*id as usize][..], *id+50);
                     coll.add(sreq);
+                    }
+                    
                     //println!("Process {} has sent the vector of size {} to {}", world.rank(), &send_agent_vec[*id as usize].len(), id); 
                 }
                 
@@ -864,8 +875,8 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
         if b {
             if self.received_neighbors.len() > 0
             {
-                println!("i have already n neighbors {} ", neighbors.len());
-                println!("Sono {} e ho ricevuto {} agenti", world.rank(), self.received_neighbors.len());
+                //println!("i have already n neighbors {} ", neighbors.len());
+                //println!("Sono {} e ho ricevuto {} agenti", world.rank(), self.received_neighbors.len());
                 for neighbor in &self.received_neighbors{
                     if (distance(&loc, &(neighbor.get_location()), self.width, self.height, true) <= dist){
                             neighbors.push(*neighbor);

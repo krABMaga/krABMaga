@@ -1641,10 +1641,10 @@ macro_rules! simulate_old_mpi {
                 //pb.inc(1);
                 //println!("Processo rank {} ha eseguito lo step ", world.rank());
                 world.barrier();
-                // if world.rank() == 0{
-                //     println!("Sincronizzato step");
-                // }
-                // world.barrier(); 
+                if world.rank() == 0{
+                    println!("Sincronizzato step");
+                }
+                world.barrier(); 
             }
             //pb.finish_with_message("\u{1F980}");
 
