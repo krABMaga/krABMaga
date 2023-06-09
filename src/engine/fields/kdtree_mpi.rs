@@ -11,6 +11,8 @@ use crate::mpi::point_to_point::Destination;
 use crate::mpi::request::WaitGuard;
 use crate::lazy_static;
 use crate::universe;
+use hashbrown::HashMap;
+use hashbrown::HashSet;
 use mpi::datatype::UserDatatype;
 use mpi::traits::*;
 use mpi::Address;
@@ -86,6 +88,10 @@ pub struct Kdtree<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::D
     received_neighbors:Vec<O>,
     halo_regions: Vec<Block>,
     neighbors_halo_regions: Vec<Vec<(i32,i32)>>,
+    pub agents_to_send: Vec<Vec<O>>,
+    pub agents_to_schedule: HashSet<O>,
+    pub scheduled_agent: HashMap<u32, u32>,
+    pub killed_agent: HashSet<O>,
     distance: f32,
     processors: u32,
     pub density_estimation:usize,
@@ -126,6 +132,10 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
             received_neighbors: Vec::new(),
             halo_regions: Vec::new(),
             neighbors_halo_regions: Vec::new(),
+            agents_to_send: Vec::new(),
+            agents_to_schedule: HashSet::new(),
+            scheduled_agent: HashMap::new(),
+            killed_agent: HashSet::new(),
             distance,
             density_estimation:0,
             density_estimation_check:false
@@ -135,6 +145,7 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
     pub fn create_tree(id:u32, x:f32, y:f32, width: f32, height:f32, discretization:f32, distance: f32) -> Self{
         let world = universe.world();
         let mut tree = Kdtree::new(id, x, y, width, height, discretization, distance);
+        tree.agents_to_send = vec![vec![]; universe.world().size() as usize];
         //let (_universe, threading) = mpi::initialize_with_threading(mpi::Threading::Multiple).unwrap();
         tree.first_subdivision();  
         tree
@@ -460,6 +471,19 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
         
     } 
 
+    pub fn insert_read(&mut self, agent: O, loc: Real2D) {
+        let world = universe.world();
+        let bag = self.discretize(&loc);
+        let index = ((bag.x * self.dh) + bag.y) as usize;
+        let mut bags = self.locs[self.read].borrow_mut();
+        bags[index].push(agent);
+        
+        if !self.density_estimation_check{
+            *self.nagents.borrow_mut() += 1;
+        }
+        
+    } 
+
     fn contains(&self, x: f32, y: f32) -> bool {
         self.pos_x <= x
             && x < self.pos_x + self.width
@@ -531,6 +555,11 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
     
     pub fn get_neighbors_within_distance(&self, loc:Real2D, dist:f32) -> Vec<O>{
 
+        let total_count: usize = self.locs[self.write].borrow().iter().map(|inner| inner.len()).sum();
+        let total_count_read: usize = self.locs[self.read].borrow().iter().map(|inner| inner.len()).sum();
+
+        //println!("Sono {} e read vale {}", universe.world().rank(), total_count_read);
+
         let mut neighbors: Vec<O>;
 
                 neighbors = Vec::new();
@@ -569,7 +598,7 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
                         let bags = self.locs[self.read].borrow();
 
                         for elem in &bags[index]{
-                            if (check == 0 && distance(&loc, &(elem.get_location()), self.width, self.height, true) <= dist) || check == 1 {
+                            if ((check == 0 && distance(&loc, &(elem.get_location()), self.width, self.height, true) <= dist) || check == 1 ) && elem.get_location() != loc{
                                 neighbors.push(*elem);
                             }
                         }
@@ -878,7 +907,7 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
                 //println!("i have already n neighbors {} ", neighbors.len());
                 //println!("Sono {} e ho ricevuto {} agenti", world.rank(), self.received_neighbors.len());
                 for neighbor in &self.received_neighbors{
-                    if (distance(&loc, &(neighbor.get_location()), self.width, self.height, true) <= dist){
+                    if (distance(&loc, &(neighbor.get_location()), self.width, self.height, true) <= dist) && neighbor.get_location() != loc{
                             neighbors.push(*neighbor);
                     }
                 }
@@ -909,22 +938,24 @@ impl<O: Location2D<Real2D> + Eq + Clone + Copy + std::fmt::Display> Field for Kd
         self.prec_neighbors.append(&mut self.neighbors);
         // println!("size prec_neighbors {:?}", self.prec_neighbors[0].len());
         self.neighbors = vec![vec![]; 4];
+        self.agents_to_send = vec![vec![]; universe.world().size() as usize];
         self.received_neighbors.clear();
         std::mem::swap(&mut self.read, &mut self.write);
 
 
-                if !self.density_estimation_check{
-                    self.density_estimation =
-                    (*self.nagents.borrow_mut())/((self.dw * self.dh) as usize);
-                    self.density_estimation_check = true;
-                    self.locs[self.write] =  RefCell::new(std::iter::repeat_with(|| Vec::with_capacity(self.density_estimation)).take((self.dw * self.dh) as usize).collect());
-                }
-                else {
-                    let mut bags =self.locs[self.write].borrow_mut();
-                    for b in 0..bags.len(){
-                        bags[b].clear();
-                    }
-                }
+        if !self.density_estimation_check{
+            self.density_estimation =
+            (*self.nagents.borrow_mut())/((self.dw * self.dh) as usize);
+            self.density_estimation_check = true;
+            self.locs[self.write] =  RefCell::new(std::iter::repeat_with(|| Vec::with_capacity(self.density_estimation)).take((self.dw * self.dh) as usize).collect());
+        }
+        else {
+            let mut bags =self.locs[self.write].borrow_mut();
+            for b in 0..bags.len(){
+                bags[b].clear();
+            }
+        }
+
     }
 
     fn update(&mut self){

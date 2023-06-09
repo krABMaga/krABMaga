@@ -1632,8 +1632,10 @@ macro_rules! simulate_old_mpi {
             state.init(&mut schedule);
             let start = std::time::Instant::now();
             //let pb = ProgressBar::new(n_step);
+            world.barrier();
             for i in 0..n_step {
-                // println!("Processo rank {} sta eseguendo lo step ", world.rank());
+                println!("Processo rank {} sta eseguendo lo step {}", world.rank(), i);
+
                 schedule.step(state);
                 if state.end_condition(&mut schedule) {
                     break;
@@ -1643,8 +1645,9 @@ macro_rules! simulate_old_mpi {
                 world.barrier();
                 if world.rank() == 0{
                     println!("Sincronizzato step");
+
                 }
-                world.barrier(); 
+                // world.barrier(); 
             }
             //pb.finish_with_message("\u{1F980}");
 
