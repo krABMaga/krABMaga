@@ -82,7 +82,7 @@ pub struct Kdtree<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::D
     pub dw: i32,
     discretization: f32,
     subtrees: Vec<Block>,
-    neighbor_trees: Vec<i32>,
+    pub neighbor_trees: Vec<i32>,
     prec_neighbors: Vec<Vec<O>>,
     neighbors:Vec<Vec<O>>, 
     received_neighbors:Vec<O>,
@@ -145,7 +145,6 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
     pub fn create_tree(id:u32, x:f32, y:f32, width: f32, height:f32, discretization:f32, distance: f32) -> Self{
         let world = universe.world();
         let mut tree = Kdtree::new(id, x, y, width, height, discretization, distance);
-        tree.agents_to_send = vec![vec![]; universe.world().size() as usize];
         //let (_universe, threading) = mpi::initialize_with_threading(mpi::Threading::Multiple).unwrap();
         tree.first_subdivision();  
         tree
@@ -219,6 +218,7 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
 
             //calculates neighbors id
             let self_points = self.get_boundary_points();
+            self.agents_to_send = vec![vec![]; universe.world().size() as usize];
             for sub in self.subtrees.iter(){
                 if sub.id as i32 != world.rank(){
                     let other_points = self.get_block_boundary_points(sub);
@@ -245,6 +245,7 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
         }
         else {
             let (subtrees, _) = world.process_at_rank(0).receive_vec::<Block>();
+            self.agents_to_send = vec![vec![]; universe.world().size() as usize];
             self.subtrees=subtrees;
             for subtree in self.subtrees.iter(){
                 if subtree.id as i32 == world.rank(){
@@ -452,6 +453,12 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
     }
 
     pub fn insert(&mut self, agent: O, loc: Real2D) {
+
+        /* let total_count: usize = self.locs[self.write].borrow().iter().map(|inner| inner.len()).sum();
+        let total_count_read: usize = self.locs[self.read].borrow().iter().map(|inner| inner.len()).sum(); */
+
+        //println!("Sono {} e prima della insert write vale {} e read vale {}", universe.world().rank(), total_count,total_count_read);
+
         let world = universe.world();
         let bag = self.discretize(&loc);
         let index = ((bag.x * self.dh) + bag.y) as usize;
@@ -468,10 +475,17 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
         if !self.density_estimation_check{
             *self.nagents.borrow_mut() += 1;
         }
+
+        drop(bags);
+
+        let total_count: usize = self.locs[self.write].borrow().iter().map(|inner| inner.len()).sum();
+        let total_count_read: usize = self.locs[self.read].borrow().iter().map(|inner| inner.len()).sum();
+
+        //println!("Sono {} e dopo la insert write vale {} e read vale {}", universe.world().rank(), total_count,total_count_read);
         
     } 
 
-    pub fn insert_read(&mut self, agent: O, loc: Real2D) {
+    /* pub fn insert_read(&mut self, agent: O, loc: Real2D) {
         let world = universe.world();
         let bag = self.discretize(&loc);
         let index = ((bag.x * self.dh) + bag.y) as usize;
@@ -482,7 +496,23 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
             *self.nagents.borrow_mut() += 1;
         }
         
-    } 
+    }  */
+
+    pub fn remove_object_location(&self, object: O, loc: Real2D) {
+        let bag = self.discretize(&loc);
+        let index = ((bag.x * self.dh) + bag.y) as usize;
+        let mut bags = self.locs[self.write].borrow_mut();
+        if !bags[index].is_empty() {
+            let before = bags[index].len();
+            bags[index].retain(|&x| x != object);
+            let after = bags[index].len();
+
+            if !self.density_estimation_check{
+                *self.nagents.borrow_mut() -= before - after;
+            }
+        }
+    }
+    
 
     fn contains(&self, x: f32, y: f32) -> bool {
         self.pos_x <= x
@@ -555,57 +585,64 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
     
     pub fn get_neighbors_within_distance(&self, loc:Real2D, dist:f32) -> Vec<O>{
 
-        let total_count: usize = self.locs[self.write].borrow().iter().map(|inner| inner.len()).sum();
+        /* let total_count: usize = self.locs[self.write].borrow().iter().map(|inner| inner.len()).sum();
         let total_count_read: usize = self.locs[self.read].borrow().iter().map(|inner| inner.len()).sum();
 
-        //println!("Sono {} e read vale {}", universe.world().rank(), total_count_read);
+        println!("Sono {} e read vale {}", universe.world().rank(), total_count_read);
+        println!("Ovvero");
+        for vec in self.locs[self.read].borrow().iter(){
+            for agent in vec{
+                println!("{}", agent);
+            }
+        } */
 
         let mut neighbors: Vec<O>;
 
-                neighbors = Vec::new();
+        neighbors = Vec::new();
 
-                if dist <= 0.0 {
-                    return neighbors;
-                }
+        if dist <= 0.0 {
+            return neighbors;
+        }
 
-                let disc_dist = (dist/self.discretization).floor() as i32;
-                let disc_loc = self.discretize(&loc);
-                let max_x = (self.width/self.discretization).ceil() as i32;
-                let max_y =  (self.height/self.discretization).ceil() as i32;
+        let disc_dist = (dist/self.discretization).floor() as i32;
+        let disc_loc = self.discretize(&loc);
+        let max_x = (self.width/self.discretization).ceil() as i32;
+        let max_y =  (self.height/self.discretization).ceil() as i32;
 
-                let mut min_i = disc_loc.x - disc_dist;
-                let mut max_i = disc_loc.x + disc_dist;
-                let mut min_j = disc_loc.y - disc_dist;
-                let mut max_j = disc_loc.y + disc_dist;
+        let mut min_i = disc_loc.x - disc_dist;
+        let mut max_i = disc_loc.x + disc_dist;
+        let mut min_j = disc_loc.y - disc_dist;
+        let mut max_j = disc_loc.y + disc_dist;
 
-                
-                min_i = cmp::max(0, min_i);
-                max_i = cmp::min(max_i, max_x-1);
-                min_j = cmp::max(0, min_j);
-                max_j = cmp::min(max_j, max_y-1);
+        
+        min_i = cmp::max(0, min_i);
+        max_i = cmp::min(max_i, max_x-1);
+        min_j = cmp::max(0, min_j);
+        max_j = cmp::min(max_j, max_y-1);
+        
 
-                for i in min_i..max_i+1 {
-                    for j in min_j..max_j+1 {
-                        let bag_id = Int2D {
-                            x: t_transform(i, max_x),
-                            y: t_transform(j, max_y),
-                        };
+        for i in min_i..max_i+1 {
+            for j in min_j..max_j+1 {
+                let bag_id = Int2D {
+                    x: t_transform(i, max_x),
+                    y: t_transform(j, max_y),
+                };
 
-                        let check = check_circle(&bag_id, self.discretization, self.width, self.height, &loc, dist, true);
+                let check = check_circle(&bag_id, self.discretization, self.width, self.height, &loc, dist, true);
 
-                        let index = ((bag_id.x * self.dh) + bag_id.y) as usize;
-                        // let bags = self.rbags.borrow();
-                        let bags = self.locs[self.read].borrow();
+                let index = ((bag_id.x * self.dh) + bag_id.y) as usize;
+                // let bags = self.rbags.borrow();
+                let bags = self.locs[self.read].borrow();
 
-                        for elem in &bags[index]{
-                            if ((check == 0 && distance(&loc, &(elem.get_location()), self.width, self.height, true) <= dist) || check == 1 ) && elem.get_location() != loc{
-                                neighbors.push(*elem);
-                            }
-                        }
-
+                for elem in &bags[index]{
+                    if ((check == 0 && distance(&loc, &(elem.get_location()), self.width, self.height, true) <= dist) || check == 1 ) && elem.get_location() != loc{
+                        neighbors.push(*elem);
                     }
                 }
-                neighbors  
+
+            }
+        }
+        neighbors  
     }
 
     /* pub fn get_distributed_neighbors_within_distance(&mut self, loc:Real2D, dist:f32) -> Vec<O>{ 
@@ -762,17 +799,17 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
     pub fn get_distributed_neighbors_within_relax_distance(&mut self, loc:Real2D, dist:f32, agent: O) -> Vec<O>{
         let world = universe.world();
 
-        let total_count: usize = self.locs[self.write].borrow().iter().map(|inner| inner.len()).sum();
+        /* let total_count: usize = self.locs[self.write].borrow().iter().map(|inner| inner.len()).sum();
         let total_count_read: usize = self.locs[self.read].borrow().iter().map(|inner| inner.len()).sum();
 
-        //println!("Sono {} e write vale {} e read vale {}", world.rank(), total_count,total_count_read);
+        println!("Sono {} e write vale {} e read vale {}", world.rank(), total_count,total_count_read); */
 
         let mut neighbors: Vec<O>;
 
         neighbors = Vec::new();
 
         if dist <= 0.0 {
-            println!("RITORNO");
+            //println!("RITORNO");
             return neighbors;
         }
 
@@ -804,7 +841,9 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
                 let bags = self.locs[self.read].borrow();
 
                 for elem in &bags[index]{
-                    neighbors.push(*elem); 
+                    if(elem.get_location() != loc){
+                        neighbors.push(*elem); 
+                    }
                 }
 
             }
@@ -838,7 +877,6 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
                     let ln = &send_vec[*neighbor as usize];
                     let rreq = WaitGuard::from(world.process_at_rank(*neighbor).immediate_receive_into_with_tag(scope, &mut received_messages[*neighbor as usize], *neighbor));
                     //println!("Process {} is ready to receive the message from {}", world.rank(), neighbor);
-
                     let sreq = WaitGuard::from(world.process_at_rank(*neighbor).immediate_ready_send_with_tag(scope, ln , world.rank()));
                     //println!("Process {} has sent value {} to {}", world.rank(), ln, neighbor);
                 });
@@ -877,12 +915,11 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
                 for id in self.neighbor_trees.iter(){
                     if send_agent_vec[*id as usize].len() != 0{
                         let mut sreq = world.process_at_rank(*id).immediate_send_with_tag(scope, &send_agent_vec[*id as usize][..], *id+50);
-                    coll.add(sreq);
+                        coll.add(sreq);
                     }
                     
                     //println!("Process {} has sent the vector of size {} to {}", world.rank(), &send_agent_vec[*id as usize].len(), id); 
                 }
-                
                 
                 let mut out = vec![];
                 coll.wait_all(&mut out);
@@ -913,16 +950,6 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
                 }
             } 
         }
-
-        /* let received_neighbors: Vec<&O> = self.received_neighbors.iter().flatten().collect();
-        if received_neighbors.len() > 0
-        {
-            for neighbor in received_neighbors{
-                if (distance(&loc, &(neighbor.get_location()), self.width, self.height, true) <= dist){
-                        neighbors.push(*neighbor);
-                }
-            }
-        }  */
         neighbors  
     }
 }
