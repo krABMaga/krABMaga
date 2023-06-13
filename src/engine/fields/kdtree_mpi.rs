@@ -74,6 +74,8 @@ pub struct Kdtree<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::D
     pub pos_y: f32,
     width: f32,
     height: f32,
+    original_width: f32,
+    original_height: f32,
     pub locs: Vec<RefCell<Vec<Vec<O>>>>,
     pub nagents: RefCell<usize>,
     read: usize,
@@ -83,9 +85,9 @@ pub struct Kdtree<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::D
     discretization: f32,
     subtrees: Vec<Block>,
     pub neighbor_trees: Vec<i32>,
-    prec_neighbors: Vec<Vec<O>>,
+    pub prec_neighbors: Vec<Vec<O>>,
     neighbors:Vec<Vec<O>>, 
-    received_neighbors:Vec<O>,
+    pub received_neighbors:Vec<O>,
     halo_regions: Vec<Block>,
     neighbors_halo_regions: Vec<Vec<(i32,i32)>>,
     pub agents_to_send: Vec<Vec<O>>,
@@ -119,6 +121,8 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
             subtrees: Vec::new(),
             neighbor_trees: Vec::new(),
             nagents: RefCell::new(0),
+            original_width: 0.,
+            original_height: 0.,
             read: 0,
             write: 1,
             dh: ((height/discretization).ceil() as i32 +1),
@@ -145,6 +149,8 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
     pub fn create_tree(id:u32, x:f32, y:f32, width: f32, height:f32, discretization:f32, distance: f32) -> Self{
         let world = universe.world();
         let mut tree = Kdtree::new(id, x, y, width, height, discretization, distance);
+        tree.original_height = height;
+        tree.original_width= width;
         //let (_universe, threading) = mpi::initialize_with_threading(mpi::Threading::Multiple).unwrap();
         tree.first_subdivision();  
         tree
@@ -217,12 +223,12 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
             }
 
             //calculates neighbors id
-            let self_points = self.get_boundary_points();
+            let self_points = self.get_boundary_points(true);
             self.agents_to_send = vec![vec![]; universe.world().size() as usize];
             for sub in self.subtrees.iter(){
                 if sub.id as i32 != world.rank(){
-                    let other_points = self.get_block_boundary_points(sub);
-                    if self.get_boundary_points()
+                    let other_points = self.get_block_boundary_points(sub, true);
+                    if self.get_boundary_points(true)
                        .iter()
                        .any(|&self_point| other_points
                        .iter()
@@ -255,9 +261,9 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
                     self.pos_y = subtree.y;
                     for sub in self.subtrees.iter(){
                         if sub.id as i32 != world.rank(){
-                            let self_points = self.get_boundary_points();
-                            let other_points = self.get_block_boundary_points(sub);
-                            if self.get_boundary_points()
+                            let self_points = self.get_boundary_points(true);
+                            let other_points = self.get_block_boundary_points(sub, true);
+                            if self.get_boundary_points(true)
                                .iter()
                                .any(|&self_point| other_points
                                 .iter()
@@ -291,28 +297,55 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
  
     } 
 
-    fn get_boundary_points(&self) -> [(f32, f32); 4] {
+    fn get_boundary_points(&self, toroidal: bool) -> Vec<(f32, f32)> {
         let (x,y) =(self.pos_x, self.pos_y);
         let (width, height) = (self.width, self.height);
+        let o_w = self.original_width;
+        let o_h = self.original_height;
 
+        let mut points = vec!
         [
             (x,y),
             (x + width, y),
             (x, y + height),
             (x + width, y + height)
-        ]
+        ];
+        if toroidal{
+            let toroidal_points = vec![
+                (x % o_w,y % o_h),
+                ((x + width) %o_w, y % o_h),
+                (x % o_w, (y + height) % o_h),
+                ((x + width) % o_w, (y + height) % o_h)
+            ];
+
+            points.extend(toroidal_points.iter().cloned());
+        }
+        
+        points
     }
 
-    fn get_block_boundary_points(&self, block: &Block) -> [(f32, f32); 4] {
+    fn get_block_boundary_points(&self, block: &Block, toroidal: bool) -> Vec<(f32, f32)> {
         let (x,y) =(block.x, block.y);
         let (width, height) = (block.width, block.height);
+        let o_w = self.original_width;
+        let o_h = self.original_height;
 
-        [
+        let mut points = vec![
             (x,y),
             (x + width, y),
             (x, y + height),
             (x + width, y + height)
-        ]
+        ];
+        if toroidal{
+            let toroidal_points = vec![
+                (x % o_w,y % o_h),
+                ((x + width) %o_w, y % o_h),
+                (x % o_w, (y + height) % o_h),
+                ((x + width) % o_w, (y + height) % o_h)
+            ];
+            points.extend(toroidal_points.iter().cloned());
+        }
+        points
     }
 
 
@@ -341,11 +374,11 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
         let world = universe.world();
 
         for region in self.halo_regions.iter(){
-            let mut region_points = self.get_block_boundary_points(region);        
+            let mut region_points = self.get_block_boundary_points(region, true);        
             let mut neighbor_blocks_region = Vec::new();
             for block in self.subtrees.iter(){
                 if block.id as i32 != world.rank(){
-                    let block_points = self.get_block_boundary_points(block);
+                    let block_points = self.get_block_boundary_points(block, true);
                     if region_points
                         .iter()
                         .any(|&region_points| block_points
@@ -443,9 +476,9 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
         }
         for block in self.subtrees.iter(){
             if block.x <= x
-            && x < block.x + block.width
+            && x <= block.x + block.width
             && block.y <= y
-            && y < block.y + block.height {
+            && y <= block.y + block.height {
                 return block.id as i32;
             }
         }
@@ -485,7 +518,7 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
         
     } 
 
-    /* pub fn insert_read(&mut self, agent: O, loc: Real2D) {
+    pub fn insert_read(&mut self, agent: O, loc: Real2D) {
         let world = universe.world();
         let bag = self.discretize(&loc);
         let index = ((bag.x * self.dh) + bag.y) as usize;
@@ -496,7 +529,7 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
             *self.nagents.borrow_mut() += 1;
         }
         
-    }  */
+    } 
 
     pub fn remove_object_location(&self, object: O, loc: Real2D) {
         let bag = self.discretize(&loc);
@@ -606,14 +639,13 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
 
         let disc_dist = (dist/self.discretization).floor() as i32;
         let disc_loc = self.discretize(&loc);
-        let max_x = (self.width/self.discretization).ceil() as i32;
-        let max_y =  (self.height/self.discretization).ceil() as i32;
+        let max_x = (self.original_width/self.discretization).ceil() as i32;
+        let max_y =  (self.original_height/self.discretization).ceil() as i32;
 
         let mut min_i = disc_loc.x - disc_dist;
         let mut max_i = disc_loc.x + disc_dist;
         let mut min_j = disc_loc.y - disc_dist;
         let mut max_j = disc_loc.y + disc_dist;
-
         
         min_i = cmp::max(0, min_i);
         max_i = cmp::min(max_i, max_x-1);
@@ -628,14 +660,14 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
                     y: t_transform(j, max_y),
                 };
 
-                let check = check_circle(&bag_id, self.discretization, self.width, self.height, &loc, dist, true);
+                let check = check_circle(&bag_id, self.discretization, self.original_width, self.original_height, &loc, dist, true);
 
                 let index = ((bag_id.x * self.dh) + bag_id.y) as usize;
                 // let bags = self.rbags.borrow();
                 let bags = self.locs[self.read].borrow();
 
                 for elem in &bags[index]{
-                    if ((check == 0 && distance(&loc, &(elem.get_location()), self.width, self.height, true) <= dist) || check == 1 ) && elem.get_location() != loc{
+                    if ((check == 0 && distance(&loc, &(elem.get_location()), self.original_width, self.original_height, true) <= dist) || check == 1 ) && elem.get_location() != loc{
                         neighbors.push(*elem);
                     }
                 }
@@ -645,245 +677,43 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
         neighbors  
     }
 
-    /* pub fn get_distributed_neighbors_within_distance(&mut self, loc:Real2D, dist:f32) -> Vec<O>{ 
-        let world = universe.world();
+    pub fn message_exchange(&self, agents_to_send: &Vec<Vec<O>>, dummy: O, with_regions: bool) -> Vec<Vec<O>>{
+        let world= universe.world();
 
-        if (self.received_neighbors.len() == 0){
-            //received_messages is the vector where i store all messages sent from my neighbors
-            //send_vec is the vector of messages i will send to each neighbor. 
-            //send_agent_vec is a vector of vectors of agents. Each vector will be sent to the specific index neighbor
-            let mut received_messages:Vec<usize> = vec![0; world.size() as usize];
-            let mut send_vec: Vec<usize> = vec![0; world.size() as usize];
-            let mut send_agent_vec: Vec<Vec<O>> = vec![vec![];world.size() as usize];
+        let mut received_messages = vec![0; world.size() as usize];
+        let mut send_vec = vec![0; world.size() as usize];
+        let mut send_agent_vec: Vec<Vec<O>> = vec![vec![];world.size() as usize];
 
-            //inside region we have vectors of tuple, one for each region. Each tuple is composed of (region_id , neighbor_id). 
+
+        if with_regions{
             for region in self.neighbors_halo_regions.iter(){
                 for neighbor in region.iter(){
-                    send_vec[neighbor.1 as usize] += self.prec_neighbors[neighbor.0 as usize].len();
-                    send_agent_vec[neighbor.1 as usize].extend(self.prec_neighbors[neighbor.0 as usize].iter())
+                    send_vec[neighbor.1 as usize] += agents_to_send[neighbor.0 as usize].len();
+                    send_agent_vec[neighbor.1 as usize].extend(agents_to_send[neighbor.0 as usize].iter())
                 }
             }
-
-            //I make a receive of messages from all my neighbors and send to all my neighbors. A message contains the number of agents i will receive.
+        }
+        else{
             for neighbor in &self.neighbor_trees{
-                mpi::request::scope(|scope| {
-                    let ln = &send_vec[*neighbor as usize];
-                    let rreq = WaitGuard::from(world.process_at_rank(*neighbor).immediate_receive_into_with_tag(scope, &mut received_messages[*neighbor as usize], *neighbor));
-                    //println!("Process {} is ready to receive the message", world.rank());
-
-                    let sreq = WaitGuard::from(world.process_at_rank(*neighbor).immediate_ready_send_with_tag(scope, ln , world.rank()));
-                    //println!("Process {} has sent value {} to {}", world.rank(), ln, neighbor);
-                });
+                send_vec[*neighbor as usize] += self.agents_to_send[*neighbor as usize].len();
+                send_agent_vec[*neighbor as usize].extend(self.agents_to_send[*neighbor as usize].iter())
             }
-
-            //For each received message, i initialize a vector that will be used as buffer for upcoming agents. A vector for each neighbor.
-            let mut vec:Vec<Vec<O>> = vec![vec![]; world.size() as usize];
-            if received_messages.len()>0{
-                for i in &self.neighbor_trees{
-                    if received_messages[*i as usize] != 0{
-                        //println!("Sono {} e mi aspetto di ricevere {} agenti da {}", world.rank(), received_messages[*i as usize], i);
-                        vec[*i as usize].append(&mut vec![self.prec_neighbors[0][0]; received_messages[*i as usize] + 10]);
-                    }
-                    else {
-                        //println!("Sono nell'else");
-                        vec[*i as usize].append((&mut vec![]));
-                    }
-    
-                }
-            }
-            
-
-            // I receive the agents from my neighbors and send my agents to them.
-            mpi::request::multiple_scope(world.size() as usize, |scope, coll| {
-
-                for (id, buffer) in vec.iter_mut().enumerate(){
-                    if received_messages[id as usize] != 0{
-                        let rreq = world.process_at_rank(id as i32).immediate_receive_into_with_tag(scope, &mut buffer[..], world.rank()+50);
-                        coll.add(rreq);
-                        //println!("Process {} is ready to receive {} agents from {}", world.rank(), received_messages[id as usize], id);
-                    }
-                }
-
-                for id in self.neighbor_trees.iter(){
-                    let mut sreq = world.process_at_rank(*id).immediate_send_with_tag(scope, &send_agent_vec[*id as usize][..], *id+50);
-                    coll.add(sreq);
-                    //println!("Process {} has sent the vector of size {} to {}", world.rank(), &send_agent_vec[*id as usize].len(), id); 
-                }
-                
-                
-                let mut out = vec![];
-                coll.wait_all(&mut out);
-            }); 
-           self.received_neighbors = vec.into_iter().flatten().collect();
         }
-
-        let mut neighbors: Vec<O>;
-
-        neighbors = Vec::new();
-
-        if dist <= 0.0 {
-            return neighbors;
-        }
-
-        let disc_dist = (dist/self.discretization).floor() as i32;
-        let disc_loc = self.discretize(&loc);
-        let max_x = (self.width/self.discretization).ceil() as i32;
-        let max_y =  (self.height/self.discretization).ceil() as i32;
-
-        let mut min_i = disc_loc.x - disc_dist;
-        let mut max_i = disc_loc.x + disc_dist;
-        let mut min_j = disc_loc.y - disc_dist;
-        let mut max_j = disc_loc.y + disc_dist;
-
+        //inside region we have vectors of tuple, one for each region. Each tuple is composed of (region_id , neighbor_id). 
         
-        min_i = cmp::max(0, min_i);
-        max_i = cmp::min(max_i, max_x-1);
-        min_j = cmp::max(0, min_j);
-        max_j = cmp::min(max_j, max_y-1);
 
-        for i in min_i..max_i+1 {
-            for j in min_j..max_j+1 {
-                let bag_id = Int2D {
-                    x: t_transform(i, max_x),
-                    y: t_transform(j, max_y),
-                };
-
-                let check = check_circle(&bag_id, self.discretization, self.width, self.height, &loc, dist, true);
-
-                let index = ((bag_id.x * self.dh) + bag_id.y) as usize;
-                // let bags = self.rbags.borrow();
-                let bags = self.locs[self.read].borrow();
-
-                for elem in &bags[index]{
-                    if (check == 0 && distance(&loc, &(elem.get_location()), self.width, self.height, true) <= dist) || check == 1 {
-                        neighbors.push(*elem);
-                    }
-                }
-
-            }
+        //I make a receive of messages from all my neighbors and send to all my neighbors. A message contains the number of agents i will receive.
+        for neighbor in &self.neighbor_trees{
+            mpi::request::scope(|scope| {
+                let ln = &send_vec[*neighbor as usize];
+                let rreq = WaitGuard::from(world.process_at_rank(*neighbor).immediate_receive_into_with_tag(scope, &mut received_messages[*neighbor as usize], *neighbor));
+                //println!("Process {} is ready to receive the message from {}", world.rank(), neighbor);
+                let sreq = WaitGuard::from(world.process_at_rank(*neighbor).immediate_ready_send_with_tag(scope, ln , world.rank()));
+                //println!("Process {} has sent value {} to {}", world.rank(), ln, neighbor);
+            });
         }
 
-        let mut b = false;
-
-        for region in &self.halo_regions{
-            if (region.x <= loc.x && loc.x <= region.x + region.width && region.y <= loc.y && loc.y <= region.y + region.height ){
-                b = true;
-                break;
-            }
-        }
-
-
-        if b {
-            if self.received_neighbors.len() > 0
-            {
-                for neighbor in &self.received_neighbors{
-                    if (distance(&loc, &(neighbor.get_location()), self.width, self.height, true) <= dist){
-                            neighbors.push(*neighbor);
-                    }
-                }
-            } 
-        }
-
-        /* let received_neighbors: Vec<&O> = self.received_neighbors.iter().flatten().collect();
-        if received_neighbors.len() > 0
-        {
-            for neighbor in received_neighbors{
-                if (distance(&loc, &(neighbor.get_location()), self.width, self.height, true) <= dist){
-                        neighbors.push(*neighbor);
-                }
-            }
-        }  */
-        neighbors  
-    }*/
-
-    pub fn get_distributed_neighbors_within_relax_distance(&mut self, loc:Real2D, dist:f32, agent: O) -> Vec<O>{
-        let world = universe.world();
-
-        /* let total_count: usize = self.locs[self.write].borrow().iter().map(|inner| inner.len()).sum();
-        let total_count_read: usize = self.locs[self.read].borrow().iter().map(|inner| inner.len()).sum();
-
-        println!("Sono {} e write vale {} e read vale {}", world.rank(), total_count,total_count_read); */
-
-        let mut neighbors: Vec<O>;
-
-        neighbors = Vec::new();
-
-        if dist <= 0.0 {
-            //println!("RITORNO");
-            return neighbors;
-        }
-
-        let disc_dist = (dist/self.discretization).floor() as i32;
-        let disc_loc = self.discretize(&loc);
-        let max_x = (self.width/self.discretization).ceil() as i32;
-        let max_y =  (self.height/self.discretization).ceil() as i32;
-
-        let mut min_i = disc_loc.x - disc_dist;
-        let mut max_i = disc_loc.x + disc_dist;
-        let mut min_j = disc_loc.y - disc_dist;
-        let mut max_j = disc_loc.y + disc_dist;
-
-        
-        min_i = cmp::max(0, min_i);
-        max_i = cmp::min(max_i, max_x-1);
-        min_j = cmp::max(0, min_j);
-        max_j = cmp::min(max_j, max_y-1);
-
-        for i in min_i..max_i+1 {
-            for j in min_j..max_j+1 {
-                let bag_id = Int2D {
-                    x: t_transform(i, max_x),
-                    y: t_transform(j, max_y),
-                };
-
-                let index = ((bag_id.x * self.dh) + bag_id.y) as usize;
-                // let bags = self.rbags.borrow();
-                let bags = self.locs[self.read].borrow();
-
-                for elem in &bags[index]{
-                    if(elem.get_location() != loc){
-                        neighbors.push(*elem); 
-                    }
-                }
-
-            }
-        }
-
-        // if neighbors.len() == 0 {
-        //     println!("loc {}", loc);
-        // }
-
-        let mut dummy = agent;
-
-        if (self.received_neighbors.len() == 0){
-            //received_messages is the vector where i store all messages sent from my neighbors
-            //send_vec is the vector of messages i will send to each neighbor. 
-            //send_agent_vec is a vector of vectors of agents. Each vector will be sent to the specific index neighbor
-            let mut received_messages:Vec<usize> = vec![0; world.size() as usize];
-            let mut send_vec: Vec<usize> = vec![0; world.size() as usize];
-            let mut send_agent_vec: Vec<Vec<O>> = vec![vec![];world.size() as usize];
-
-            //inside region we have vectors of tuple, one for each region. Each tuple is composed of (region_id , neighbor_id). 
-            for region in self.neighbors_halo_regions.iter(){
-                for neighbor in region.iter(){
-                    send_vec[neighbor.1 as usize] += self.prec_neighbors[neighbor.0 as usize].len();
-                    send_agent_vec[neighbor.1 as usize].extend(self.prec_neighbors[neighbor.0 as usize].iter())
-                }
-            }
-
-            //I make a receive of messages from all my neighbors and send to all my neighbors. A message contains the number of agents i will receive.
-            for neighbor in &self.neighbor_trees{
-                mpi::request::scope(|scope| {
-                    let ln = &send_vec[*neighbor as usize];
-                    let rreq = WaitGuard::from(world.process_at_rank(*neighbor).immediate_receive_into_with_tag(scope, &mut received_messages[*neighbor as usize], *neighbor));
-                    //println!("Process {} is ready to receive the message from {}", world.rank(), neighbor);
-                    let sreq = WaitGuard::from(world.process_at_rank(*neighbor).immediate_ready_send_with_tag(scope, ln , world.rank()));
-                    //println!("Process {} has sent value {} to {}", world.rank(), ln, neighbor);
-                });
-            }
-
-            //For each received message, i initialize a vector that will be used as buffer for upcoming agents. A vector for each neighbor.
-            let mut vec:Vec<Vec<O>> = vec![vec![]; world.size() as usize];
+        let mut vec:Vec<Vec<O>> = vec![vec![]; world.size() as usize];
             // println!("Sono {} e ho ricevuto {:?} world.size {:?}", world.rank(), received_messages, world.size());
             if received_messages.len()>0{
                 for i in &self.neighbor_trees{
@@ -924,31 +754,62 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + mpi:
                 let mut out = vec![];
                 coll.wait_all(&mut out);
             }); 
-           self.received_neighbors = vec.into_iter().flatten().collect();
+           //self.received_neighbors = vec.into_iter().flatten().collect();
+        return vec;
+    }
+
+
+    pub fn get_distributed_neighbors_within_relax_distance(&mut self, loc:Real2D, dist:f32, agent: O) -> Vec<O>{
+        let world = universe.world();
+
+        /* let total_count: usize = self.locs[self.write].borrow().iter().map(|inner| inner.len()).sum();
+        let total_count_read: usize = self.locs[self.read].borrow().iter().map(|inner| inner.len()).sum();
+
+        println!("Sono {} e write vale {} e read vale {}", world.rank(), total_count,total_count_read); */
+
+        let mut neighbors: Vec<O>;
+
+        neighbors = Vec::new();
+
+        if dist <= 0.0 {
+            //println!("RITORNO");
+            return neighbors;
         }
 
+        let disc_dist = (dist/self.discretization).floor() as i32;
+        let disc_loc = self.discretize(&loc);
+        let max_x = (self.original_width/self.discretization).ceil() as i32;
+        let max_y =  (self.original_height/self.discretization).ceil() as i32;
 
-        let mut b = false;
+        let mut min_i = disc_loc.x - disc_dist;
+        let mut max_i = disc_loc.x + disc_dist;
+        let mut min_j = disc_loc.y - disc_dist;
+        let mut max_j = disc_loc.y + disc_dist;
 
-        for region in &self.halo_regions{
-            if (region.x <= loc.x && loc.x <= region.x + region.width && region.y <= loc.y && loc.y <= region.y + region.height ){
-                b = true;
-                break;
-            }
-        }
+        
+        min_i = cmp::max(0, min_i);
+        max_i = cmp::min(max_i, max_x-1);
+        min_j = cmp::max(0, min_j);
+        max_j = cmp::min(max_j, max_y-1);
 
+        for i in min_i..max_i+1 {
+            for j in min_j..max_j+1 {
+                let bag_id = Int2D {
+                    x: t_transform(i, max_x),
+                    y: t_transform(j, max_y),
+                };
 
-        if b {
-            if self.received_neighbors.len() > 0
-            {
-                //println!("i have already n neighbors {} ", neighbors.len());
-                //println!("Sono {} e ho ricevuto {} agenti", world.rank(), self.received_neighbors.len());
-                for neighbor in &self.received_neighbors{
-                    if (distance(&loc, &(neighbor.get_location()), self.width, self.height, true) <= dist) && neighbor.get_location() != loc{
-                            neighbors.push(*neighbor);
+                let index = ((bag_id.x * self.dh) + bag_id.y) as usize;
+                // let bags = self.rbags.borrow();
+                let bags = self.locs[self.read].borrow();
+
+                for elem in &bags[index]{
+                    if(elem.get_location() != loc){
+                        neighbors.push(*elem); 
                     }
                 }
-            } 
+
+            }
         }
         neighbors  
     }
@@ -1080,181 +941,3 @@ pub fn toroidal_transform(val: f32, dim: f32) -> f32 {
         val
     }
 }
-
-
-/* pub fn get_distributed_neighbors_within_distance(&mut self, loc:Real2D, dist:f32) -> Vec<O>{
-    let world = universe.world();
-
-    if (self.received_neighbors.len() == 0){
-        let mut received_messages:Vec<usize> = vec![0; world.size() as usize];
-        let ln = self.prec_neighbors.len();
-
-        for id in self.neighbor_trees.iter(){
-            if (*id != world.rank()){
-                mpi::request::scope(|scope| {
-                    let rreq = WaitGuard::from(world.process_at_rank(*id).immediate_receive_into_with_tag(scope, &mut received_messages[*id as usize], world.rank()));
-                    //println!("Process {} is ready to receive the message", world.rank());
-                    let mut sreq = WaitGuard::from(world.process_at_rank(*id).immediate_ready_send_with_tag(scope, &ln, *id));
-                    //println!("Process {} has sent value {} to {}", world.rank(), ln, id);
-                });
-            }
-        } 
-        
-
-        /* for msg in &received_messages{
-            println!("Process {} has received {}", world.rank(), msg);
-        }   */
-
-        let mut vec:Vec<Vec<O>> = vec![vec![]; world.size() as usize];
-        for i in &self.neighbor_trees{
-            if received_messages[*i as usize] != 0{
-                //println!("Sono {} e mi aspetto di ricevere {} agenti da {}", world.rank(), received_messages[*i as usize], i);
-                vec[*i as usize].append(&mut (vec![self.prec_neighbors[0][0]; received_messages[*i as usize] +100]));
-            }
-            else {
-                //println!("Sono nell'else");
-                vec[*i as usize].append((&mut vec![self.prec_neighbors[0][0]; 0]));
-            }
-
-        }
-
-
-        
-        
-/*             let mut i = 0;
-        for message in received_messages.iter(){
-            println!("Process {} ha message {} in position {}", world.rank(), message, i);
-            i+=1;
-        } */
-
-        mpi::request::multiple_scope(world.size() as usize, |scope, coll| {
-
-            for (id, buffer) in vec.iter_mut().enumerate(){
-                if id as i32 != world.rank() && received_messages[id as usize] != 0{
-                    let rreq = world.process_at_rank(id as i32).immediate_receive_into_with_tag(scope, &mut buffer[..], world.rank()+50);
-                    coll.add(rreq);
-                    //println!("Process {} is ready to receive {} agents from {}", world.rank(), received_messages[id as usize], id);
-                }
-            }
-
-            for id in self.neighbor_trees.iter(){
-                if *id != world.rank(){
-                    let mut sreq = world.process_at_rank(*id).immediate_send_with_tag(scope, &self.prec_neighbors[..], *id+50);
-                    coll.add(sreq);
-                    //println!("Process {} has sent the vector of size {} to {}", world.rank(), &self.prec_neighbors.len(), id); 
-                }
-            }
-            
-            
-            let mut out = vec![];
-            coll.wait_all(&mut out);
-        }); 
-       self.received_neighbors = vec;
-    }
-
-    let mut i = 0;
-
-    /* for vec in &self.received_neighbors{
-        i+=1;
-        println!("Iterazione {} ", i);
-        println!("Sono {} e sto per inserire {} agenti",world.rank(), vec.len());
-    } */
-
-    let mut neighbors: Vec<O>;
-
-    neighbors = Vec::new();
-
-    if dist <= 0.0 {
-        return neighbors;
-    }
-
-    let disc_dist = (dist/self.discretization).floor() as i32;
-    let disc_loc = self.discretize(&loc);
-    let max_x = (self.width/self.discretization).ceil() as i32;
-    let max_y =  (self.height/self.discretization).ceil() as i32;
-
-    let mut min_i = disc_loc.x - disc_dist;
-    let mut max_i = disc_loc.x + disc_dist;
-    let mut min_j = disc_loc.y - disc_dist;
-    let mut max_j = disc_loc.y + disc_dist;
-
-    
-    min_i = cmp::max(0, min_i);
-    max_i = cmp::min(max_i, max_x-1);
-    min_j = cmp::max(0, min_j);
-    max_j = cmp::min(max_j, max_y-1);
-
-    for i in min_i..max_i+1 {
-        for j in min_j..max_j+1 {
-            let bag_id = Int2D {
-                x: t_transform(i, max_x),
-                y: t_transform(j, max_y),
-            };
-
-            let check = check_circle(&bag_id, self.discretization, self.width, self.height, &loc, dist, true);
-
-            let index = ((bag_id.x * self.dh) + bag_id.y) as usize;
-            // let bags = self.rbags.borrow();
-            let bags = self.locs[self.read].borrow();
-
-            for elem in &bags[index]{
-                if (check == 0 && distance(&loc, &(elem.get_location()), self.width, self.height, true) <= dist) || check == 1 {
-                    neighbors.push(*elem);
-                }
-            }
-
-        }
-    }
-    if self.received_neighbors.len() > 0
-    {
-        for vec in self.received_neighbors.iter(){
-            for neighbor in vec.iter(){
-                if (distance(&loc, &(neighbor.get_location()), self.width, self.height, true) <= dist){
-                    neighbors.push(*neighbor);
-                }
-            }
-        }
-    } 
-    neighbors  
-} */
-
-
-//Precedente generazione albero
-/* if (self.processors != 1)
-            //Root subdivision
-            {
-                //nodes in subtrees
-                let nodes = self.split(&Axis::Vertical);
-                temp_subtrees.push(nodes.0);
-                temp_subtrees.push(nodes.1);
-
-                if (self.processors > 2)
-                {
-                    for i in 0..FIRST_SUB_DIMENSION/2{
-                    //buttare 
-                    let mut id = self.id.clone();
-                    let x = temp_subtrees[i].split(&Axis::Horizontal);
-                    temp_subtrees[i]=x.0;
-                    temp_subtrees.push(x.1);
-                    }
-                
-                    count+=FIRST_SUB_DIMENSION as u32;
-                    let mut axis = Axis::Vertical;
-
-                    //Progressive subdivision
-                    while count<self.processors{
-                        for n in 0..temp_subtrees.len(){
-                            if count >= self.processors{break;}
-                            let nodes=temp_subtrees[n*2].split(&axis);
-                            temp_subtrees[n*2] = nodes.0;
-                            temp_subtrees.insert((n*2)+1, nodes.1);
-                            count+=1;
-                        }
-                        if axis == Axis::Vertical {axis=Axis::Horizontal;}
-                        else {axis=Axis::Vertical;}
-                    }
-                }
-            } */
-            /* for subtree in temp_subtrees.iter(){
-                println!("Trovato subtree con dimensioni w:{} h:{}", subtree.width, subtree.height)
-            } */

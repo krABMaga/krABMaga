@@ -340,6 +340,75 @@ cfg_if! {
                 }
             }
 
+            pub fn distributed_step(&mut self, state: &mut dyn State){
+
+                if self.step == 0{
+                    state.update(self.step);
+                }
+
+                state.before_step(self);
+
+                let events = &mut self.events;
+
+                if events.is_empty() {
+                    println!("No agent in the queue to schedule. Terminating.");
+                    //TODO check if we need to exit on 0 agents or we have to continue until new agents are spawned
+                    // std::process::exit(0);
+                    state.after_step(self);
+                    self.step += 1;
+                    state.update(self.step);
+                    return;
+                }
+
+                let mut cevents: Vec<Pair> = Vec::new();
+
+                match events.peek() {
+                    Some(item) => {
+                        let (_agent, priority) = item;
+                        self.time = priority.time;
+                    },
+                    None => {panic!("Agent not found - out loop")},
+                }
+
+                loop {
+                    if events.is_empty() {
+                        break;
+                    }
+
+                    match events.peek() {
+                        Some(item) => {
+                            let (agent, priority) = item;
+                            //println!("Found agent {}", agent);
+                            if priority.time > self.time {
+                                break;
+                            }
+                            let (agent, priority) = events.pop().expect("Error on pop from queue");
+                            cevents.push(Pair::new(agent, priority));
+                        },
+                        None => panic!("Agent not found - inside loop"),
+                    }
+                }
+
+                for mut item in cevents.into_iter() {
+
+                    item.agentimpl.agent.before_step(state);
+                    item.agentimpl.agent.step(state);
+                    item.agentimpl.agent.after_step(state);
+
+                    if item.agentimpl.repeating && !item.agentimpl.agent.is_stopped(state) {
+                        self.schedule_once(
+                            item.agentimpl,
+                            item.priority.time + 1.0,
+                            item.priority.ordering,
+                        );
+                    }
+                }
+
+                state.after_step(self);
+                self.step += 1;
+                state.update(self.step);
+            }
+
             /// Compute the step for each agent in the PriorityQueue.
             ///
             /// # Arguments
