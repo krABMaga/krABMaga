@@ -388,8 +388,6 @@ pub mod visualization;
 #[cfg(any(feature = "visualization", feature = "visualization_wasm",))]
 pub use bevy;
 
-
-
 #[doc(hidden)]
 pub use rand::{
     distributions::{Distribution, Uniform},
@@ -424,20 +422,19 @@ pub use {
     memoffset::{offset_of, span_of},
     mpi::datatype::DynBufferMut,
     mpi::datatype::PartitionMut,
-    mpi::point_to_point as p2p,
     mpi::environment::Universe,
+    mpi::point_to_point as p2p,
+    mpi::traits::Equivalence,
     mpi::Count,
     mpi::{datatype::UserDatatype, traits::*, Address},
-    mpi::traits::Equivalence,
 };
 
-
-
 #[cfg(any(feature = "distributed_mpi"))]
-lazy_static!{
-    pub static ref universe:Universe = mpi::initialize().expect("Error initialing mpi environment");
-    static ref root_rank:u32 = 0;
-} 
+lazy_static! {
+    pub static ref universe: Universe =
+        mpi::initialize().expect("Error initialing mpi environment");
+    static ref root_rank: u32 = 0;
+}
 
 #[doc(hidden)]
 #[cfg(any(feature = "bayesian"))]
@@ -1594,7 +1591,7 @@ macro_rules! simulate_old_mpi {
             let mut option = Info::Normal;
 
         if world.rank() == 0{
-            
+
             $(
                 option = $info;
             )?
@@ -1631,31 +1628,16 @@ macro_rules! simulate_old_mpi {
             let mut schedule: Schedule = Schedule::new();
             state.init(&mut schedule);
             let start = std::time::Instant::now();
-            //let pb = ProgressBar::new(n_step);
-            //world.barrier();
             for i in 0..n_step {
-                //println!("Processo rank {} sta eseguendo lo step {}", world.rank(), i);
-
-                schedule.distributed_step(state);
+                schedule.step(state);
                 if state.end_condition(&mut schedule) {
                     break;
                 }
-                //pb.inc(1);
-                //println!("Processo rank {} ha eseguito lo step ", world.rank());
                 world.barrier();
-                /* if world.rank() == 0{
-                    println!("Sincronizzato step");
-
-                }
-                world.barrier();  */
             }
-            //pb.finish_with_message("\u{1F980}");
 
             let run_duration = start.elapsed();
-            
-            /* if r==$reps-1{
-                world.barrier();
-            } */
+
             if world.rank() == 0{
                 match option {
                     Info::Verbose => {}
@@ -1706,8 +1688,6 @@ macro_rules! simulate_old_mpi {
                         print!("{}|", avg_step_seconds);
                         print!("{:width$}", "", width = 9 - avg_time.len());
                         println!("{}s|", avg_time);
-                        
-                        
                     }
                 }
             }
@@ -1715,7 +1695,6 @@ macro_rules! simulate_old_mpi {
                 mpi::ffi::MPI_Finalize();
             }
         }
-        
         results
     }};
 }
