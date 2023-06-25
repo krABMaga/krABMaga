@@ -457,7 +457,10 @@ impl<
                 return block.id as i32;
             }
         }
-        panic!("Block for location {};{} not found! This should not happen!", x, y);
+        panic!(
+            "Block for location {};{} not found! This should not happen!",
+            x, y
+        );
         -1
     }
 
@@ -715,7 +718,7 @@ impl<
         let world = universe.world();
         let mut dist = distance;
 
-        if dist > self.distance{
+        if dist > self.distance {
             dist = self.distance;
         }
 

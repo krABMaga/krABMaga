@@ -1,21 +1,16 @@
-#![allow(warnings)]
 use crate::lazy_static;
-use crate::mpi::datatype::UncommittedDatatypeRef;
-use crate::mpi::datatype::UserDatatype;
-use crate::mpi::environment::Universe;
-use crate::mpi::ffi::MPI_Finalize;
-use crate::mpi::point_to_point::Destination;
-use crate::mpi::point_to_point::Source;
-use crate::mpi::topology::Communicator;
-use crate::mpi::topology::SystemCommunicator;
-use crate::mpi::traits::*;
-use crate::mpi::Address;
-use crate::mpi::Threading;
 use core::mem::size_of;
 use std::fmt;
 use std::hash::Hash;
 use std::hash::Hasher;
-
+#[cfg(feature = "distributed_mpi")]
+use {
+    crate::mpi::datatype::UncommittedDatatypeRef, crate::mpi::datatype::UserDatatype,
+    crate::mpi::environment::Universe, crate::mpi::ffi::MPI_Finalize,
+    crate::mpi::point_to_point::Destination, crate::mpi::point_to_point::Source,
+    crate::mpi::topology::Communicator, crate::mpi::topology::SystemCommunicator,
+    crate::mpi::traits::*, crate::mpi::Address, crate::mpi::Threading,
+};
 
 #[cfg(feature = "distributed_mpi")]
 /// A structure describing a two-dimensional, f32 location, for use in continuous fields.
