@@ -685,7 +685,7 @@ impl<
                 if received_messages[id as usize] != 0 {
                     let rreq = world
                         .process_at_rank(id as i32)
-                        .immediate_receive_into_with_tag(scope, &mut buffer[..], world.rank() + 50);
+                        .immediate_receive_into_with_tag(scope, &mut buffer[..], world.rank());
                     coll.add(rreq);
                 }
             }
@@ -695,7 +695,7 @@ impl<
                     let mut sreq = world.process_at_rank(*id).immediate_send_with_tag(
                         scope,
                         &send_agent_vec[*id as usize][..],
-                        *id + 50,
+                        *id,
                     );
                     coll.add(sreq);
                 }
@@ -709,10 +709,15 @@ impl<
     pub fn get_distributed_neighbors_within_relax_distance(
         &mut self,
         loc: Real2D,
-        dist: f32,
+        distance: f32,
         agent: O,
     ) -> Vec<O> {
         let world = universe.world();
+        let mut dist = distance;
+
+        if dist > self.distance{
+            dist = self.distance;
+        }
 
         let mut neighbors: Vec<O>;
 

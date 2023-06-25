@@ -8,7 +8,6 @@ Cargo.lock
 .vscode
 /bin
 /output
-/src/engine/fields/backup
 
 
 # tarpaulin output
