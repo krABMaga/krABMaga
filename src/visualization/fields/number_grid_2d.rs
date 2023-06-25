@@ -76,11 +76,10 @@ pub trait BatchRender<S: State> {
             ..Default::default()
         };
         commands
-            .spawn()
+            .spawn(sprite_bundle)
             .insert(Marker::<Self> {
                 marker: PhantomData,
-            })
-            .insert_bundle(sprite_bundle);
+            });
     }
 
     // Must override to specify how to fetch the texture of self from the state. Your state struct

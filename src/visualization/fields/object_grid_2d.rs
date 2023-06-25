@@ -8,7 +8,6 @@ cfg_if! {
         };
 
         use crate::visualization::{
-            // agent_render::SpriteType,
             asset_handle_factory::AssetHandleFactoryResource,
             wrappers::ActiveState,
         };
@@ -54,12 +53,11 @@ cfg_if! {
                         sprite_bundle.transform.scale.y = scale.1;
 
                         commands
-                            .spawn()
+                            .spawn(sprite_bundle)
                             .insert(Marker::<Self> {
                                 marker: PhantomData,
                             })
-                            .insert(obj.clone())
-                            .insert_bundle(sprite_bundle);
+                            .insert(obj.clone());
                     }
                 } else if dense_grid.is_some() {
                     for obj in dense_grid
@@ -79,12 +77,11 @@ cfg_if! {
                         sprite_bundle.transform.scale.y = scale.1;
 
                         commands
-                            .spawn()
+                            .spawn(sprite_bundle)
                             .insert(Marker::<Self> {
                                 marker: PhantomData,
                             })
-                            .insert(obj.clone())
-                            .insert_bundle(sprite_bundle);
+                            .insert(obj.clone());
                     }
                 }
             }

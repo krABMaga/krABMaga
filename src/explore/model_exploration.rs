@@ -8,8 +8,8 @@
 /// * `repconf` - number of repetitions
 /// * `state` - state of the simulation
 /// * `input` - multiple custom input, pair of a identifier and its type
-/// * `output` - multas u32iple custom input, pair of a identifier and its type
-/// * `explore_mode` - enum to choose how manage parameters combination (Supported option: Exaustive, Matched)
+/// * `output` - multiple custom input, pair of a identifier and its type
+/// * `explore_mode` - enum to choose how manage parameters combination (Supported option: Exhaustive, Matched)
 ///
 /// Last parameter is the computing mode to use.
 /// Without the last parameter, the macro will use the default computing mode (Sequential).
@@ -197,9 +197,9 @@ macro_rules! simulate_explore {
 /// * `step` - simulation step number,
 /// * `repconf` - number of repetitions
 /// * `state` - state of the simulation
-/// * `input {name: type}` - input paramaters of simulation
+/// * `input {name: type}` - input parameters of simulation
 /// * `output [name: type]` - output parameters of simulation
-/// * `mode` - enum to choose which mode of execution is desired (Supported option: Exaustive, Matched)
+/// * `mode` - enum to choose which mode of execution is desired (Supported option: Exhaustive, Matched)
 ///
 /// # Example
 ///
@@ -319,9 +319,9 @@ macro_rules! explore_sequential {
 /// * `step` - simulation step number,
 /// * `repconf` - number of repetitions
 /// * `state` - state of the simulation
-/// * `input {name: type}` - input paramaters of simulation
+/// * `input {name: type}` - input parameters of simulation
 /// * `output [name: type]` - output parameters of simulation
-/// * `mode` - enum to choose which mode of execution is desired (Supported option: Exaustive, Matched)
+/// * `mode` - enum to choose which mode of execution is desired (Supported option: Exhaustive, Matched)
 ///
 /// # Example
 ///

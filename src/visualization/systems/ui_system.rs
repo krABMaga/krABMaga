@@ -19,8 +19,8 @@ use crate::visualization::{
     wrappers::{ActiveSchedule, ActiveState},
 };
 
-pub fn ui_system<I: VisualizationState<S> + Clone + 'static, S: State>(
-    egui_context: ResMut<EguiContext>,
+pub fn ui_system<I: VisualizationState<S> + Clone + 'static + bevy::prelude::Resource, S: State>(
+    mut egui_context: ResMut<EguiContext>,
     mut sim_data: ResMut<SimulationDescriptor>,
     active_schedule_wrapper: ResMut<ActiveSchedule>,
     active_state_wrapper: ResMut<ActiveState<S>>,
@@ -31,7 +31,7 @@ pub fn ui_system<I: VisualizationState<S> + Clone + 'static, S: State>(
     mut commands: Commands,
     mut time: ResMut<Time>,
 ) {
-    egui::SidePanel::left("main").show(egui_context.ctx(), |ui| {
+    egui::SidePanel::left("main").show(egui_context.ctx_mut(), |ui| {
         ui.vertical_centered(|ui| {
             ui.heading(sim_data.title.clone());
             ui.separator();

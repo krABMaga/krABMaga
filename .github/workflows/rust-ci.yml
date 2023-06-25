@@ -10,17 +10,17 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  stdbuild:
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, macos-latest ]
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
         rust:
           - stable
           - nightly
-          - beta
 
+    name: ${{ matrix.os }} ${{ matrix.rust }} build 
     steps:
       - name: Ubuntu Required Deps
         if: matrix.os == 'ubuntu-latest'
@@ -29,62 +29,56 @@ jobs:
           sudo apt install pkg-config libx11-dev libasound2-dev libudev-dev
           sudo apt install libxcb-randr0-dev libxcb-xtest0-dev libxcb-xinerama0-dev libxcb-shape0-dev libxcb-xkb-dev
           sudo apt install libxcb-render0-dev libxcb-xfixes0-dev libxcb1-dev
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@master
         with:
-          profile: minimal
           toolchain: ${{ matrix.rust }}
-          override: true
 
-      - uses: Swatinem/rust-cache@v1
-
+      - uses: Swatinem/rust-cache@v2
+   
       - name: Build
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --all --examples --features visualization
+        run: cargo build --release
+
+      - name: BuildVisualization
+        run: cargo build --release --features "visualization, visualization_wasm"
+
+      - name: BuildBayesian
+        run: cargo build --release --features bayesian
 
       - name: Test
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --features parallel
+        run: cargo test --features parallel
           
       - name: TestNoFeatures
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
+        run: cargo test
 
-
-  coverage:
-    runs-on: ubuntu-latest
+  mpibuild:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            rust: stable
+            mpi: openmpi
+          - os: macos-latest
+            rust: stable
+            mpi: openmpi
+          - os: windows-2022
+            rust: stable
+            mpi: msmpi
+            
+    name: ${{ matrix.os }} MPI
     steps:
-     - uses: actions/checkout@v2
-     - uses: actions-rs/toolchain@v1
-       with:
-        toolchain: stable
-        override: true
-        components: llvm-tools-preview
-
-     - uses: Swatinem/rust-cache@v1
-       with:
-        key: coverage 
-
-     - name: Cargo Clean
-       run: |
-        cargo clean
-     - name: Setup
-       run: |
-        rustup update
-        cargo install cargo-tarpaulin
-        
-     - name: Run Tests
-       run: |
-        cargo tarpaulin --implicit-test-threads  --out Xml --exclude-files src/utils/* src/visualization/* src/lib.rs src/explore/bayesian.rs
-
-     - uses: codecov/codecov-action@v2
-       with:
-        token: ${{ secrets.CODECOV_TOKEN }}
-        files: ./cobertura.xml 
-        verbose: true 
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup MPI
+        uses: mpi4py/setup-mpi@v1
+        with:
+          mpi: ${{ matrix.mpi }}
+      - uses: Swatinem/rust-cache@v2
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
+      - run: cargo build --release --features distributed_mpi
+  

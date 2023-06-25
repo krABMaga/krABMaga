@@ -70,7 +70,7 @@ cfg_if! {
 
             // Create the application and start it immediately. Requires a startup callback defined as a struct
             // that implements [OnStateInit], along with the state and the schedule, which you manually create.
-            pub fn start<I: VisualizationState<S> + 'static + Clone, S: State>(
+            pub fn start<I: VisualizationState<S> + 'static + bevy::prelude::Resource + Clone, S: State>(
                 self,
                 init_call: I,
                 state: S,
@@ -81,7 +81,7 @@ cfg_if! {
 
             // Sets up the application, exposing the [AppBuilder]. Useful if you want to directly interface Bevy
             // and add plugins, resources or systems yourself.
-            pub fn setup<I: VisualizationState<S> + Clone + 'static, S: State>(
+            pub fn setup<I: VisualizationState<S> + Clone + 'static + bevy::prelude::Resource, S: State>(
                 &self,
                 init_call: I,
                 mut state: S,
@@ -91,26 +91,20 @@ cfg_if! {
                 window_constraints.min_width = 600.;
                 window_constraints.min_height = 300.;
 
-                let window_descriptor = WindowDescriptor {
-                    title: self
-                        .window_name
-                        .parse()
-                        .expect("Error: can't parse window name"),
-                    width: self.width,
-                    height: self.height,
-                    vsync: true,
-                    resize_constraints: window_constraints,
-                    ..Default::default()
-                };
-
                 let mut app = App::new();
                 let mut schedule = Schedule::new();
                 state.init(&mut schedule);
                 let cloned_init_call = init_call.clone();
 
-                app.insert_resource(window_descriptor)
-                    .add_plugins(DefaultPlugins)
+                app.add_plugins(DefaultPlugins.set(WindowPlugin {
+                    window: WindowDescriptor {
+                        // width: 400.0,
+                        ..default()
+                    },
+                    ..default()
+                    }))
                     .add_plugin(EguiPlugin);
+
 
                 // Required for network visualization
                 app.add_plugin(ShapePlugin);
@@ -135,18 +129,18 @@ cfg_if! {
                 .insert_resource(Initializer(cloned_init_call, Default::default()))
                 .init_resource::<Time>()
                 .init_resource::<FixedTimestepState>()
-                .add_startup_system(init_system::<I, S>.system())
-                .add_startup_system(set_initial_timestep.system())
+                .add_startup_system(init_system::<I, S>)
+                .add_startup_system(set_initial_timestep)
                 .add_plugin(FrameTimeDiagnosticsPlugin::default())
                 .add_system_set(
                     SystemSet::new()
-                        .with_run_criteria(FixedTimestep::step.system())
-                        .with_system(renderer_system::<I, S>.system().label("render"))
-                        .with_system(simulation_system::<S>.system().before("render")),
+                        .with_run_criteria(FixedTimestep::step)
+                        .with_system(renderer_system::<I, S>.label("render"))
+                        .with_system(simulation_system::<S>.before("render")),
                 )
-                .add_system(ui_system::<I, S>.system().before("render"))
-                .add_system(camera_system.system())
-                .add_system_to_stage(CoreStage::First, time_system.exclusive_system());
+                .add_system(ui_system::<I, S>.before("render"))
+                .add_system(camera_system)
+                .add_system_to_stage(CoreStage::First, time_system);
 
                 app
             }

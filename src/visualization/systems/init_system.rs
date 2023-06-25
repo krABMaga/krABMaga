@@ -2,14 +2,14 @@ use cfg_if::cfg_if;
 cfg_if! {
     if #[cfg(any(feature = "visualization", feature = "visualization_wasm"))] {
 
-        use bevy::prelude::{Commands, OrthographicCameraBundle, Res, ResMut, WindowDescriptor};
+        use bevy::prelude::{Commands, Camera2dBundle, Res, ResMut};
+        use bevy::window::Windows;
         use bevy::render::camera::WindowOrigin;
-
         use crate::bevy::prelude::Transform;
-        use crate::bevy::render::camera::{Camera, DepthCalculation, OrthographicProjection};
-        use bevy::render::camera::CameraPlugin;
-
+        use crate::bevy::utils::default;
+        use crate::bevy::render::camera::ScalingMode;
         use crate::engine::state::State;
+        use crate::bevy::render::camera::OrthographicProjection;
 
         use crate::visualization::{
             asset_handle_factory::AssetHandleFactoryResource,
@@ -18,46 +18,42 @@ cfg_if! {
             wrappers::{ActiveSchedule, ActiveState},
         };
 
-        /// The main startup system which boostraps a simple orthographic camera, centers it to aim at the simulation,
+        /// The main startup system which bootstraps a simple orthographic camera, centers it to aim at the simulation,
         /// then calls the user provided init callback.
-        pub fn init_system<I: VisualizationState<S> + 'static, S: State>(
+        pub fn init_system<I: VisualizationState<S> + 'static + bevy::prelude::Resource, S: State>(
             on_init: Res<I>,
             mut sprite_factory: AssetHandleFactoryResource,
             mut commands: Commands,
             state_resource: ResMut<ActiveState<S>>,
             schedule_resource: ResMut<ActiveSchedule>,
-            window: Res<WindowDescriptor>,
+            windows: Res<Windows>,
             mut sim: ResMut<SimulationDescriptor>,
         ) {
+            if let Some(window) = windows.get_primary() {
+
             // Right handed coordinate system, equal to how it is implemented in [`OrthographicProjection::new_2d()`].
             let far = 1000.;
             // Offset the whole simulation to the left to take the width of the UI panel into account.
             let ui_offset = -sim.ui_width;
             // Scale the simulation so it fills the portion of the screen not covered by the UI panel.
-            let scale_x = sim.width / (window.width + ui_offset);
+            let scale_x = sim.width / (window.width() + ui_offset);
             // The translation x must depend on the scale_x to keep the left offset constant between window resizes.
             let mut initial_transform = Transform::from_xyz(ui_offset * scale_x, 0., far - 0.1);
             initial_transform.scale.x = scale_x;
-            initial_transform.scale.y = sim.height / window.height;
+            initial_transform.scale.y = sim.height / window.height();
 
-            let camera_bundle = OrthographicCameraBundle {
-                camera: Camera {
-                    name: Some(CameraPlugin::CAMERA_2D.to_string()),
-                    ..Default::default()
-                },
-                orthographic_projection: OrthographicProjection {
+            commands.spawn(Camera2dBundle {
+                projection: OrthographicProjection {
                     far,
-                    depth_calculation: DepthCalculation::ZDifference,
-                    window_origin: WindowOrigin::BottomLeft, // Main difference with the new_2d constructor: by default, this is Center
-                    ..Default::default()
-                },
-                visible_entities: Default::default(),
-                frustum: Default::default(),
+                    scaling_mode: ScalingMode::WindowSize,
+                    window_origin: WindowOrigin::BottomLeft,
+            ..default()
+                }
+                .into(),
                 transform: initial_transform,
-                global_transform: Default::default(),
-            };
+                ..default()
+            });
 
-            commands.spawn_bundle(camera_bundle);
             on_init.on_init(
                 &mut commands,
                 &mut sprite_factory,
@@ -73,6 +69,6 @@ cfg_if! {
             )
         }
 
-
+    }
     }
 }

@@ -1,12 +1,10 @@
 use crate::engine::fields::field::Field;
 use cfg_if::cfg_if;
 use core::fmt::Debug;
-use core::fmt::Error;
 use hashbrown::HashMap;
 use rand::prelude::*;
 use std::cell::RefCell;
 use std::fmt::Display;
-use std::fmt::Formatter;
 use std::hash::Hash;
 
 use rand::rngs::StdRng;
@@ -15,6 +13,8 @@ cfg_if! {
     if #[cfg(any(feature = "parallel", feature = "visualization", feature = "visualization_wasm"))]{
         use crate::utils::dbdashmap::DBDashMap;
     } else {
+        use core::fmt::Error;
+        use std::fmt::Formatter;
     }
 }
 
@@ -537,18 +537,22 @@ cfg_if! {
                 true
             }
 
-            pub fn update_node(&self, uid: u32, u: O){
+            pub fn update_node(&self, u: O){
+                let uid: u32;
+                {
+                    let nodes2id = self.nodes2id.borrow();
+                    uid = match nodes2id.get(&u){
+                        Some(u)=> *u,
+                        None => return
+                    };
+                }
                 let mut nodes2id = self.nodes2id.borrow_mut();
-                // let uid = match nodes2id.get(&u){
-                //     Some(u)=> u,
-                //     None => return
-                // };
 
                 match self.id2nodes.get_write(&uid){
                     Some(mut value) => {
 
                         if let Some(_) = nodes2id.remove(&value){
-                            nodes2id.insert(u.clone(), uid);
+                            nodes2id.insert(u.clone(), uid.clone());
                         }
                         *value = u
                     },

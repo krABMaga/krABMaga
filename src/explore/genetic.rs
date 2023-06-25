@@ -178,7 +178,7 @@ macro_rules! build_dataframe_explore {
 ///     }
 /// }
 ///
-/// // Create the initial population. In genetic algorithms, an individual is represened as a String
+/// // Create the initial population. In genetic algorithms, an individual is represented as a String
 /// fn init_population() -> Vec<String> { ... }
 ///
 /// // Compute the fitness value of an individual using results of each repetition
@@ -358,7 +358,7 @@ macro_rules! evolutionary_search {
 ///     }
 /// }
 ///
-/// // Create the initial population. In genetic algorithms, an individual is represened as a String
+/// // Create the initial population. In genetic algorithms, an individual is represented as a String
 /// fn init_population() -> Vec<String> { ... }
 ///
 /// // Compute the fitness value of an individual using results of each repetition
@@ -601,7 +601,7 @@ macro_rules! explore_ga_sequential {
 ///     }
 /// }
 ///
-/// // Create the initial population. In genetic algorithms, an individual is represened as a String
+/// // Create the initial population. In genetic algorithms, an individual is represented as a String
 /// fn init_population() -> Vec<String> { ... }
 ///
 /// // Compute the fitness value of an individual using results of each repetition
@@ -705,7 +705,7 @@ macro_rules! explore_ga_parallel {
                         individual = <$state>::new_with_parameters(r, &population[index]);
                     }
 
-                    // state initilization
+                    // state initialization
                     individual.init(&mut schedule);
                     // simulation computation
                     for _ in 0..($step as usize) {

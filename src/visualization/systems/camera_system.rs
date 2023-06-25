@@ -1,9 +1,8 @@
 use cfg_if::cfg_if;
 cfg_if! {
     if #[cfg(any(feature = "visualization", feature = "visualization_wasm"))] {
-
+        use bevy::ecs::event::Events;
         use bevy::{
-            app::Events,
             prelude::{Query, Transform},
             window::WindowResized,
         };
