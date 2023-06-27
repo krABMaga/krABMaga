@@ -61,26 +61,5 @@ cfg_if! {
                 false
             }
         }
-
-        pub trait DistributedState: Send + 'static {
-
-            fn init(&mut self, schedule: &mut Schedule);
-            fn schedule_agent(&mut self, schedule: &mut Schedule);
-            fn as_any_mut(&mut self) -> &mut dyn Any;
-            fn as_any(&self) -> &dyn Any;
-            fn as_state_mut(&mut self) -> &mut dyn State;
-            fn as_state(&self) -> &dyn State;
-            fn reset(&mut self);
-            fn update(&mut self, step: u64);
-            /**Optional functions**/
-            #[allow(unused_variables)]
-            fn before_step(&mut self, schedule: &mut Schedule) {}
-            #[allow(unused_variables)]
-            fn after_step(&mut self, schedule: &mut Schedule) {}
-            #[allow(unused_variables)]
-            fn end_condition(&mut self, schedule: &mut Schedule) -> bool {
-                false
-            }
-        }
     }
 }

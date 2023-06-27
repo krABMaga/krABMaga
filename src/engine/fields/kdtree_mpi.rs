@@ -1,26 +1,14 @@
 use crate::engine::fields::field::Field;
 use crate::engine::location::{Int2D, Real2D};
-use crate::lazy_static;
 use crate::mpi::point_to_point::Destination;
 use crate::mpi::request::WaitGuard;
 use crate::mpi::topology::Communicator;
-use crate::mpi::Rank;
-use crate::universe;
-use core::mem::size_of;
+use crate::UNIVERSE;
 use hashbrown::HashMap;
-use hashbrown::HashSet;
-use mpi::datatype::UserDatatype;
-use mpi::ffi::MPI_Finalize;
 use mpi::point_to_point::Source;
-use mpi::topology::SystemCommunicator;
 use mpi::traits::*;
-use mpi::Address;
-use mpi::Threading;
-use std::borrow::Borrow;
 use std::cell::RefCell;
 use std::cmp;
-use std::sync::Arc;
-use std::sync::Mutex;
 
 pub trait Location2D<Real2D> {
     fn get_location(self) -> Real2D;
@@ -150,7 +138,6 @@ impl<
         discretization: f32,
         distance: f32,
     ) -> Self {
-        let world = universe.world();
         let mut tree = Kdtree::new(id, x, y, width, height, discretization, distance);
         tree.original_height = height;
         tree.original_width = width;
@@ -159,8 +146,7 @@ impl<
     }
 
     pub fn first_subdivision(&mut self) {
-        let world = universe.world();
-        let mut count = 0;
+        let world = UNIVERSE.world();
         let mut temp_subtrees: Vec<Kdtree<O>> = vec![];
 
         if self.processors == 0 {
@@ -182,7 +168,7 @@ impl<
                     self.processors
                 );
 
-                if (self.processors != 1)
+                if self.processors != 1
                 //Root subdivision
                 {
                     //nodes in subtrees
@@ -213,7 +199,7 @@ impl<
 
                 let mut subtree_id = self.id;
                 for subtree in temp_subtrees.iter_mut() {
-                    let mut block = Block {
+                    let block = Block {
                         id: subtree_id,
                         x: subtree.pos_x,
                         y: subtree.pos_y,
@@ -236,8 +222,7 @@ impl<
                 }
 
                 //calculates neighbors id
-                let self_points = self.get_boundary_points(true);
-                self.agents_to_send = vec![vec![]; universe.world().size() as usize];
+                self.agents_to_send = vec![vec![]; UNIVERSE.world().size() as usize];
                 for sub in self.subtrees.iter() {
                     if sub.id as i32 != world.rank() {
                         let other_points = self.get_block_boundary_points(sub, true);
@@ -256,7 +241,7 @@ impl<
                 }
             } else {
                 let (subtrees, _) = world.process_at_rank(0).receive_vec::<Block>();
-                self.agents_to_send = vec![vec![]; universe.world().size() as usize];
+                self.agents_to_send = vec![vec![]; UNIVERSE.world().size() as usize];
                 self.subtrees = subtrees;
                 for subtree in self.subtrees.iter() {
                     if subtree.id as i32 == world.rank() {
@@ -266,7 +251,6 @@ impl<
                         self.pos_y = subtree.y;
                         for sub in self.subtrees.iter() {
                             if sub.id as i32 != world.rank() {
-                                let self_points = self.get_boundary_points(true);
                                 let other_points = self.get_block_boundary_points(sub, true);
                                 if self.get_boundary_points(true).iter().any(|&self_point| {
                                     other_points
@@ -382,10 +366,10 @@ impl<
     }
 
     fn calculate_neighbor_regions(&mut self) {
-        let world = universe.world();
+        let world = UNIVERSE.world();
 
         for region in self.halo_regions.iter() {
-            let mut region_points = self.get_block_boundary_points(region, true);
+            let region_points = self.get_block_boundary_points(region, true);
             let mut neighbor_blocks_region = Vec::new();
             for block in self.subtrees.iter() {
                 if block.id as i32 != world.rank() {
@@ -406,7 +390,7 @@ impl<
     }
 
     fn split(&mut self, direction: &Axis) -> (Kdtree<O>, Kdtree<O>) {
-        let mut id = self.id.clone();
+        let id = self.id.clone();
         let mut node_x = self.pos_x;
         let mut node_y = self.pos_y;
         let mut node_w = self.width;
@@ -428,9 +412,7 @@ impl<
                 node_h = self.height;
             }
         }
-        let agents: Vec<(O, f32, f32)> = Vec::new();
-        let p = self.processors;
-        let mut n2 = Kdtree::new(
+        let n2 = Kdtree::new(
             id,
             node_x,
             node_y,
@@ -444,7 +426,7 @@ impl<
     }
 
     pub fn get_block_by_location(&self, x: f32, y: f32) -> i32 {
-        let world = universe.world();
+        let world = UNIVERSE.world();
         if world.size() == 1 {
             return 0;
         }
@@ -461,21 +443,19 @@ impl<
             "Block for location {};{} not found! This should not happen!",
             x, y
         );
-        -1
     }
 
     pub fn insert(&mut self, agent: O, loc: Real2D) {
-        let world = universe.world();
         let bag = self.discretize(&loc);
         let index = ((bag.x * self.dh) + bag.y) as usize;
         let mut bags = self.locs[self.write].borrow_mut();
         bags[index].push(agent);
 
         for region in &self.halo_regions {
-            if (region.x <= loc.x
+            if region.x <= loc.x
                 && loc.x <= region.x + region.width
                 && region.y <= loc.y
-                && loc.y <= region.y + region.height)
+                && loc.y <= region.y + region.height
             {
                 self.neighbors[region.id as usize].push(agent);
                 break;
@@ -488,7 +468,6 @@ impl<
     }
 
     pub fn insert_read(&mut self, agent: O, loc: Real2D) {
-        let world = universe.world();
         let bag = self.discretize(&loc);
         let index = ((bag.x * self.dh) + bag.y) as usize;
         let mut bags = self.locs[self.read].borrow_mut();
@@ -514,14 +493,14 @@ impl<
         }
     }
 
-    fn contains(&self, x: f32, y: f32) -> bool {
+    /* fn contains(&self, x: f32, y: f32) -> bool {
         self.pos_x <= x
             && x < self.pos_x + self.width
             && self.pos_y <= y
             && y < self.pos_y + self.height
-    }
+    } */
 
-    fn calculate_median(&self, agents: &Vec<(O, i32, i32)>) -> i32 {
+    /* fn calculate_median(&self, agents: &Vec<(O, i32, i32)>) -> i32 {
         let len = agents.len();
 
         if len >= 1 && len % 2 == 1 {
@@ -531,9 +510,9 @@ impl<
         } else {
             return 0;
         }
-    }
+    } */
 
-    fn calculate_median_on_y(&self, agents: &Vec<(O, i32, i32)>) -> i32 {
+    /* fn calculate_median_on_y(&self, agents: &Vec<(O, i32, i32)>) -> i32 {
         let len = agents.len();
 
         if len > 1 && len % 2 == 1 {
@@ -543,7 +522,7 @@ impl<
         } else {
             return 0;
         }
-    }
+    } */
 
     fn discretize(&self, loc: &Real2D) -> Int2D {
         let x_floor = (loc.x / self.discretization).floor();
@@ -629,7 +608,7 @@ impl<
         dummy: O,
         with_regions: bool,
     ) -> Vec<Vec<O>> {
-        let world = universe.world();
+        let world = UNIVERSE.world();
         let mut received_messages = vec![0; world.size() as usize];
         let mut send_vec = vec![0; world.size() as usize];
         let mut send_agent_vec: Vec<Vec<O>> = vec![vec![]; world.size() as usize];
@@ -654,7 +633,7 @@ impl<
         for neighbor in &self.neighbor_trees {
             mpi::request::scope(|scope| {
                 let ln = &send_vec[*neighbor as usize];
-                let rreq = WaitGuard::from(
+                let _rreq = WaitGuard::from(
                     world
                         .process_at_rank(*neighbor)
                         .immediate_receive_into_with_tag(
@@ -663,7 +642,7 @@ impl<
                             *neighbor,
                         ),
                 );
-                let sreq = WaitGuard::from(
+                let _sreq = WaitGuard::from(
                     world
                         .process_at_rank(*neighbor)
                         .immediate_ready_send_with_tag(scope, ln, world.rank()),
@@ -677,7 +656,7 @@ impl<
                 if received_messages[*i as usize] != 0 {
                     vec[*i as usize].append(&mut vec![dummy; received_messages[*i as usize]]);
                 } else {
-                    vec[*i as usize].append((&mut vec![]));
+                    vec[*i as usize].append(&mut vec![]);
                 }
             }
         }
@@ -695,7 +674,7 @@ impl<
 
             for id in self.neighbor_trees.iter() {
                 if send_agent_vec[*id as usize].len() != 0 {
-                    let mut sreq = world.process_at_rank(*id).immediate_send_with_tag(
+                    let sreq = world.process_at_rank(*id).immediate_send_with_tag(
                         scope,
                         &send_agent_vec[*id as usize][..],
                         *id,
@@ -713,9 +692,7 @@ impl<
         &mut self,
         loc: Real2D,
         distance: f32,
-        agent: O,
     ) -> Vec<O> {
-        let world = universe.world();
         let mut dist = distance;
 
         if dist > self.distance {
@@ -756,7 +733,7 @@ impl<
                 let bags = self.locs[self.read].borrow();
 
                 for elem in &bags[index] {
-                    if (elem.get_location() != loc) {
+                    if elem.get_location() != loc {
                         neighbors.push(*elem);
                     }
                 }
@@ -775,7 +752,7 @@ impl<O: Location2D<Real2D> + Eq + Clone + Copy + std::fmt::Display> Field for Kd
         self.prec_neighbors = Vec::new();
         self.prec_neighbors.append(&mut self.neighbors);
         self.neighbors = vec![vec![]; 4];
-        self.agents_to_send = vec![vec![]; universe.world().size() as usize];
+        self.agents_to_send = vec![vec![]; UNIVERSE.world().size() as usize];
         self.received_neighbors.clear();
         std::mem::swap(&mut self.read, &mut self.write);
 

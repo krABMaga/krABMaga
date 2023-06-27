@@ -381,8 +381,7 @@ cfg_if! {
 
                     match events.peek() {
                         Some(item) => {
-                            let (agent, priority) = item;
-                            //println!("Found agent {}", agent);
+                            let (_, priority) = item;
                             if priority.time > self.time {
                                 break;
                             }

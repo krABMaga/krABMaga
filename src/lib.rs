@@ -1,4 +1,3 @@
-#![allow(warnings)]
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/krABMaga/krABMaga.github.io/main/static/images/krabmaga_docs.png"
 )]
@@ -431,9 +430,8 @@ pub use {
 
 #[cfg(any(feature = "distributed_mpi"))]
 lazy_static! {
-    pub static ref universe: Universe =
+    pub static ref UNIVERSE: Universe =
         mpi::initialize().expect("Error initialing mpi environment");
-    static ref root_rank: u32 = 0;
 }
 
 #[doc(hidden)]
@@ -1580,9 +1578,9 @@ macro_rules! simulate_old {
 
 #[cfg(any(feature = "distributed_mpi"))]
 #[macro_export]
-macro_rules! simulate_old_mpi {
+macro_rules! simulate_mpi {
     ($s:expr, $step:expr, $reps:expr $(, $info:expr)?) => {{
-        let world = universe.world();
+        let world = UNIVERSE.world();
         let mut s = $s;
         let mut state = s.as_state_mut();
         let n_step: u64 = $step;

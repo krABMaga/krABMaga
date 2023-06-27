@@ -1,19 +1,10 @@
-use crate::lazy_static;
-use core::mem::size_of;
+#[cfg(feature = "distributed_mpi")]
+use crate::mpi::traits::*;
 use std::fmt;
 use std::hash::Hash;
 use std::hash::Hasher;
-#[cfg(feature = "distributed_mpi")]
-use {
-    crate::mpi::datatype::UncommittedDatatypeRef, crate::mpi::datatype::UserDatatype,
-    crate::mpi::environment::Universe, crate::mpi::ffi::MPI_Finalize,
-    crate::mpi::point_to_point::Destination, crate::mpi::point_to_point::Source,
-    crate::mpi::topology::Communicator, crate::mpi::topology::SystemCommunicator,
-    crate::mpi::traits::*, crate::mpi::Address, crate::mpi::Threading,
-};
 
 #[cfg(feature = "distributed_mpi")]
-/// A structure describing a two-dimensional, f32 location, for use in continuous fields.
 #[derive(Clone, Default, Copy, Debug, Equivalence)]
 pub struct Real2D {
     pub x: f32,
@@ -21,6 +12,7 @@ pub struct Real2D {
 }
 
 #[cfg(not(feature = "distributed_mpi"))]
+/// A structure describing a two-dimensional, f32 location, for use in continuous fields.
 #[derive(Clone, Default, Copy, Debug)]
 pub struct Real2D {
     pub x: f32,
