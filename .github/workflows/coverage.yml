@@ -19,7 +19,7 @@ jobs:
 
       - name:                   Generate code coverage
         run: |
-          cargo +nightly tarpaulin --verbose --workspace --timeout 120 --out Xml --exclude-files src/utils/* src/visualization/* src/lib.rs src/explore/bayesian.rs
+          cargo +nightly tarpaulin --verbose --workspace --timeout 120 --out Xml --exclude-files src/utils/* src/visualization/* src/lib.rs src/engine/fields/kdtree_mpi.rs src/explore/bayesian.rs
 
       - name:                   Upload to codecov.io
         uses:                   codecov/codecov-action@v3

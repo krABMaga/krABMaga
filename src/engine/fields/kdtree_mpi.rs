@@ -17,6 +17,7 @@ pub trait Location2D<Real2D> {
 
 #[derive(Clone, Equivalence)]
 pub struct Block {
+    /// A Block is equivalent to a subtree. It has an ID, an origin point coordinates, a width and a height
     id: u32,
     x: f32,
     y: f32,
@@ -32,32 +33,59 @@ enum Axis {
 
 #[derive(Clone)]
 pub struct Kdtree<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display + 'static> {
+    /// ID of the field
     pub id: u32,
+    /// X coordinate of the origin point of the field
     pub pos_x: f32,
+    /// Y coordinate of the origin point of the field
     pub pos_y: f32,
+    /// Width of the field
     width: f32,
+    /// Height of the field
     height: f32,
+    /// Width of the field before subdivision
     original_width: f32,
+    /// Height of the field before subdivision
     original_height: f32,
+    /// Matrix to write data. Vector of vectors that have a generic Object O inside
     pub locs: Vec<RefCell<Vec<Vec<O>>>>,
+    /// Number of agents inside the field
     pub nagents: RefCell<usize>,
+    /// Read index of the matrix
     read: usize,
+    /// Write index of the matrix
     write: usize,
+    /// Discretized height of the field
     pub dh: i32,
+    /// Discretized width of the field
     pub dw: i32,
+    /// Value to discretize `Real2D` positions to our Matrix
     discretization: f32,
+    /// Vector that contains all subtrees created, as Blocks
     subtrees: Vec<Block>,
+    /// Vector that contains all IDs of the neighbors of the current subtree
     pub neighbor_trees: Vec<i32>,
+    /// Vector that contains all agents that have been found as neighbors of the agents from other subtrees in the previous step
     pub prec_neighbors: Vec<Vec<O>>,
+    /// Vector that contains all agents that have been found as neighbors of the agents from other subtrees in the current step
     neighbors: Vec<Vec<O>>,
+    /// Vector that contains all agents that have been received from neighbor subtrees
     pub received_neighbors: Vec<O>,
+    /// Vector that every Halo Region of the current subtree, as Blocks
     halo_regions: Vec<Block>,
+    /// Vector that contains the neighbor subtree(s) of each Halo Region
     neighbors_halo_regions: Vec<Vec<(i32, i32)>>,
+    /// Vector that contains all the agents that need to be sent to the neighbors subtrees
     pub agents_to_send: Vec<Vec<O>>,
+    /// HashMap where the keys are the id of an agent and the values are the id assgined to that agent in the scheduler
     pub scheduled_agent: HashMap<u32, u32>,
+    /// The max distance from the edges of the field in which to find the neighbors
     distance: f32,
+    /// Number of processors assigned to the simulation
     processors: u32,
+    /// Field density
     pub density_estimation: usize,
+    /// `true` if you want calculate field density, `false` otherwise
     pub density_estimation_check: bool,
 }
 
@@ -69,6 +97,16 @@ impl<
             + std::fmt::Display
             + mpi::datatype::Equivalence,
     > Kdtree<O>
+    /// Creates a new `KdTree`. WARNING: Use the create_tree(...) function instead of this.
+    ///
+    /// # Arguments
+    /// * `id` - ID of the process it will be assigned to - Starts from 0
+    /// * `pos_x` - The X coordinate of the origin point of the field
+    /// * `pos_y` - The Y coordinate of the origin point of the field
+    /// * `width` - The width of the field
+    /// * `height` - The height of the field
+    /// * `discretization` - The value to discretize `Real2D` positions to our Matrix
+    /// * `distance` - The max distance from the edges of the field in which to find the neighbors
 {
     pub fn new(
         id: u32,
@@ -129,6 +167,7 @@ impl<
         }
     }
 
+    /// Creates the KdTree, splits it into subtrees and returns the root
     pub fn create_tree(
         id: u32,
         x: f32,
@@ -145,6 +184,7 @@ impl<
         tree
     }
 
+    /// Splits the tree into subtrees based on the number of processors assigned to the simulation
     pub fn first_subdivision(&mut self) {
         let world = UNIVERSE.world();
         let mut temp_subtrees: Vec<Kdtree<O>> = vec![];
@@ -171,7 +211,7 @@ impl<
                 if self.processors != 1
                 //Root subdivision
                 {
-                    //nodes in subtrees
+                    //First split is a vertical split and generates 2 subtrees
                     let nodes = self.split(&Axis::Vertical);
                     temp_subtrees.push(nodes.0);
                     temp_subtrees.push(nodes.1);
@@ -179,6 +219,7 @@ impl<
                     let mut count = 2;
                     let mut axis = Axis::Horizontal;
 
+                    //Splits every subtree generated into as many subtrees as the number of processors
                     while count < self.processors {
                         for n in 0..temp_subtrees.len() {
                             if count >= self.processors {
@@ -197,6 +238,7 @@ impl<
                     }
                 }
 
+                //Creates the equivalent Block of every subtree created, then stores them into 'subtrees'
                 let mut subtree_id = self.id;
                 for subtree in temp_subtrees.iter_mut() {
                     let block = Block {
@@ -214,6 +256,7 @@ impl<
                     subtree_id += 1;
                 }
 
+                //If the subtree ID is equal to the processor rank, change its width and height values to the new ones
                 for sub in self.subtrees.iter() {
                     if sub.id as i32 == world.rank() {
                         self.width = sub.width;
@@ -221,7 +264,7 @@ impl<
                     }
                 }
 
-                //calculates neighbors id
+                //Calculates neighbor subtrees IDs
                 self.agents_to_send = vec![vec![]; UNIVERSE.world().size() as usize];
                 for sub in self.subtrees.iter() {
                     if sub.id as i32 != world.rank() {
@@ -236,10 +279,12 @@ impl<
                     }
                 }
 
+                //Send the generated subtrees to all processors
                 for i in 1..world.size() {
                     world.process_at_rank(i).send(&self.subtrees);
                 }
             } else {
+                //Receives all subtrees and calculates their neighbors
                 let (subtrees, _) = world.process_at_rank(0).receive_vec::<Block>();
                 self.agents_to_send = vec![vec![]; UNIVERSE.world().size() as usize];
                 self.subtrees = subtrees;
@@ -266,11 +311,17 @@ impl<
             }
         }
 
+        //Calculate Halo Regions for the current subtree
         self.calculate_regions();
 
+        //Calculate the neighbor subtrees of all the Halo Regions of the current subtree
         self.calculate_neighbor_regions();
     }
 
+    /// Calculates the 4 vertices of the current KdTree
+    ///
+    /// # Arguments
+    /// * `toroidal` - 'true' if the points have to be toroidal, 'false' otherwise
     fn get_boundary_points(&self, toroidal: bool) -> Vec<(f32, f32)> {
         let (x, y) = (self.pos_x, self.pos_y);
         let (width, height) = (self.width, self.height);
@@ -297,6 +348,10 @@ impl<
         points
     }
 
+    /// Calculates the 4 vertices of the Block
+    ///
+    /// # Arguments
+    /// * `toroidal` - 'true' if the points have to be toroidal, 'false' otherwise
     fn get_block_boundary_points(&self, block: &Block, toroidal: bool) -> Vec<(f32, f32)> {
         let (x, y) = (block.x, block.y);
         let (width, height) = (block.width, block.height);
@@ -321,6 +376,7 @@ impl<
         points
     }
 
+    /// Calculates the 4 halo regions of the subtree
     fn calculate_regions(&mut self) {
         let h = self.distance;
         let w = self.distance;
@@ -365,6 +421,7 @@ impl<
         self.halo_regions.push(west);
     }
 
+    /// Calculates the neighbor subtrees of each halo region
     fn calculate_neighbor_regions(&mut self) {
         let world = UNIVERSE.world();
 
@@ -389,6 +446,10 @@ impl<
         }
     }
 
+    /// Splits the tree into two subtrees
+    ///
+    /// # Arguments
+    /// * `direction` - 'Axis::Vertical' if the split must be done on the vertical axis, 'Axis::Horizontal' otherwise
     fn split(&mut self, direction: &Axis) -> (Kdtree<O>, Kdtree<O>) {
         let id = self.id.clone();
         let mut node_x = self.pos_x;
@@ -425,6 +486,11 @@ impl<
         return (n1, n2);
     }
 
+    /// Gets the ID of the subtree that 'contains' a given coordinate
+    ///
+    /// # Arguments
+    /// * `x` - The X coordinate
+    /// * `y` - The Y coordinate
     pub fn get_block_by_location(&self, x: f32, y: f32) -> i32 {
         let world = UNIVERSE.world();
         if world.size() == 1 {
@@ -445,6 +511,11 @@ impl<
         );
     }
 
+    /// Inserts an agent into the field based on its location
+    ///
+    /// # Arguments
+    /// * `agent` - The agent to insert
+    /// * `loc` - The location of the agent
     pub fn insert(&mut self, agent: O, loc: Real2D) {
         let bag = self.discretize(&loc);
         let index = ((bag.x * self.dh) + bag.y) as usize;
@@ -467,6 +538,11 @@ impl<
         drop(bags);
     }
 
+    /// Inserts an agent into the field (in read mode) based on its location
+    ///
+    /// # Arguments
+    /// * `agent` - The agent to insert
+    /// * `loc` - The location of the agent
     pub fn insert_read(&mut self, agent: O, loc: Real2D) {
         let bag = self.discretize(&loc);
         let index = ((bag.x * self.dh) + bag.y) as usize;
@@ -478,6 +554,11 @@ impl<
         }
     }
 
+    /// Removes an agent from the field based on its location
+    ///
+    /// # Arguments
+    /// * `object` - The agent to remove
+    /// * `loc` - The location of the agent
     pub fn remove_object_location(&self, object: O, loc: Real2D) {
         let bag = self.discretize(&loc);
         let index = ((bag.x * self.dh) + bag.y) as usize;
@@ -524,6 +605,10 @@ impl<
         }
     } */
 
+    /// Map coordinates of an object into matrix indexes
+    ///
+    /// # Arguments
+    /// * `loc` - `Real2D` coordinates of the object
     fn discretize(&self, loc: &Real2D) -> Int2D {
         let x_floor = (loc.x / self.discretization).floor();
         let x_floor = x_floor as i32;
@@ -537,6 +622,11 @@ impl<
         }
     }
 
+    /// Returns the set of objects within a certain distance.
+    ///
+    /// # Arguments
+    /// * `loc` - `Real2D` coordinates of the object
+    /// * `dist` - Distance to look for objects
     pub fn get_neighbors_within_distance(&self, loc: Real2D, dist: f32) -> Vec<O> {
         let mut neighbors: Vec<O>;
 
@@ -602,6 +692,16 @@ impl<
         neighbors
     }
 
+    /// Function that starts the message exchange phase. 
+    /// Step 1: The process sends to its neighbors the number of agents it will send to them
+    /// Step 2: The process allocates memory for the upcoming agents
+    /// Step 3: The agents will be sent to its neighbors and received from its neighbors
+    /// Step 4: Return the received agents
+    ///
+    /// # Arguments
+    /// * `agents_to_send` - The agents that must be sent to the other processes
+    /// * `dummy` - A dummy agent that will be used for mmemory allocation
+    /// * `with_regions` - 'true' if the agents must be sent only to the neighbors of its Halo Regions, 'false' otherwise
     pub fn message_exchange(
         &self,
         agents_to_send: &Vec<Vec<O>>,
@@ -650,6 +750,7 @@ impl<
             });
         }
 
+        //Allocate memory based on the number of agents i will receive
         let mut vec: Vec<Vec<O>> = vec![vec![]; world.size() as usize];
         if received_messages.len() > 0 {
             for i in &self.neighbor_trees {
@@ -688,6 +789,11 @@ impl<
         return vec;
     }
 
+    /// Returns the set of objects within a certain relaxed distance.
+    ///
+    /// # Arguments
+    /// * `loc` - `Real2D` coordinates of the object
+    /// * `dist` - Distance to look for objects
     pub fn get_distributed_neighbors_within_relax_distance(
         &mut self,
         loc: Real2D,
@@ -748,6 +854,7 @@ impl<O: Location2D<Real2D> + Clone + Copy + PartialEq + std::fmt::Display> Drop 
 }
 
 impl<O: Location2D<Real2D> + Eq + Clone + Copy + std::fmt::Display> Field for Kdtree<O> {
+    /// Swap read and write buffer, puts current neighbors into prec_neighbors and clears all vectors
     fn lazy_update(&mut self) {
         self.prec_neighbors = Vec::new();
         self.prec_neighbors.append(&mut self.neighbors);
