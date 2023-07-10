@@ -26,6 +26,29 @@ jobs:
           sudo apt install libfontconfig libfontconfig1-dev
       - run: cargo check --release --features "visualization, bayesian"
 
+  checkmpi:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            rust: stable
+            mpi: openmpi
+            
+    name: check ${{ matrix.os }} MPI
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup MPI
+        uses: mpi4py/setup-mpi@v1
+        with:
+          mpi: ${{ matrix.mpi }}
+      - uses: Swatinem/rust-cache@v2
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
+      - run: cargo check --release --features distributed_mpi
+
   fmt:
     name: Rustfmt
     runs-on: ubuntu-latest
@@ -53,30 +76,6 @@ jobs:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - run: rustup component add clippy
-      - uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: --features "visualization, bayesian"
-
- clippympi:
-    name: Clippy visualization
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - run: rustup component add clippy
-      - uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: --features distributed_mpi
           components: rustfmt
       - run: |
           sudo apt update
@@ -86,3 +85,26 @@ jobs:
           sudo apt install libudev-dev libasound2-dev portaudio19-dev build-essential libpulse-dev libdbus-1-dev
           sudo apt install libfontconfig libfontconfig1-dev
       - run: cargo clippy --features "visualization, bayesian"
+
+  clippympi:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            rust: stable
+            mpi: openmpi
+            
+    name: clippy ${{ matrix.os }} MPI
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup MPI
+        uses: mpi4py/setup-mpi@v1
+        with:
+          mpi: ${{ matrix.mpi }}
+      - uses: Swatinem/rust-cache@v2
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
+      - run: cargo clippy --features distributed_mpi

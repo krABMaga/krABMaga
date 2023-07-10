@@ -97,6 +97,7 @@ impl<
             + std::fmt::Display
             + mpi::datatype::Equivalence,
     > Kdtree<O>
+{
     /// Creates a new `KdTree`. WARNING: Use the create_tree(...) function instead of this.
     ///
     /// # Arguments
@@ -107,7 +108,6 @@ impl<
     /// * `height` - The height of the field
     /// * `discretization` - The value to discretize `Real2D` positions to our Matrix
     /// * `distance` - The max distance from the edges of the field in which to find the neighbors
-{
     pub fn new(
         id: u32,
         pos_x: f32,
