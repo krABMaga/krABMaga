@@ -692,7 +692,7 @@ impl<
         neighbors
     }
 
-    /// Function that starts the message exchange phase. 
+    /// Function that starts the message exchange phase.
     /// Step 1: The process sends to its neighbors the number of agents it will send to them
     /// Step 2: The process allocates memory for the upcoming agents
     /// Step 3: The agents will be sent to its neighbors and received from its neighbors
