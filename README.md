@@ -33,7 +33,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-krabmaga = 0.3.*
+krabmaga = 0.4.*
 ```
 
 To get started using krABMaga, see [the examples](https://github.com/krABMaga/examples).
@@ -81,7 +81,7 @@ The visualization framework requires certain dependencies to run the simulation 
 If you don't start from our [Template](https://github.com/krABMaga/examples/tree/main/template), add this to your `Cargo.toml`:
 ```toml
 [dependencies]
-krabmaga = 0.3.*
+krabmaga = 0.4.*
 
 [features]
 visualization = ["krabmaga/visualization"]
