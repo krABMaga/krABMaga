@@ -414,17 +414,25 @@ pub use {
 };
 
 #[cfg(feature = "distributed_mpi")]
+pub extern crate mpi;
+
+#[cfg(feature = "distributed_mpi")]
 pub use {
     memoffset::{offset_of, span_of},
     mpi::datatype::DynBufferMut,
     mpi::datatype::PartitionMut,
+    mpi::environment::Universe,
     mpi::point_to_point as p2p,
+    mpi::traits::Equivalence,
     mpi::Count,
     mpi::{datatype::UserDatatype, traits::*, Address},
 };
 
-#[cfg(feature = "distributed_mpi")]
-pub extern crate mpi;
+#[cfg(any(feature = "distributed_mpi"))]
+lazy_static! {
+    pub static ref UNIVERSE: Universe =
+        mpi::initialize().expect("Error initialing mpi environment");
+}
 
 #[doc(hidden)]
 #[cfg(any(feature = "bayesian"))]
@@ -1562,6 +1570,127 @@ macro_rules! simulate_old {
                     print!("{:width$}", "", width = 9 - avg_time.len());
                     println!("{}s|", avg_time);
                 }
+            }
+        }
+        results
+    }};
+}
+
+#[cfg(any(feature = "distributed_mpi"))]
+#[macro_export]
+macro_rules! simulate_mpi {
+    ($s:expr, $step:expr, $reps:expr $(, $info:expr)?) => {{
+        let world = UNIVERSE.world();
+        let mut s = $s;
+        let mut state = s.as_state_mut();
+        let n_step: u64 = $step;
+
+        let mut results: Vec<(Duration, f32)> = Vec::new();
+            let mut option = Info::Normal;
+
+        if world.rank() == 0{
+
+            $(
+                option = $info;
+            )?
+
+            /* match option {
+                Info::Verbose => {
+                    println!("\u{1F980} krABMaga v1.0\n");
+                    println!(
+                        "{0: >10}|{1: >9}|    {2: >11}|{3: >10}|",
+                        "#Rep", "Steps", "Steps/Seconds", "Time"
+                    );
+                    println!("--------------------------------------------------");
+                }
+                Info::Normal => {
+                    println!("{esc}c", esc = 27 as char);
+                    println!("\u{1F980} krABMaga v1.0\n");
+                    println!(
+                        "{0: >10}|{1: >9}|    {2: >11}|{3: >10}|",
+                        "#Rep", "Steps", "Avg. Steps/Seconds", "Avg. Time"
+                    );
+                    println!("----------------------------------------------------------------");
+                }
+            }
+
+            match option {
+                Info::Verbose => {}
+                Info::Normal => {
+                    println!("{esc}c", esc = 27 as char);
+                }
+            } */
+        }
+
+        for r in 0..$reps {
+            let mut schedule: Schedule = Schedule::new();
+            state.init(&mut schedule);
+            let start = std::time::Instant::now();
+            for i in 0..n_step {
+                schedule.step(state);
+                if state.end_condition(&mut schedule) {
+                    break;
+                }
+                world.barrier();
+            }
+
+            let run_duration = start.elapsed();
+
+            if world.rank() == 0{
+                match option {
+                    Info::Verbose => {}
+                    Info::Normal => {
+                        println!("{esc}c", esc = 27 as char);
+                        println!("\u{1F980} krABMaga v1.0\n");
+                        println!(
+                            "{0: >10}|{1: >9}|    {2: >11}|{3: >10}|",
+                            "#Rep", "Steps", "Avg. Steps/Seconds", "Avg. Time"
+                        );
+                        println!("----------------------------------------------------------------");
+                    }
+                }
+
+                let step_seconds =
+                    format!("{:.0}", schedule.step as f32 / (run_duration.as_secs_f32()));
+                let time = format!("{:.4}", run_duration.as_secs_f32());
+                print!("{:width$}|", (r + 1), width = 14 - $reps.to_string().len());
+                print!(
+                    "{:width$}|",
+                    schedule.step,
+                    width = 15 - n_step.to_string().len() - $reps.to_string().len()
+                );
+                print!("{:width$}", "", width = 13 - step_seconds.len());
+
+                results.push((
+                    run_duration,
+                    schedule.step as f32 / (run_duration.as_nanos() as f32 * 1e-9),
+                ));
+
+                match option {
+                    Info::Verbose => {
+                        print!("{}|", step_seconds);
+                        print!("{:width$}", "", width = 9 - time.len());
+                        println!("{}s|", time);
+                    }
+                    Info::Normal => {
+                        let mut avg_time = 0.0;
+                        let mut avg_step_seconds = 0.0;
+                        for (time, step_seconds) in &results {
+                            avg_time += time.as_secs_f32();
+                            avg_step_seconds += step_seconds;
+                        }
+                        avg_time /= results.len() as f32;
+                        avg_step_seconds /= results.len() as f32;
+                        let avg_step_seconds = format!("{:.2}", avg_step_seconds);
+                        let avg_time = format!("{:.4}", avg_time);
+                        print!("{}|", avg_step_seconds);
+                        print!("{:width$}", "", width = 9 - avg_time.len());
+                        println!("{}s|", avg_time);
+                    }
+                }
+            }
+            unsafe {
+                mpi::ffi::MPI_Finalize();
             }
         }
         results

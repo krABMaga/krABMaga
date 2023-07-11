@@ -26,6 +26,29 @@ jobs:
           sudo apt install libfontconfig libfontconfig1-dev
       - run: cargo check --release --features "visualization, bayesian"
 
+  checkmpi:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            rust: stable
+            mpi: openmpi
+            
+    name: check ${{ matrix.os }} MPI
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup MPI
+        uses: mpi4py/setup-mpi@v1
+        with:
+          mpi: ${{ matrix.mpi }}
+      - uses: Swatinem/rust-cache@v2
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
+      - run: cargo check --release --features distributed_mpi
+
   fmt:
     name: Rustfmt
     runs-on: ubuntu-latest
@@ -62,3 +85,26 @@ jobs:
           sudo apt install libudev-dev libasound2-dev portaudio19-dev build-essential libpulse-dev libdbus-1-dev
           sudo apt install libfontconfig libfontconfig1-dev
       - run: cargo clippy --features "visualization, bayesian"
+
+  clippympi:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            rust: stable
+            mpi: openmpi
+            
+    name: clippy ${{ matrix.os }} MPI
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup MPI
+        uses: mpi4py/setup-mpi@v1
+        with:
+          mpi: ${{ matrix.mpi }}
+      - uses: Swatinem/rust-cache@v2
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
+      - run: cargo clippy --features distributed_mpi

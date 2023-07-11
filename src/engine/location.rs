@@ -1,7 +1,17 @@
+#[cfg(feature = "distributed_mpi")]
+use crate::mpi::traits::*;
 use std::fmt;
 use std::hash::Hash;
 use std::hash::Hasher;
 
+#[cfg(feature = "distributed_mpi")]
+#[derive(Clone, Default, Copy, Debug, Equivalence)]
+pub struct Real2D {
+    pub x: f32,
+    pub y: f32,
+}
+
+#[cfg(not(feature = "distributed_mpi"))]
 /// A structure describing a two-dimensional, f32 location, for use in continuous fields.
 #[derive(Clone, Default, Copy, Debug)]
 pub struct Real2D {

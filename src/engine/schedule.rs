@@ -302,6 +302,16 @@ cfg_if! {
                 opt.is_none()
             }
 
+            pub fn distributed_schedule_repeating(&mut self, agent: Box<dyn Agent>, the_time:f32, the_ordering:i32) -> (u32,bool) {
+                let mut a = AgentImpl::new(agent, self.agent_ids_counting);
+                self.agent_ids_counting +=1;
+                a.repeating = true;
+
+                let pr = Priority::new(the_time, the_ordering);
+                let opt = self.events.push(a, pr);
+                (self.agent_ids_counting-1, opt.is_none())
+            }
+
             /// Return a vector of all the objects contained in the PriorityQueue
             pub fn get_all_events(&self) -> Vec<Box<dyn Agent>>{
                 let mut tor: Vec<Box<dyn Agent>> = Vec::new();
