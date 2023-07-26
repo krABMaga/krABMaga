@@ -1479,7 +1479,7 @@ macro_rules! simulate_old {
 
         match option {
             Info::Verbose => {
-                println!("\u{1F980} krABMaga v1.0\n");
+                println!("\u{1F980} krABMaga v0.4.1\n");
                 println!(
                     "{0: >10}|{1: >9}|    {2: >11}|{3: >10}|",
                     "#Rep", "Steps", "Steps/Seconds", "Time"
@@ -1488,7 +1488,7 @@ macro_rules! simulate_old {
             }
             Info::Normal => {
                 println!("{esc}c", esc = 27 as char);
-                println!("\u{1F980} krABMaga v1.0\n");
+                println!("\u{1F980} krABMaga v0.4.1\n");
                 println!(
                     "{0: >10}|{1: >9}|    {2: >11}|{3: >10}|",
                     "#Rep", "Steps", "Avg. Steps/Seconds", "Avg. Time"
@@ -1524,7 +1524,7 @@ macro_rules! simulate_old {
                 Info::Verbose => {}
                 Info::Normal => {
                     println!("{esc}c", esc = 27 as char);
-                    println!("\u{1F980} krABMaga v1.0\n");
+                    println!("\u{1F980} krABMaga v0.4.1\n");
                     println!(
                         "{0: >10}|{1: >9}|    {2: >11}|{3: >10}|",
                         "#Rep", "Steps", "Avg. Steps/Seconds", "Avg. Time"
@@ -1596,7 +1596,7 @@ macro_rules! simulate_mpi {
 
             /* match option {
                 Info::Verbose => {
-                    println!("\u{1F980} krABMaga v1.0\n");
+                    println!("\u{1F980} krABMaga v0.4.1\n");
                     println!(
                         "{0: >10}|{1: >9}|    {2: >11}|{3: >10}|",
                         "#Rep", "Steps", "Steps/Seconds", "Time"
@@ -1605,7 +1605,7 @@ macro_rules! simulate_mpi {
                 }
                 Info::Normal => {
                     println!("{esc}c", esc = 27 as char);
-                    println!("\u{1F980} krABMaga v1.0\n");
+                    println!("\u{1F980} krABMaga v0.4.1\n");
                     println!(
                         "{0: >10}|{1: >9}|    {2: >11}|{3: >10}|",
                         "#Rep", "Steps", "Avg. Steps/Seconds", "Avg. Time"
@@ -1641,7 +1641,7 @@ macro_rules! simulate_mpi {
                     Info::Verbose => {}
                     Info::Normal => {
                         println!("{esc}c", esc = 27 as char);
-                        println!("\u{1F980} krABMaga v1.0\n");
+                        println!("\u{1F980} krABMaga v0.4.1\n");
                         println!(
                             "{0: >10}|{1: >9}|    {2: >11}|{3: >10}|",
                             "#Rep", "Steps", "Avg. Steps/Seconds", "Avg. Time"

@@ -127,8 +127,7 @@ macro_rules! explore_distributed_mpi {
         ) => {{
 
             // mpi initialization
-            let universe = mpi::initialize().expect("Error: can't initialize mpi environment");
-            let world = universe.world();
+            let world = UNIVERSE.world();
             let root_rank = 0;
             let root_process = world.process_at_rank(root_rank);
             let my_rank = world.rank();
