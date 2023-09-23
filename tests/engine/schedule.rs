@@ -12,10 +12,10 @@ fn schedule_operations() {
 
     let mut schedule = Schedule::new();
     let node1 = MyNode { id: 0, flag: false };
-    let node2 = MyNode { id: 1, flag: false };
+    let node2 = MyNode { id: 15, flag: false };
 
-    schedule.schedule_repeating(Box::new(node1), 0., 0);
-    schedule.schedule_repeating(Box::new(node2), 0., 0);
+    schedule.schedule_repeating(Box::new(node1), node1.id, 0., 0);
+    schedule.schedule_repeating(Box::new(node2), node2.id, 0., 0);
 
     let agents = schedule.get_all_events();
     assert_eq!(agents.len(), 2);
@@ -54,13 +54,13 @@ fn distributed_schedule_operations() {
     let node1 = MyNode { id: 0, flag: false };
     let node2 = MyNode { id: 1, flag: false };
 
-    let (id1, opt1) = schedule.distributed_schedule_repeating(Box::new(node1), 0., 0);
-    let (id2, opt2) = schedule.distributed_schedule_repeating(Box::new(node2), 0., 0);
+    let opt1 = schedule.distributed_schedule_repeating(Box::new(node1), node1.id, 0., 0);
+    let opt2 = schedule.distributed_schedule_repeating(Box::new(node2), node2.id, 0., 0);
 
-    assert_eq!(id1, 0);
+    // assert_eq!(id1, 0);
     assert!(opt1);
 
-    assert_eq!(id2, 1);
+    // assert_eq!(id2, 1);
     assert!(opt2);
 
     let agents = schedule.get_all_events();

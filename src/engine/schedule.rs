@@ -107,10 +107,8 @@ cfg_if! {
                 );
             }
 
-            pub fn schedule_repeating(&mut self, agent: Box<dyn Agent>, the_time:f32, the_ordering:i32) {
-                let mut agent_ids_counting = self.agent_ids_counting.lock().expect("error on lock");
-                let mut a = AgentImpl::new(agent, *agent_ids_counting);
-                *agent_ids_counting +=1;
+            pub fn schedule_repeating(&mut self, agent: Box<dyn Agent>, agent_id: u32, the_time:f32, the_ordering:i32) {
+                let mut a = AgentImpl::new(agent, agent_id);
                 a.repeating = true;
                 let pr = Priority::new(the_time, the_ordering);
                 self.events.lock().expect("error on lock").push(a, pr);
@@ -274,7 +272,7 @@ cfg_if! {
                 }
             }
 
-            /// Onsert an agent in the PriorityQueue for one step
+            /// Insert an agent in the PriorityQueue for one step
             ///
             /// # Arguments
             /// * `agent` - Agent to schedule
@@ -290,11 +288,11 @@ cfg_if! {
             ///
             /// # Arguments
             /// * `agent` - Agent to schedule
+            /// * `agent_id` - Id of the agent to schedule
             /// * `the_time` - Time to schedule the agent
             /// * `the_ordering` - Ordering of the agent inside the queue
-            pub fn schedule_repeating(&mut self, agent: Box<dyn Agent>, the_time:f32, the_ordering:i32) -> bool {
-                let mut a = AgentImpl::new(agent, self.agent_ids_counting);
-                self.agent_ids_counting +=1;
+            pub fn schedule_repeating(&mut self, agent: Box<dyn Agent>, agent_id:u32, the_time:f32, the_ordering:i32) -> bool {
+                let mut a = AgentImpl::new(agent, agent_id);
                 a.repeating = true;
 
                 let pr = Priority::new(the_time, the_ordering);
@@ -302,14 +300,22 @@ cfg_if! {
                 opt.is_none()
             }
 
-            pub fn distributed_schedule_repeating(&mut self, agent: Box<dyn Agent>, the_time:f32, the_ordering:i32) -> (u32,bool) {
-                let mut a = AgentImpl::new(agent, self.agent_ids_counting);
-                self.agent_ids_counting +=1;
+            /// Insert an agent in the PriorityQueue with the repeating field in distributed settings.
+            ///
+            /// Return false if the insertion in the priority queue fails.
+            ///
+            /// # Arguments
+            /// * `agent` - Agent to schedule
+            /// * `agent_id` - Id of the agent to schedule
+            /// * `the_time` - Time to schedule the agent
+            /// * `the_ordering` - Ordering of the agent inside the queue
+            pub fn distributed_schedule_repeating(&mut self, agent: Box<dyn Agent>, agent_id:u32, the_time:f32, the_ordering:i32) -> bool {
+                let mut a = AgentImpl::new(agent, agent_id);
                 a.repeating = true;
 
                 let pr = Priority::new(the_time, the_ordering);
                 let opt = self.events.push(a, pr);
-                (self.agent_ids_counting-1, opt.is_none())
+                opt.is_none()
             }
 
             /// Return a vector of all the objects contained in the PriorityQueue

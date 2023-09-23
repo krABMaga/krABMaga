@@ -51,7 +51,7 @@ impl State for Flocker {
             };
             let bird = Bird::new(bird_id, pos, last_d);
             self.field1.set_object_location(bird, pos);
-            schedule.schedule_repeating(Box::new(bird), 0., 0);
+            schedule.schedule_repeating(Box::new(bird), bird_id, 0., 0);
         }
     }
 
