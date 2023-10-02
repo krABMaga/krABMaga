@@ -23,20 +23,12 @@ pub trait Agent: Downcast + DynClone + Send + Sync {
     ///
     /// # Arguments
     /// * `state` - state of the simulation
-    fn before_step(
-        &mut self,
-        _state: &mut dyn State,
-    ) -> Option<Vec<(Box<dyn Agent>, ScheduleOptions)>> {
-        None
-    }
+    fn before_step(&mut self, _state: &mut dyn State) {}
 
     /// Define the optional behaviour of the agent after computing the actual step
-    fn after_step(
-        &mut self,
-        _state: &mut dyn State,
-    ) -> Option<Vec<(Box<dyn Agent>, ScheduleOptions)>> {
-        None
-    }
+    /// # Arguments
+    /// * `state` - state of the simulation
+    fn after_step(&mut self, _state: &mut dyn State) {}
 }
 
 /// Trait use to compare agents.
