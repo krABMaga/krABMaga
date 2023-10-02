@@ -27,11 +27,6 @@ impl AgentImpl {
             repeating: false,
         }
     }
-
-    /// return the id of AgentImpl
-    pub fn id(self) -> u32 {
-        self.id
-    }
 }
 
 impl fmt::Display for AgentImpl {
