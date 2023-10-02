@@ -1,10 +1,16 @@
-use crate::engine::{schedule::ScheduleOptions, state::State};
+use crate::engine::state::State;
 
 use downcast_rs::{impl_downcast, Downcast};
 use dyn_clone::DynClone;
 
 /// Agent define the specific functionalities that an agent of a simulation should have e.g. the step function
 pub trait Agent: Downcast + DynClone + Send + Sync {
+    /// Define the optional behaviour of the agent before computing the actual step
+    ///
+    /// # Arguments
+    /// * `state` - state of the simulation
+    fn before_step(&mut self, _state: &mut dyn State) {}
+
     /// Define the core behaviour of the agent. Write here all the code that will be executed by the agent at each step.
     ///
     /// # Arguments
@@ -15,20 +21,7 @@ pub trait Agent: Downcast + DynClone + Send + Sync {
     ///
     /// # Arguments
     /// * `state` - state of the simulation
-    fn is_stopped(&mut self, _state: &mut dyn State) -> bool {
-        false
-    }
-
-    /// Define the optional behaviour of the agent before computing the actual step
-    ///
-    /// # Arguments
-    /// * `state` - state of the simulation
-    fn before_step(&mut self, _state: &mut dyn State) {}
-
-    /// Define the optional behaviour of the agent after computing the actual step
-    /// # Arguments
-    /// * `state` - state of the simulation
-    fn after_step(&mut self, _state: &mut dyn State) {}
+    fn is_stopped(&self, _state: &mut dyn State) -> bool;
 }
 
 /// Trait use to compare agents.
