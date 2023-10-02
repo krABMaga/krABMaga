@@ -2,6 +2,7 @@ use std::fmt::Display;
 use std::hash::{Hash, Hasher};
 
 use krabmaga::engine::agent::Agent;
+use krabmaga::engine::state::State;
 
 #[derive(Clone, Debug, Copy)]
 pub struct MyNode {
@@ -10,7 +11,10 @@ pub struct MyNode {
 }
 
 impl Agent for MyNode {
-    fn step(&mut self, _state: &mut dyn krabmaga::engine::state::State) {}
+    fn step(&mut self, _state: &mut dyn State) {}
+    fn is_stopped(&self, _state: &mut dyn State) -> bool {
+        false
+    }
 }
 
 impl Eq for MyNode {}

@@ -152,6 +152,10 @@ impl Agent for Bird {
             .field1
             .set_object_location(*self, Real2D { x: loc_x, y: loc_y });
     }
+
+    fn is_stopped(&self, _state: &mut dyn State) -> bool {
+        false
+    }
 }
 
 impl Hash for Bird {
