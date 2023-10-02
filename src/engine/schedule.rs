@@ -336,12 +336,7 @@ cfg_if! {
                 let a = AgentImpl::new(agent, my_id);
                 let removed = self.events.remove(&a);
                 match removed {
-                    //some if found and removed
-                    Some(_) => {
-
-                        // println!("Agent {} -- {} removed from the queue",a, my_id);
-                        true
-                    },
+                    Some(_) => true,
                     None => false,
                 }
             }
@@ -362,8 +357,6 @@ cfg_if! {
 
                 if events.is_empty() {
                     println!("No agent in the queue to schedule. Terminating.");
-                    //TODO check if we need to exit on 0 agents or we have to continue until new agents are spawned
-                    // std::process::exit(0);
                     state.after_step(self);
                     self.step += 1;
                     state.update(self.step);
