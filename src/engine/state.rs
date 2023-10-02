@@ -15,14 +15,10 @@ cfg_if! {
 
             /**Optional functions**/
             fn reset(&mut self) {}
-            #[allow(unused_variables)]
-            fn update(&mut self, step: u64) {}
-            #[allow(unused_variables)]
-            fn before_step(&mut self, schedule: &mut Schedule) {}
-            #[allow(unused_variables)]
-            fn after_step(&mut self, schedule: &mut Schedule) {}
-            #[allow(unused_variables)]
-            fn end_condition(&mut self, schedule: &mut Schedule) -> bool {
+            fn update(&mut self, _step: u64) {}
+            fn before_step(&mut self, _schedule: &mut Schedule) {}
+            fn after_step(&mut self, _schedule: &mut Schedule) {}
+            fn end_condition(&mut self, _schedule: &mut Schedule) -> bool {
                 false
             }
         }
