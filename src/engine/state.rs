@@ -18,7 +18,7 @@ cfg_if! {
             fn update(&mut self, _step: u64) {}
             fn before_step(&mut self, _schedule: &mut Schedule) {}
             fn after_step(&mut self, _schedule: &mut Schedule) {}
-            fn end_condition(&mut self, _schedule: &mut Schedule) -> bool {
+            fn end_condition(&mut self) -> bool {
                 false
             }
         }
