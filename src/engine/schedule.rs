@@ -403,7 +403,7 @@ cfg_if! {
                     }
                 }
 
-                for mut item in cevents.into_iter() {
+                for mut item in cevents.into_iter().rev() {
                     item.agentimpl.agent.after_step(state);
                 }
 
