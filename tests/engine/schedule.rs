@@ -12,7 +12,10 @@ fn schedule_operations() {
 
     let mut schedule = Schedule::new();
     let node1 = MyNode { id: 0, flag: false };
-    let node2 = MyNode { id: 15, flag: false };
+    let node2 = MyNode {
+        id: 15,
+        flag: false,
+    };
 
     schedule.schedule_repeating(Box::new(node1), node1.id, 0., 0);
     schedule.schedule_repeating(Box::new(node2), node2.id, 0., 0);
