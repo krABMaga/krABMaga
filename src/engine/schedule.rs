@@ -391,9 +391,12 @@ cfg_if! {
                     }
                 }
 
-                for mut item in cevents.clone().into_iter() {
+                for item in cevents.iter_mut() {
                     item.agentimpl.agent.step(state);
+                }
 
+                for mut item in cevents.into_iter().rev() {
+                    item.agentimpl.agent.after_step(state);
                     if item.agentimpl.repeating && !item.agentimpl.agent.is_stopped(state) {
                         self.schedule_once(
                             item.agentimpl,
@@ -401,10 +404,6 @@ cfg_if! {
                             item.priority.ordering,
                         );
                     }
-                }
-
-                for mut item in cevents.into_iter().rev() {
-                    item.agentimpl.agent.after_step(state);
                 }
 
                 state.after_step(self);
