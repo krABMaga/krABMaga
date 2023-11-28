@@ -155,20 +155,20 @@ cfg_if! {
 
         fn inspector_ui(world: &mut World) {
             let egui_context = world.resource_mut::<bevy_inspector_egui::bevy_egui::EguiContext>().ctx_mut().clone();
-        
+
             bevy_inspector_egui::egui::Window::new("UI").show(&egui_context, |ui| {
                 bevy_inspector_egui::egui::ScrollArea::vertical().show(ui, |ui| {
                     // equivalent to `WorldInspectorPlugin`
                     bevy_inspector::ui_for_world(world, ui);
-                     
+
                     // works with any `Reflect` value, including `Handle`s
                     let mut any_reflect_value: i32 = 5;
                     bevy_inspector::ui_for_value(&mut any_reflect_value, ui, world);
-        
+
                     bevy_inspector_egui::egui::CollapsingHeader::new("Materials").show(ui, |ui| {
                         bevy_inspector::ui_for_assets::<bevy::pbr::StandardMaterial>(world, ui);
                     });
-        
+
                     ui.heading("Entities");
                     bevy_inspector::ui_for_world_entities(world, ui);
                 });
