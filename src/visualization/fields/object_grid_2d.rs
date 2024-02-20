@@ -1,20 +1,18 @@
+use std::hash::Hash;
+use std::marker::PhantomData;
+use std::marker::Sync;
+
+use bevy::prelude::{Commands, Component, Handle, Image, Query, Res, Transform};
+
+use crate::bevy::math::Quat;
 use crate::engine::{
     fields::{dense_object_grid_2d::DenseGrid2D, sparse_object_grid_2d::SparseGrid2D},
     location::Int2D,
     state::State,
 };
-
 use crate::visualization::{
     asset_handle_factory::AssetHandleFactoryResource, wrappers::ActiveState,
 };
-
-use crate::bevy::math::Quat;
-
-use bevy::prelude::{Commands, Component, Handle, Image, Query, Res, Transform};
-
-use std::hash::Hash;
-use std::marker::PhantomData;
-use std::marker::Sync;
 
 // Allows rendering field structs as a single texture, to improve performance by sending the whole struct to the GPU in a single batch.
 // Use the trait by declaring a wrapper struct over a field, for example over a ObjectGrid2D<f32>, and implementing this trait on said wrapper.
