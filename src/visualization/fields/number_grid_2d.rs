@@ -1,12 +1,10 @@
-use cfg_if::cfg_if;
-cfg_if! {
-    if #[cfg(any(feature = "visualization", feature = "visualization_wasm"))] {
-        use std::default::Default;
+use std::default::Default;
 use std::marker::PhantomData;
 
 use bevy::prelude::{
     Assets, Commands, Component, Handle, Image, Query, Res, ResMut, SpriteBundle, Transform,
 };
+use bevy::render::render_asset::RenderAssetUsages;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
 use image::imageops::{flip_horizontal, rotate180};
 use image::ImageBuffer;
@@ -55,6 +53,7 @@ pub trait BatchRender<S: State> {
             TextureDimension::D2,
             image_buffer.into_raw(),
             TextureFormat::Rgba8UnormSrgb,
+            RenderAssetUsages::RENDER_WORLD,
         )
     }
 
@@ -98,7 +97,7 @@ pub trait BatchRender<S: State> {
         let new_image =
             Self::get_texture_from_state(&(*state_wrapper).0.lock().expect("error on lock"));
 
-        let new_asset = assets.set(&*image, new_image);
+        let new_asset = assets.add(new_image);
         *image = new_asset;
     }
 }
@@ -107,7 +106,4 @@ pub trait BatchRender<S: State> {
 #[derive(Component)]
 pub struct Marker<T> {
     marker: PhantomData<T>,
-}
-
-    }
 }

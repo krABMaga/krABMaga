@@ -1,35 +1,35 @@
-use cfg_if::cfg_if;
-cfg_if! {
-    if #[cfg(any(feature = "visualization", feature = "visualization_wasm"))] {
-        use bevy::prelude::{Entity, Query, Without};
+use bevy::diagnostic::DiagnosticsStore;
+use bevy::prelude::{Entity, Query, Without};
+use bevy::time::{Fixed, Time};
+use bevy_egui::egui;
 use bevy_egui::egui::{Color32, RichText};
-use bevy_egui::{egui, EguiContext};
+use bevy_egui::EguiContexts;
 
-use crate::bevy::diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin};
+use crate::bevy::diagnostic::FrameTimeDiagnosticsPlugin;
 use crate::bevy::prelude::{Commands, Res, ResMut};
 use crate::bevy::render::camera::Camera;
 
 use crate::engine::{schedule::Schedule, state::State};
 
-use crate::visualization::utils::updated_time::Time;
 use crate::visualization::{
     asset_handle_factory::AssetHandleFactoryResource,
     simulation_descriptor::SimulationDescriptor,
     visualization_state::VisualizationState,
     wrappers::{ActiveSchedule, ActiveState},
 };
+use bevy::window::Window;
 
 pub fn ui_system<I: VisualizationState<S> + Clone + 'static + bevy::prelude::Resource, S: State>(
-    mut egui_context: ResMut<EguiContext>,
+    mut egui_context: EguiContexts,
     mut sim_data: ResMut<SimulationDescriptor>,
     active_schedule_wrapper: ResMut<ActiveSchedule>,
     active_state_wrapper: ResMut<ActiveState<S>>,
     on_init: Res<I>,
     mut sprite_factory: AssetHandleFactoryResource,
-    query: Query<Entity, Without<Camera>>,
-    diagnostics: Res<Diagnostics>,
+    query: Query<Entity, (Without<Camera>, Without<Window>)>,
+    diagnostics: Res<DiagnosticsStore>,
     mut commands: Commands,
-    mut time: ResMut<Time>,
+    mut time: ResMut<Time<Fixed>>,
 ) {
     egui::SidePanel::left("main").show(egui_context.ctx_mut(), |ui| {
         ui.vertical_centered(|ui| {
@@ -46,20 +46,20 @@ pub fn ui_system<I: VisualizationState<S> + Clone + 'static + bevy::prelude::Res
             ));
             ui.label(format!("Number of entities: {}", query.iter().count()));
 
-            let fps = match diagnostics.get_measurement(FrameTimeDiagnosticsPlugin::FPS) {
+            let fps = match diagnostics.get_measurement(&FrameTimeDiagnosticsPlugin::FPS) {
                 Some(fps_measurement) => fps_measurement.value,
                 None => 0.,
             };
             ui.label(format!("FPS: {:.0}", fps));
 
             // A slider that allows the user to set the speed of the simulation.
-            let mut value = 1.0 / time.fixed_delta().as_secs_f32();
+            let mut value = 1. / time.timestep().as_secs_f64();
             ui.add(
                 egui::Slider::new(&mut value, 0.1..=250.0)
                     .text("Steps per second")
                     .clamp_to_range(true),
             );
-            time.set_steps_per_second(value);
+            time.set_timestep_seconds(1. / value);
 
             ui.horizontal_wrapped(|ui| {
                 ui.centered_and_justified(|ui| {
@@ -114,7 +114,4 @@ pub fn ui_system<I: VisualizationState<S> + Clone + 'static + bevy::prelude::Res
             });
         });
     });
-}
-
-    }
 }
