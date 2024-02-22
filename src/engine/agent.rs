@@ -1,53 +1,41 @@
-use crate::engine::{schedule::ScheduleOptions, state::State};
+use bevy::prelude::{Component, EntityWorldMut};
 
-use downcast_rs::{impl_downcast, Downcast};
-use dyn_clone::DynClone;
+use crate::engine::components::double_buffer::DoubleBuffered;
+use crate::engine::simulation::Simulation;
 
-/// Agent define the specific functionalities that an agent of a simulation should have e.g. the step function
-pub trait Agent: Downcast + DynClone + Send + Sync {
-    /// Define the core behaviour of the agent. Write here all the code that will be executed by the agent at each step.
-    ///
-    /// # Arguments
-    /// * `state` - state of the simulation
-    fn step(&mut self, state: &mut dyn State);
-
-    /// Specifies whether this agent should be removed from the schedule after the current step.
-    ///
-    /// # Arguments
-    /// * `state` - state of the simulation
-    fn is_stopped(&mut self, _state: &mut dyn State) -> bool {
-        false
-    }
-
-    /// Define the optional behaviour of the agent before computing the actual step
-    ///
-    /// # Arguments
-    /// * `state` - state of the simulation
-    fn before_step(
-        &mut self,
-        _state: &mut dyn State,
-    ) -> Option<Vec<(Box<dyn Agent>, ScheduleOptions)>> {
-        None
-    }
-
-    /// Define the optional behaviour of the agent after computing the actual step
-    fn after_step(
-        &mut self,
-        _state: &mut dyn State,
-    ) -> Option<Vec<(Box<dyn Agent>, ScheduleOptions)>> {
-        None
-    }
+/// A helper struct to properly create agents and add data to it with the ECS architecture
+pub struct Agent<'w> {
+    entity: EntityWorldMut<'w>,
 }
 
-/// Trait use to compare agents.
-///
-/// Must be implemented to use `check_reproducibility!` macro.
-/// There aren't constraints about what must be compared by an agent because it depends on your model.
-pub trait ReproducibilityEq {
-    /// Function used to compare two agents.
-    /// Return true if the agent are the same, false otherwise.
-    fn equals(&self, other: &Self) -> bool;
-}
+impl<'w> Agent<'w> {
+    /// Spawn a new agent in the simulation.
+    pub fn new(simulation: &'w mut Simulation) -> Self {
+        Agent {
+            entity: simulation.spawn_agent(),
+        }
+    }
 
-dyn_clone::clone_trait_object!(Agent);
-impl_downcast!(Agent);
+    /// Insert constant data associated to this agent. We assume this data will not be changed by user defined systems, so we can avoid keeping a copy of the original data, for example to perform a reset of the simulation.
+    pub fn insert_const<T: Component>(&mut self, value: T) -> &mut Self {
+        self.entity.insert(value);
+        self
+    }
+
+    /// Insert data associated to this agent. This method stores a readonly copy of the original data to be used to reset the simulation.
+    pub fn insert_data<T: Component + Copy>(&mut self, value: T) -> &mut Self {
+        self.entity.insert(value);
+        // TODO
+        // #[cfg(feature = "reset_simulation")]
+        // self.entity.insert(Original(value));
+        self
+    }
+
+    /// Insert double buffered data associated to this agent. This method automatically generates two buffers that the user can use, one to read values from and one to write updated values in.
+    pub fn insert_double_buffered<T: Component + Copy>(&mut self, value: T) -> &mut Self {
+        self.entity.insert(DoubleBuffered::new(value));
+        // #[cfg(feature = "reset_simulation")]
+        // self.entity.insert(Original(value));
+        self
+    }
+}
