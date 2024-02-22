@@ -2,6 +2,7 @@ use bevy::prelude::*;
 
 use crate::engine::fields::field_2d::{update_field, Field2D};
 use crate::engine::resources::engine_configuration::EngineConfiguration;
+use crate::engine::rng::RNG;
 use crate::engine::systems::double_buffer_sync::double_buffer_sync;
 use crate::engine::systems::engine_config_update::engine_config_update;
 
@@ -20,19 +21,20 @@ pub struct Simulation {
 impl Simulation {
     pub fn build() -> Self {
         let mut app = App::new();
-        app.configure_sets(
-            Update,
-            (
-                SimulationSet::BeforeStep,
-                SimulationSet::Step,
-                SimulationSet::AfterStep,
+        app.add_plugins(DefaultPlugins)
+            .configure_sets(
+                Update,
+                (
+                    SimulationSet::BeforeStep,
+                    SimulationSet::Step,
+                    SimulationSet::AfterStep,
+                )
+                    .chain(),
             )
-                .chain(),
-        )
-        .add_systems(
-            Update,
-            (engine_config_update,).in_set(SimulationSet::BeforeStep),
-        );
+            .add_systems(
+                Update,
+                (engine_config_update,).in_set(SimulationSet::BeforeStep),
+            );
 
         Self { app, steps: None }
     }
@@ -65,6 +67,12 @@ impl Simulation {
     // TODO specify this is required (SimulationBuilder with validation, which generates a Simulation on build()?)
     pub fn with_engine_configuration(mut self, config: EngineConfiguration) -> Self {
         self.app.insert_resource(config);
+        self
+    }
+
+    pub fn with_rng(mut self, seed: u64) -> Self {
+        let rng = RNG::new(seed, 0);
+        self.app.insert_resource(rng);
         self
     }
 

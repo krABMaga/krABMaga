@@ -5,7 +5,10 @@ use rand::Rng;
 use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 
+use crate::engine::bevy_ecs::prelude::Resource;
+
 // TODO offer several constructors to allow the user to create scoped RNGs, such as an agent-based one, or a step-based one or both
+#[derive(Resource)]
 pub struct RNG {
     inner: ChaCha8Rng,
     float_range: Uniform<f32>,
@@ -19,6 +22,10 @@ impl RNG {
             inner: chacha,
             float_range: Uniform::new(0.0f32, 1.0),
         }
+    }
+
+    pub fn set_stream(&mut self, stream: u64) {
+        self.inner.set_stream(stream);
     }
 
     pub fn gen(&mut self) -> f32 {

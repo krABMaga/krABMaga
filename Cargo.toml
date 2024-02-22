@@ -130,9 +130,13 @@ visualization_wasm = [
     "bevy_egui/default_fonts"
 ]
 
+trace_tracy = [
+    "bevy/trace",
+    "bevy/trace_tracy"
+]
+
 [package.metadata.docs.rs]
 features = ["bayesian"]
-
 
 [lib]
 doctest = false     
