@@ -135,6 +135,10 @@ trace_tracy = [
     "bevy/trace_tracy"
 ]
 
+multithreaded = [
+    "bevy/multi-threaded"
+]
+
 [package.metadata.docs.rs]
 features = ["bayesian"]
 

@@ -1,4 +1,6 @@
+use bevy::core::TaskPoolThreadAssignmentPolicy;
 use bevy::prelude::*;
+use bevy::tasks::available_parallelism;
 
 use crate::engine::fields::field_2d::{update_field, Field2D};
 use crate::engine::resources::engine_configuration::EngineConfiguration;
@@ -21,20 +23,33 @@ pub struct Simulation {
 impl Simulation {
     pub fn build() -> Self {
         let mut app = App::new();
-        app.add_plugins(DefaultPlugins)
-            .configure_sets(
-                Update,
-                (
-                    SimulationSet::BeforeStep,
-                    SimulationSet::Step,
-                    SimulationSet::AfterStep,
-                )
-                    .chain(),
+        app.add_plugins(TaskPoolPlugin {
+            task_pool_options: TaskPoolOptions {
+                // Assign all threads to compute
+                compute: TaskPoolThreadAssignmentPolicy {
+                    // set the minimum # of compute threads
+                    // to the total number of available threads
+                    min_threads: available_parallelism(),
+                    max_threads: std::usize::MAX, // unlimited max threads
+                    percent: 1.0,                 // this value is irrelevant in this case
+                },
+                // keep the defaults for everything else
+                ..default()
+            },
+        })
+        .configure_sets(
+            Update,
+            (
+                SimulationSet::BeforeStep,
+                SimulationSet::Step,
+                SimulationSet::AfterStep,
             )
-            .add_systems(
-                Update,
-                (engine_config_update,).in_set(SimulationSet::BeforeStep),
-            );
+                .chain(),
+        )
+        .add_systems(
+            Update,
+            (engine_config_update,).in_set(SimulationSet::BeforeStep),
+        );
 
         Self { app, steps: None }
     }

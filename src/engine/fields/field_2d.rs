@@ -22,7 +22,6 @@ pub fn update_field(
     mut field_query: Query<&mut Field2D<Entity>>,
     xform_query: Query<(Entity, &DBWrite<Real2DTranslation>)>,
 ) {
-    println!("Updating field");
     if let Ok(mut field) = field_query.get_single_mut() {
         field.clear();
         for (entity, xform) in &xform_query {
@@ -36,17 +35,28 @@ pub fn update_field(
 ///  Sparse matrix structure modelling agent interactions on a 2D real space with coordinates represented by 2D f32 tuples
 #[derive(Component)]
 pub struct Field2D<O: Copy + Eq + Hash> {
+    /// Matrix to write data. Vector of vectors that have a generic Object O inside
     pub findex: HashMap<O, Int2D>,
     pub fbag: HashMap<Int2D, Vec<O>>,
     pub floc: HashMap<O, Real2D>,
+    /// First dimension of the field
     pub width: f32,
+    /// Second dimension of the field
     pub height: f32,
+    /// Value to discretize `Real2D` positions to our Matrix
     pub discretization: f32,
+    /// `true` if you want a Toroidal field, `false` otherwise
     pub toroidal: bool,
 }
 
-//field 2d
-impl<O: Copy + Eq + Hash> Field2D<O> {
+impl<O: Hash + Eq + Copy> Field2D<O> {
+    /// Create a new `Field2D`
+    ///
+    /// # Arguments
+    /// * `w` - Width, first dimension of the field
+    /// * `h` - Height, second dimension of the field
+    /// * `d` - Value to discretize `Real2D` positions to our Matrix
+    /// * `t` - `true` if you want a Toroidal field, `false` otherwise
     pub fn new(w: f32, h: f32, d: f32, t: bool) -> Field2D<O> {
         Field2D {
             findex: HashMap::default(),
@@ -65,6 +75,14 @@ impl<O: Copy + Eq + Hash> Field2D<O> {
         self.floc.clear();
     }
 
+    pub fn get_location(&self, object: O) -> Option<&Real2D> {
+        self.floc.get(&object)
+    }
+
+    /// Map coordinates of an object into matrix indexes
+    ///
+    /// # Arguments
+    /// * `loc` - `Real2D` coordinates of the object
     fn discretize(&self, loc: &Real2D) -> Int2D {
         let x_floor = (loc.x / self.discretization).floor();
         let x_floor = x_floor as i32;
@@ -78,10 +96,54 @@ impl<O: Copy + Eq + Hash> Field2D<O> {
         }
     }
 
+    /// Map matrix indexes into coordinates of an object
+    ///
+    /// # Arguments
+    /// * `loc` - `Int2D` indexes of the object
+    fn not_discretize(&self, loc: &Int2D) -> Real2D {
+        let x_real = loc.x as f32 * self.discretization;
+        let y_real = loc.y as f32 * self.discretization;
+
+        Real2D {
+            x: x_real,
+            y: y_real,
+        }
+    }
+
+    /// Return the set of objects within a certain distance.
+    ///
+    /// # Arguments
+    /// * `loc` - `Real2D` coordinates of the object
+    /// * `dist` - Distance to look for objects
+    ///
+    /// # Example
+    /// ```
+    /// struct Object {
+    ///    id: u32
+    /// }
+    ///
+    /// let DISCRETIZATION = 0.5;
+    /// let TOROIDAL = true;
+    /// let mut field = Field2D::new(10.0,  10.0, DISCRETIZATION, TOROIDAL);
+    /// field.set_object_location(&Object{id: 0}, Real2D {x: 0.0, y: 0.0} );
+    /// field.set_object_location(&Object{id: 1}, Real2D {x: 3.0, y: 3.0} );
+    ///
+    /// field.lazy_update();
+    ///
+    /// let objects = field.get_objects_within_distance(&Real2D {x: 0.0, y: 0.0}, 2.0);
+    /// assert_eq!(objects.len(), 1);
+    ///
+    /// let objects = field.get_objects_within_distance(&Real2D {x: 0.0, y: 0.0}, 5.0);
+    /// assert_eq!(objects.len(), 2);
+    ///
+    /// let objects = field.get_objects_within_distance(&Real2D {x: 6.0, y: 6.0}, 1.0);
+    /// assert_eq!(objects.len(), 0);
+    ///
+    /// ```
     pub fn get_neighbors_within_distance(&self, loc: Real2D, dist: f32) -> HashSet<O> {
         let density = ((self.width * self.height) as usize) / (self.findex.len());
         let sdist = (dist * dist) as usize;
-        let mut neighbors: HashSet<O> = HashSet::with_capacity(density as usize * sdist);
+        let mut neighbors: HashSet<O> = HashSet::with_capacity(density * sdist);
 
         if dist <= 0.0 {
             return neighbors;
@@ -143,10 +205,40 @@ impl<O: Copy + Eq + Hash> Field2D<O> {
         neighbors
     }
 
+    /// Return the set of objects within a certain distance. No circle check.
+    ///
+    /// # Arguments
+    /// * `loc` - `Real2D` coordinates of the object
+    /// * `dist` - Distance to look for objects
+    ///
+    /// # Example
+    /// ```
+    /// struct Object {
+    ///   id: u32
+    /// }
+    ///
+    /// let DISCRETIZATION = 0.5;
+    /// let TOROIDAL = true;
+    /// let mut field = Field2D::new(10.0,  10.0, DISCRETIZATION, TOROIDAL);
+    /// field.set_object_location(&Object{id: 0}, Real2D {x: 0.0, y: 0.0} );
+    /// field.set_object_location(&Object{id: 1}, Real2D {x: 3.0, y: 3.0} );
+    ///
+    /// field.lazy_update();
+    ///
+    /// let objects = field.get_objects_within_relax_distance(&Real2D {x: 0.0, y: 0.0}, 2.0);
+    /// assert_eq!(objects.len(), 1);
+    ///
+    /// let objects = field.get_objects_within_relax_distance(&Real2D {x: 0.0, y: 0.0}, 5.0);
+    /// assert_eq!(objects.len(), 2);
+    ///
+    /// let objects = field.get_objects_within_relax_distance(&Real2D {x: 6.0, y: 6.0}, 1.0);
+    /// assert_eq!(objects.len(), 0);
+    ///
+    /// ```
     pub fn get_neighbors_within_relax_distance(&self, loc: Real2D, dist: f32) -> Vec<O> {
         let density = ((self.width * self.height) as usize) / (self.findex.len());
         let sdist = (dist * dist) as usize;
-        let mut neighbors: Vec<O> = Vec::with_capacity(density as usize * sdist);
+        let mut neighbors: Vec<O> = Vec::with_capacity(density * sdist);
 
         if dist <= 0.0 {
             return neighbors;
@@ -187,17 +279,32 @@ impl<O: Copy + Eq + Hash> Field2D<O> {
         neighbors
     }
 
-    // take an object and check if it is in the field
-    // if so return the object
-    // mainly used for visualization
-    pub fn get(&self, object: &O) -> Option<&O> {
-        match self.floc.get_key_value(object) {
-            Some((updated_object, _loc)) => Some(updated_object),
-            None => None,
-        }
-    }
-
-    // take a location and return the corresponding objects on that location
+    /// Return objects at a specific location
+    ///
+    /// # Arguments
+    /// * `loc` - `Real2D` coordinates of the object
+    ///
+    /// # Example
+    /// ```
+    /// struct Object {
+    ///  id: u32
+    /// }
+    ///
+    /// let DISCRETIZATION = 0.5;
+    /// let TOROIDAL = true;
+    /// let mut field = Field2D::new(10.0,  10.0, DISCRETIZATION, TOROIDAL);
+    ///
+    /// field.set_object_location(&Object{id: 0}, Real2D {x: 5.0, y: 5.0} );
+    /// field.set_object_location(&Object{id: 1}, Real2D {x: 5.0, y: 5.0} );
+    ///
+    /// let none = field.get_objects(&Real2D {x: 5.0, y: 5.0});
+    /// assert_eq!(none.len(), 0);
+    ///
+    /// field.lazy_update();
+    /// let objects = field.get_objects(&Real2D {x: 5.0, y: 5.0});
+    /// assert_eq!(objects.len(), 2);
+    ///
+    /// ```
     pub fn get_objects(&self, loc: Real2D) -> Vec<&O> {
         let bag = self.discretize(&loc);
         let mut result = Vec::new();
@@ -213,43 +320,35 @@ impl<O: Copy + Eq + Hash> Field2D<O> {
         result
     }
 
-    // take an object and return the corresponding location
-    pub fn get_location(&self, object: O) -> Option<&Real2D> {
-        self.floc.get(&object)
-    }
-
-    // take an object and return the corresponding location from the write state
-    /*pub fn get_location_unbuffered(&self, object: O) -> Option<Real2D> {
-        let mut loc = self.floc.get(&object).expect("error on get_write");
-        Some(*loc.value_mut())
-    }*/
-
-    // take an object and check if it is in the field
-    // if so return the object from the write bags
-    // mainly used for visualization
-    /*pub fn get_unbuffered(&self, object: &O) -> Option<O> {
-
-        match self.floc.get(object){
-            Some(loc) =>{
-                let real_loc = self.discretize(&loc);
-                for obj in self.fbag.get(&real_loc).expect("error on get_write").value_mut(){
-                    if obj == object {
-                        return Some(*obj);
-                    }
-                }
-            }, None =>{
-                return None;
-            }
-        }
-        None
-    }*/
-
-    // return the number of objects in the field
-    pub fn num_objects(&self) -> usize {
-        self.findex.len()
-    }
-
-    // return the number of objects in the field on that location
+    /// Return number of object at a specific location
+    ///
+    /// # Arguments
+    /// * `loc` - `Real2D` coordinates of the location to check
+    ///
+    /// # Example
+    /// ```
+    /// struct Object {
+    ///     id: u32
+    /// }
+    ///
+    /// let DISCRETIZATION = 0.5;
+    /// let TOROIDAL = true;
+    /// let mut field = Field2D::new(10.0,  10.0, DISCRETIZATION, TOROIDAL);
+    ///
+    /// field.set_object_location(&Object{id: 0}, Real2D {x: 5.0, y: 5.0} );
+    /// field.set_object_location(&Object{id: 1}, Real2D {x: 1.5, y: 1.5} );
+    /// field.set_object_location(&Object{id: 2}, Real2D {x: 4.0, y: 4.0} );
+    ///
+    /// field.lazy_update();
+    ///
+    /// let one = field.get_number_of_objects_at_location(&Real2D {x: 5.0, y: 5.0});
+    /// assert_eq!(one, 1);
+    /// let two = field.get_number_of_objects_at_location(&Real2D {x: 1.5, y: 1.5});
+    /// assert_eq!(two, 2);
+    /// let zero = field.get_number_of_objects_at_location(&Real2D {x: 8.0, y: 8.0});
+    /// assert_eq!(zero, 0);
+    /// ```
+    ///
     pub fn num_objects_at_location(&self, loc: Real2D) -> usize {
         let bag = self.discretize(&loc);
         match self.fbag.get(&bag) {
@@ -258,9 +357,35 @@ impl<O: Copy + Eq + Hash> Field2D<O> {
         }
     }
 
-    // put the object in that location
+    /// Insert an object into a specific position
+    ///
+    /// # Arguments
+    /// * `obj` - Object to insert
+    /// * `loc` - `Real2D` coordinates where to insert the object
+    ///
+    /// # Example
+    /// ```
+    /// struct Object {
+    ///    id: u32
+    /// }
+    ///
+    /// let DISCRETIZATION = 0.5;
+    /// let TOROIDAL = true;
+    /// let mut field = Field2D::new(10.0,  10.0, DISCRETIZATION, TOROIDAL);
+    ///
+    /// field.set_object_location(&Object{id: 0}, Real2D {x: 5.0, y: 5.0} );
+    ///
+    /// let obj = field.get_objects_unbuffered(&Real2D {x: 5.0, y: 5.0});
+    /// assert_eq!(obj.len(), 1);
+    /// assert_eq!(obj[0].id, 0);
+    ///
+    /// field.lazy_update();
+    /// let obj = field.get_objects(&Real2D {x: 5.0, y: 5.0});
+    /// assert_eq!(obj.len(), 1);
+    /// assert_eq!(obj[0].id, 0);
+    ///
+    /// ```
     pub fn set_object_location(&mut self, object: O, loc: Real2D) {
-        // TODO prevent setting the same object twice?
         let bag = self.discretize(&loc);
         self.floc.insert(object, loc);
         self.findex.insert(object, bag);

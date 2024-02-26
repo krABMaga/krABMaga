@@ -8,7 +8,7 @@ use rand_chacha::ChaCha8Rng;
 use crate::engine::bevy_ecs::prelude::Resource;
 
 // TODO offer several constructors to allow the user to create scoped RNGs, such as an agent-based one, or a step-based one or both
-#[derive(Resource)]
+#[derive(Resource, Clone)]
 pub struct RNG {
     inner: ChaCha8Rng,
     float_range: Uniform<f32>,
