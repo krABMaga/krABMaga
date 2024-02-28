@@ -18,36 +18,35 @@ pub struct GisPlugin;
 
 impl Plugin for GisPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, startup)
-            .add_systems(Update, pick_file);
+        app.add_systems(Update, pick_file);
     }
 }
 
-fn startup(mut commands: Commands) {
-    let far = 1000.;
-    // Offset the whole simulation to the left to take the width of the UI panel into account.
-    let ui_offset = -700.;
-    // Scale the simulation so it fills the portion of the screen not covered by the UI panel.
-    let scale_x = 700. / (700. + ui_offset);
-    // The translation x must depend on the scale_x to keep the left offset constant between window resizes.
-    let mut initial_transform = Transform::from_xyz(ui_offset * scale_x, 0., far - 0.1);
-    initial_transform.scale.x = scale_x;
-    initial_transform.scale.y = 700. / 700.;
-
-    commands
-        .spawn(Camera2dBundle {
-            projection: OrthographicProjection {
-                far,
-                scaling_mode: ScalingMode::WindowSize(1.),
-                viewport_origin: Vec2::new(0., 0.),
-                ..default()
-            }
-            .into(),
-            transform: initial_transform,
-            ..default()
-        })
-        .insert(PanCam::default());
-}
+//fn startup(mut commands: Commands) {
+//    let far = 1000.;
+//    // Offset the whole simulation to the left to take the width of the UI panel into account.
+//    let ui_offset = -700.;
+//    // Scale the simulation so it fills the portion of the screen not covered by the UI panel.
+//    let scale_x = 700. / (700. + ui_offset);
+//    // The translation x must depend on the scale_x to keep the left offset constant between window resizes.
+//    let mut initial_transform = Transform::from_xyz(ui_offset * scale_x, 0., far - 0.1);
+//    initial_transform.scale.x = scale_x;
+//    initial_transform.scale.y = 700. / 700.;
+//
+//    commands
+//        .spawn(Camera2dBundle {
+//            projection: OrthographicProjection {
+//                far,
+//                scaling_mode: ScalingMode::WindowSize(1.),
+//                viewport_origin: Vec2::new(0., 0.),
+//                ..default()
+//            }
+//            .into(),
+//            transform: initial_transform,
+//            ..default()
+//        })
+//        .insert(PanCam::default());
+//}
 
 fn pick_file(
     mut egui_context: EguiContexts,
@@ -61,7 +60,7 @@ fn pick_file(
     camera_query: Query<Entity, With<Camera>>,
 ) {
     if let Some(camera) = camera_query.get_single().ok() {
-        egui::SidePanel::left("main")
+        egui::SidePanel::left("new")
             // .resizable(true)
             .show(egui_context.ctx_mut(), |ui| {
                 ui.vertical_centered(|ui| {

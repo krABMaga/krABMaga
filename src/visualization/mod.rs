@@ -1,7 +1,7 @@
 pub mod agent_render;
 pub mod asset_handle_factory;
 pub mod fields;
-pub mod plugin;
+pub mod plugins;
 pub mod simulation_descriptor;
 mod systems;
 pub mod utils;

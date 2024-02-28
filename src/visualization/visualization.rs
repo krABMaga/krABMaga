@@ -9,7 +9,7 @@ use crate::bevy::diagnostic::FrameTimeDiagnosticsPlugin;
 use crate::engine::{schedule::Schedule, state::State};
 use crate::visualization::{
     asset_handle_factory::AssetHandleFactory,
-    plugin::GisPlugin,
+    plugins::gis::GisPlugin,
     simulation_descriptor::SimulationDescriptor,
     systems::{
         camera_system::camera_system, init_system::init_system, renderer_system::renderer_system,
