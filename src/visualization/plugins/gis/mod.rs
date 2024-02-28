@@ -4,9 +4,9 @@ mod lib;
 
 use ::bevy::prelude::*;
 
-use bevy_pancam::*;
+//use bevy_pancam::*;
 
-use bevy::render::camera::ScalingMode;
+//use bevy::render::camera::ScalingMode;
 use bevy_egui::{
     egui::{self, Color32, RichText},
     EguiContexts,
