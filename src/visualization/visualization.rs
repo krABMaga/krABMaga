@@ -16,6 +16,7 @@ use crate::visualization::{
     },
     visualization_state::VisualizationState,
     wrappers::{ActiveSchedule, ActiveState, Initializer},
+    plugin::GisPlugin,
 };
 
 // The application main struct, used to build and start the event loop. Offers several methods in a builder-pattern style
@@ -128,6 +129,8 @@ impl Visualization {
         .add_systems(Startup, init_system::<I, S>)
         .add_plugins(FrameTimeDiagnosticsPlugin::default())
         .add_systems(Update, camera_system);
+
+        app.add_plugins(GisPlugin);
 
         app
     }
