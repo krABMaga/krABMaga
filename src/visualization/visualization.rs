@@ -9,6 +9,7 @@ use crate::bevy::diagnostic::FrameTimeDiagnosticsPlugin;
 use crate::engine::{schedule::Schedule, state::State};
 use crate::visualization::{
     asset_handle_factory::AssetHandleFactory,
+    plugin::GisPlugin,
     simulation_descriptor::SimulationDescriptor,
     systems::{
         camera_system::camera_system, init_system::init_system, renderer_system::renderer_system,
@@ -16,7 +17,6 @@ use crate::visualization::{
     },
     visualization_state::VisualizationState,
     wrappers::{ActiveSchedule, ActiveState, Initializer},
-    plugin::GisPlugin,
 };
 
 // The application main struct, used to build and start the event loop. Offers several methods in a builder-pattern style

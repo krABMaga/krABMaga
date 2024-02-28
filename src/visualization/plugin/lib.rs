@@ -2,7 +2,10 @@ use bevy::{
     ecs::{component::Component, entity::Entity, system::Commands},
     math::{Vec2, Vec3},
     prelude::default,
-    render::{color::Color, mesh::{Mesh, Meshable}},
+    render::{
+        color::Color,
+        mesh::{Mesh, Meshable},
+    },
     sprite::ColorMaterial,
     transform::components::Transform,
 };
@@ -13,7 +16,7 @@ use bevy_prototype_lyon::{
     geometry::*,
 };
 use geo::{Centroid, CoordsIter, GeometryCollection};
-use geo_types::{Geometry,Point};
+use geo_types::{Geometry, Point};
 use geojson::{quick_collection, FeatureCollection, GeoJson};
 use std::{fs, str::FromStr};
 
