@@ -30,6 +30,11 @@ pub struct EntityFile {
     pub entities: Vec<bevy::ecs::entity::Entity>,
 }
 
+#[derive(crate::bevy::ecs::system::Resource)]
+pub struct PickedFile {
+    pub picked: bool,
+}
+
 pub enum MeshType {
     Point,
     Polygon,

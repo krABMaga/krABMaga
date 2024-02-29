@@ -12,12 +12,13 @@ use bevy_egui::{
     EguiContexts,
 };
 
-use self::lib::EntityFile;
+use self::lib::{EntityFile, PickedFile};
 
 pub struct GisPlugin;
 
 impl Plugin for GisPlugin {
     fn build(&self, app: &mut App) {
+        app.insert_resource(PickedFile { picked: false });
         app.add_systems(Update, pick_file);
     }
 }
@@ -51,26 +52,23 @@ impl Plugin for GisPlugin {
 fn pick_file(
     mut egui_context: EguiContexts,
     mut commands: Commands,
-    mut app_exit_events: ResMut<Events<bevy::app::AppExit>>,
+    // mut app_exit_events: ResMut<Events<bevy::app::AppExit>>,
     mut files_query: Query<&EntityFile>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    file_entity_query: Query<Entity, With<EntityFile>>,
-    all_entities_query: Query<Entity, Without<Camera>>,
+    mut picked: ResMut<PickedFile>,
+    // file_entity_query: Query<Entity, With<EntityFile>>,
+    // all_entities_query: Query<Entity, Without<Camera>>,
     camera_query: Query<Entity, With<Camera>>,
 ) {
     if let Some(camera) = camera_query.get_single().ok() {
-        egui::SidePanel::left("new")
-            // .resizable(true)
-            .show(egui_context.ctx_mut(), |ui| {
-                ui.vertical_centered(|ui| {
-                    ui.heading(RichText::new("GIS").color(Color32::RED).strong());
-                    ui.separator();
+        if picked.picked.eq(&false) {
+            egui::Window::new("GIS")
+                .open(&mut true)
+                .collapsible(true)
+                .show(egui_context.ctx_mut(), |ui| {
                     let select_btn =
                         egui::Button::new(RichText::new("▶ Select File").color(Color32::GREEN));
-                    let clear_btn =
-                        egui::Button::new(RichText::new("▶ Clear").color(Color32::YELLOW));
-                    let exit_btn = egui::Button::new(RichText::new("▶ Exit").color(Color32::RED));
 
                     if ui.add(select_btn).clicked() {
                         if let Some(path_buf) = rfd::FileDialog::new().pick_file() {
@@ -99,50 +97,102 @@ fn pick_file(
 
                                 for file in files_query.iter() {
                                     vec_entity_file.push(file.clone());
+
+                                    lib::center_camera(
+                                        &mut commands,
+                                        camera,
+                                        vec_entity_file.clone(),
+                                    );
                                 }
-
-                                lib::center_camera(&mut commands, camera, vec_entity_file);
                             }
                         }
+                        picked.picked = true;
                     }
-
-                    if ui.add(clear_btn).clicked() {
-                        for entity in all_entities_query.iter() {
-                            commands.entity(entity).despawn();
-                        }
-                    }
-
-                    if ui.add(exit_btn).clicked() {
-                        app_exit_events.send(bevy::app::AppExit);
-                    }
-
-                    ui.separator();
-
-                    for file in &mut files_query.iter_mut() {
-                        let name = &file.name;
-                        let remove_file_btn =
-                            egui::Button::new(RichText::new("Remove").color(Color32::WHITE));
-                        let label_text = name.to_owned();
-
-                        ui.label(
-                            RichText::new(label_text)
-                                .strong()
-                                .color(Color32::DEBUG_COLOR),
-                        );
-
-                        if ui.add(remove_file_btn).clicked() {
-                            for entity_file in file_entity_query.iter() {
-                                commands.entity(entity_file).despawn();
-                            }
-
-                            for entity in file.entities.iter() {
-                                commands.entity(*entity).despawn();
-                            }
-                        }
-
-                        ui.separator();
-                    }
-                })
-            });
+                });
+            //egui::SidePanel::left("new")
+            //    // .resizable(true)
+            //    .show(egui_context.ctx_mut(), |ui| {
+            //        ui.vertical_centered(|ui| {
+            //            ui.heading(RichText::new("GIS").color(Color32::RED).strong());
+            //            ui.separator();
+            //            let select_btn =
+            //                egui::Button::new(RichText::new("▶ Select File").color(Color32::GREEN));
+            //            let clear_btn =
+            //                egui::Button::new(RichText::new("▶ Clear").color(Color32::YELLOW));
+            //            let exit_btn = egui::Button::new(RichText::new("▶ Exit").color(Color32::RED));
+            //
+            //            if ui.add(select_btn).clicked() {
+            //                if let Some(path_buf) = rfd::FileDialog::new().pick_file() {
+            //                    let extension = path_buf.extension().unwrap();
+            //                    if extension.eq("json") || extension.eq("geojson") {
+            //                        let path = Some(path_buf.display().to_string()).unwrap();
+            //                        let name = path_buf.file_name().unwrap().to_str().unwrap();
+            //                        let (layers, entities) = lib::build_meshes(
+            //                            &mut *meshes,
+            //                            &mut *materials,
+            //                            &mut commands,
+            //                            path.to_owned(),
+            //                            name.to_owned(),
+            //                        );
+            //                        let entity_file = EntityFile {
+            //                            name: name.to_owned(),
+            //                            path: path.to_owned(),
+            //                            layers: layers,
+            //                            entities: entities,
+            //                        };
+            //                        let mut vec_entity_file: Vec<EntityFile> = Vec::new();
+            //
+            //                        vec_entity_file.push(entity_file.clone());
+            //
+            //                        commands.spawn(entity_file);
+            //
+            //                        for file in files_query.iter() {
+            //                            vec_entity_file.push(file.clone());
+            //                        }
+            //
+            //                        lib::center_camera(&mut commands, camera, vec_entity_file);
+            //                    }
+            //                }
+            //            }
+            //
+            //            if ui.add(clear_btn).clicked() {
+            //                for entity in all_entities_query.iter() {
+            //                    commands.entity(entity).despawn();
+            //                }
+            //            }
+            //
+            //            if ui.add(exit_btn).clicked() {
+            //                app_exit_events.send(bevy::app::AppExit);
+            //            }
+            //
+            //            ui.separator();
+            //
+            //            for file in &mut files_query.iter_mut() {
+            //                let name = &file.name;
+            //                let remove_file_btn =
+            //                    egui::Button::new(RichText::new("Remove").color(Color32::WHITE));
+            //                let label_text = name.to_owned();
+            //
+            //                ui.label(
+            //                    RichText::new(label_text)
+            //                        .strong()
+            //                        .color(Color32::DEBUG_COLOR),
+            //                );
+            //
+            //                if ui.add(remove_file_btn).clicked() {
+            //                    for entity_file in file_entity_query.iter() {
+            //                        commands.entity(entity_file).despawn();
+            //                    }
+            //
+            //                    for entity in file.entities.iter() {
+            //                        commands.entity(*entity).despawn();
+            //                    }
+            //                }
+            //
+            //                ui.separator();
+            //            }
+            //        })
+            //    });
+        }
     }
 }
