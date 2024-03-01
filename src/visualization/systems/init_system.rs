@@ -2,6 +2,7 @@ use bevy::math::Vec2;
 use bevy::prelude::{Camera2dBundle, Commands, Res, ResMut};
 use bevy::prelude::{Query, With};
 use bevy::window::{PrimaryWindow, Window};
+use bevy_pancam::PanCam;
 
 use crate::bevy::prelude::Transform;
 use crate::bevy::render::camera::OrthographicProjection;
@@ -38,17 +39,19 @@ pub fn init_system<I: VisualizationState<S> + 'static + bevy::prelude::Resource,
         initial_transform.scale.x = scale_x;
         initial_transform.scale.y = sim.height / window.height();
 
-        commands.spawn(Camera2dBundle {
-            projection: OrthographicProjection {
-                far,
-                scaling_mode: ScalingMode::WindowSize(1.),
-                viewport_origin: Vec2::new(0., 0.),
+        commands
+            .spawn(Camera2dBundle {
+                projection: OrthographicProjection {
+                    far,
+                    scaling_mode: ScalingMode::WindowSize(1.),
+                    viewport_origin: Vec2::new(0., 0.),
+                    ..default()
+                }
+                .into(),
+                transform: initial_transform,
                 ..default()
-            }
-            .into(),
-            transform: initial_transform,
-            ..default()
-        });
+            })
+            .insert(PanCam::default());
 
         on_init.on_init(
             &mut commands,

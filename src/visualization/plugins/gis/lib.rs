@@ -1,7 +1,7 @@
 use bevy::{
     ecs::{component::Component, entity::Entity, system::Commands},
     math::{Vec2, Vec3},
-    prelude::default,
+    prelude::{default, SpatialBundle},
     render::{
         color::Color,
         mesh::{Mesh, Meshable},
@@ -19,8 +19,6 @@ use geo::{Centroid, CoordsIter, GeometryCollection};
 use geo_types::{Geometry, Point};
 use geojson::{quick_collection, FeatureCollection, GeoJson};
 use std::{fs, str::FromStr};
-
-use super::layers::AllLayers;
 
 #[derive(Component, Clone)]
 pub struct EntityFile {
@@ -41,6 +39,82 @@ pub enum MeshType {
     LineString,
 }
 
+#[derive(
+    Copy, Clone, Debug, Eq, Ord, PartialEq, PartialOrd, Hash, bevy::ecs::component::Component,
+)]
+pub struct LayerId(i32);
+
+impl Default for LayerId {
+    fn default() -> Self {
+        Self::new(-1)
+    }
+}
+
+impl LayerId {
+    pub fn new(last: i32) -> Self {
+        LayerId(new_id(last))
+    }
+
+    pub fn get_id(&self) -> i32 {
+        self.0
+    }
+}
+
+pub fn new_id(last: i32) -> i32 {
+    last + 1
+}
+
+#[derive(Clone)]
+pub struct Layer {
+    pub id: LayerId,
+    pub file_name: String,
+    pub geom_type: geo_types::Geometry,
+    pub visible: bool,
+}
+
+#[derive(Clone)]
+pub struct AllLayers {
+    pub layers: Vec<Layer>,
+    pub selected_layer_id: i32,
+}
+
+impl AllLayers {
+    pub fn new() -> AllLayers {
+        AllLayers {
+            layers: vec![],
+            selected_layer_id: 0,
+        }
+    }
+
+    fn next_layer_id(&self) -> LayerId {
+        LayerId::new(self.last_layer_id())
+    }
+
+    pub fn add(&mut self, geometry: geo_types::Geometry, file_name: String) {
+        let id = self.next_layer_id();
+        let layer = Layer {
+            id,
+            file_name,
+            visible: false,
+            geom_type: geometry,
+        };
+
+        self.layers.push(layer);
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &Layer> {
+        self.layers.iter()
+    }
+
+    pub fn last_layer_id(&self) -> i32 {
+        if self.layers.len() == 0 {
+            return 0;
+        }
+
+        self.layers.last().unwrap().id.get_id()
+    }
+}
+
 pub fn read_geojson(path: String) -> GeoJson {
     let geojson_str = fs::read_to_string(path).unwrap();
     GeoJson::from_str(&geojson_str).unwrap()
@@ -53,12 +127,12 @@ pub fn read_geojson_feature_collection(geojson: GeoJson) -> FeatureCollection {
 }
 
 pub fn calculate_z(layer_index: i32, mesh_type: MeshType) -> f32 {
-    return layer_index as f32 * 3.
+    layer_index as f32 * 3.
         + match mesh_type {
             MeshType::Point => 1.,
             MeshType::Polygon => 2.,
             MeshType::LineString => 3.,
-        };
+        }
 }
 
 pub fn medium_centroid(centroids: Vec<Point>) -> Point {
@@ -79,7 +153,7 @@ pub fn medium_centroid(centroids: Vec<Point>) -> Point {
 pub fn build_polygon(
     polygon: geo_types::geometry::Polygon,
     id: i32,
-) -> (GeometryBuilder, Transform) {
+) -> (GeometryBuilder, SpatialBundle) {
     let mut coords: Vec<Vec2> = Vec::new();
 
     for coord in polygon.coords_iter() {
@@ -96,23 +170,22 @@ pub fn build_polygon(
     let z = calculate_z(id, MeshType::Polygon);
     let translation = Vec3 { x: 0., y: 0., z };
     let transform = Transform::from_translation(translation);
+    let spatial = SpatialBundle::from_transform(transform);
 
-    (GeometryBuilder::new().add(&shape), transform)
+    (GeometryBuilder::new().add(&shape), spatial)
 }
 
 pub fn build_linestring(
     line_string: geo_types::geometry::LineString,
     id: i32,
-) -> (GeometryBuilder, Transform) {
+) -> (GeometryBuilder, SpatialBundle) {
     let mut coords: Vec<Point> = Vec::new();
 
     for coord in line_string.0 {
         coords.push(Point::new(coord.x as f64, coord.y as f64));
     }
-
     let start = coords.get(0).unwrap();
     let last = coords.last().unwrap();
-
     let shape = bevy_prototype_lyon::shapes::Line(
         Vec2 {
             x: start.0.x as f32,
@@ -123,16 +196,16 @@ pub fn build_linestring(
             y: last.0.y as f32,
         },
     );
-
-    let builder = GeometryBuilder::new().add(&shape);
     let translation = Vec3 {
         x: 0.,
         y: 0.,
         z: calculate_z(id, MeshType::LineString),
     };
     let transform = Transform::from_translation(translation);
+    let spatial = SpatialBundle::from_transform(transform);
+    let builder = GeometryBuilder::new().add(&shape);
 
-    (builder, transform)
+    (builder, spatial)
 }
 
 pub fn center_camera(commands: &mut Commands, camera: Entity, entity_file: Vec<EntityFile>) {
@@ -178,17 +251,17 @@ pub fn build_meshes(
             Geometry::Polygon(polygon) => {
                 layers.add(geo::Geometry::Polygon(polygon.clone()), name.clone());
 
-                let (builder, transform) = build_polygon(polygon, layers.last_layer_id());
+                let (builder, spatial) = build_polygon(polygon, layers.last_layer_id());
 
                 let id = commands
                     .spawn((
                         ShapeBundle {
                             path: builder.build(),
+                            spatial,
                             ..default()
                         },
                         Fill::color(Color::WHITE),
                         Stroke::new(Color::BLUE, 0.1),
-                        transform,
                     ))
                     .id();
 
@@ -197,17 +270,17 @@ pub fn build_meshes(
             Geometry::LineString(linestring) => {
                 layers.add(geo::Geometry::LineString(linestring.clone()), name.clone());
 
-                let (builder, transform) = build_linestring(linestring, layers.last_layer_id());
+                let (builder, spatial) = build_linestring(linestring, layers.last_layer_id());
 
                 let id = commands
                     .spawn((
                         ShapeBundle {
                             path: builder.build(),
+                            spatial,
                             ..default()
                         },
                         Fill::color(Color::RED),
                         Stroke::new(Color::YELLOW_GREEN, 0.1),
-                        transform,
                     ))
                     .id();
 
@@ -242,18 +315,17 @@ pub fn build_meshes(
                 );
 
                 for polygon in multi_polygon.0.iter() {
-                    let (builder, transform) =
-                        build_polygon(polygon.clone(), layers.last_layer_id());
+                    let (builder, spatial) = build_polygon(polygon.clone(), layers.last_layer_id());
 
                     let id = commands
                         .spawn((
                             ShapeBundle {
                                 path: builder.build(),
+                                spatial,
                                 ..default()
                             },
                             Fill::color(Color::WHITE),
                             Stroke::new(Color::BLUE, 0.1),
-                            transform,
                         ))
                         .id();
                     entities_id.push(id);
@@ -266,18 +338,17 @@ pub fn build_meshes(
                 );
 
                 for line in multi_line_string.iter() {
-                    let (builder, transform) =
-                        build_linestring(line.clone(), layers.last_layer_id());
+                    let (builder, spatial) = build_linestring(line.clone(), layers.last_layer_id());
 
                     let id = commands
                         .spawn((
                             ShapeBundle {
                                 path: builder.build(),
+                                spatial,
                                 ..default()
                             },
                             Fill::color(Color::WHITE),
                             Stroke::new(Color::YELLOW_GREEN, 0.1),
-                            transform,
                         ))
                         .id();
 
