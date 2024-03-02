@@ -5,6 +5,7 @@ pub use bevy::prelude::Component;
 pub use bevy::prelude::Entity;
 pub use bevy::prelude::Query;
 pub use bevy::prelude::Res;
+pub use bevy::prelude::ResMut;
 
 /// Module to define Agent methods
 pub mod agent;

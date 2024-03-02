@@ -3,17 +3,20 @@ use bevy::prelude::{Component, EntityWorldMut};
 use crate::engine::components::double_buffer::DoubleBuffered;
 use crate::engine::simulation::Simulation;
 
+#[derive(Component)]
+pub struct Agent;
+
 /// A helper struct to properly create agents and add data to it with the ECS architecture
-pub struct Agent<'w> {
+pub struct AgentFactory<'w> {
     entity: EntityWorldMut<'w>,
 }
 
-impl<'w> Agent<'w> {
+impl<'w> AgentFactory<'w> {
     /// Spawn a new agent in the simulation.
     pub fn new(simulation: &'w mut Simulation) -> Self {
-        Agent {
-            entity: simulation.spawn_agent(),
-        }
+        let mut entity = simulation.spawn_agent();
+        entity.insert((Agent,));
+        AgentFactory { entity }
     }
 
     /// Insert constant data associated to this agent. We assume this data will not be changed by user defined systems, so we can avoid keeping a copy of the original data, for example to perform a reset of the simulation.

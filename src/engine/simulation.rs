@@ -1,6 +1,6 @@
 use bevy::core::TaskPoolThreadAssignmentPolicy;
+use bevy::log::LogPlugin;
 use bevy::prelude::*;
-use bevy::tasks::available_parallelism;
 
 use crate::engine::fields::field_2d::{update_field, Field2D};
 use crate::engine::resources::engine_configuration::EngineConfiguration;
@@ -23,21 +23,9 @@ pub struct Simulation {
 impl Simulation {
     pub fn build() -> Self {
         let mut app = App::new();
-        app.add_plugins(TaskPoolPlugin {
-            task_pool_options: TaskPoolOptions {
-                // Assign all threads to compute
-                compute: TaskPoolThreadAssignmentPolicy {
-                    // set the minimum # of compute threads
-                    // to the total number of available threads
-                    min_threads: available_parallelism(),
-                    max_threads: std::usize::MAX, // unlimited max threads
-                    percent: 1.0,                 // this value is irrelevant in this case
-                },
-                // keep the defaults for everything else
-                ..default()
-            },
-        })
-        .configure_sets(
+        #[cfg(feature = "trace_tracy")]
+        app.add_plugins(LogPlugin::default());
+        app.configure_sets(
             Update,
             (
                 SimulationSet::BeforeStep,
@@ -54,12 +42,28 @@ impl Simulation {
         Self { app, steps: None }
     }
 
+    pub fn with_num_threads(mut self, num_threads: usize) -> Self {
+        self.app.add_plugins(TaskPoolPlugin {
+            task_pool_options: TaskPoolOptions {
+                // Assign all threads to compute
+                compute: TaskPoolThreadAssignmentPolicy {
+                    // set the minimum # of compute threads
+                    // to the total number of available threads
+                    min_threads: num_threads,
+                    max_threads: num_threads, // unlimited max threads
+                    percent: 1.0,             // this value is irrelevant in this case
+                },
+                ..default()
+            },
+        });
+        self
+    }
+
     // TODO expose a macro to wrap a fn describing the step of one agent and transform it in a system that cycles all agents? This is probably the worst aspect of the refactor, the step signature can easily get too complex to read.
     pub fn register_step_handler<Params>(
         mut self,
         step_handler: impl IntoSystemConfigs<Params>,
     ) -> Self {
-        println!("Adding step handler");
         self.app
             .add_systems(Update, (step_handler,).in_set(SimulationSet::Step));
         self
