@@ -1,13 +1,7 @@
-use cfg_if::cfg_if;
-cfg_if! {
-    if #[cfg(any(feature = "visualization", feature = "visualization_wasm"))] {
-
-        use bevy::prelude::{Handle, Image, Query, Res, Transform, Visibility};
+use bevy::prelude::{Handle, Image, Query, Res, Transform, Visibility};
 
 use crate::bevy::prelude::{Commands, ResMut};
-
 use crate::engine::state::State;
-
 use crate::visualization::{
     agent_render::{AgentRender, SpriteType},
     asset_handle_factory::AssetHandleFactoryResource,
@@ -17,7 +11,10 @@ use crate::visualization::{
 };
 
 // The system that updates the visual representation of each agent of our simulation.
-pub fn renderer_system<I: VisualizationState<S> + Clone + 'static + bevy::prelude::Resource, S: State>(
+pub fn renderer_system<
+    I: VisualizationState<S> + Clone + 'static + bevy::prelude::Resource,
+    S: State,
+>(
     mut query: Query<(
         &mut Box<dyn AgentRender>,
         &mut Transform,
@@ -48,7 +45,7 @@ pub fn renderer_system<I: VisualizationState<S> + Clone + 'static + bevy::prelud
                     &Box::new(state.as_state()),
                     &mut *visible,
                 );
-                visible.is_visible = true;
+                *visible = Visibility::Visible;
                 // transform.translation.x = 0.5;
                 transform.translation.y += 0.5;
                 let SpriteType::Emoji(emoji_code) =
@@ -61,13 +58,9 @@ pub fn renderer_system<I: VisualizationState<S> + Clone + 'static + bevy::prelud
                 let schedule = schedule_wrapper.0.lock().expect("error on lock");
                 let step = schedule.step;
                 if step != 0 {
-                    visible.is_visible = false;
+                    *visible = Visibility::Hidden;
                 }
             }
         }
-    }
-}
-
-
     }
 }
