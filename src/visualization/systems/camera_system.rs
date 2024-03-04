@@ -1,8 +1,8 @@
+use bevy::prelude::EventReader;
 use bevy::{
     prelude::{Query, Transform},
     window::WindowResized,
 };
-use bevy::prelude::EventReader;
 
 use crate::bevy::prelude::Res;
 use crate::bevy::render::camera::Camera;
