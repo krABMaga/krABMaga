@@ -6,8 +6,10 @@ use std::hash::Hash;
 
 pub use bevy::prelude::Color;
 use bevy::prelude::{Commands, Component, Query, Transform};
+use bevy::utils::default;
 use bevy_prototype_lyon::draw::{Fill, Stroke};
 use bevy_prototype_lyon::path::ShapePath;
+use bevy_prototype_lyon::prelude::ShapeBundle;
 use bevy_prototype_lyon::prelude::{GeometryBuilder, Path};
 use bevy_prototype_lyon::shapes::Line;
 
@@ -78,13 +80,15 @@ pub trait NetworkRender<O: Hash + Eq + Clone + Display, L: Clone + Hash + Displa
                 } = Self::get_edge_info(edge, network);
 
                 let mut spawn_command = commands.spawn((
-                    GeometryBuilder::build_as(&Line(
-                        Vec2::new(source_loc.x, source_loc.y),
-                        Vec2::new(target_loc.x, target_loc.y),
-                    )),
+                    ShapeBundle {
+                        path: GeometryBuilder::build_as(&Line(
+                            Vec2::new(source_loc.x, source_loc.y),
+                            Vec2::new(target_loc.x, target_loc.y),
+                        )),
+                        ..default()
+                    },
                     Fill::color(Color::BLACK),
                     Stroke::new(line_color, line_width),
-                    Transform::default(),
                 ));
                 if !is_static {
                     spawn_command.insert(EdgeRender(edge.u, edge.v, source_loc, target_loc));
@@ -98,6 +102,7 @@ pub trait NetworkRender<O: Hash + Eq + Clone + Display, L: Clone + Hash + Displa
         let state = state_wrapper.0.lock().expect("error on lock");
         let network = Self::get_network(&*state);
         for (mut path, edge_render) in query.iter_mut() {
+            println!("Test");
             let source_loc = Self::get_loc(network, edge_render.0);
             let target_loc = Self::get_loc(network, edge_render.1);
             if source_loc != edge_render.2 || target_loc != edge_render.3 {
