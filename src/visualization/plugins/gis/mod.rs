@@ -36,7 +36,7 @@ fn pick_file(
         if picked.picked.eq(&false) {
             egui::Window::new("GIS")
                 .open(&mut true)
-                .collapsible(true)
+                .movable(false)
                 .show(egui_context.ctx_mut(), |ui| {
                     let select_btn =
                         egui::Button::new(RichText::new("▶ Select File").color(Color32::GREEN));
@@ -68,13 +68,9 @@ fn pick_file(
 
                                 for file in files_query.iter() {
                                     vec_entity_file.push(file.clone());
-
-                                    lib::center_camera(
-                                        &mut commands,
-                                        camera,
-                                        vec_entity_file.clone(),
-                                    );
                                 }
+
+                                lib::center_camera(&mut commands, camera, vec_entity_file.clone());
                             }
                         }
                         picked.picked = true;

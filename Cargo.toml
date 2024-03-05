@@ -2,15 +2,15 @@
 name = "krabmaga"
 version = "0.4.1"
 authors = [
-    "Carmine Spagnuolo <spagnuolocarmine@gmail.com>", 
-    "Alessia Antelmi <aantelmi@unisa.it>", 
-    "Matteo D'Auria <matdauria@unisa.it>", 
-    "Daniele De Vinco <danieledevinco1996@gmail.com", 
-    "Francesco Foglia <frafonia@gmail.com>", 
-    "Pasquale Caramante <pasqcaramante@gmail.com>", 
-    "Luca Postiglione <lucapostiglione10@gmail.com>", 
+    "Carmine Spagnuolo <spagnuolocarmine@gmail.com>",
+    "Alessia Antelmi <aantelmi@unisa.it>",
+    "Matteo D'Auria <matdauria@unisa.it>",
+    "Daniele De Vinco <danieledevinco1996@gmail.com",
+    "Francesco Foglia <frafonia@gmail.com>",
+    "Pasquale Caramante <pasqcaramante@gmail.com>",
+    "Luca Postiglione <lucapostiglione10@gmail.com>",
     "Giuseppe D'Ambrosio <giuseppe.dambrosio14@gmail.com>",
-    "Andrea Tranquillo <andreatranquillo87@gmail.com>"
+    "Andrea Tranquillo <andreatranquillo87@gmail.com>",
 ]
 edition = "2021"
 license = "MIT"
@@ -29,9 +29,9 @@ rand = "0.8.5"
 lazy_static = "1.4.0"
 cfg-if = "1.0.0"
 num_cpus = "1.13.1"
-rayon="1.5.1"
-ahash="0.8.9"
-dyn-clone="1.0.5"
+rayon = "1.5.1"
+ahash = "0.8.9"
+dyn-clone = "1.0.5"
 downcast-rs = "1.2.0"
 csv = "1.1.6"
 indicatif = "0.16.2"
@@ -40,7 +40,7 @@ chrono = "0.4"
 bevy_asset = "0.13"
 geo-bevy = "2.0.0"
 bevy_math = "0.13"
-bevy_pancam = "0.11.0"
+bevy_pancam = { version = "0.11.0", features = ["bevy_egui"] }
 geo-types = "0.7.8"
 geo = "0.28.0"
 geojson = { version = "*", features = ["geo-types"] }
@@ -49,52 +49,54 @@ egui_file = "0.16.2"
 rfd = "0.14.*"
 
 # Parallel
-crossbeam = {version = "0.8.1", optional = true}
-clap= {version = "2.34.0", optional = true}
+crossbeam = { version = "0.8.1", optional = true }
+clap = { version = "2.34.0", optional = true }
 
 # Model exploration AWS features
-lambda_runtime = {version = "0.4", optional = true}
-serde = { version = "1.0.137", features = ["derive"], optional = true}
-serde_json = {version = "1.0.81", optional = true}
+lambda_runtime = { version = "0.4", optional = true }
+serde = { version = "1.0.137", features = ["derive"], optional = true }
+serde_json = { version = "1.0.81", optional = true }
 tokio = { version = "1.18.1", features = ["full"], optional = true }
-aws-config = {version = "0.4", optional = true}
-aws-sdk-sqs = {version = "0.4", optional = true}
-aws-sdk-lambda = {version = "0.4", optional = true}
-futures = {version = "0.3", optional = true}
+aws-config = { version = "0.4", optional = true }
+aws-sdk-sqs = { version = "0.4", optional = true }
+aws-sdk-lambda = { version = "0.4", optional = true }
+futures = { version = "0.3", optional = true }
 
 # Model exploration MPI features
 # We used this crate because "rsmpi" has some bugs, so we updated to this fork
 # mpi-fork-fnsp = { version="0.6", optional = true }
-mpi = { version = "0.6", optional=true, features = ["user-operations", "derive"] }
-memoffset = { version = "0.6.4", optional = true}
+mpi = { version = "0.6", optional = true, features = [
+    "user-operations",
+    "derive",
+] }
+memoffset = { version = "0.6.4", optional = true }
 
 # Bayesian
 friedrich = { version = "0.4.1", optional = true }
-statrs = { version = "0.15.0", optional = true } 
+statrs = { version = "0.15.0", optional = true }
 
 # Visualization features
-bevy_prototype_lyon = {version="0.11.0", optional=true, default-features = false}
-image = {version="0.24.8", optional=true, default-features = false}
-bevy_egui = {version="0.25.0",optional=true}
-bevy = {version= "0.13.0", optional = true, features = ["x11"]}
+bevy_prototype_lyon = { version = "0.11.0", optional = true, default-features = false }
+image = { version = "0.24.8", optional = true, default-features = false }
+bevy_egui = { version = "0.25.0", optional = true }
+bevy = { version = "0.13.0", optional = true, features = ["x11"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-getrandom = {version="0.2.6", features=["wasm-bindgen"], default-features = false}
+getrandom = { version = "0.2.6", features = [
+    "wasm-bindgen",
+], default-features = false }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 tui = "0.18.0"
 crossterm = "0.23.2"
 sysinfo = "0.27.2"
-plotters = "0.3.1" 
+plotters = "0.3.1"
 
 # Must be kept separate and asked to the user due to missing support for conditional compilation of features
 # https://github.com/rust-lang/cargo/issues/7914
 # "mpi-fork-fnsp" old dependency, fork of mpi
 [features]
-distributed_mpi = [
-    "mpi",
-    "memoffset"
-]
+distributed_mpi = ["mpi", "memoffset"]
 aws = [
     "lambda_runtime",
     "serde",
@@ -105,15 +107,9 @@ aws = [
     "aws-sdk-lambda",
     "futures",
 ]
-bayesian = [
-    "friedrich",
-    "statrs", 
-]
+bayesian = ["friedrich", "statrs"]
 
-parallel = [
-    "crossbeam",
-    "clap",
-]
+parallel = ["crossbeam", "clap"]
 
 visualization = [
     "bevy_prototype_lyon",
@@ -124,7 +120,7 @@ visualization = [
     "bevy/png",
     "image",
     "bevy_egui",
-    "bevy_egui/default_fonts"
+    "bevy_egui/default_fonts",
 ]
 visualization_wasm = [
     "bevy_prototype_lyon",
@@ -135,7 +131,7 @@ visualization_wasm = [
     "bevy/png",
     "image",
     "bevy_egui",
-    "bevy_egui/default_fonts"
+    "bevy_egui/default_fonts",
 ]
 
 [package.metadata.docs.rs]
@@ -143,4 +139,4 @@ features = ["bayesian"]
 
 
 [lib]
-doctest = false     
+doctest = false
