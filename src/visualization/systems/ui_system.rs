@@ -1,4 +1,5 @@
 use bevy::diagnostic::DiagnosticsStore;
+use bevy::ecs::event::EventWriter;
 use bevy::prelude::{Entity, Query, Without};
 use bevy::time::{Fixed, Time};
 use bevy::window::Window;
@@ -10,6 +11,8 @@ use crate::bevy::diagnostic::FrameTimeDiagnosticsPlugin;
 use crate::bevy::prelude::{Commands, Res, ResMut};
 use crate::bevy::render::camera::Camera;
 use crate::engine::{schedule::Schedule, state::State};
+use crate::visualization::plugins::gis::OpenDialog;
+use crate::visualization::visualization::ChoicedPlugin;
 use crate::visualization::{
     asset_handle_factory::AssetHandleFactoryResource,
     simulation_descriptor::SimulationDescriptor,
@@ -28,6 +31,8 @@ pub fn ui_system<I: VisualizationState<S> + Clone + 'static + bevy::prelude::Res
     diagnostics: Res<DiagnosticsStore>,
     mut commands: Commands,
     mut time: ResMut<Time<Fixed>>,
+    mut plugin: ResMut<ChoicedPlugin>,
+    mut dialog_event: EventWriter<OpenDialog>,
 ) {
     egui::SidePanel::left("main").show(egui_context.ctx_mut(), |ui| {
         ui.vertical_centered(|ui| {
@@ -108,6 +113,32 @@ pub fn ui_system<I: VisualizationState<S> + Clone + 'static + bevy::prelude::Res
                     if ui.button("⏸ Pause").clicked() {
                         sim_data.paused = true;
                     }
+
+                    ui.separator();
+
+                    ui.vertical_centered(|ui| {
+                        let mut check = false;
+                        let gis_check = egui::Checkbox::new(&mut check, "gis");
+
+                        if ui.add(gis_check).clicked() {
+                            plugin.plugin_name = crate::visualization::visualization::Plugins::Gis;
+                        }
+
+                        if plugin
+                            .plugin_name
+                            .eq(&crate::visualization::visualization::Plugins::Gis)
+                        {
+                            let select_btn = egui::Button::new(
+                                RichText::new("▶ Select File").color(Color32::GREEN),
+                            );
+
+                            if ui.add(select_btn).clicked() {
+                                dialog_event.send(OpenDialog(true));
+                            }
+                        }
+                    });
+
+                    ui.separator();
                 });
             });
         });

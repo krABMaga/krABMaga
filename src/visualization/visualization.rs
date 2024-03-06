@@ -35,6 +35,17 @@ pub struct Visualization {
     background_color: Color,
 }
 
+#[derive(Resource)]
+pub struct ChoicedPlugin {
+    pub plugin_name: Plugins,
+}
+
+#[derive(PartialEq, Eq)]
+pub enum Plugins {
+    Gis,
+    None,
+}
+
 impl Visualization {
     // Specify width and height of the window where the visualization will appear. Defaults to 500x300.
     pub fn with_window_dimensions(mut self, width: f32, height: f32) -> Visualization {
@@ -122,6 +133,9 @@ impl Visualization {
         .insert_resource(ActiveState(Arc::new(Mutex::new(state))))
         .insert_resource(ActiveSchedule(Arc::new(Mutex::new(schedule))))
         .insert_resource(Initializer(cloned_init_call, Default::default()))
+        .insert_resource(ChoicedPlugin {
+            plugin_name: Plugins::None,
+        })
         .add_systems(FixedPreUpdate, simulation_system::<S>)
         .add_systems(Update, ui_system::<I, S>)
         .add_systems(FixedPostUpdate, renderer_system::<I, S>)
