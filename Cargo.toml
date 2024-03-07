@@ -38,15 +38,15 @@ indicatif = "0.16.2"
 rand_pcg = "0.3.1"
 chrono = "0.4"
 bevy_asset = "0.13"
-geo-bevy = "2.0.0"
-bevy_math = "0.13"
-bevy_pancam = { version = "0.11.0", features = ["bevy_egui"] }
-geo-types = "0.7.8"
-geo = "0.28.0"
-geojson = { version = "*", features = ["geo-types"] }
-eframe = "0.26.*"
-egui_file = "0.16.2"
-rfd = "0.14.*"
+geo-bevy = { version = "2.0.0", optional = true }
+bevy_math = { version = "0.13", optional = true }
+bevy_pancam = { version = "0.11.0", features = ["bevy_egui"], optional = true }
+geo-types = { version = "0.7.8", optional = true }
+geo = { version = "0.28.0", optional = true }
+geojson = { version = "*", features = ["geo-types"], optional = true }
+eframe = { version = "0.26.*", optional = true }
+egui_file = { version = "0.16.2", optional = true }
+rfd = { version = "0.14.*", optional = true }
 
 # Parallel
 crossbeam = { version = "0.8.1", optional = true }
@@ -121,6 +121,16 @@ visualization = [
     "image",
     "bevy_egui",
     "bevy_egui/default_fonts",
+    "geojson",
+    "geo",
+    "rfd",
+    "geo-types",
+    "bevy_pancam",
+    "geo-bevy",
+    "bevy_math",
+    "eframe",
+    "egui_file",
+
 ]
 visualization_wasm = [
     "bevy_prototype_lyon",
