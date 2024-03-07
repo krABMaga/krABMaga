@@ -6,6 +6,7 @@ use bevy::window::Window;
 use bevy_egui::egui;
 use bevy_egui::egui::{Color32, RichText};
 use bevy_egui::EguiContexts;
+use eframe::egui::menu;
 
 use crate::bevy::diagnostic::FrameTimeDiagnosticsPlugin;
 use crate::bevy::prelude::{Commands, Res, ResMut};
@@ -116,18 +117,21 @@ pub fn ui_system<I: VisualizationState<S> + Clone + 'static + bevy::prelude::Res
 
                     ui.separator();
 
-                    ui.vertical_centered(|ui| {
-                        let mut check = false;
-                        let gis_check = egui::Checkbox::new(&mut check, "gis");
+                    menu::bar(ui, |ui| {
+                        let menu_title = RichText::new("PLUGINS").color(Color32::RED);
 
-                        if ui.add(gis_check).clicked() {
-                            plugin.plugin_name = crate::visualization::visualization::Plugins::Gis;
-                        }
+                        ui.menu_button(menu_title, |ui| {
+                            if ui.button("Gis").clicked() {
+                                plugin.plugin_name =
+                                    crate::visualization::visualization::Plugins::Gis;
+                            }
+                        });
+                    });
 
-                        if plugin
-                            .plugin_name
-                            .eq(&crate::visualization::visualization::Plugins::Gis)
-                        {
+                    match plugin.plugin_name {
+                        crate::visualization::visualization::Plugins::Gis => {
+                            ui.separator();
+
                             let select_btn = egui::Button::new(
                                 RichText::new("▶ Select File").color(Color32::GREEN),
                             );
@@ -135,10 +139,13 @@ pub fn ui_system<I: VisualizationState<S> + Clone + 'static + bevy::prelude::Res
                             if ui.add(select_btn).clicked() {
                                 dialog_event.send(OpenDialog(true));
                             }
-                        }
-                    });
 
-                    ui.separator();
+                            ui.separator();
+                        }
+                        crate::visualization::visualization::Plugins::None => {
+                            //nothing to do here
+                        },
+                    }
                 });
             });
         });
