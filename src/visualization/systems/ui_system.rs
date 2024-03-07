@@ -136,6 +136,8 @@ pub fn ui_system<I: VisualizationState<S> + Clone + 'static + bevy::prelude::Res
                                 RichText::new("▶ Select File").color(Color32::GREEN),
                             );
 
+                            ui.heading(RichText::new("GIS").color(Color32::DEBUG_COLOR));
+
                             if ui.add(select_btn).clicked() {
                                 dialog_event.send(OpenDialog(true));
                             }
