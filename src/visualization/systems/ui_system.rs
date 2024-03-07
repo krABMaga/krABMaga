@@ -144,7 +144,7 @@ pub fn ui_system<I: VisualizationState<S> + Clone + 'static + bevy::prelude::Res
                         }
                         crate::visualization::visualization::Plugins::None => {
                             //nothing to do here
-                        },
+                        }
                     }
                 });
             });
