@@ -13,7 +13,7 @@ use crate::bevy::prelude::{Commands, Res, ResMut};
 use crate::bevy::render::camera::Camera;
 use crate::engine::{schedule::Schedule, state::State};
 use crate::visualization::plugins::gis::OpenDialog;
-use crate::visualization::visualization::ChoicedPlugin;
+use crate::visualization::visualization::{ChoicedPlugin, Plugins};
 use crate::visualization::{
     asset_handle_factory::AssetHandleFactoryResource,
     simulation_descriptor::SimulationDescriptor,
@@ -123,13 +123,13 @@ pub fn ui_system<I: VisualizationState<S> + Clone + 'static + bevy::prelude::Res
                         ui.menu_button(menu_title, |ui| {
                             if ui.button("Gis").clicked() {
                                 plugin.plugin_name =
-                                    crate::visualization::visualization::Plugins::Gis;
+                                    Some(Plugins::Gis);
                             }
                         });
                     });
 
                     match plugin.plugin_name {
-                        crate::visualization::visualization::Plugins::Gis => {
+                        Some(Plugins::Gis) => {
                             ui.separator();
 
                             let select_btn = egui::Button::new(
@@ -144,9 +144,7 @@ pub fn ui_system<I: VisualizationState<S> + Clone + 'static + bevy::prelude::Res
 
                             ui.separator();
                         }
-                        crate::visualization::visualization::Plugins::None => {
-                            //nothing to do here
-                        }
+                        None => ()
                     }
                 });
             });

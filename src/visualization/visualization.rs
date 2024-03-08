@@ -37,13 +37,12 @@ pub struct Visualization {
 
 #[derive(Resource)]
 pub struct ChoicedPlugin {
-    pub plugin_name: Plugins,
+    pub plugin_name: Option<Plugins>,
 }
 
 #[derive(PartialEq, Eq)]
 pub enum Plugins {
     Gis,
-    None,
 }
 
 impl Visualization {
@@ -133,9 +132,7 @@ impl Visualization {
         .insert_resource(ActiveState(Arc::new(Mutex::new(state))))
         .insert_resource(ActiveSchedule(Arc::new(Mutex::new(schedule))))
         .insert_resource(Initializer(cloned_init_call, Default::default()))
-        .insert_resource(ChoicedPlugin {
-            plugin_name: Plugins::None,
-        })
+        .insert_resource(ChoicedPlugin { plugin_name: None })
         .add_systems(FixedPreUpdate, simulation_system::<S>)
         .add_systems(Update, ui_system::<I, S>)
         .add_systems(FixedPostUpdate, renderer_system::<I, S>)

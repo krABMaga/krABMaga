@@ -7,6 +7,8 @@ use ::bevy::prelude::*;
 //use bevy::render::camera::ScalingMode;
 use bevy_pancam::PanCamPlugin;
 
+use crate::visualization::simulation_descriptor::SimulationDescriptor;
+
 use self::lib::{EntityFile, PickedFile};
 
 #[derive(Event)]
@@ -29,6 +31,7 @@ fn pick_file(
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut picked: ResMut<PickedFile>,
     mut event_dialog: EventReader<OpenDialog>,
+    sim_descriptor: ResMut<SimulationDescriptor>,
     camera_query: Query<Entity, With<Camera>>,
     files_query: Query<&EntityFile>,
 ) {
@@ -63,7 +66,9 @@ fn pick_file(
                             vec_entity_file.push(file.clone());
                         }
 
-                        lib::center_camera(&mut commands, camera, vec_entity_file.clone());
+                        let x = sim_descriptor.width - sim_descriptor.ui_width ;
+
+                        lib::center_camera(&mut commands, camera, vec_entity_file.clone(), x / 2.);
                     }
                 }
                 picked.picked = true;

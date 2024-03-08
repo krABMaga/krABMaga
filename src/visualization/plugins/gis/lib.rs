@@ -3,6 +3,7 @@ use bevy::{
     math::{Vec2, Vec3},
     prelude::{default, SpatialBundle},
     render::{
+        camera::OrthographicProjection,
         color::Color,
         mesh::{Mesh, Meshable},
     },
@@ -208,7 +209,12 @@ pub fn build_linestring(
     (builder, spatial)
 }
 
-pub fn center_camera(commands: &mut Commands, camera: Entity, entity_file: Vec<EntityFile>) {
+pub fn center_camera(
+    commands: &mut Commands,
+    camera: Entity,
+    entity_file: Vec<EntityFile>,
+    x: f32,
+) {
     let mut points: Vec<geo_types::Point<f64>> = Vec::new();
     let mut new_camera = bevy::core_pipeline::core_2d::Camera2dBundle::default();
 
@@ -225,8 +231,14 @@ pub fn center_camera(commands: &mut Commands, camera: Entity, entity_file: Vec<E
     }
 
     let center = medium_centroid(points);
+    let projection = OrthographicProjection {
+        scaling_mode: bevy::render::camera::ScalingMode::WindowSize(0.5),
+        scale: 0.05,
+        ..default()
+    };
 
-    new_camera.transform = Transform::from_xyz(center.0.x as f32, center.0.y as f32, 999.9);
+    new_camera.transform = Transform::from_xyz((center.0.x as f32 - x) / 1.5 , center.0.y as f32, 999.9);
+    new_camera.projection = projection;
 
     commands
         .spawn(new_camera)
