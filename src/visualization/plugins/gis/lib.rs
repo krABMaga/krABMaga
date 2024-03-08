@@ -237,7 +237,8 @@ pub fn center_camera(
         ..default()
     };
 
-    new_camera.transform = Transform::from_xyz((center.0.x as f32 - x) / 1.5 , center.0.y as f32, 999.9);
+    new_camera.transform =
+        Transform::from_xyz((center.0.x as f32 - x) / 1.5, center.0.y as f32, 999.9);
     new_camera.projection = projection;
 
     commands

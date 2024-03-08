@@ -66,7 +66,7 @@ fn pick_file(
                             vec_entity_file.push(file.clone());
                         }
 
-                        let x = sim_descriptor.width - sim_descriptor.ui_width ;
+                        let x = sim_descriptor.width - sim_descriptor.ui_width;
 
                         lib::center_camera(&mut commands, camera, vec_entity_file.clone(), x / 2.);
                     }

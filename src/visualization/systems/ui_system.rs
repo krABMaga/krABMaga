@@ -122,8 +122,7 @@ pub fn ui_system<I: VisualizationState<S> + Clone + 'static + bevy::prelude::Res
 
                         ui.menu_button(menu_title, |ui| {
                             if ui.button("Gis").clicked() {
-                                plugin.plugin_name =
-                                    Some(Plugins::Gis);
+                                plugin.plugin_name = Some(Plugins::Gis);
                             }
                         });
                     });
@@ -144,7 +143,7 @@ pub fn ui_system<I: VisualizationState<S> + Clone + 'static + bevy::prelude::Res
 
                             ui.separator();
                         }
-                        None => ()
+                        None => (),
                     }
                 });
             });
