@@ -42,11 +42,12 @@ geo-bevy = { version = "2.0.0", optional = true }
 bevy_math = { version = "0.13", optional = true }
 bevy_pancam = { version = "0.11.0", features = ["bevy_egui"], optional = true }
 geo-types = { version = "0.7.8", optional = true }
-geo = { version = "0.28.0", optional = true }
+geo = { version = "0.28.0", optional = true, features = ["use-proj"]}
 geojson = { version = "*", features = ["geo-types"], optional = true }
 eframe = { version = "0.26.*", optional = true }
 egui_file = { version = "0.16.2", optional = true }
 rfd = { version = "0.14.*", optional = true }
+geo-rasterize = {version = "0.1.2", optional = true}
 
 # Parallel
 crossbeam = { version = "0.8.1", optional = true }
@@ -125,6 +126,7 @@ visualization = [
     "geo",
     "rfd",
     "geo-types",
+    "geo-rasterize",
     "bevy_pancam",
     "geo-bevy",
     "bevy_math",

@@ -121,8 +121,7 @@ pub fn read_geojson(path: String) -> GeoJson {
     GeoJson::from_str(&geojson_str).unwrap()
 }
 
-//read geometry with a feature collection
-pub fn read_geojson_feature_collection(geojson: GeoJson) -> FeatureCollection {
+pub fn get_feature_collection(geojson: GeoJson) -> FeatureCollection {
     let collection: GeometryCollection = quick_collection(&geojson).unwrap();
     FeatureCollection::from(&collection)
 }
@@ -252,14 +251,19 @@ pub fn build_meshes(
     commands: &mut Commands,
     path: String,
     name: String,
-) -> (AllLayers, Vec<Entity>) {
+) -> (AllLayers, Vec<Entity>, Vec<geo::Geometry<f64>>) {
     let geojson = read_geojson(path);
-    let feature_collection = read_geojson_feature_collection(geojson);
+    let feature_collection = get_feature_collection(geojson);
     let mut layers: AllLayers = AllLayers::new();
     let mut entities_id: Vec<Entity> = Vec::new();
-    for feature in feature_collection {
+    let mut shapes: Vec<geo::Geometry<f64>> = vec![];
+
+    for feature in feature_collection.clone().into_iter() {
         let geometry = feature.geometry.unwrap();
         let geom: geo::Geometry = geometry.try_into().unwrap();
+
+        shapes.push(geom.clone());
+
         match geom {
             Geometry::Polygon(polygon) => {
                 layers.add(geo::Geometry::Polygon(polygon.clone()), name.clone());
@@ -394,5 +398,5 @@ pub fn build_meshes(
         }
     }
 
-    (layers, entities_id)
+    (layers, entities_id, shapes)
 }

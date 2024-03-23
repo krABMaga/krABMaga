@@ -1,10 +1,6 @@
 mod lib;
 
 use ::bevy::prelude::*;
-
-//use bevy_pancam::*;
-
-//use bevy::render::camera::ScalingMode;
 use bevy_pancam::PanCamPlugin;
 
 use crate::visualization::simulation_descriptor::SimulationDescriptor;
@@ -43,7 +39,7 @@ fn pick_file(
                     if extension.eq("json") || extension.eq("geojson") {
                         let path = Some(path_buf.display().to_string()).unwrap();
                         let name = path_buf.file_name().unwrap().to_str().unwrap();
-                        let (layers, entities) = lib::build_meshes(
+                        let (layers, entities, shapes) = lib::build_meshes(
                             &mut *meshes,
                             &mut *materials,
                             &mut commands,
@@ -67,8 +63,40 @@ fn pick_file(
                         }
 
                         let x = sim_descriptor.width - sim_descriptor.ui_width;
+                        let shapes: Vec<geo::Geometry<i32>> = vec![
+                            geo::Point::new(3, 4).into(),
+                            geo::Line::new((0, -3), (-3, 0)).into(),
+                        ];
+                        let geo_transform =
+                            geo_rasterize::Transform::from_array(shapes.try_into().unwrap());
+
+                        let mut r = geo_rasterize::LabelBuilder::background(0)
+                            .width(4)
+                            .height(5)
+                            .geo_to_pix(geo_transform.inverse().unwrap())
+                            .build()
+                            .unwrap();
 
                         lib::center_camera(&mut commands, camera, vec_entity_file.clone(), x / 2.);
+
+                        for shape in shapes {
+                            let _ = r.rasterize(&shape, 1).unwrap();
+                        }
+
+                        println!("{:?}", r.finish());
+
+                        //for shape in shapes {
+                        //    let _ = r.rasterize(&shape, 1).ok().unwrap();
+                        //}
+                        //let pixels = r.finish();
+                        //println!("{:?}", pixels);
+                        //let mut i = 0;
+                        //for pixel in pixels {
+                        //    if pixel.eq(&1) {
+                        //        i += 1;
+                        //    }
+                        //}
+                        //println!("numero di pixel pieni {:?}", i);
                     }
                 }
                 picked.picked = true;
