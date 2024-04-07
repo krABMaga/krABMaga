@@ -16,9 +16,11 @@ use bevy_prototype_lyon::{
     entity::ShapeBundle,
     geometry::*,
 };
-use geo::{Centroid, CoordsIter, GeometryCollection};
+use geo::{BoundingRect, Centroid, CoordsIter, Extremes, GeodesicArea, GeometryCollection};
+use geo_bevy::geometry_collection_to_mesh;
 use geo_types::{Geometry, Point};
 use geojson::{quick_collection, FeatureCollection, GeoJson};
+use proj::Proj;
 use std::{fs, str::FromStr};
 
 #[derive(Component, Clone)]
@@ -255,16 +257,19 @@ pub fn build_meshes(
     let geojson = read_geojson(path);
     let feature_collection = get_feature_collection(geojson);
     let mut layers: AllLayers = AllLayers::new();
-    let mut entities_id: Vec<Entity> = Vec::new();
     let mut shapes: Vec<geo::Geometry<f64>> = vec![];
+    let mut entities_id: Vec<Entity> = Vec::new();
 
     for feature in feature_collection.clone().into_iter() {
         let geometry = feature.geometry.unwrap();
         let geom: geo::Geometry = geometry.try_into().unwrap();
+        let geo_t: geo_types::Geometry = geom.try_into().unwrap();
+        let geom_transformed =
+            geo::Transform::transformed_crs_to_crs(&geo_t, "EPSG:4326", "EPSG:3857").unwrap();
 
-        shapes.push(geom.clone());
+        shapes.push(geom_transformed.clone());
 
-        match geom {
+        match geom_transformed {
             Geometry::Polygon(polygon) => {
                 layers.add(geo::Geometry::Polygon(polygon.clone()), name.clone());
 
@@ -305,7 +310,7 @@ pub fn build_meshes(
             }
             Geometry::Point(point) => {
                 let center = point.centroid();
-                layers.add(geom.clone(), name.clone());
+                layers.add(geom_transformed.clone(), name.clone());
                 let z = calculate_z(layers.last_layer_id(), MeshType::Point);
 
                 let id = commands

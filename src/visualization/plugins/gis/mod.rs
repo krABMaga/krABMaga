@@ -7,6 +7,8 @@ use crate::visualization::simulation_descriptor::SimulationDescriptor;
 
 use self::lib::{EntityFile, PickedFile};
 
+extern crate tinyfiledialogs as tfd;
+
 #[derive(Event)]
 pub struct OpenDialog(pub bool);
 
@@ -67,13 +69,10 @@ fn pick_file(
                             geo::Point::new(3, 4).into(),
                             geo::Line::new((0, -3), (-3, 0)).into(),
                         ];
-                        let geo_transform =
-                            geo_rasterize::Transform::from_array(shapes.try_into().unwrap());
 
                         let mut r = geo_rasterize::LabelBuilder::background(0)
-                            .width(4)
-                            .height(5)
-                            .geo_to_pix(geo_transform.inverse().unwrap())
+                            .width(10000000000)
+                            .height(1000000000)
                             .build()
                             .unwrap();
 
@@ -84,19 +83,6 @@ fn pick_file(
                         }
 
                         println!("{:?}", r.finish());
-
-                        //for shape in shapes {
-                        //    let _ = r.rasterize(&shape, 1).ok().unwrap();
-                        //}
-                        //let pixels = r.finish();
-                        //println!("{:?}", pixels);
-                        //let mut i = 0;
-                        //for pixel in pixels {
-                        //    if pixel.eq(&1) {
-                        //        i += 1;
-                        //    }
-                        //}
-                        //println!("numero di pixel pieni {:?}", i);
                     }
                 }
                 picked.picked = true;
