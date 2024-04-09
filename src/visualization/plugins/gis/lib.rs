@@ -16,11 +16,9 @@ use bevy_prototype_lyon::{
     entity::ShapeBundle,
     geometry::*,
 };
-use geo::{BoundingRect, Centroid, CoordsIter, Extremes, GeodesicArea, GeometryCollection};
-use geo_bevy::geometry_collection_to_mesh;
+use geo::{Centroid, CoordsIter, GeometryCollection};
 use geo_types::{Geometry, Point};
 use geojson::{quick_collection, FeatureCollection, GeoJson};
-use proj::Proj;
 use std::{fs, str::FromStr};
 
 #[derive(Component, Clone)]
@@ -253,12 +251,16 @@ pub fn build_meshes(
     commands: &mut Commands,
     path: String,
     name: String,
-) -> (AllLayers, Vec<Entity>, Vec<geo::Geometry<f64>>) {
+) -> (AllLayers, Vec<Entity>, Vec<geo::Geometry<f64>>, i32, i32) {
     let geojson = read_geojson(path);
     let feature_collection = get_feature_collection(geojson);
     let mut layers: AllLayers = AllLayers::new();
     let mut shapes: Vec<geo::Geometry<f64>> = vec![];
     let mut entities_id: Vec<Entity> = Vec::new();
+    let mut min_y = 0.;
+    let mut min_x = 0.;
+    let mut max_y = 0.;
+    let mut max_x = 0.;
 
     for feature in feature_collection.clone().into_iter() {
         let geometry = feature.geometry.unwrap();
@@ -268,6 +270,8 @@ pub fn build_meshes(
             geo::Transform::transformed_crs_to_crs(&geo_t, "EPSG:4326", "EPSG:3857").unwrap();
 
         shapes.push(geom_transformed.clone());
+
+        (min_x, min_y, max_x, max_y) = max_min_coords(geom_transformed.clone());
 
         match geom_transformed {
             Geometry::Polygon(polygon) => {
@@ -403,5 +407,35 @@ pub fn build_meshes(
         }
     }
 
-    (layers, entities_id, shapes)
+    (
+        layers,
+        entities_id,
+        shapes,
+        (max_x - min_x) as i32 + 1,
+        (max_y - min_y) as i32 + 1,
+    )
+}
+
+pub fn max_min_coords(geom: Geometry) -> (f64, f64, f64, f64) {
+    let mut max_x = f64::NEG_INFINITY;
+    let mut max_y = f64::NEG_INFINITY;
+    let mut min_x = f64::INFINITY;
+    let mut min_y = f64::INFINITY;
+
+    for coord in geom.coords_iter() {
+        if coord.x > max_x {
+            max_x = coord.x;
+        }
+        if coord.x < min_x {
+            min_x = coord.x;
+        }
+        if coord.y > max_y {
+            max_y = coord.y;
+        }
+        if coord.y < min_y {
+            min_y = coord.y;
+        }
+    }
+
+    return (min_x, min_y, max_x, max_y);
 }

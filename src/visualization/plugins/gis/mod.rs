@@ -41,7 +41,7 @@ fn pick_file(
                     if extension.eq("json") || extension.eq("geojson") {
                         let path = Some(path_buf.display().to_string()).unwrap();
                         let name = path_buf.file_name().unwrap().to_str().unwrap();
-                        let (layers, entities, shapes) = lib::build_meshes(
+                        let (layers, entities, shapes, width, height) = lib::build_meshes(
                             &mut *meshes,
                             &mut *materials,
                             &mut commands,
@@ -65,14 +65,12 @@ fn pick_file(
                         }
 
                         let x = sim_descriptor.width - sim_descriptor.ui_width;
-                        let shapes: Vec<geo::Geometry<i32>> = vec![
-                            geo::Point::new(3, 4).into(),
-                            geo::Line::new((0, -3), (-3, 0)).into(),
-                        ];
+
+                        println!("{:?} {:?}", width as usize, height as usize);
 
                         let mut r = geo_rasterize::LabelBuilder::background(0)
-                            .width(10000000000)
-                            .height(1000000000)
+                            .width(width as usize)
+                            .height(height as usize)
                             .build()
                             .unwrap();
 
