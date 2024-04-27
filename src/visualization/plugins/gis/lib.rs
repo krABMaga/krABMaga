@@ -19,6 +19,7 @@ use bevy_prototype_lyon::{
 use geo::{Centroid, CoordsIter, GeometryCollection};
 use geo_types::{Geometry, Point};
 use geojson::{quick_collection, FeatureCollection, GeoJson};
+use proj::Proj;
 use std::{fs, str::FromStr};
 
 #[derive(Component, Clone)]
@@ -184,6 +185,7 @@ pub fn build_linestring(
     for coord in line_string.0 {
         coords.push(Point::new(coord.x as f64, coord.y as f64));
     }
+
     let start = coords.get(0).unwrap();
     let last = coords.last().unwrap();
     let shape = bevy_prototype_lyon::shapes::Line(
@@ -231,8 +233,8 @@ pub fn center_camera(
 
     let center = medium_centroid(points);
     let projection = OrthographicProjection {
-        scaling_mode: bevy::render::camera::ScalingMode::WindowSize(0.5),
-        scale: 0.05,
+        scaling_mode: bevy::render::camera::ScalingMode::WindowSize(0.1),
+        scale: 0.01,
         ..default()
     };
 
@@ -252,28 +254,45 @@ pub fn build_meshes(
     path: String,
     name: String,
 ) -> (AllLayers, Vec<Entity>, Vec<geo::Geometry<f64>>, i32, i32) {
+    let to = "EPSG:4269";
+    let from = "EPSG:4326";
+    let proj = Proj::new_known_crs(&from, &to, None).unwrap();
     let geojson = read_geojson(path);
     let feature_collection = get_feature_collection(geojson);
     let mut layers: AllLayers = AllLayers::new();
     let mut shapes: Vec<geo::Geometry<f64>> = vec![];
+    let mut min_y = f64::INFINITY;
+    let mut min_x = f64::INFINITY;
+    let mut max_y = f64::NEG_INFINITY;
+    let mut max_x = f64::NEG_INFINITY;
     let mut entities_id: Vec<Entity> = Vec::new();
-    let mut min_y = 0.;
-    let mut min_x = 0.;
-    let mut max_y = 0.;
-    let mut max_x = 0.;
 
     for feature in feature_collection.clone().into_iter() {
         let geometry = feature.geometry.unwrap();
         let geom: geo::Geometry = geometry.try_into().unwrap();
         let geo_t: geo_types::Geometry = geom.try_into().unwrap();
-        let geom_transformed =
-            geo::Transform::transformed_crs_to_crs(&geo_t, "EPSG:4326", "EPSG:3857").unwrap();
 
-        shapes.push(geom_transformed.clone());
+        shapes.push(geo_t.clone());
 
-        (min_x, min_y, max_x, max_y) = max_min_coords(geom_transformed.clone());
+        let (tmp_min_x, tmp_min_y, tmp_max_x, tmp_max_y) = max_min_coords(&geo_t);
 
-        match geom_transformed {
+        if tmp_min_x < min_x {
+            min_x = tmp_min_x;
+        }
+
+        if tmp_min_y < min_y {
+            min_y = tmp_min_y;
+        }
+
+        if tmp_max_x > max_x {
+            max_x = tmp_max_x;
+        }
+
+        if tmp_max_y > max_y {
+            max_y = tmp_min_y;
+        }
+
+        match geo_t {
             Geometry::Polygon(polygon) => {
                 layers.add(geo::Geometry::Polygon(polygon.clone()), name.clone());
 
@@ -314,7 +333,7 @@ pub fn build_meshes(
             }
             Geometry::Point(point) => {
                 let center = point.centroid();
-                layers.add(geom_transformed.clone(), name.clone());
+                layers.add(geo_t.clone(), name.clone());
                 let z = calculate_z(layers.last_layer_id(), MeshType::Point);
 
                 let id = commands
@@ -411,18 +430,18 @@ pub fn build_meshes(
         layers,
         entities_id,
         shapes,
-        (max_x - min_x) as i32 + 1,
-        (max_y - min_y) as i32 + 1,
+        (max_x - min_x) as i32,
+        (max_y - min_y) as i32,
     )
 }
 
-pub fn max_min_coords(geom: Geometry) -> (f64, f64, f64, f64) {
+pub fn max_min_coords(geom: &Geometry) -> (f64, f64, f64, f64) {
     let mut max_x = f64::NEG_INFINITY;
     let mut max_y = f64::NEG_INFINITY;
     let mut min_x = f64::INFINITY;
     let mut min_y = f64::INFINITY;
 
-    for coord in geom.coords_iter() {
+    for coord in geom.exterior_coords_iter() {
         if coord.x > max_x {
             max_x = coord.x;
         }
@@ -433,7 +452,7 @@ pub fn max_min_coords(geom: Geometry) -> (f64, f64, f64, f64) {
             max_y = coord.y;
         }
         if coord.y < min_y {
-            min_y = coord.y;
+            min_y = coord.y
         }
     }
 

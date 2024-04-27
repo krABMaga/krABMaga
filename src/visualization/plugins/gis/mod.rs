@@ -7,8 +7,6 @@ use crate::visualization::simulation_descriptor::SimulationDescriptor;
 
 use self::lib::{EntityFile, PickedFile};
 
-extern crate tinyfiledialogs as tfd;
-
 #[derive(Event)]
 pub struct OpenDialog(pub bool);
 
@@ -41,7 +39,7 @@ fn pick_file(
                     if extension.eq("json") || extension.eq("geojson") {
                         let path = Some(path_buf.display().to_string()).unwrap();
                         let name = path_buf.file_name().unwrap().to_str().unwrap();
-                        let (layers, entities, shapes, width, height) = lib::build_meshes(
+                        let (layers, entities, shapes, _width, _height) = lib::build_meshes(
                             &mut *meshes,
                             &mut *materials,
                             &mut commands,
@@ -66,21 +64,22 @@ fn pick_file(
 
                         let x = sim_descriptor.width - sim_descriptor.ui_width;
 
-                        println!("{:?} {:?}", width as usize, height as usize);
+                        lib::center_camera(&mut commands, camera, vec_entity_file.clone(), x / 2.);
 
                         let mut r = geo_rasterize::LabelBuilder::background(0)
-                            .width(width as usize)
-                            .height(height as usize)
+                            .width(30)
+                            .height(30)
                             .build()
                             .unwrap();
 
-                        lib::center_camera(&mut commands, camera, vec_entity_file.clone(), x / 2.);
-
                         for shape in shapes {
-                            let _ = r.rasterize(&shape, 1).unwrap();
+                            r.rasterize(&shape, 1).unwrap();
                         }
+                        let pixels = r.finish();
 
-                        println!("{:?}", r.finish());
+                        for row in pixels.rows() {
+                            println!("{:?}", row);
+                        }
                     }
                 }
                 picked.picked = true;

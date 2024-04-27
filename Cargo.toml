@@ -45,7 +45,7 @@ egui_file = { version = "0.16.2", optional = true }
 rfd = { version = "0.14.*", optional = true, features = [
     "gtk3",
 ], default-features = false }
-tinyfiledialogs = { version = "3.9.1", optional = true }
+polyline = {version = "0.10.1", optional = true}
 
 # Geo Dependencies
 geo = { version = "0.28.0", optional = true, features = ["use-proj"] }
@@ -138,8 +138,8 @@ visualization = [
     "bevy_math",
     "eframe",
     "egui_file",
-    "tinyfiledialogs",
     "proj",
+    "polyline"
 ]
 visualization_wasm = [
     "bevy_prototype_lyon",
