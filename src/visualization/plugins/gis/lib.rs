@@ -256,7 +256,6 @@ pub fn build_meshes(
 ) -> (AllLayers, Vec<Entity>, Vec<geo::Geometry<f64>>, i32, i32) {
     let to = "EPSG:4269";
     let from = "EPSG:4326";
-    let proj = Proj::new_known_crs(&from, &to, None).unwrap();
     let geojson = read_geojson(path);
     let feature_collection = get_feature_collection(geojson);
     let mut layers: AllLayers = AllLayers::new();

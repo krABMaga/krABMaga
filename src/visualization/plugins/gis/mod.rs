@@ -3,34 +3,42 @@ mod lib;
 use ::bevy::prelude::*;
 use bevy_pancam::PanCamPlugin;
 
-use crate::visualization::simulation_descriptor::SimulationDescriptor;
+use crate::engine::state::State;
+use crate::visualization::{simulation_descriptor::SimulationDescriptor, wrappers::ActiveState};
 
 use self::lib::{EntityFile, PickedFile};
 
 #[derive(Event)]
 pub struct OpenDialog(pub bool);
 
-pub struct GisPlugin;
+pub struct GisPlugin<S: State> {
+    pub phantom_data: std::marker::PhantomData<S>,
+}
 
-impl Plugin for GisPlugin {
+impl<S> Plugin for GisPlugin<S>
+where
+    S: State,
+{
     fn build(&self, app: &mut App) {
         app.insert_resource(PickedFile { picked: false });
         app.add_event::<OpenDialog>();
         app.add_plugins(PanCamPlugin);
-        app.add_systems(Update, pick_file);
+        app.add_systems(Update, pick_file::<S>);
     }
 }
 
-fn pick_file(
+fn pick_file<S: State>(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut picked: ResMut<PickedFile>,
     mut event_dialog: EventReader<OpenDialog>,
+    state: Res<ActiveState<S>>,
     sim_descriptor: ResMut<SimulationDescriptor>,
     camera_query: Query<Entity, With<Camera>>,
     files_query: Query<&EntityFile>,
 ) {
+    let mut state = state.0.lock().expect("error on lock");
     if let Some(camera) = camera_query.get_single().ok() {
         for event in event_dialog.read().into_iter() {
             if event.0.eq(&true) {
@@ -72,14 +80,17 @@ fn pick_file(
                             .build()
                             .unwrap();
 
+                        let mut pixels: Vec<i32> = Vec::new();
+
                         for shape in shapes {
                             r.rasterize(&shape, 1).unwrap();
                         }
-                        let pixels = r.finish();
 
-                        for row in pixels.rows() {
-                            println!("{:?}", row);
+                        for pixel in r.finish().mapv(|v| v as i32) {
+                            pixels.push(pixel);
                         }
+
+                        (*state).set_gis(pixels);
                     }
                 }
                 picked.picked = true;

@@ -140,8 +140,9 @@ impl Visualization {
         .add_systems(Startup, init_system::<I, S>)
         .add_plugins(FrameTimeDiagnosticsPlugin::default())
         .add_systems(Update, camera_system);
-
-        app.add_plugins(GisPlugin);
+        app.add_plugins(GisPlugin::<S> {
+            phantom_data: std::marker::PhantomData,
+        });
 
         app
     }

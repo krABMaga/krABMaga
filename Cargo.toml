@@ -46,6 +46,7 @@ rfd = { version = "0.14.*", optional = true, features = [
     "gtk3",
 ], default-features = false }
 polyline = {version = "0.10.1", optional = true}
+ndarray = {version = "0.15.6",optional = true}
 
 # Geo Dependencies
 geo = { version = "0.28.0", optional = true, features = ["use-proj"] }
@@ -139,7 +140,8 @@ visualization = [
     "eframe",
     "egui_file",
     "proj",
-    "polyline"
+    "polyline",
+    "ndarray"
 ]
 visualization_wasm = [
     "bevy_prototype_lyon",

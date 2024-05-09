@@ -42,8 +42,7 @@ cfg_if! {
         /// * `after_step` - define the optional behaviour of the state after computing the actual step
         ///
         /// * `end_condition` - define a condition where the simulation should end
-        pub trait State: Send + 'static {
-
+        pub trait State: Send + 'static + Sync {
             fn init(&mut self, schedule: &mut Schedule);
             fn as_any_mut(&mut self) -> &mut dyn Any;
             fn as_any(&self) -> &dyn Any;
@@ -60,6 +59,10 @@ cfg_if! {
             fn end_condition(&mut self, schedule: &mut Schedule) -> bool {
                 false
             }
+            fn get_gis(&self, vec: Vec<i32>){}
+            fn set_gis(&mut self, vec: Vec<i32>){}
         }
+
+
     }
 }
