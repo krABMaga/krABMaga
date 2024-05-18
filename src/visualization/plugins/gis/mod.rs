@@ -1,10 +1,10 @@
 mod lib;
 
+use crate::engine::state::State;
+use crate::visualization::wrappers::ActiveSchedule;
+use crate::visualization::{simulation_descriptor::SimulationDescriptor, wrappers::ActiveState};
 use ::bevy::prelude::*;
 use bevy_pancam::PanCamPlugin;
-
-use crate::engine::state::State;
-use crate::visualization::{simulation_descriptor::SimulationDescriptor, wrappers::ActiveState};
 
 use self::lib::{EntityFile, PickedFile};
 
@@ -34,6 +34,7 @@ fn pick_file<S: State>(
     mut picked: ResMut<PickedFile>,
     mut event_dialog: EventReader<OpenDialog>,
     state: Res<ActiveState<S>>,
+    schedule_resource: ResMut<ActiveSchedule>,
     sim_descriptor: ResMut<SimulationDescriptor>,
     camera_query: Query<Entity, With<Camera>>,
     files_query: Query<&EntityFile>,
@@ -86,11 +87,13 @@ fn pick_file<S: State>(
                             r.rasterize(&shape, 1).unwrap();
                         }
 
-                        for pixel in r.finish().mapv(|v| v as i32) {
-                            pixels.push(pixel);
+                        for i in r.finish().mapv(|x| x as i32) {
+                            pixels.push(i);
                         }
-
-                        (*state).set_gis(pixels);
+                        (*state).set_gis(
+                            pixels,
+                            &mut schedule_resource.0.lock().expect("error on lock"),
+                        );
                     }
                 }
                 picked.picked = true;

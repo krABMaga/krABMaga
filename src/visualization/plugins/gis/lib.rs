@@ -19,7 +19,6 @@ use bevy_prototype_lyon::{
 use geo::{Centroid, CoordsIter, GeometryCollection};
 use geo_types::{Geometry, Point};
 use geojson::{quick_collection, FeatureCollection, GeoJson};
-use proj::Proj;
 use std::{fs, str::FromStr};
 
 #[derive(Component, Clone)]
@@ -254,8 +253,6 @@ pub fn build_meshes(
     path: String,
     name: String,
 ) -> (AllLayers, Vec<Entity>, Vec<geo::Geometry<f64>>, i32, i32) {
-    let to = "EPSG:4269";
-    let from = "EPSG:4326";
     let geojson = read_geojson(path);
     let feature_collection = get_feature_collection(geojson);
     let mut layers: AllLayers = AllLayers::new();

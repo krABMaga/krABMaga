@@ -59,8 +59,10 @@ cfg_if! {
             fn end_condition(&mut self, schedule: &mut Schedule) -> bool {
                 false
             }
+            #[allow(unused_variables)]
             fn get_gis(&self, vec: Vec<i32>){}
-            fn set_gis(&mut self, vec: Vec<i32>){}
+            #[allow(unused_variables)]
+            fn set_gis(&mut self, vec: Vec<i32>,schedule: &mut Schedule){}
         }
 
 
