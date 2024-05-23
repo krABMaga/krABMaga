@@ -23,7 +23,7 @@ repository = "https://github.com/krABMaga/krABMaga"
 documentation = "https://docs.rs/krABMaga"
 
 [dependencies]
-hashbrown = "0.14.3"
+hashbrown = "0.12.3"
 priority-queue = "2.0.2"
 rand = "0.8.5"
 lazy_static = "1.4.0"
