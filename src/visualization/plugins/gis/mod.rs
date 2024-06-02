@@ -71,9 +71,12 @@ fn pick_file<S: State>(
                             vec_entity_file.push(file.clone());
                         }
 
-                        let x = sim_descriptor.width - sim_descriptor.ui_width;
-
-                        lib::center_camera(&mut commands, camera, vec_entity_file.clone(), x / 2.);
+                        lib::center_camera(
+                            &mut commands,
+                            camera,
+                            vec_entity_file.clone(),
+                            sim_descriptor.width,
+                        );
 
                         let mut r = geo_rasterize::LabelBuilder::background(0)
                             .width(30)
@@ -87,11 +90,14 @@ fn pick_file<S: State>(
                             r.rasterize(&shape, 1).unwrap();
                         }
 
-                        for i in r.finish().mapv(|x| x as i32) {
-                            pixels.push(i);
+                        for row in r.finish().rows() {
+                            for pixel in row.iter() {
+                                pixels.push(*pixel);
+                            }
                         }
+
                         (*state).set_gis(
-                            pixels,
+                            pixels.clone().into_iter().rev().collect::<Vec<i32>>(),
                             &mut schedule_resource.0.lock().expect("error on lock"),
                         );
                     }

@@ -168,7 +168,11 @@ pub fn build_polygon(
         closed: true,
     };
     let z = calculate_z(id, MeshType::Polygon);
-    let translation = Vec3 { x: 0., y: 0., z };
+    let translation = Vec3 {
+        x: 0.,
+        y: 0.,
+        z: 0.,
+    };
     let transform = Transform::from_translation(translation);
     let spatial = SpatialBundle::from_transform(transform);
 
@@ -200,7 +204,7 @@ pub fn build_linestring(
     let translation = Vec3 {
         x: 0.,
         y: 0.,
-        z: calculate_z(id, MeshType::LineString),
+        z: 0.,
     };
     let transform = Transform::from_translation(translation);
     let spatial = SpatialBundle::from_transform(transform);
@@ -237,8 +241,7 @@ pub fn center_camera(
         ..default()
     };
 
-    new_camera.transform =
-        Transform::from_xyz((center.0.x as f32 - x) / 1.5, center.0.y as f32, 999.9);
+    new_camera.transform = Transform::from_xyz(x - center.0.x as f32, center.0.y as f32, 999.9);
     new_camera.projection = projection;
 
     commands
@@ -301,7 +304,7 @@ pub fn build_meshes(
                             spatial,
                             ..default()
                         },
-                        Fill::color(Color::WHITE),
+                        Fill::color(Color::NONE),
                         Stroke::new(Color::BLUE, 0.1),
                     ))
                     .id();
@@ -341,7 +344,7 @@ pub fn build_meshes(
                         transform: Transform::from_translation(Vec3::new(
                             center.0.x as f32,
                             center.0.y as f32,
-                            z,
+                            0.,
                         )),
                         ..Default::default()
                     })
@@ -365,7 +368,7 @@ pub fn build_meshes(
                                 spatial,
                                 ..default()
                             },
-                            Fill::color(Color::WHITE),
+                            Fill::color(Color::NONE),
                             Stroke::new(Color::BLUE, 0.1),
                         ))
                         .id();
@@ -409,7 +412,7 @@ pub fn build_meshes(
                             transform: Transform::from_translation(Vec3::new(
                                 point.0.x as f32,
                                 point.0.y as f32,
-                                z,
+                                0.,
                             )),
                             ..Default::default()
                         })
