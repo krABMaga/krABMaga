@@ -18,7 +18,6 @@ jobs:
         os: [ ubuntu-latest, macos-latest, windows-latest ]
         rust:
           - stable
-          - nightly
 
     name: ${{ matrix.os }} ${{ matrix.rust }} build 
     steps:
@@ -81,4 +80,40 @@ jobs:
         with:
           toolchain: ${{ matrix.rust }}
       - run: cargo build --release --features distributed_mpi
+
+  nightlybuild:
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
+        rust:
+          - nightly
+            
+    name: ${{ matrix.os }} nightly build
+    steps:
+      - name: Ubuntu Required Deps
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt update
+          sudo apt install pkg-config libx11-dev libasound2-dev libudev-dev
+          sudo apt install libxcb-randr0-dev libxcb-xtest0-dev libxcb-xinerama0-dev libxcb-shape0-dev libxcb-xkb-dev
+          sudo apt install libxcb-render0-dev libxcb-xfixes0-dev libxcb1-dev
+      - uses: actions/checkout@v3
+
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
+
+      - uses: Swatinem/rust-cache@v2
+   
+      - name: Build nightly
+        run: cargo build --release
+
+      - name: BuildVisualization nightly
+        run: cargo build --release --features "visualization, visualization_wasm"
+
+      - name: BuildBayesian nightly
+        run: cargo build --release --features bayesian
   

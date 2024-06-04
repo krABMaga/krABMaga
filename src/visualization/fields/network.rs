@@ -1,15 +1,9 @@
-pub extern crate bevy_prototype_lyon;
-
-use std::f32::consts::PI;
-use std::fmt::Display;
-use std::hash::Hash;
-
-pub use bevy::prelude::Color;
-use bevy::prelude::{Commands, Component, Query, Transform};
-use bevy_prototype_lyon::draw::{Fill, Stroke};
-use bevy_prototype_lyon::path::ShapePath;
-use bevy_prototype_lyon::prelude::{GeometryBuilder, Path};
-use bevy_prototype_lyon::shapes::Line;
+use cfg_if::cfg_if;
+cfg_if! {
+    if #[cfg(any(feature = "visualization", feature = "visualization_wasm"))] {
+        use std::f32::consts::PI;
+        use std::fmt::Display;
+        use std::hash::Hash;
 
 use crate::bevy::prelude::{Res, Vec2};
 use crate::engine::{
@@ -77,21 +71,23 @@ pub trait NetworkRender<O: Hash + Eq + Clone + Display, L: Clone + Hash + Displa
                     is_static,
                 } = Self::get_edge_info(edge, network);
 
-                let mut spawn_command = commands.spawn((
-                    GeometryBuilder::build_as(&Line(
-                        Vec2::new(source_loc.x, source_loc.y),
-                        Vec2::new(target_loc.x, target_loc.y),
-                    )),
-                    Fill::color(Color::BLACK),
-                    Stroke::new(line_color, line_width),
-                    Transform::default(),
-                ));
-                if !is_static {
-                    spawn_command.insert(EdgeRender(edge.u, edge.v, source_loc, target_loc));
+                        let mut spawn_command = commands.spawn(GeometryBuilder::build_as(
+                            &Line(
+                                Vec2::new(source_loc.x, source_loc.y),
+                                Vec2::new(target_loc.x, target_loc.y),
+                            ),
+                            DrawMode::Outlined {
+                                fill_mode: FillMode::color(Color::BLACK), // ignored
+                                outline_mode: StrokeMode::new(line_color, line_width),
+                            },
+                            Transform::default(),
+                        ));
+                        if !is_static {
+                            spawn_command.insert(EdgeRender(edge.u, edge.v, source_loc, target_loc));
+                        }
+                    }
                 }
             }
-        }
-    }
 
     // If the nodes connected by the edge have moved, we regenerate the path mesh related to the edge.
     fn render(state_wrapper: Res<ActiveState<S>>, mut query: Query<(&mut Path, &EdgeRender)>) {
