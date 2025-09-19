@@ -80,11 +80,10 @@ pub trait NetworkRender<O: Hash + Eq + Clone + Display, L: Clone + Hash + Displa
                 } = Self::get_edge_info(edge, network);
 
                 let mut spawn_command = commands.spawn((
-                    GeometryBuilder::build_as(
-                        &Line(
-                            Vec2::new(source_loc.x, source_loc.y),
-                            Vec2::new(target_loc.x, target_loc.y),
-                        )),
+                    GeometryBuilder::build_as(&Line(
+                        Vec2::new(source_loc.x, source_loc.y),
+                        Vec2::new(target_loc.x, target_loc.y),
+                    )),
                     Fill::color(Color::BLACK),
                     Stroke::new(line_color, line_width),
                     Transform::default(),

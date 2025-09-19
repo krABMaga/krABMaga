@@ -61,10 +61,10 @@ jobs:
         include:
           - os: ubuntu-latest
             rust: stable
-            mpi: openmpi
+            mpi: mpich
           - os: macos-latest
             rust: stable
-            mpi: openmpi
+            mpi: mpich
           - os: windows-2022
             rust: stable
             mpi: msmpi
@@ -90,6 +90,7 @@ jobs:
             sudo apt install -y libudev-dev libasound2-dev portaudio19-dev build-essential libpulse-dev libdbus-1-dev
             sudo apt install -y libfontconfig libfontconfig1-dev
           fi
+          
       - run: cargo build --release --features distributed_mpi
 
   nightlybuild:
