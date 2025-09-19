@@ -7,7 +7,7 @@ jobs:
     name: Check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo check --release
 
@@ -15,11 +15,11 @@ jobs:
     name: Check visualization and bayesian
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
       - run: |
           sudo apt update
-          sudo apt install pkg-config libx11-dev libasound2-dev libudev-dev
+          sudo apt install pkg-config libx11-dev libasound2-dev libudev-dev libgtk-3-dev
           sudo apt install libxcb-randr0-dev libxcb-xtest0-dev libxcb-xinerama0-dev libxcb-shape0-dev libxcb-xkb-dev
           sudo apt install libxcb-render0-dev libxcb-xfixes0-dev libxcb1-dev
           sudo apt install libudev-dev libasound2-dev portaudio19-dev build-essential libpulse-dev libdbus-1-dev
@@ -38,7 +38,7 @@ jobs:
     name: check ${{ matrix.os }} MPI
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
       - name: Setup MPI
         uses: mpi4py/setup-mpi@v1
         with:
@@ -53,7 +53,7 @@ jobs:
     name: Rustfmt
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt
@@ -63,7 +63,7 @@ jobs:
     name: Clippy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
@@ -73,13 +73,13 @@ jobs:
     name: Clippy visualization
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt
       - run: |
           sudo apt update
-          sudo apt install pkg-config libx11-dev libasound2-dev libudev-dev
+          sudo apt install pkg-config libx11-dev libasound2-dev libudev-dev libgtk-3-dev
           sudo apt install libxcb-randr0-dev libxcb-xtest0-dev libxcb-xinerama0-dev libxcb-shape0-dev libxcb-xkb-dev
           sudo apt install libxcb-render0-dev libxcb-xfixes0-dev libxcb1-dev
           sudo apt install libudev-dev libasound2-dev portaudio19-dev build-essential libpulse-dev libdbus-1-dev
@@ -98,7 +98,7 @@ jobs:
     name: clippy ${{ matrix.os }} MPI
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
       - name: Setup MPI
         uses: mpi4py/setup-mpi@v1
         with:

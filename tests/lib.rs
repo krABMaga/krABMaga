@@ -9,7 +9,7 @@ fn simulate_ui_structs() {
     use krabmaga::*;
     use rand::Rng;
 
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
 
     addplot!(
         String::from("Agents"),           // Plot Name
@@ -23,14 +23,14 @@ fn simulate_ui_structs() {
             String::from("Agents"),
             String::from("Wolfs"),
             step as f64,
-            rng.gen_range(0..10_u32) as f64
+            rng.random_range(0..10_u32) as f64
         );
 
         plot!(
             String::from("Agents"),
             String::from("Sheeps"),
             step as f64,
-            rng.gen_range(0..10_u32) as f64
+            rng.random_range(0..10_u32) as f64
         );
     }
 

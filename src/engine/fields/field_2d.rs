@@ -766,8 +766,8 @@ cfg_if! {
                 if empty_bags.is_empty() {
                     return None;
                 }
-                let mut rng = rand::thread_rng();
-                let index = rng.gen_range(0..empty_bags.len());
+                let mut rng = rand::rng();
+                let index = rng.random_range(0..empty_bags.len());
                 Some(empty_bags[index])
             }
 

@@ -45,9 +45,9 @@ use {
 ///      .into_iter()
 ///      .map(|_| {
 ///        let mut t_x = Vec::with_capacity(num_params);
-///        let mut rng = rand::thread_rng();
+///        let mut rng = rand::rng();
 ///        for _ in 0..num_params {
-///          t_x.push(rand::Rng::gen_range(&mut rng, -10.0..=10.0));
+///          t_x.push(rand::Rng::random_range(&mut rng, -10.0..=10.0));
 ///        }
 ///        t_x
 ///       })
@@ -248,9 +248,9 @@ pub fn generate_samples(batch_size: usize, scale: f64, num_of_params: usize) -> 
         .into_iter()
         .map(|_| {
             let mut t_x = Vec::with_capacity(num_of_params);
-            let mut rng = rand::thread_rng();
+            let mut rng = rand::rng();
             for _ in 0..num_of_params {
-                t_x.push(rand::Rng::gen_range(&mut rng, -1.0..=1.0) * scale);
+                t_x.push(rand::Rng::random_range(&mut rng, -1.0..=1.0) * scale);
             }
             t_x
         })
