@@ -80,7 +80,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: ${{ matrix.rust }}
+          toolchain: ${{ matrix.rust }}        
+        
       - run: |
           if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
             sudo apt update
@@ -90,7 +91,9 @@ jobs:
             sudo apt install -y libudev-dev libasound2-dev portaudio19-dev build-essential libpulse-dev libdbus-1-dev
             sudo apt install -y libfontconfig libfontconfig1-dev
           fi
-          
+          if [ "${{ matrix.os }}" = "macos-latest" ]; then
+            brew install libffi  
+          fi
       - run: cargo build --release --features distributed_mpi
 
   nightlybuild:
