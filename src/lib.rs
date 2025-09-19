@@ -389,9 +389,10 @@ pub use bevy;
 
 #[doc(hidden)]
 pub use rand::{
-    distr::{StandardUniform},
+    distr::StandardUniform,
     // distributions::{Distribution, Uniform},
-    rng, Rng,
+    rng,
+    Rng,
 };
 
 #[doc(hidden)]
@@ -806,7 +807,7 @@ macro_rules! simulate {
                         // log!(LogType::Critical, format!("cpu usage {}", process.cpu_usage() as f64 / sys.cpus().len() as f64));
 
                         let cpu_used: f64 = process.cpu_usage() as f64;
-                        
+
                         {
                             let mut monitor = monitor.lock().unwrap();
 
