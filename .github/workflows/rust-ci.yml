@@ -93,7 +93,9 @@ jobs:
       - name: Install macOS dependencies
         if: matrix.os == 'macos-latest'
         run: |
-          brew install libffi
+          brew install libffi pkg-config
+          echo "PKG_CONFIG_PATH=$(brew --prefix libffi)/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
+          echo "LIBFFI_DIR=$(brew --prefix libffi)" >> $GITHUB_ENV
       
       - name: Build with MPI
         run: cargo build --release --features distributed_mpi
