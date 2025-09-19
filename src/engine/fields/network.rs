@@ -1081,7 +1081,7 @@ cfg_if! {
                     self.add_edge(first_node.clone(), second_node.clone(), EdgeOptions::Simple);
                     // self.update();
 
-                    let mut rng = rand::thread_rng();
+                    let mut rng = rand::rng();
                     let mut dist: Vec<(O, i32, usize)> = Vec::with_capacity(n_nodes);
 
                     // if self.direct {

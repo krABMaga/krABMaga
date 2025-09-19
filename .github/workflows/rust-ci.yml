@@ -82,13 +82,13 @@ jobs:
         with:
           toolchain: ${{ matrix.rust }}
       - run: |
-          if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
+          if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
             sudo apt update
-            sudo apt install pkg-config libx11-dev libasound2-dev libudev-dev libgtk-3-dev
-            sudo apt install libxcb-randr0-dev libxcb-xtest0-dev libxcb-xinerama0-dev libxcb-shape0-dev libxcb-xkb-dev
-            sudo apt install libxcb-render0-dev libxcb-xfixes0-dev libxcb1-dev
-            sudo apt install libudev-dev libasound2-dev portaudio19-dev build-essential libpulse-dev libdbus-1-dev
-            sudo apt install libfontconfig libfontconfig1-dev
+            sudo apt install -y pkg-config libx11-dev libasound2-dev libudev-dev libgtk-3-dev
+            sudo apt install -y libxcb-randr0-dev libxcb-xtest0-dev libxcb-xinerama0-dev libxcb-shape0-dev libxcb-xkb-dev
+            sudo apt install -y libxcb-render0-dev libxcb-xfixes0-dev libxcb1-dev
+            sudo apt install -y libudev-dev libasound2-dev portaudio19-dev build-essential libpulse-dev libdbus-1-dev
+            sudo apt install -y libfontconfig libfontconfig1-dev
           fi
       - run: cargo build --release --features distributed_mpi
 
@@ -107,9 +107,11 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt update
-          sudo apt install pkg-config libx11-dev libasound2-dev libudev-dev
+          sudo apt install pkg-config libx11-dev libasound2-dev libudev-dev libgtk-3-dev
           sudo apt install libxcb-randr0-dev libxcb-xtest0-dev libxcb-xinerama0-dev libxcb-shape0-dev libxcb-xkb-dev
           sudo apt install libxcb-render0-dev libxcb-xfixes0-dev libxcb1-dev
+          sudo apt install libudev-dev libasound2-dev portaudio19-dev build-essential libpulse-dev libdbus-1-dev
+          sudo apt install libfontconfig libfontconfig1-dev
       - uses: actions/checkout@v5
 
       - uses: actions/checkout@v5
@@ -118,16 +120,6 @@ jobs:
           toolchain: ${{ matrix.rust }}
 
       - uses: Swatinem/rust-cache@v2
-
-      - run: |
-          if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
-            sudo apt update
-            sudo apt install pkg-config libx11-dev libasound2-dev libudev-dev libgtk-3-dev
-            sudo apt install libxcb-randr0-dev libxcb-xtest0-dev libxcb-xinerama0-dev libxcb-shape0-dev libxcb-xkb-dev
-            sudo apt install libxcb-render0-dev libxcb-xfixes0-dev libxcb1-dev
-            sudo apt install libudev-dev libasound2-dev portaudio19-dev build-essential libpulse-dev libdbus-1-dev
-            sudo apt install libfontconfig libfontconfig1-dev
-          fi
       - name: Build nightly
         run: cargo build --release
 
