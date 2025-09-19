@@ -1,7 +1,6 @@
 use bevy::diagnostic::DiagnosticsStore;
 use bevy::prelude::{Entity, Query, Without};
 use bevy::time::{Fixed, Time};
-use bevy::window::Window;
 use bevy_egui::egui;
 use bevy_egui::egui::{Color32, RichText};
 use bevy_egui::EguiContexts;
@@ -9,13 +8,16 @@ use bevy_egui::EguiContexts;
 use crate::bevy::diagnostic::FrameTimeDiagnosticsPlugin;
 use crate::bevy::prelude::{Commands, Res, ResMut};
 use crate::bevy::render::camera::Camera;
+
 use crate::engine::{schedule::Schedule, state::State};
+
 use crate::visualization::{
     asset_handle_factory::AssetHandleFactoryResource,
     simulation_descriptor::SimulationDescriptor,
     visualization_state::VisualizationState,
     wrappers::{ActiveSchedule, ActiveState},
 };
+use bevy::window::Window;
 
 pub fn ui_system<I: VisualizationState<S> + Clone + 'static + bevy::prelude::Resource, S: State>(
     mut egui_context: EguiContexts,

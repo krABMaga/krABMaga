@@ -1,7 +1,9 @@
 use bevy::prelude::{Handle, Image, Query, Res, Transform, Visibility};
 
 use crate::bevy::prelude::{Commands, ResMut};
+
 use crate::engine::state::State;
+
 use crate::visualization::{
     agent_render::{AgentRender, SpriteType},
     asset_handle_factory::AssetHandleFactoryResource,

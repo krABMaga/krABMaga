@@ -1,12 +1,8 @@
-use std::sync::{Arc, Mutex};
-
-use bevy::render::RenderPlugin;
-use bevy::{prelude::*, window::WindowResizeConstraints, DefaultPlugins};
-use bevy_egui::EguiPlugin;
-use bevy_prototype_lyon::prelude::ShapePlugin;
-
 use crate::bevy::diagnostic::FrameTimeDiagnosticsPlugin;
+use bevy::render::RenderPlugin;
+
 use crate::engine::{schedule::Schedule, state::State};
+
 use crate::visualization::{
     asset_handle_factory::AssetHandleFactory,
     simulation_descriptor::SimulationDescriptor,
@@ -17,6 +13,12 @@ use crate::visualization::{
     visualization_state::VisualizationState,
     wrappers::{ActiveSchedule, ActiveState, Initializer},
 };
+
+use bevy::{prelude::*, window::WindowResizeConstraints, DefaultPlugins};
+use bevy_egui::EguiPlugin;
+
+use bevy_prototype_lyon::prelude::ShapePlugin;
+use std::sync::{Arc, Mutex};
 
 // The application main struct, used to build and start the event loop. Offers several methods in a builder-pattern style
 // to allow for basic customization, such as background color, asset path and custom systems. Right now the framework
