@@ -8,7 +8,7 @@ Cargo.lock
 .vscode
 /bin
 /output
-
+.DS_Store
 
 # tarpaulin output
 cobertura.xml

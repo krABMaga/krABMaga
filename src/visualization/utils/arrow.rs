@@ -1,8 +1,7 @@
+use crate::bevy::prelude::Vec2;
 use bevy_prototype_lyon::prelude::tess::geom::point;
 use bevy_prototype_lyon::prelude::tess::path::path::Builder;
 use bevy_prototype_lyon::prelude::Geometry;
-
-use crate::bevy::prelude::Vec2;
 
 // An arrow segment consisting of a main line, along with two small lines starting at the end point.
 #[derive(Debug, Clone, Copy, PartialEq)]

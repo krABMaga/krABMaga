@@ -270,7 +270,7 @@ cfg_if! {
 
                     // self.update();
 
-                    let mut rng = rand::thread_rng();
+                    let mut rng = rand::rng();
                     let mut dist: Vec<(O, i32, usize)> = Vec::with_capacity(n_nodes);
 
                     dist.push(((first_node.clone()), 1, 0));
@@ -400,7 +400,7 @@ cfg_if! {
             //     self.add_edge(node_set[0], node_set[1], EdgeOptions::Simple);
             //     self.update();
 
-            //     let mut rng = rand::thread_rng();
+            //     let mut rng = rand::rng();
             //     for i in 0..n_nodes {
             //         let node = node_set[i] as O;
 
@@ -550,15 +550,15 @@ cfg_if! {
 
                 match self.id2nodes.get_write(&uid){
                     Some(mut value) => {
-
-                        if let Some(_) = nodes2id.remove(&value){
-                            nodes2id.insert(u.clone(), uid.clone());
-                        }
-                        *value = u
+                        // Remove the old node from nodes2id and insert the new one
+                        nodes2id.retain(|_, v| *v != uid);
+                        nodes2id.insert(u.clone(), uid);
+                        *value = u;
                     },
                     None => return
                 };
             }
+
         }
 
         impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> Field for Network<O, L> {
@@ -1081,7 +1081,7 @@ cfg_if! {
                     self.add_edge(first_node.clone(), second_node.clone(), EdgeOptions::Simple);
                     // self.update();
 
-                    let mut rng = rand::thread_rng();
+                    let mut rng = rand::rng();
                     let mut dist: Vec<(O, i32, usize)> = Vec::with_capacity(n_nodes);
 
                     // if self.direct {

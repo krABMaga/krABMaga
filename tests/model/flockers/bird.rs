@@ -110,10 +110,10 @@ impl Agent for Bird {
             };
 
             //randomness
-            let mut rng = rand::thread_rng();
-            let r1: f32 = rng.gen();
+            let mut rng = rand::rng();
+            let r1: f32 = rng.random();
             let x_rand = r1 * 2.0 - 1.0;
-            let r2: f32 = rng.gen();
+            let r2: f32 = rng.random();
             let y_rand = r2 * 2.0 - 1.0;
 
             let square = (x_rand * x_rand + y_rand * y_rand).sqrt();

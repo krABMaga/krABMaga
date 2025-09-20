@@ -80,9 +80,9 @@ fn field_2d_neighbors() {
         .get_neighbors_within_relax_distance(Real2D { x: 5.0, y: 5.0 }, 1.0);
     assert_eq!(0, vec.len());
 
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
 
-    let fly: f32 = rng.gen_range(5..10) as f32;
+    let fly: f32 = rng.random_range(5..10) as f32;
 
     bird1.pos = Real2D {
         x: bird1.pos.x + fly,

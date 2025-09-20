@@ -39,11 +39,11 @@ impl State for Flocker {
     }
 
     fn init(&mut self, schedule: &mut Schedule) {
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         // Should be moved in the init method on the model exploration changes
         for bird_id in 0..self.initial_flockers {
-            let r1: f32 = rng.gen();
-            let r2: f32 = rng.gen();
+            let r1: f32 = rng.random();
+            let r2: f32 = rng.random();
             let last_d = Real2D { x: 0., y: 0. };
             let pos = Real2D {
                 x: self.dim.0 * r1,

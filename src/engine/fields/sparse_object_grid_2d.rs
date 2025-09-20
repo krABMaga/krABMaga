@@ -127,9 +127,9 @@ cfg_if! {
             }
 
             pub fn get_random_empty_bag(&self) -> Option<Int2D>{
-                let mut rng = rand::thread_rng();
+                let mut rng = rand::rng();
                 loop {
-                    let loc = Int2D{x: rng.gen_range(0..self.width), y: rng.gen_range(0..self.height)};
+                    let loc = Int2D{x: rng.random_range(0..self.width), y: rng.random_range(0..self.height)};
                     match self.loc2objs.get_read(&loc){
                         Some(_bag) =>{},
                         None => {
@@ -521,9 +521,9 @@ cfg_if! {
             ///
             /// ```
             pub fn get_random_empty_bag(&self) -> Option<Int2D>{
-                let mut rng = rand::thread_rng();
+                let mut rng = rand::rng();
                 loop {
-                    let loc = Int2D{x: rng.gen_range(0..self.width), y: rng.gen_range(0..self.height)};
+                    let loc = Int2D{x: rng.random_range(0..self.width), y: rng.random_range(0..self.height)};
                     match self.locs[self.read].borrow().get(&loc){
                         Some(_bag) =>{},
                         None => {

@@ -16,11 +16,11 @@ use {
 #[test]
 fn dense_object_grid_2d_gets() {
     let mut grid: DenseGrid2D<Bird> = DenseGrid2D::new(WIDTH, HEIGHT);
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
 
     let loc = Int2D {
-        x: rng.gen_range(0..WIDTH),
-        y: rng.gen_range(0..HEIGHT),
+        x: rng.random_range(0..WIDTH),
+        y: rng.random_range(0..HEIGHT),
     };
     let no_bird = grid.get_objects(&loc);
     assert!(None == no_bird);

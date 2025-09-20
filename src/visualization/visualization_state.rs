@@ -1,8 +1,9 @@
 use bevy::prelude::{Commands, SpriteBundle};
 
-use crate::bevy::ecs::system::Resource;
 use crate::bevy::prelude::{Quat, Transform, Vec3};
 use crate::engine::{agent::Agent, schedule::Schedule, state::State};
+
+use crate::bevy::ecs::system::Resource;
 use crate::visualization::{
     agent_render::{AgentRender, SpriteType},
     asset_handle_factory::AssetHandleFactoryResource,

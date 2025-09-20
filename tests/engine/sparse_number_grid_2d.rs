@@ -146,9 +146,9 @@ fn sparse_number_grid_2d_bags() {
     let loc = grid.get_location_unbuffered(0);
     assert!(loc.is_some());
 
-    let mut rng = rand::thread_rng();
-    let i = rng.gen_range(1..WIDTH);
-    let j = rng.gen_range(1..HEIGHT);
+    let mut rng = rand::rng();
+    let i = rng.random_range(1..WIDTH);
+    let j = rng.random_range(1..HEIGHT);
     let loc = Int2D { x: i, y: j };
 
     grid.set_value_location(5, &loc);

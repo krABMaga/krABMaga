@@ -1,8 +1,9 @@
 use bevy::ecs::component::TableStorage;
 use bevy::prelude::{Component, Transform, Visibility};
-use downcast_rs::{impl_downcast, Downcast};
 
 use crate::engine::{agent::Agent, state::State};
+
+use downcast_rs::{impl_downcast, Downcast};
 
 pub trait AgentRender:
     Downcast + Send + Sync + 'static + Component<Storage = TableStorage>

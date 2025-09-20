@@ -1,25 +1,25 @@
-pub extern crate bevy_prototype_lyon;
-
 use std::f32::consts::PI;
 use std::fmt::Display;
 use std::hash::Hash;
 
-pub use bevy::prelude::Color;
-use bevy::prelude::{Commands, Component, Query};
-use bevy::utils::default;
-use bevy_prototype_lyon::draw::{Fill, Stroke};
-use bevy_prototype_lyon::path::ShapePath;
-use bevy_prototype_lyon::prelude::ShapeBundle;
-use bevy_prototype_lyon::prelude::{GeometryBuilder, Path};
-use bevy_prototype_lyon::shapes::Line;
-
 use crate::bevy::prelude::{Res, Vec2};
+
+use crate::visualization::wrappers::ActiveState;
+
 use crate::engine::{
     fields::network::{Edge, Network},
     location::Real2D,
     state::State,
 };
-use crate::visualization::wrappers::ActiveState;
+
+pub use bevy::prelude::Color;
+use bevy::prelude::{Commands, Component, Query, Transform};
+use bevy_prototype_lyon::draw::{Fill, Stroke};
+use bevy_prototype_lyon::path::ShapePath;
+use bevy_prototype_lyon::prelude::{GeometryBuilder, Path};
+use bevy_prototype_lyon::shapes::Line;
+
+pub extern crate bevy_prototype_lyon;
 
 // Allows customization of the arrow geometry used to render edges.
 pub struct ArrowOptions {
@@ -80,15 +80,13 @@ pub trait NetworkRender<O: Hash + Eq + Clone + Display, L: Clone + Hash + Displa
                 } = Self::get_edge_info(edge, network);
 
                 let mut spawn_command = commands.spawn((
-                    ShapeBundle {
-                        path: GeometryBuilder::build_as(&Line(
-                            Vec2::new(source_loc.x, source_loc.y),
-                            Vec2::new(target_loc.x, target_loc.y),
-                        )),
-                        ..default()
-                    },
+                    GeometryBuilder::build_as(&Line(
+                        Vec2::new(source_loc.x, source_loc.y),
+                        Vec2::new(target_loc.x, target_loc.y),
+                    )),
                     Fill::color(Color::BLACK),
                     Stroke::new(line_color, line_width),
+                    Transform::default(),
                 ));
                 if !is_static {
                     spawn_command.insert(EdgeRender(edge.u, edge.v, source_loc, target_loc));

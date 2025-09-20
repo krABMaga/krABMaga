@@ -130,9 +130,9 @@ fn dense_number_grid_2d_bags() {
     assert_eq!(loc.x, 0);
     assert_eq!(loc.y, 0);
 
-    let mut rng = rand::thread_rng();
-    let i = rng.gen_range(1..WIDTH);
-    let j = rng.gen_range(1..HEIGHT);
+    let mut rng = rand::rng();
+    let i = rng.random_range(1..WIDTH);
+    let j = rng.random_range(1..HEIGHT);
 
     let loc = Int2D { x: i, y: j };
     grid.set_value_location(5, &loc);

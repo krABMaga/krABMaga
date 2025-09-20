@@ -1,9 +1,10 @@
-use std::marker::PhantomData;
-use std::sync::{Arc, Mutex};
+use crate::engine::{schedule::Schedule, state::State};
 
 use crate::bevy::ecs::system::Resource;
-use crate::engine::{schedule::Schedule, state::State};
 use crate::visualization::visualization_state::VisualizationState;
+use std::sync::{Arc, Mutex};
+
+use std::marker::PhantomData;
 
 // A wrapper of the currently active state, used as a Bevy resource.
 #[derive(Resource)]

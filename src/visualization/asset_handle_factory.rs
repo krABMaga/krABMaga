@@ -2,10 +2,10 @@ use std::marker::PhantomData;
 use std::path::Path;
 
 use bevy::ecs::system::SystemParam;
-use bevy::prelude::{AssetServer, Assets, Handle, Image, Res, ResMut, SpriteBundle};
-use hashbrown::HashMap;
 
 use crate::bevy::ecs::system::Resource;
+use bevy::prelude::{AssetServer, Assets, Handle, Image, Res, ResMut, SpriteBundle};
+use hashbrown::HashMap;
 
 // A simple lazy loader of sprites, mainly for use with the Emoji sprite feature offered by the framework.
 // This allows loading sprites only once, storing a handle pointing to the sprite resource itself and returning clones

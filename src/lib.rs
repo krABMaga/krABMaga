@@ -389,8 +389,10 @@ pub use bevy;
 
 #[doc(hidden)]
 pub use rand::{
-    distributions::{Distribution, Uniform},
-    thread_rng, Rng,
+    distr::StandardUniform,
+    // distributions::{Distribution, Uniform},
+    rng,
+    Rng,
 };
 
 #[doc(hidden)]
@@ -798,10 +800,13 @@ macro_rules! simulate {
                 match sys.process(pid_main) {
                     Some(process) => {
                         let mem_used: f64 = ( sys.used_memory() as f64 / sys.total_memory() as f64) * 100.0;
-                        // log!(LogType::Info, format!("Memory used: {}%", mem * 100.0 ));
+                        log!(LogType::Info, format!("Memory used: {}%", mem_used));
+                        for cpu in sys.cpus() {
+                            log!(LogType::Info, format!("CPU {}: {}%", cpu.name(), cpu.cpu_usage()));
+                        }
                         // log!(LogType::Critical, format!("cpu usage {}", process.cpu_usage() as f64 / sys.cpus().len() as f64));
 
-                        let cpu_used: f64 = process.cpu_usage() as f64 / sys.cpus().len() as f64;
+                        let cpu_used: f64 = process.cpu_usage() as f64;
 
                         {
                             let mut monitor = monitor.lock().unwrap();
@@ -1837,8 +1842,8 @@ macro_rules! gen_param {
             n = 1;
         }
 
-        let between = Uniform::from(minimum..maximum);
-        let mut rng = rand::thread_rng();
+        let between = StandardUniform::from(minimum..maximum);
+        let mut rng = rand::rng();
         let dist: Vec<$type> = between.sample_iter(&mut rng).take($n).collect();
 
         dist

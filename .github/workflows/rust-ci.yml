@@ -1,119 +1,144 @@
 name: Rust CI
-
-on:
+'on':
   push:
-    branches: [ main ]
+    branches:
+      - main
   pull_request:
-    branches: [ main ]
-
+    branches:
+      - main
 env:
   CARGO_TERM_COLOR: always
-
 jobs:
   stdbuild:
-    runs-on: ${{ matrix.os }}
+    runs-on: '${{ matrix.os }}'
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, macos-latest, windows-latest ]
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
         rust:
           - stable
-
-    name: ${{ matrix.os }} ${{ matrix.rust }} build 
+    name: '${{ matrix.os }} ${{ matrix.rust }} build'
     steps:
       - name: Ubuntu Required Deps
         if: matrix.os == 'ubuntu-latest'
-        run: |
+        run: >
           sudo apt update
-          sudo apt install pkg-config libx11-dev libasound2-dev libudev-dev
-          sudo apt install libxcb-randr0-dev libxcb-xtest0-dev libxcb-xinerama0-dev libxcb-shape0-dev libxcb-xkb-dev
-          sudo apt install libxcb-render0-dev libxcb-xfixes0-dev libxcb1-dev
-      - uses: actions/checkout@v3
 
-      - uses: actions/checkout@v3
+          sudo apt install pkg-config libx11-dev libasound2-dev libudev-dev
+          libgtk-3-dev
+
+          sudo apt install libxcb-randr0-dev libxcb-xtest0-dev
+          libxcb-xinerama0-dev libxcb-shape0-dev libxcb-xkb-dev
+
+          sudo apt install libxcb-render0-dev libxcb-xfixes0-dev libxcb1-dev
+
+          sudo apt install libudev-dev libasound2-dev portaudio19-dev
+          build-essential libpulse-dev libdbus-1-dev
+
+          sudo apt install libfontconfig libfontconfig1-dev
+      - uses: actions/checkout@v5
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: ${{ matrix.rust }}
-
+          toolchain: '${{ matrix.rust }}'
       - uses: Swatinem/rust-cache@v2
-   
       - name: Build
         run: cargo build --release
-
       - name: BuildVisualization
-        run: cargo build --release --features "visualization, visualization_wasm"
-
+        run: 'cargo build --release --features "visualization, visualization_wasm"'
       - name: BuildBayesian
         run: cargo build --release --features bayesian
-
       - name: Test
         run: cargo test --features parallel
-          
       - name: TestNoFeatures
         run: cargo test
-
   mpibuild:
-    runs-on: ${{ matrix.os }}
+    runs-on: '${{ matrix.os }}'
+    continue-on-error: true
     strategy:
       matrix:
         include:
           - os: ubuntu-latest
             rust: stable
-            mpi: openmpi
-          - os: macos-latest
+            mpi: mpich
+          - os: macos-13
             rust: stable
             mpi: openmpi
           - os: windows-2022
             rust: stable
             mpi: msmpi
-            
-    name: ${{ matrix.os }} MPI
+    name: '${{ matrix.os }} MPI'
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
       - name: Setup MPI
         uses: mpi4py/setup-mpi@v1
         with:
-          mpi: ${{ matrix.mpi }}
+          mpi: '${{ matrix.mpi }}'
       - uses: Swatinem/rust-cache@v2
       - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: ${{ matrix.rust }}
-      - run: cargo build --release --features distributed_mpi
-
-  nightlybuild:
-    runs-on: ${{ matrix.os }}
-    continue-on-error: true
-    strategy:
-      matrix:
-        os: [ ubuntu-latest, macos-latest, windows-latest ]
-        rust:
-          - nightly
-            
-    name: ${{ matrix.os }} nightly build
-    steps:
-      - name: Ubuntu Required Deps
+          toolchain: '${{ matrix.rust }}'
+      - name: Install Ubuntu dependencies
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt update
-          sudo apt install pkg-config libx11-dev libasound2-dev libudev-dev
+          sudo apt install pkg-config libx11-dev libasound2-dev libudev-dev libgtk-3-dev
           sudo apt install libxcb-randr0-dev libxcb-xtest0-dev libxcb-xinerama0-dev libxcb-shape0-dev libxcb-xkb-dev
           sudo apt install libxcb-render0-dev libxcb-xfixes0-dev libxcb1-dev
-      - uses: actions/checkout@v3
+          sudo apt install libudev-dev libasound2-dev portaudio19-dev build-essential libpulse-dev libdbus-1-dev
+          sudo apt install libfontconfig libfontconfig1-dev
+      - name: Install macOS dependencies
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install libffi pkg-config
+          echo "PKG_CONFIG_PATH=$(brew --prefix libffi)/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
+          echo "LIBFFI_DIR=$(brew --prefix libffi)" >> $GITHUB_ENV
+      
+      - name: Build with MPI
+        run: cargo build --release --features distributed_mpi
+  nightlybuild:
+    runs-on: '${{ matrix.os }}'
+    continue-on-error: true
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+        rust:
+          - nightly
+    name: '${{ matrix.os }} nightly build'
+    steps:
+      - name: Ubuntu Required Deps
+        if: matrix.os == 'ubuntu-latest'
+        run: >
+          sudo apt update
 
-      - uses: actions/checkout@v3
+          sudo apt install pkg-config libx11-dev libasound2-dev libudev-dev
+          libgtk-3-dev
+
+          sudo apt install libxcb-randr0-dev libxcb-xtest0-dev
+          libxcb-xinerama0-dev libxcb-shape0-dev libxcb-xkb-dev
+
+          sudo apt install libxcb-render0-dev libxcb-xfixes0-dev libxcb1-dev
+
+          sudo apt install libudev-dev libasound2-dev portaudio19-dev
+          build-essential libpulse-dev libdbus-1-dev
+
+          sudo apt install libfontconfig libfontconfig1-dev
+      - uses: actions/checkout@v5
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: ${{ matrix.rust }}
-
+          toolchain: '${{ matrix.rust }}'
       - uses: Swatinem/rust-cache@v2
-   
       - name: Build nightly
         run: cargo build --release
-
       - name: BuildVisualization nightly
-        run: cargo build --release --features "visualization, visualization_wasm"
-
+        run: 'cargo build --release --features "visualization, visualization_wasm"'
       - name: BuildBayesian nightly
         run: cargo build --release --features bayesian
-  

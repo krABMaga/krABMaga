@@ -120,7 +120,7 @@ impl<'a, K: 'a + Eq + Hash, V: 'a, S: BuildHasher + Clone + Default> DBDashMap<K
         shard.get(key)
     }
 
-    pub fn get_key_value(&'a self, key: &K) -> Option<(&K, &V)> {
+    pub fn get_key_value(&self, key: &K) -> Option<(&K, &V)> {
         let hash = self.hash_usize(&key);
 
         let idx = self.determine_shard(hash);
@@ -130,7 +130,7 @@ impl<'a, K: 'a + Eq + Hash, V: 'a, S: BuildHasher + Clone + Default> DBDashMap<K
         shard.get_key_value(key)
     }
 
-    pub fn get_write(&'a self, key: &K) -> Option<RefMut<K, V, S>> {
+    pub fn get_write<'b>(&'b self, key: &K) -> Option<RefMut<'b, K, V, S>> {
         let hash = self.hash_usize(&key);
 
         let idx = self.determine_shard(hash);
