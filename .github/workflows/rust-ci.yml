@@ -64,7 +64,7 @@ jobs:
           - os: ubuntu-latest
             rust: stable
             mpi: mpich
-          - os: macos-latest
+          - os: macos-13
             rust: stable
             mpi: openmpi
           - os: windows-2022
