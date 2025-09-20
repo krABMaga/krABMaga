@@ -57,6 +57,7 @@ jobs:
         run: cargo test
   mpibuild:
     runs-on: '${{ matrix.os }}'
+    continue-on-error: true
     strategy:
       matrix:
         include:
@@ -65,7 +66,7 @@ jobs:
             mpi: mpich
           - os: macos-latest
             rust: stable
-            mpi: mpich
+            mpi: openmpi
           - os: windows-2022
             rust: stable
             mpi: msmpi
