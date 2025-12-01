@@ -39,8 +39,8 @@ jobs:
           build-essential libpulse-dev libdbus-1-dev
 
           sudo apt install libfontconfig libfontconfig1-dev
-      - uses: actions/checkout@v5
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: '${{ matrix.rust }}'
@@ -73,7 +73,7 @@ jobs:
     name: '${{ matrix.os }} MPI'
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Setup MPI
         uses: mpi4py/setup-mpi@v1
         with:
@@ -130,8 +130,8 @@ jobs:
           build-essential libpulse-dev libdbus-1-dev
 
           sudo apt install libfontconfig libfontconfig1-dev
-      - uses: actions/checkout@v5
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: '${{ matrix.rust }}'
