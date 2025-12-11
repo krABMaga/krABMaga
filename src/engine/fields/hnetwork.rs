@@ -305,10 +305,7 @@ impl<O: Hash + Eq + Clone + Display, L: Clone + Hash + Display> HNetwork<O, L> {
     ///
     pub fn get_edges(&self, u: O) -> Option<Vec<HEdge<L>>> {
         let nodes2id = self.nodes2id.borrow();
-        let uid = match nodes2id.get(&u) {
-            Some(u) => u,
-            None => return None,
-        };
+        let uid = nodes2id.get(&u)?;
         let edges = self.redges.borrow();
         edges.get(uid).map(|es| (*(es.clone())).to_vec())
     }

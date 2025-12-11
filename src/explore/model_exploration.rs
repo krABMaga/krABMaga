@@ -15,8 +15,7 @@
 /// Without the last parameter, the macro will use the default computing mode (Sequential).
 /// The computing mode can be:
 /// * `ComputingMode::Parallel`: the exploration will be performed in parallel
-/// * `ComputingMode::Distributed`: the exploration will be performed distributing the computation
-///    on different machines
+/// * `ComputingMode::Distributed`: the exploration will be performed distributing the computation on different machines
 /// * `ComputingMode::Cloud`: computation will be performed on the cloud.
 ///
 /// # Example

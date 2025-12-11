@@ -872,18 +872,12 @@ cfg_if! {
 
                 let id2nodes = self.id2nodes[self.read].borrow();
 
-                let uid = match nodes2id.get(&u) {
-                    Some(u) => u,
-                    None => return None,
-                };
+                let uid = nodes2id.get(&u)?;
 
                 let edges = self.edges[self.read].borrow();
                 match edges.get(uid) {
                     Some(uedges) => {
-                        let vid = match nodes2id.get(&v) {
-                            Some(v) => v,
-                            None => return None,
-                        };
+                        let vid = nodes2id.get(&v)?;
 
                         for e in uedges {
                             let vid_edge = nodes2id.get(id2nodes.get(&e.v).expect("error on get")).expect("error on get");
@@ -962,10 +956,7 @@ cfg_if! {
             /// ```
             pub fn get_edges(&self, u: O) -> Option<Vec<Edge<L>>> {
                 let nodes2id = self.nodes2id[self.read].borrow();
-                let uid = match nodes2id.get(&u) {
-                    Some(u) => u,
-                    None => return None,
-                };
+                let uid = nodes2id.get(&u)?;
                 let edges = self.edges[self.read].borrow();
                 edges.get(uid).map(|es| (*(es.clone())).to_vec())
             }
@@ -1314,26 +1305,17 @@ cfg_if! {
             pub fn remove_edge(&self, u: O, v: O) -> Option<Edge<L>> {
                 let nodes2id = self.nodes2id[self.read].borrow();
 
-                let uid = match nodes2id.get(&u) {
-                    Some(u) => u,
-                    None => return None,
-                };
+                let uid = nodes2id.get(&u)?;
 
-                let vid = match nodes2id.get(&v) {
-                    Some(v) => v,
-                    None => return None,
-                };
+                let vid = nodes2id.get(&v)?;
 
 
                 let mut edges = self.edges[self.write].borrow_mut();
                 let u_edges = edges.get_mut(uid).expect("error on get_mut");
 
-                let index = match u_edges.iter().position(|entry| {
+                let index = u_edges.iter().position(|entry| {
                     (entry.u == *uid && entry.v == *vid) || (entry.u == *vid && entry.v == *uid)
-                }) {
-                    Some(i) => i,
-                    None => return None,
-                };
+                })?;
 
                 let u_edge = u_edges.remove(index);
 
@@ -1407,10 +1389,7 @@ cfg_if! {
                 let id2nodes = self.id2nodes[self.write].borrow();
                 let nodes2id = self.nodes2id[self.read].borrow();
 
-                let uid = match nodes2id.get(&u) {
-                    Some(u) => u,
-                    None => return None,
-                };
+                let uid = nodes2id.get(&u)?;
 
                 for v in id2nodes.keys(){
                     if v != uid {
@@ -1480,10 +1459,7 @@ cfg_if! {
                 let id2nodes = self.id2nodes[self.write].borrow();
                 let nodes2id = self.nodes2id[self.read].borrow();
 
-                let uid = match nodes2id.get(&u) {
-                    Some(u) => u,
-                    None => return None,
-                };
+                let uid = nodes2id.get(&u)?;
 
                 for v in id2nodes.keys(){
                     if v != uid {

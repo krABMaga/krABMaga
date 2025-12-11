@@ -1,4 +1,4 @@
-#[cfg(any(feature = "bayesian"))]
+#[cfg(feature = "bayesian")]
 use {
     friedrich::gaussian_process::GaussianProcess,
     friedrich::kernel::Gaussian,
@@ -99,7 +99,7 @@ use {
 ///
 /// ```
 
-#[cfg(any(feature = "bayesian"))]
+#[cfg(feature = "bayesian")]
 #[macro_export]
 macro_rules! bayesian_search {
     (
@@ -264,7 +264,7 @@ pub fn generate_samples(batch_size: usize, scale: f64, num_of_params: usize) -> 
 /// * `x_init` - initial samples
 /// * `x_samples` - samples to evaluate
 /// * `gp` - gaussian process to use for the prediction
-#[cfg(any(feature = "bayesian"))]
+#[cfg(feature = "bayesian")]
 pub fn acquisition_function(
     x_init: &Vec<Vec<f64>>,
     x_samples: &[Vec<f64>],
@@ -292,7 +292,7 @@ pub fn acquisition_function(
 /// * `x_init` - initial samples
 /// * `x` - sample to evaluate
 /// * `gp` - gaussian process to use for the prediction
-#[cfg(any(feature = "bayesian"))]
+#[cfg(feature = "bayesian")]
 pub fn expected_improvement(
     x_init: &Vec<Vec<f64>>,
     x: &Vec<f64>,

@@ -430,14 +430,14 @@ pub use {
     mpi::{datatype::UserDatatype, traits::*, Address},
 };
 
-#[cfg(any(feature = "distributed_mpi"))]
+#[cfg(feature = "distributed_mpi")]
 lazy_static! {
     pub static ref UNIVERSE: Universe =
         mpi::initialize().expect("Error initialing mpi environment");
 }
 
 #[doc(hidden)]
-#[cfg(any(feature = "bayesian"))]
+#[cfg(feature = "bayesian")]
 pub use {friedrich, statrs};
 
 #[doc(hidden)]
@@ -1581,7 +1581,7 @@ macro_rules! simulate_old {
     }};
 }
 
-#[cfg(any(feature = "distributed_mpi"))]
+#[cfg(feature = "distributed_mpi")]
 #[macro_export]
 macro_rules! simulate_mpi {
     ($s:expr, $step:expr, $reps:expr $(, $info:expr)?) => {{
