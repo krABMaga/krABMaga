@@ -15,14 +15,14 @@ jobs:
       options:                  --security-opt seccomp=unconfined
     steps:
       - name:                   Checkout repository
-        uses:                   actions/checkout@v5
+        uses:                   actions/checkout@v6
 
       - name:                   Generate code coverage
         run: |
           cargo +nightly tarpaulin --verbose --workspace --timeout 120 --out Xml --exclude-files src/utils/* src/visualization/* src/lib.rs src/engine/fields/kdtree_mpi.rs src/explore/bayesian.rs
 
       - name:                   Upload to codecov.io
-        uses:                   codecov/codecov-action@v3
+        uses:                   codecov/codecov-action@v5
         with:
           token:                ${{secrets.CODECOV_TOKEN}} # not required for public repos
           files: ./cobertura.xml 
