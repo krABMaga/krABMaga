@@ -32,3 +32,14 @@ jobs:
           token: ${{ secrets.SITE_REPO_ACCESS_TOKEN }}
           repository: krABMaga/krABMaga.github.io
           event-type: updated
+
+  manual_dispatch:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch event
+        uses: peter-evans/repository-dispatch@v4
+        with:
+          token: ${{ secrets.SITE_REPO_ACCESS_TOKEN }}
+          repository: krABMaga/krABMaga.github.io
+          event-type: updated
