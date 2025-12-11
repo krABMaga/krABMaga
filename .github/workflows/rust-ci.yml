@@ -64,7 +64,7 @@ jobs:
           - os: ubuntu-latest
             rust: stable
             mpi: mpich
-          - os: macos-13
+          - os: macos-15-intel
             rust: stable
             mpi: openmpi
           - os: windows-2022
@@ -92,7 +92,7 @@ jobs:
           sudo apt install libudev-dev libasound2-dev portaudio19-dev build-essential libpulse-dev libdbus-1-dev
           sudo apt install libfontconfig libfontconfig1-dev
       - name: Install macOS dependencies
-        if: matrix.os == 'macos-latest'
+        if: matrix.os == 'macos-15-intel'
         run: |
           brew install libffi pkg-config
           echo "PKG_CONFIG_PATH=$(brew --prefix libffi)/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
