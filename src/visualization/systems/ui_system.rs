@@ -1,5 +1,5 @@
 use bevy::diagnostic::DiagnosticsStore;
-use bevy::prelude::{Entity, Query, Without};
+use bevy::prelude::{Entity, Query, With};
 use bevy::time::{Fixed, Time};
 use bevy_egui::egui;
 use bevy_egui::egui::{Color32, RichText};
@@ -7,7 +7,6 @@ use bevy_egui::EguiContexts;
 
 use crate::bevy::diagnostic::FrameTimeDiagnosticsPlugin;
 use crate::bevy::prelude::{Commands, Res, ResMut};
-use crate::bevy::render::camera::Camera;
 
 use crate::engine::{schedule::Schedule, state::State};
 
@@ -15,9 +14,8 @@ use crate::visualization::{
     asset_handle_factory::AssetHandleFactoryResource,
     simulation_descriptor::SimulationDescriptor,
     visualization_state::VisualizationState,
-    wrappers::{ActiveSchedule, ActiveState},
+    wrappers::{ActiveSchedule, ActiveState, SimulationRenderEntity},
 };
-use bevy::window::Window;
 
 pub fn ui_system<I: VisualizationState<S> + Clone + 'static + bevy::prelude::Resource, S: State>(
     mut egui_context: EguiContexts,
@@ -26,12 +24,16 @@ pub fn ui_system<I: VisualizationState<S> + Clone + 'static + bevy::prelude::Res
     active_state_wrapper: ResMut<ActiveState<S>>,
     on_init: Res<I>,
     mut sprite_factory: AssetHandleFactoryResource,
-    query: Query<Entity, (Without<Camera>, Without<Window>)>,
+    query: Query<Entity, With<SimulationRenderEntity>>,
     diagnostics: Res<DiagnosticsStore>,
     mut commands: Commands,
     mut time: ResMut<Time<Fixed>>,
 ) {
-    egui::SidePanel::left("main").show(egui_context.ctx_mut(), |ui| {
+    let Ok(ctx) = egui_context.ctx_mut() else {
+        return;
+    };
+
+    egui::SidePanel::left("main").show(ctx, |ui| {
         ui.vertical_centered(|ui| {
             ui.heading(sim_data.title.clone());
             ui.separator();
@@ -57,7 +59,7 @@ pub fn ui_system<I: VisualizationState<S> + Clone + 'static + bevy::prelude::Res
             ui.add(
                 egui::Slider::new(&mut value, 0.1..=250.0)
                     .text("Steps per second")
-                    .clamp_to_range(true),
+                    .clamping(egui::SliderClamping::Always),
             );
             time.set_timestep_seconds(1. / value);
 

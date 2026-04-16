@@ -1,11 +1,9 @@
-use bevy::prelude::{Handle, Image, Query, Res, Transform, Visibility};
-
-use crate::bevy::prelude::{Commands, ResMut};
+use bevy::prelude::{Commands, Query, Res, ResMut, Sprite, Transform, Visibility};
 
 use crate::engine::state::State;
 
 use crate::visualization::{
-    agent_render::{AgentRender, SpriteType},
+    agent_render::{AgentRenderComponent, SpriteType},
     asset_handle_factory::AssetHandleFactoryResource,
     simulation_descriptor::SimulationDescriptor,
     visualization_state::VisualizationState,
@@ -18,10 +16,10 @@ pub fn renderer_system<
     S: State,
 >(
     mut query: Query<(
-        &mut Box<dyn AgentRender>,
+        &mut AgentRenderComponent,
         &mut Transform,
         &mut Visibility,
-        &mut Handle<Image>,
+        &mut Sprite,
     )>,
     state_wrapper: ResMut<ActiveState<S>>,
     schedule_wrapper: Res<ActiveSchedule>,
@@ -38,9 +36,11 @@ pub fn renderer_system<
             &mut sprite_factory,
         );
 
-        for (mut agent_render, mut transform, mut visible, mut material) in query.iter_mut() {
+        for (mut agent_render_component, mut transform, mut visible, mut sprite) in query.iter_mut()
+        {
+            let agent_render = &mut agent_render_component.0;
             let state = state_wrapper.0.lock().expect("error on lock");
-            if let Some(agent) = vis_state.get_agent(&agent_render, &Box::new(state.as_state())) {
+            if let Some(agent) = vis_state.get_agent(agent_render.as_ref(), &Box::new(state.as_state())) {
                 agent_render.update(
                     &agent,
                     &mut *transform,
@@ -53,8 +53,8 @@ pub fn renderer_system<
                 let SpriteType::Emoji(emoji_code) =
                     agent_render.sprite(&agent, &Box::new(state.as_state()));
                 let new_material = sprite_factory.get_material_handle(emoji_code);
-                if *material != new_material {
-                    *material = new_material;
+                if sprite.image != new_material {
+                    sprite.image = new_material;
                 }
             } else {
                 let schedule = schedule_wrapper.0.lock().expect("error on lock");

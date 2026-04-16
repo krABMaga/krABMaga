@@ -1,11 +1,9 @@
-use crate::bevy::prelude::Transform;
-use crate::bevy::render::camera::OrthographicProjection;
-use crate::bevy::render::camera::ScalingMode;
-use crate::bevy::utils::default;
 use crate::engine::state::State;
+use bevy::camera::ScalingMode;
 use bevy::math::Vec2;
-use bevy::prelude::{Camera2dBundle, Commands, Res, ResMut};
-use bevy::prelude::{Query, With};
+use bevy::prelude::{
+    Camera2d, Commands, OrthographicProjection, Projection, Query, Res, ResMut, Transform, With,
+};
 use bevy::window::{PrimaryWindow, Window};
 
 use crate::visualization::{
@@ -26,7 +24,7 @@ pub fn init_system<I: VisualizationState<S> + 'static + bevy::prelude::Resource,
     window: Query<&Window, With<PrimaryWindow>>,
     mut sim: ResMut<SimulationDescriptor>,
 ) {
-    if let Ok(window) = window.get_single() {
+    if let Ok(window) = window.single() {
         // Right handed coordinate system, equal to how it is implemented in [`OrthographicProjection::new_2d()`].
         let far = 1000.;
         // Offset the whole simulation to the left to take the width of the UI panel into account.
@@ -38,17 +36,16 @@ pub fn init_system<I: VisualizationState<S> + 'static + bevy::prelude::Resource,
         initial_transform.scale.x = scale_x;
         initial_transform.scale.y = sim.height / window.height();
 
-        commands.spawn(Camera2dBundle {
-            projection: OrthographicProjection {
+        commands.spawn((
+            Camera2d,
+            Projection::Orthographic(OrthographicProjection {
                 far,
-                scaling_mode: ScalingMode::WindowSize(1.),
+                scaling_mode: ScalingMode::WindowSize,
                 viewport_origin: Vec2::new(0., 0.),
-                ..default()
-            }
-            .into(),
-            transform: initial_transform,
-            ..default()
-        });
+                ..OrthographicProjection::default_2d()
+            }),
+            initial_transform,
+        ));
 
         on_init.on_init(
             &mut commands,

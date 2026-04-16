@@ -7,7 +7,7 @@ use bevy_prototype_lyon::prelude::Geometry;
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Arrow(pub Vec2, pub Vec2, pub f32, pub f32);
 
-impl Geometry for Arrow {
+impl Geometry<Builder> for Arrow {
     fn add_geometry(&self, b: &mut Builder) {
         let start = self.0;
         let end = self.1;

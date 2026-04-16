@@ -4,7 +4,7 @@ use std::hash::Hash;
 
 use crate::bevy::prelude::{Res, Vec2};
 
-use crate::visualization::wrappers::ActiveState;
+use crate::visualization::wrappers::{ActiveState, SimulationRenderEntity};
 
 use crate::engine::{
     fields::network::{Edge, Network},
@@ -14,9 +14,10 @@ use crate::engine::{
 
 pub use bevy::prelude::Color;
 use bevy::prelude::{Commands, Component, Query, Transform};
-use bevy_prototype_lyon::draw::{Fill, Stroke};
-use bevy_prototype_lyon::path::ShapePath;
-use bevy_prototype_lyon::prelude::{GeometryBuilder, Path};
+use bevy_prototype_lyon::draw::Stroke;
+use bevy_prototype_lyon::entity::Shape;
+use bevy_prototype_lyon::prelude::{Geometry, ShapeBuilder, ShapeBuilderBase};
+use bevy_prototype_lyon::prelude::tess::path::path::Builder;
 use bevy_prototype_lyon::shapes::Line;
 
 pub extern crate bevy_prototype_lyon;
@@ -79,15 +80,15 @@ pub trait NetworkRender<O: Hash + Eq + Clone + Display, L: Clone + Hash + Displa
                     is_static,
                 } = Self::get_edge_info(edge, network);
 
-                let mut spawn_command = commands.spawn((
-                    GeometryBuilder::build_as(&Line(
-                        Vec2::new(source_loc.x, source_loc.y),
-                        Vec2::new(target_loc.x, target_loc.y),
-                    )),
-                    Fill::color(Color::BLACK),
-                    Stroke::new(line_color, line_width),
-                    Transform::default(),
-                ));
+                let shape = ShapeBuilder::with(&Line(
+                    Vec2::new(source_loc.x, source_loc.y),
+                    Vec2::new(target_loc.x, target_loc.y),
+                ))
+                .stroke(Stroke::new(line_color, line_width))
+                .build();
+
+                let mut spawn_command = commands.spawn((shape, Transform::default()));
+                spawn_command.insert(SimulationRenderEntity);
                 if !is_static {
                     spawn_command.insert(EdgeRender(edge.u, edge.v, source_loc, target_loc));
                 }
@@ -96,17 +97,25 @@ pub trait NetworkRender<O: Hash + Eq + Clone + Display, L: Clone + Hash + Displa
     }
 
     // If the nodes connected by the edge have moved, we regenerate the path mesh related to the edge.
-    fn render(state_wrapper: Res<ActiveState<S>>, mut query: Query<(&mut Path, &EdgeRender)>) {
+    fn render(
+        state_wrapper: Res<ActiveState<S>>,
+        mut query: Query<(&mut Shape, &mut EdgeRender)>,
+    ) {
         let state = state_wrapper.0.lock().expect("error on lock");
         let network = Self::get_network(&*state);
-        for (mut path, edge_render) in query.iter_mut() {
+        for (mut shape, mut edge_render) in query.iter_mut() {
             let source_loc = Self::get_loc(network, edge_render.0);
             let target_loc = Self::get_loc(network, edge_render.1);
             if source_loc != edge_render.2 || target_loc != edge_render.3 {
-                *path = ShapePath::build_as(&Line(
+                let mut builder = Builder::new();
+                Line(
                     Vec2::new(source_loc.x, source_loc.y),
                     Vec2::new(target_loc.x, target_loc.y),
-                ));
+                )
+                .add_geometry(&mut builder);
+                shape.path = builder.build();
+                edge_render.2 = source_loc;
+                edge_render.3 = target_loc;
             }
         }
     }
