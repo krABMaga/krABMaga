@@ -10,6 +10,12 @@ The structure of the project is:
 - utils: Contains utilities used by the framework such as the DBDashMap data structure.
 - visualization: Contains the (optional) visualization framework files that interact with krABMaga.
 
+# prerequisites
+
+```bash
+cargo install --locked prek
+```
+
 # How to: Test
 
 To test the framework's code, the command to run is `cargo test --lib`.
