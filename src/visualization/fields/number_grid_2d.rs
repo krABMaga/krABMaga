@@ -1,18 +1,17 @@
 use std::default::Default;
 use std::marker::PhantomData;
 
-use bevy::prelude::{
-    Assets, Commands, Component, Handle, Image, Query, Res, ResMut, SpriteBundle, Transform,
-};
-use bevy::render::render_asset::RenderAssetUsages;
+use bevy::asset::RenderAssetUsages;
+use bevy::prelude::{Assets, Commands, Component, Image, Query, Res, ResMut, Sprite, Transform};
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
 use image::imageops::{flip_horizontal, rotate180};
 use image::ImageBuffer;
 
 use crate::engine::{location::Int2D, state::State};
 use crate::visualization::{
-    asset_handle_factory::AssetHandleFactoryResource, simulation_descriptor::SimulationDescriptor,
-    wrappers::ActiveState,
+    asset_handle_factory::AssetHandleFactoryResource,
+    simulation_descriptor::SimulationDescriptor,
+    wrappers::{ActiveState, SimulationRenderEntity},
 };
 
 // Allows rendering field structs as a single texture, to improve performance by sending the whole struct to the GPU in a single batch.
@@ -69,14 +68,12 @@ pub trait BatchRender<S: State> {
         let texture = self.texture();
         let handle = sprite_render_factory.assets.add(texture);
         let transform = Transform::from_xyz(sim.center_x - 0.5, sim.center_y, self.get_layer());
-        let sprite_bundle = SpriteBundle {
-            texture: handle,
-            transform,
-            ..Default::default()
-        };
-        commands.spawn(sprite_bundle).insert(Marker::<Self> {
-            marker: PhantomData,
-        });
+        commands
+            .spawn((Sprite::from_image(handle), transform))
+            .insert(Marker::<Self> {
+                marker: PhantomData,
+            })
+            .insert(SimulationRenderEntity);
     }
 
     // Must override to specify how to fetch the texture of self from the state. Your state struct
@@ -86,17 +83,19 @@ pub trait BatchRender<S: State> {
     // The system that will handle batch rendering self. You must insert this system in the [AppBuilder].
     fn batch_render(
         mut assets: ResMut<Assets<Image>>,
-        mut query: Query<(&Marker<Self>, &mut Handle<Image>)>,
+        mut query: Query<(&Marker<Self>, &mut Sprite)>,
         state_wrapper: Res<ActiveState<S>>,
     ) where
         Self: 'static + Sized + Sync + Send,
     {
-        let (_marker, mut image) = query.single_mut();
+        let Ok((_marker, mut sprite)) = query.single_mut() else {
+            return;
+        };
         let new_image =
             Self::get_texture_from_state(&(*state_wrapper).0.lock().expect("error on lock"));
 
         let new_asset = assets.add(new_image);
-        *image = new_asset;
+        sprite.image = new_asset;
     }
 }
 

@@ -1,13 +1,13 @@
-use bevy::prelude::{Commands, SpriteBundle};
+use bevy::prelude::{Commands, Resource, Sprite};
 
 use crate::bevy::prelude::{Quat, Transform, Vec3};
 use crate::engine::{agent::Agent, schedule::Schedule, state::State};
 
-use crate::bevy::ecs::system::Resource;
 use crate::visualization::{
-    agent_render::{AgentRender, SpriteType},
+    agent_render::{AgentRender, AgentRenderComponent, SpriteType},
     asset_handle_factory::AssetHandleFactoryResource,
     simulation_descriptor::SimulationDescriptor,
+    wrappers::SimulationRenderEntity,
 };
 
 // A simple trait which lets the developer set up the visualization components of his simulation.
@@ -54,7 +54,7 @@ pub trait VisualizationState<S: State>: Send + Sync + Resource {
         &self,
         agent: &Box<dyn Agent>,
         agent_render: Box<dyn AgentRender>,
-        mut sprite_bundle: SpriteBundle,
+        sprite: Sprite,
         commands: &mut Commands,
         state: &Box<&dyn State>,
     ) {
@@ -68,11 +68,10 @@ pub trait VisualizationState<S: State>: Send + Sync + Resource {
         transform.scale.y = scale_y;
         transform.rotation = Quat::from_rotation_z(rotation);
 
-        sprite_bundle.transform = transform;
         commands
-            .spawn(sprite_bundle)
-            .insert(agent_render)
-            .insert(transform);
+            .spawn((sprite, transform))
+            .insert(AgentRenderComponent(agent_render))
+            .insert(SimulationRenderEntity);
     }
 
     // The user must specify which AgentRender is associated to which Agent through this method
@@ -81,7 +80,7 @@ pub trait VisualizationState<S: State>: Send + Sync + Resource {
 
     fn get_agent(
         &self,
-        agent_render: &Box<dyn AgentRender>,
+        agent_render: &dyn AgentRender,
         state: &Box<&dyn State>,
     ) -> Option<Box<dyn Agent>>;
 

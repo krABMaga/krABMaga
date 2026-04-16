@@ -14,8 +14,8 @@ use crate::visualization::{
     wrappers::{ActiveSchedule, ActiveState, Initializer},
 };
 
-use bevy::{prelude::*, window::WindowResizeConstraints, DefaultPlugins};
-use bevy_egui::EguiPlugin;
+use bevy::{prelude::*, DefaultPlugins};
+use bevy_egui::{EguiPlugin, EguiPrimaryContextPass};
 
 use bevy_prototype_lyon::prelude::ShapePlugin;
 use std::sync::{Arc, Mutex};
@@ -72,7 +72,7 @@ impl Visualization {
         state: S,
     ) {
         let mut app_builder = self.setup(init_call, state);
-        app_builder.run()
+        app_builder.run();
     }
 
     // Sets up the application, exposing the [AppBuilder]. Useful if you want to directly interface Bevy
@@ -82,11 +82,6 @@ impl Visualization {
         init_call: I,
         mut state: S,
     ) -> App {
-        //Minimum constraints taking into account a 300 x 300 simulation window + a 300 width UI panel
-        let mut window_constraints = WindowResizeConstraints::default();
-        window_constraints.min_width = 600.;
-        window_constraints.min_height = 300.;
-
         let mut app = App::new();
         let mut schedule = Schedule::new();
         state.init(&mut schedule);
@@ -100,7 +95,7 @@ impl Visualization {
             // }),
             ..default()
         }))
-        .add_plugins(EguiPlugin);
+        .add_plugins(EguiPlugin::default());
 
         // Required for network visualization
         app.add_plugins(ShapePlugin);
@@ -124,7 +119,7 @@ impl Visualization {
         .insert_resource(ActiveSchedule(Arc::new(Mutex::new(schedule))))
         .insert_resource(Initializer(cloned_init_call, Default::default()))
         .add_systems(FixedPreUpdate, simulation_system::<S>)
-        .add_systems(Update, ui_system::<I, S>)
+        .add_systems(EguiPrimaryContextPass, ui_system::<I, S>)
         .add_systems(FixedPostUpdate, renderer_system::<I, S>)
         .insert_resource(Time::<Fixed>::default())
         .add_systems(Startup, init_system::<I, S>)
@@ -143,7 +138,7 @@ impl Default for Visualization {
             sim_width: 300.,
             sim_height: 300.,
             window_name: env!("CARGO_PKG_NAME"),
-            background_color: Color::rgb(1., 1., 1.),
+            background_color: Color::srgb(1., 1., 1.),
         }
     }
 }

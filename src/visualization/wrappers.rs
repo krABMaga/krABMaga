@@ -1,7 +1,7 @@
 use crate::engine::{schedule::Schedule, state::State};
 
-use crate::bevy::ecs::system::Resource;
 use crate::visualization::visualization_state::VisualizationState;
+use bevy::prelude::{Component, Resource};
 use std::sync::{Arc, Mutex};
 
 use std::marker::PhantomData;
@@ -20,3 +20,7 @@ pub struct Initializer<I: VisualizationState<S> + 'static + bevy::prelude::Resou
     pub I,
     pub PhantomData<Arc<Mutex<S>>>,
 );
+
+// Marker used to identify entities spawned by the visualization layer.
+#[derive(Component)]
+pub struct SimulationRenderEntity;

@@ -1,6 +1,6 @@
 // A resource containing data about the simulation, for ease of access during initialization.
 
-use crate::bevy::ecs::system::Resource;
+use bevy::prelude::Resource;
 
 #[derive(Resource)]
 pub struct SimulationDescriptor {

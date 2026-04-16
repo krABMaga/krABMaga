@@ -3,8 +3,7 @@ use std::path::Path;
 
 use bevy::ecs::system::SystemParam;
 
-use crate::bevy::ecs::system::Resource;
-use bevy::prelude::{AssetServer, Assets, Handle, Image, Res, ResMut, SpriteBundle};
+use bevy::prelude::{AssetServer, Assets, Handle, Image, Res, ResMut, Resource, Sprite};
 use hashbrown::HashMap;
 
 // A simple lazy loader of sprites, mainly for use with the Emoji sprite feature offered by the framework.
@@ -27,11 +26,8 @@ impl AssetHandleFactory {
         &mut self,
         emoji_code: String,
         asset_server: &Res<AssetServer>,
-    ) -> SpriteBundle {
-        SpriteBundle {
-            texture: self.get_material_handle(emoji_code, asset_server),
-            ..Default::default()
-        }
+    ) -> Sprite {
+        Sprite::from_image(self.get_material_handle(emoji_code, asset_server))
     }
 
     // Actually fetch the sprite resource from the filesystem, from the framework asset folder.
@@ -64,25 +60,24 @@ impl AssetHandleFactory {
 }
 
 // A bundle of resources related to sprite assets, commonly used to edit the graphical representation of an agent.
-#[derive(Resource, SystemParam)]
+#[derive(SystemParam)]
 pub struct AssetHandleFactoryResource<'w, 's> {
     pub sprite_factory: ResMut<'w, AssetHandleFactory>,
     pub asset_server: Res<'w, AssetServer>,
     pub assets: ResMut<'w, Assets<Image>>,
-    #[system_param(ignore)]
-    marker: PhantomData<&'s usize>,
+    marker: PhantomData<&'s ()>,
 }
 
 impl<'w, 's> AssetHandleFactoryResource<'w, 's> {
     // A proxy method that exposes [AssetHandleFactory get_emoji_loader](AssetHandleFactory#get_emoji_loader)
-    pub fn get_emoji_loader(&mut self, emoji_code: String) -> SpriteBundle {
+    pub fn get_emoji_loader(&mut self, emoji_code: String) -> Sprite {
         self.sprite_factory
-            .get_emoji_loader(emoji_code, &mut self.asset_server)
+            .get_emoji_loader(emoji_code, &self.asset_server)
     }
 
     // A proxy method that exposes [AssetHandleFactory get_material_handle](AssetHandleFactory#get_material_handle)
     pub fn get_material_handle(&mut self, emoji_code: String) -> Handle<Image> {
         self.sprite_factory
-            .get_material_handle(emoji_code, &mut self.asset_server)
+            .get_material_handle(emoji_code, &self.asset_server)
     }
 }

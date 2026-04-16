@@ -1,20 +1,19 @@
-use bevy::prelude::EventReader;
 use bevy::{
-    prelude::{Query, Transform},
+    prelude::{Camera, MessageReader, Query, Res, Transform},
     window::WindowResized,
 };
 
-use crate::bevy::prelude::Res;
-use crate::bevy::render::camera::Camera;
 use crate::visualization::simulation_descriptor::SimulationDescriptor;
 
 pub fn camera_system(
-    mut resize_event: EventReader<WindowResized>,
+    mut resize_event: MessageReader<WindowResized>,
     sim: Res<SimulationDescriptor>,
     mut query: Query<(&Camera, &mut Transform)>,
 ) {
     for e in resize_event.read() {
-        let (_camera, mut transform) = query.single_mut();
+        let Ok((_camera, mut transform)) = query.single_mut() else {
+            continue;
+        };
         // Offset the whole simulation to the left to take the width of the UI panel into account.
         let ui_offset = -sim.ui_width;
         // Scale the simulation so it fills the portion of the screen not covered by the UI panel.
