@@ -1,6 +1,6 @@
 [package]
 name = "krabmaga"
-version = "0.5.3"
+version = "0.6.0"
 authors = [
     "Carmine Spagnuolo <spagnuolocarmine@gmail.com>", 
     "Alessia Antelmi <aantelmi@unisa.it>", 

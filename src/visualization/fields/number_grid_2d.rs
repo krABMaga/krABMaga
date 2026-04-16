@@ -1,15 +1,16 @@
 use std::default::Default;
 use std::marker::PhantomData;
 
-use bevy::prelude::{Assets, Commands, Component, Image, Query, Res, ResMut, Sprite, Transform};
 use bevy::asset::RenderAssetUsages;
+use bevy::prelude::{Assets, Commands, Component, Image, Query, Res, ResMut, Sprite, Transform};
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
 use image::imageops::{flip_horizontal, rotate180};
 use image::ImageBuffer;
 
 use crate::engine::{location::Int2D, state::State};
 use crate::visualization::{
-    asset_handle_factory::AssetHandleFactoryResource, simulation_descriptor::SimulationDescriptor,
+    asset_handle_factory::AssetHandleFactoryResource,
+    simulation_descriptor::SimulationDescriptor,
     wrappers::{ActiveState, SimulationRenderEntity},
 };
 

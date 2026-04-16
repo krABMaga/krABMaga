@@ -40,7 +40,9 @@ pub fn renderer_system<
         {
             let agent_render = &mut agent_render_component.0;
             let state = state_wrapper.0.lock().expect("error on lock");
-            if let Some(agent) = vis_state.get_agent(agent_render.as_ref(), &Box::new(state.as_state())) {
+            if let Some(agent) =
+                vis_state.get_agent(agent_render.as_ref(), &Box::new(state.as_state()))
+            {
                 agent_render.update(
                     &agent,
                     &mut *transform,

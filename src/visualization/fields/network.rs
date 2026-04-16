@@ -16,8 +16,8 @@ pub use bevy::prelude::Color;
 use bevy::prelude::{Commands, Component, Query, Transform};
 use bevy_prototype_lyon::draw::Stroke;
 use bevy_prototype_lyon::entity::Shape;
-use bevy_prototype_lyon::prelude::{Geometry, ShapeBuilder, ShapeBuilderBase};
 use bevy_prototype_lyon::prelude::tess::path::path::Builder;
+use bevy_prototype_lyon::prelude::{Geometry, ShapeBuilder, ShapeBuilderBase};
 use bevy_prototype_lyon::shapes::Line;
 
 pub extern crate bevy_prototype_lyon;
@@ -97,10 +97,7 @@ pub trait NetworkRender<O: Hash + Eq + Clone + Display, L: Clone + Hash + Displa
     }
 
     // If the nodes connected by the edge have moved, we regenerate the path mesh related to the edge.
-    fn render(
-        state_wrapper: Res<ActiveState<S>>,
-        mut query: Query<(&mut Shape, &mut EdgeRender)>,
-    ) {
+    fn render(state_wrapper: Res<ActiveState<S>>, mut query: Query<(&mut Shape, &mut EdgeRender)>) {
         let state = state_wrapper.0.lock().expect("error on lock");
         let network = Self::get_network(&*state);
         for (mut shape, mut edge_render) in query.iter_mut() {
