@@ -12,3 +12,9 @@ hooks = [
   { id = "detect-private-key" },
   { id = "check-toml" }
 ]
+
+[[repos]]
+repo = "local"
+hooks = [
+  { id = "rust-fmt-check", name = "rustfmt check (make fmt-check)", entry = "make fmt-check", language = "system", pass_filenames = false, always_run = true }
+]
