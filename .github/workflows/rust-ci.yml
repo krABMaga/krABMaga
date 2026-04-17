@@ -9,16 +9,7 @@ name: Rust CI
 env:
   CARGO_TERM_COLOR: always
 jobs:
-  deps-cache-warmup:
-    runs-on: ubuntu-latest
-    name: Warm APT deps cache
-    steps:
-      - uses: actions/checkout@v6
-      - name: Install system dependencies
-        uses: ./.github/workflows/install-deps
-
   stdbuild:
-    needs: deps-cache-warmup
     runs-on: '${{ matrix.os }}'
     strategy:
       fail-fast: false
@@ -35,6 +26,8 @@ jobs:
       - name: Install system dependencies
         if: matrix.os == 'ubuntu-latest'
         uses: ./.github/workflows/install-deps
+        with:
+          profile: visualization
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: '${{ matrix.rust }}'
@@ -50,7 +43,6 @@ jobs:
       - name: TestNoFeatures
         run: cargo test
   mpibuild:
-    needs: deps-cache-warmup
     runs-on: '${{ matrix.os }}'
     continue-on-error: true
     strategy:
@@ -80,6 +72,8 @@ jobs:
       - name: Install system dependencies
         if: matrix.os == 'ubuntu-latest'
         uses: ./.github/workflows/install-deps
+        with:
+          profile: mpi
       - name: Install macOS dependencies
         if: matrix.os == 'macos-15-intel'
         run: |
@@ -90,30 +84,20 @@ jobs:
       - name: Build with MPI
         run: cargo build --release --features distributed_mpi
   nightlybuild:
-    needs: deps-cache-warmup
-    runs-on: '${{ matrix.os }}'
+    runs-on: ubuntu-latest
     continue-on-error: true
-    strategy:
-      matrix:
-        os:
-          - ubuntu-latest
-          - macos-latest
-          - windows-latest
-        rust:
-          - nightly
-    name: '${{ matrix.os }} nightly build'
+    name: 'ubuntu nightly build'
     steps:
       - uses: actions/checkout@v6
       - name: Install system dependencies
-        if: matrix.os == 'ubuntu-latest'
         uses: ./.github/workflows/install-deps
+        with:
+          profile: visualization
       - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: '${{ matrix.rust }}'
+          toolchain: nightly
       - uses: Swatinem/rust-cache@v2
       - name: Build nightly
         run: cargo build --release
       - name: BuildVisualization nightly
         run: 'cargo build --release --features "visualization, visualization_wasm"'
-      - name: BuildBayesian nightly
-        run: cargo build --release --features bayesian

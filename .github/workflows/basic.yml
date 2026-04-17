@@ -3,38 +3,31 @@ on: [push, pull_request]
 name: Continuous integration
 
 jobs:
-  deps-cache-warmup:
-    name: Warm APT deps cache
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - name: Install system dependencies
-        uses: ./.github/workflows/install-deps
-
   check:
     name: Check
-    needs: deps-cache-warmup
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
       - name: Install system dependencies
         uses: ./.github/workflows/install-deps
+        with:
+          profile: base
       - run: cargo check --release
 
   checkvis:
     name: Check visualization and bayesian
-    needs: deps-cache-warmup
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
       - name: Install system dependencies
         uses: ./.github/workflows/install-deps
+        with:
+          profile: visualization
       - run: cargo check --release --features "visualization, bayesian"
 
   checkmpi:
-    needs: deps-cache-warmup
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -57,6 +50,8 @@ jobs:
           toolchain: ${{ matrix.rust }}
       - name: Install system dependencies
         uses: ./.github/workflows/install-deps
+        with:
+          profile: mpi
       - run: cargo check --release --features distributed_mpi
 
   fmt:
@@ -71,7 +66,6 @@ jobs:
 
   clippy:
     name: Clippy
-    needs: deps-cache-warmup
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -80,11 +74,12 @@ jobs:
           components: clippy
       - name: Install system dependencies
         uses: ./.github/workflows/install-deps
+        with:
+          profile: base
       - run: cargo clippy
 
   clippyvis:
     name: Clippy visualization
-    needs: deps-cache-warmup
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -93,10 +88,11 @@ jobs:
           components: rustfmt
       - name: Install system dependencies
         uses: ./.github/workflows/install-deps
+        with:
+          profile: visualization
       - run: cargo clippy --features "visualization, bayesian"
 
   clippympi:
-    needs: deps-cache-warmup
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -119,4 +115,6 @@ jobs:
           toolchain: ${{ matrix.rust }}
       - name: Install system dependencies
         uses: ./.github/workflows/install-deps
+        with:
+          profile: mpi
       - run: cargo clippy --features distributed_mpi
