@@ -22,11 +22,10 @@ jobs:
           - stable
     name: '${{ matrix.os }} ${{ matrix.rust }} build'
     steps:
+      - uses: actions/checkout@v6
       - name: Install system dependencies
         if: matrix.os == 'ubuntu-latest'
         uses: ./.github/workflows/install-deps
-      - uses: actions/checkout@v6
-      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: '${{ matrix.rust }}'
@@ -93,11 +92,10 @@ jobs:
           - nightly
     name: '${{ matrix.os }} nightly build'
     steps:
+      - uses: actions/checkout@v6
       - name: Install system dependencies
         if: matrix.os == 'ubuntu-latest'
         uses: ./.github/workflows/install-deps
-      - uses: actions/checkout@v6
-      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: '${{ matrix.rust }}'

@@ -8,9 +8,10 @@ runs:
       uses: actions/cache@v5
       id: cache-apt
       with:
-        path: /var/cache/apt/archives/*.deb
-        key: ${{ runner.os }}-apt-${{ hashFiles('**/action.yml') }}-v1
+        path: /var/cache/apt/archives
+        key: ${{ runner.os }}-${{ runner.arch }}-apt-${{ hashFiles('.github/workflows/install-deps/action.yml') }}-v2
         restore-keys: |
+          ${{ runner.os }}-${{ runner.arch }}-apt-
           ${{ runner.os }}-apt-
 
     - name: Install system dependencies
