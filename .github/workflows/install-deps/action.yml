@@ -1,0 +1,39 @@
+name: 'Install System Dependencies'
+description: 'Install required system dependencies with caching'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Cache APT packages
+      uses: actions/cache@v5
+      id: cache-apt
+      with:
+        path: /var/cache/apt/archives/*.deb
+        key: ${{ runner.os }}-apt-${{ hashFiles('**/action.yml') }}-v1
+        restore-keys: |
+          ${{ runner.os }}-apt-
+
+    - name: Install system dependencies
+      if: steps.cache-apt.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        sudo apt update
+        sudo apt install -y --download-only \
+          pkg-config libx11-dev libasound2-dev libudev-dev libgtk-3-dev \
+          libwayland-dev libxkbcommon-dev \
+          libxcb-randr0-dev libxcb-xtest0-dev libxcb-xinerama0-dev libxcb-shape0-dev libxcb-xkb-dev \
+          libxcb-render0-dev libxcb-xfixes0-dev libxcb1-dev \
+          portaudio19-dev build-essential libpulse-dev libdbus-1-dev \
+          libfontconfig libfontconfig1-dev
+
+    - name: Install cached packages
+      shell: bash
+      run: |
+        sudo apt update
+        sudo apt install -y \
+          pkg-config libx11-dev libasound2-dev libudev-dev libgtk-3-dev \
+          libwayland-dev libxkbcommon-dev \
+          libxcb-randr0-dev libxcb-xtest0-dev libxcb-xinerama0-dev libxcb-shape0-dev libxcb-xkb-dev \
+          libxcb-render0-dev libxcb-xfixes0-dev libxcb1-dev \
+          portaudio19-dev build-essential libpulse-dev libdbus-1-dev \
+          libfontconfig libfontconfig1-dev
