@@ -3,8 +3,17 @@ on: [push, pull_request]
 name: Continuous integration
 
 jobs:
+  deps-cache-warmup:
+    name: Warm APT deps cache
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install system dependencies
+        uses: ./.github/workflows/install-deps
+
   check:
     name: Check
+    needs: deps-cache-warmup
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -15,6 +24,7 @@ jobs:
 
   checkvis:
     name: Check visualization and bayesian
+    needs: deps-cache-warmup
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -24,6 +34,7 @@ jobs:
       - run: cargo check --release --features "visualization, bayesian"
 
   checkmpi:
+    needs: deps-cache-warmup
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -60,6 +71,7 @@ jobs:
 
   clippy:
     name: Clippy
+    needs: deps-cache-warmup
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -72,6 +84,7 @@ jobs:
 
   clippyvis:
     name: Clippy visualization
+    needs: deps-cache-warmup
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -83,6 +96,7 @@ jobs:
       - run: cargo clippy --features "visualization, bayesian"
 
   clippympi:
+    needs: deps-cache-warmup
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:

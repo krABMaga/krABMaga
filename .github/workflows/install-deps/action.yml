@@ -4,9 +4,9 @@ description: 'Install required system dependencies with caching'
 runs:
   using: 'composite'
   steps:
-    - name: Cache APT packages
-      uses: actions/cache@v5
-      id: cache-apt
+    - name: Restore APT packages cache
+      uses: actions/cache/restore@v5
+      id: cache-apt-restore
       with:
         path: /var/cache/apt/archives
         key: ${{ runner.os }}-${{ runner.arch }}-apt-${{ hashFiles('.github/workflows/install-deps/action.yml') }}-v2
@@ -14,8 +14,8 @@ runs:
           ${{ runner.os }}-${{ runner.arch }}-apt-
           ${{ runner.os }}-apt-
 
-    - name: Install system dependencies
-      if: steps.cache-apt.outputs.cache-hit != 'true'
+    - name: Download system dependency packages
+      if: steps.cache-apt-restore.outputs.cache-hit != 'true'
       shell: bash
       run: |
         sudo apt update
@@ -26,6 +26,13 @@ runs:
           libxcb-render0-dev libxcb-xfixes0-dev libxcb1-dev \
           portaudio19-dev build-essential libpulse-dev libdbus-1-dev \
           libfontconfig libfontconfig1-dev
+
+    - name: Save APT packages cache
+      if: steps.cache-apt-restore.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v5
+      with:
+        path: /var/cache/apt/archives
+        key: ${{ runner.os }}-${{ runner.arch }}-apt-${{ hashFiles('.github/workflows/install-deps/action.yml') }}-v2
 
     - name: Install cached packages
       shell: bash

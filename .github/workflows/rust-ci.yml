@@ -9,7 +9,16 @@ name: Rust CI
 env:
   CARGO_TERM_COLOR: always
 jobs:
+  deps-cache-warmup:
+    runs-on: ubuntu-latest
+    name: Warm APT deps cache
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install system dependencies
+        uses: ./.github/workflows/install-deps
+
   stdbuild:
+    needs: deps-cache-warmup
     runs-on: '${{ matrix.os }}'
     strategy:
       fail-fast: false
@@ -41,6 +50,7 @@ jobs:
       - name: TestNoFeatures
         run: cargo test
   mpibuild:
+    needs: deps-cache-warmup
     runs-on: '${{ matrix.os }}'
     continue-on-error: true
     strategy:
@@ -80,6 +90,7 @@ jobs:
       - name: Build with MPI
         run: cargo build --release --features distributed_mpi
   nightlybuild:
+    needs: deps-cache-warmup
     runs-on: '${{ matrix.os }}'
     continue-on-error: true
     strategy:
