@@ -1,0 +1,20 @@
+[[repos]]
+repo = "https://github.com/pre-commit/pre-commit-hooks"
+rev = "v6.0.0"
+hooks = [
+  { id = "check-yaml" },
+  { id = "end-of-file-fixer" },
+  { id = "mixed-line-ending", args = ["--fix=lf"] },
+  { id = "pretty-format-json", args = ["--autofix", "--indent=2"] },
+  { id = "trailing-whitespace" },
+  { id = "check-added-large-files", args = ["--maxkb=51200"] },
+  { id = "check-merge-conflict" },
+  { id = "detect-private-key" },
+  { id = "check-toml" }
+]
+
+[[repos]]
+repo = "local"
+hooks = [
+  { id = "rust-fmt-check", name = "rustfmt check (make fmt-check)", entry = "make fmt-check", language = "system", pass_filenames = false, always_run = true }
+]

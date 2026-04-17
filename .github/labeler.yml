@@ -1,0 +1,38 @@
+ci:
+  - changed-files:
+      - any-glob-to-any-file: ".github/**"
+
+docs:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "docs/**"
+          - "*.md"
+  - head-branch: ["^docs"]
+
+core:
+  - changed-files:
+      - any-glob-to-any-file: "src/engine/**"
+
+explore:
+  - changed-files:
+      - any-glob-to-any-file: "src/explore/**"
+
+utils:
+  - changed-files:
+      - any-glob-to-any-file: "src/utils/**"
+tests:
+  - changed-files:
+      - any-glob-to-any-file: "tests/**"
+
+
+feature:
+  - head-branch: ["^feat"]
+
+fix:
+  - head-branch: ["^fix"]
+
+chore:
+  - head-branch: ["^chore"]
+
+refactoring:
+  - head-branch: ["^refactor"]

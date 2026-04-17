@@ -11,7 +11,7 @@
 
 (Notice that the *parallel* and *visualization* components are excluded from _codecov_ as are experimental ore release candidate)
 
-**krABMaga** (Previously named Rust-AB) is a discrete events simulation engine for developing ABM simulation that is written in Rust language. 
+**krABMaga** (Previously named Rust-AB) is a discrete events simulation engine for developing ABM simulation that is written in Rust language.
 
 krABMaga is designed to be a _ready-to-use_ tool for the ABM community and for this reason the architectural concepts of the well-adopted MASON library were re-engineered to exploit the Rust peculiarities and programming model.
 
@@ -33,7 +33,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-krabmaga = 0.5.*
+krabmaga = 0.6.*
 ```
 
 To get started using krABMaga, see [the examples](https://github.com/krABMaga/examples).
@@ -47,14 +47,14 @@ To run a model with visualization enabled, you have to start the simulation with
 cargo run --release --features  visualization
 
 # Alternative command. Requires 'cargo make' installed
-cargo make run --release 
+cargo make run --release
 ```
 
-In addition to the classical visualization, you can run your krABMaga simulation inside your browser using [*Web Assembly*](https://webassembly.org). 
+In addition to the classical visualization, you can run your krABMaga simulation inside your browser using [*Web Assembly*](https://webassembly.org).
 This is possible with the command:
 ```sh
 # Requires 'cargo make' installed
-cargo make serve --release 
+cargo make serve --release
 ```
 
 ***Visualization FAQs***
@@ -81,7 +81,7 @@ The visualization framework requires certain dependencies to run the simulation 
 If you don't start from our [Template](https://github.com/krABMaga/examples/tree/main/template), add this to your `Cargo.toml`:
 ```toml
 [dependencies]
-krabmaga = 0.5.*
+krabmaga = 0.6.*
 
 [features]
 visualization = ["krabmaga/visualization"]
@@ -93,15 +93,15 @@ We **strongly** recommend to use [Template](https://github.com/krABMaga/examples
 Each krABMaga model needs structs that implements our *Traits*, one for *State* and the other for *Agent*. In the *State* struct you have to put *Agent* field(s), because it represents the ecosystem of a simulation. More details for each krABMaga componenet are in the [Architecture](#architecture) section.
 
 The simplest part is `main.rs`, because is similar for each example.
-You can define two *main* functions using **cfg** directive, that can remove code based on which features are (not) enabled.  
-Without visualization, you have only to use *simulate!* to run simulation, passing a state, step number and how may time repeat your simulation. 
+You can define two *main* functions using **cfg** directive, that can remove code based on which features are (not) enabled.
+Without visualization, you have only to use *simulate!* to run simulation, passing a state, step number and how may time repeat your simulation.
 With visualization, you have to set graphical settings (like dimension or background) and call *start* method.
 ```rs
 // Main used when only the simulation should run, without any visualization.
 #[cfg(not(any(feature = "visualization", feature = "visualization_wasm")))]
 fn main() {
   let dim = (200., 200.);
-  let num_agents = 100;  
+  let num_agents = 100;
   let state = Flocker::new(dim, num_agents);
   let step = 10;
   let reps = 1;
@@ -145,7 +145,7 @@ fn main() {
 That macro has a fourth optional parameter, a boolean. When `false` is passed, `Simulation Terminal` is disabled.
 ```rs
 ($s:expr, $step:expr, $reps:expr $(, $flag:expr)?) => {{
-      // Macro code 
+      // Macro code
 }}
 ```
 
@@ -179,7 +179,7 @@ pub enum LogType {
 
 
 ### [Contributing FAQ](CONTRIBUTING.md)
- 
+
 ## Support conference paper
 
 If you find this code useful in your research, please consider citing:

@@ -1,8 +1,5 @@
 name: Rust CI
 'on':
-  push:
-    branches:
-      - main
   pull_request:
     branches:
       - main
@@ -22,25 +19,12 @@ jobs:
           - stable
     name: '${{ matrix.os }} ${{ matrix.rust }} build'
     steps:
-      - name: Ubuntu Required Deps
+      - uses: actions/checkout@v6
+      - name: Install system dependencies
         if: matrix.os == 'ubuntu-latest'
-        run: >
-          sudo apt update
-
-          sudo apt install pkg-config libx11-dev libasound2-dev libudev-dev
-          libgtk-3-dev
-
-          sudo apt install libxcb-randr0-dev libxcb-xtest0-dev
-          libxcb-xinerama0-dev libxcb-shape0-dev libxcb-xkb-dev
-
-          sudo apt install libxcb-render0-dev libxcb-xfixes0-dev libxcb1-dev
-
-          sudo apt install libudev-dev libasound2-dev portaudio19-dev
-          build-essential libpulse-dev libdbus-1-dev
-
-          sudo apt install libfontconfig libfontconfig1-dev
-      - uses: actions/checkout@v6
-      - uses: actions/checkout@v6
+        uses: ./.github/workflows/install-deps
+        with:
+          profile: visualization
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: '${{ matrix.rust }}'
@@ -82,63 +66,35 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: '${{ matrix.rust }}'
-      - name: Install Ubuntu dependencies
+      - name: Install system dependencies
         if: matrix.os == 'ubuntu-latest'
-        run: |
-          sudo apt update
-          sudo apt install pkg-config libx11-dev libasound2-dev libudev-dev libgtk-3-dev
-          sudo apt install libxcb-randr0-dev libxcb-xtest0-dev libxcb-xinerama0-dev libxcb-shape0-dev libxcb-xkb-dev
-          sudo apt install libxcb-render0-dev libxcb-xfixes0-dev libxcb1-dev
-          sudo apt install libudev-dev libasound2-dev portaudio19-dev build-essential libpulse-dev libdbus-1-dev
-          sudo apt install libfontconfig libfontconfig1-dev
+        uses: ./.github/workflows/install-deps
+        with:
+          profile: mpi
       - name: Install macOS dependencies
         if: matrix.os == 'macos-15-intel'
         run: |
           brew install libffi pkg-config
           echo "PKG_CONFIG_PATH=$(brew --prefix libffi)/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
           echo "LIBFFI_DIR=$(brew --prefix libffi)" >> $GITHUB_ENV
-      
+
       - name: Build with MPI
         run: cargo build --release --features distributed_mpi
   nightlybuild:
-    runs-on: '${{ matrix.os }}'
+    runs-on: ubuntu-latest
     continue-on-error: true
-    strategy:
-      matrix:
-        os:
-          - ubuntu-latest
-          - macos-latest
-          - windows-latest
-        rust:
-          - nightly
-    name: '${{ matrix.os }} nightly build'
+    name: 'ubuntu nightly build'
     steps:
-      - name: Ubuntu Required Deps
-        if: matrix.os == 'ubuntu-latest'
-        run: >
-          sudo apt update
-
-          sudo apt install pkg-config libx11-dev libasound2-dev libudev-dev
-          libgtk-3-dev
-
-          sudo apt install libxcb-randr0-dev libxcb-xtest0-dev
-          libxcb-xinerama0-dev libxcb-shape0-dev libxcb-xkb-dev
-
-          sudo apt install libxcb-render0-dev libxcb-xfixes0-dev libxcb1-dev
-
-          sudo apt install libudev-dev libasound2-dev portaudio19-dev
-          build-essential libpulse-dev libdbus-1-dev
-
-          sudo apt install libfontconfig libfontconfig1-dev
       - uses: actions/checkout@v6
-      - uses: actions/checkout@v6
+      - name: Install system dependencies
+        uses: ./.github/workflows/install-deps
+        with:
+          profile: visualization
       - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: '${{ matrix.rust }}'
+          toolchain: nightly
       - uses: Swatinem/rust-cache@v2
       - name: Build nightly
         run: cargo build --release
       - name: BuildVisualization nightly
         run: 'cargo build --release --features "visualization, visualization_wasm"'
-      - name: BuildBayesian nightly
-        run: cargo build --release --features bayesian

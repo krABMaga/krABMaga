@@ -1,0 +1,66 @@
+name: 'Install System Dependencies'
+description: 'Install required system dependencies with dedicated apt package caching'
+
+inputs:
+  profile:
+    description: 'Dependency profile to install (base, visualization, mpi)'
+    required: false
+    default: 'base'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Cache and install base dependencies
+      if: inputs.profile == 'base'
+      uses: awalsh128/cache-apt-pkgs-action@v1
+      with:
+        packages: >-
+          pkg-config
+          libfontconfig
+          libfontconfig1-dev
+        version: base-v1
+
+    - name: Cache and install visualization dependencies
+      if: inputs.profile == 'visualization'
+      uses: awalsh128/cache-apt-pkgs-action@v1
+      with:
+        packages: >-
+          pkg-config
+          libx11-dev
+          libasound2-dev
+          libudev-dev
+          libgtk-3-dev
+          libwayland-dev
+          libxkbcommon-dev
+          libxcb-randr0-dev
+          libxcb-xtest0-dev
+          libxcb-xinerama0-dev
+          libxcb-shape0-dev
+          libxcb-xkb-dev
+          libxcb-render0-dev
+          libxcb-xfixes0-dev
+          libxcb1-dev
+          portaudio19-dev
+          build-essential
+          libpulse-dev
+          libdbus-1-dev
+          libfontconfig
+          libfontconfig1-dev
+        version: visualization-v1
+
+    - name: Cache and install mpi dependencies
+      if: inputs.profile == 'mpi'
+      uses: awalsh128/cache-apt-pkgs-action@v1
+      with:
+        packages: >-
+          pkg-config
+          libfontconfig
+          libfontconfig1-dev
+        version: mpi-v1
+
+    - name: Validate dependency profile
+      if: inputs.profile != 'base' && inputs.profile != 'visualization' && inputs.profile != 'mpi'
+      shell: bash
+      run: |
+        echo "Unsupported install-deps profile: '${{ inputs.profile }}'"
+        exit 1
