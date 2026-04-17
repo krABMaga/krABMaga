@@ -7,14 +7,17 @@ runs:
     - name: Prepare local APT cache directory
       shell: bash
       run: |
-        mkdir -p "${GITHUB_WORKSPACE}/.apt-cache/archives/partial"
+        sudo mkdir -p "${GITHUB_WORKSPACE}/.apt-cache/cache-debs"
+        sudo mkdir -p "${GITHUB_WORKSPACE}/.apt-cache/archives/partial"
+        sudo chown -R "$(id -u):$(id -g)" "${GITHUB_WORKSPACE}/.apt-cache"
+        chmod -R u+rwX "${GITHUB_WORKSPACE}/.apt-cache"
 
     - name: Restore APT packages cache
       uses: actions/cache/restore@v5
       id: cache-apt-restore
       with:
-        path: ${{ github.workspace }}/.apt-cache/archives/*.deb
-        key: ${{ runner.os }}-${{ runner.arch }}-apt-home-${{ hashFiles('.github/workflows/install-deps/action.yml') }}-v4
+        path: ${{ github.workspace }}/.apt-cache/cache-debs/*.deb
+        key: ${{ runner.os }}-${{ runner.arch }}-apt-home-${{ hashFiles('.github/workflows/install-deps/action.yml') }}-v5
         restore-keys: |
           ${{ runner.os }}-${{ runner.arch }}-apt-home-
           ${{ runner.os }}-apt-home-
@@ -23,37 +26,42 @@ runs:
       if: steps.cache-apt-restore.outputs.cache-hit != 'true'
       shell: bash
       run: |
-        CACHE_DIR="${GITHUB_WORKSPACE}/.apt-cache/archives"
+        CACHE_STORE="${GITHUB_WORKSPACE}/.apt-cache/cache-debs"
+        APT_ARCHIVES="${GITHUB_WORKSPACE}/.apt-cache/archives"
         sudo apt update
-        sudo apt install -y --download-only -o Dir::Cache::archives="$CACHE_DIR" \
+        sudo apt install -y --download-only -o Dir::Cache::archives="$APT_ARCHIVES" \
           pkg-config libx11-dev libasound2-dev libudev-dev libgtk-3-dev \
           libwayland-dev libxkbcommon-dev \
           libxcb-randr0-dev libxcb-xtest0-dev libxcb-xinerama0-dev libxcb-shape0-dev libxcb-xkb-dev \
           libxcb-render0-dev libxcb-xfixes0-dev libxcb1-dev \
           portaudio19-dev build-essential libpulse-dev libdbus-1-dev \
           libfontconfig libfontconfig1-dev
+        sudo cp -f "$APT_ARCHIVES"/*.deb "$CACHE_STORE"/ || true
         sudo chown -R "$(id -u):$(id -g)" "${GITHUB_WORKSPACE}/.apt-cache"
 
     - name: Save APT packages cache
       if: steps.cache-apt-restore.outputs.cache-hit != 'true'
       uses: actions/cache/save@v5
       with:
-        path: ${{ github.workspace }}/.apt-cache/archives/*.deb
-        key: ${{ runner.os }}-${{ runner.arch }}-apt-home-${{ hashFiles('.github/workflows/install-deps/action.yml') }}-v4
+        path: ${{ github.workspace }}/.apt-cache/cache-debs/*.deb
+        key: ${{ runner.os }}-${{ runner.arch }}-apt-home-${{ hashFiles('.github/workflows/install-deps/action.yml') }}-v5
 
     - name: Install cached packages
       shell: bash
       run: |
-        CACHE_DIR="${GITHUB_WORKSPACE}/.apt-cache/archives"
+        CACHE_STORE="${GITHUB_WORKSPACE}/.apt-cache/cache-debs"
+        APT_ARCHIVES="${GITHUB_WORKSPACE}/.apt-cache/archives"
+        mkdir -p "$APT_ARCHIVES/partial"
+        cp -f "$CACHE_STORE"/*.deb "$APT_ARCHIVES"/ || true
         sudo apt update
-        sudo apt install -y --no-download -o Dir::Cache::archives="$CACHE_DIR" \
+        sudo apt install -y --no-download -o Dir::Cache::archives="$APT_ARCHIVES" \
           pkg-config libx11-dev libasound2-dev libudev-dev libgtk-3-dev \
           libwayland-dev libxkbcommon-dev \
           libxcb-randr0-dev libxcb-xtest0-dev libxcb-xinerama0-dev libxcb-shape0-dev libxcb-xkb-dev \
           libxcb-render0-dev libxcb-xfixes0-dev libxcb1-dev \
           portaudio19-dev build-essential libpulse-dev libdbus-1-dev \
           libfontconfig libfontconfig1-dev || \
-        sudo apt install -y -o Dir::Cache::archives="$CACHE_DIR" \
+        sudo apt install -y -o Dir::Cache::archives="$APT_ARCHIVES" \
           pkg-config libx11-dev libasound2-dev libudev-dev libgtk-3-dev \
           libwayland-dev libxkbcommon-dev \
           libxcb-randr0-dev libxcb-xtest0-dev libxcb-xinerama0-dev libxcb-shape0-dev libxcb-xkb-dev \
