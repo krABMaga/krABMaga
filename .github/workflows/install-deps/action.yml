@@ -8,8 +8,8 @@ runs:
       uses: actions/cache/restore@v5
       id: cache-apt-restore
       with:
-        path: /var/cache/apt/archives
-        key: ${{ runner.os }}-${{ runner.arch }}-apt-${{ hashFiles('.github/workflows/install-deps/action.yml') }}-v2
+        path: /var/cache/apt/archives/*.deb
+        key: ${{ runner.os }}-${{ runner.arch }}-apt-${{ hashFiles('.github/workflows/install-deps/action.yml') }}-v3
         restore-keys: |
           ${{ runner.os }}-${{ runner.arch }}-apt-
           ${{ runner.os }}-apt-
@@ -31,8 +31,8 @@ runs:
       if: steps.cache-apt-restore.outputs.cache-hit != 'true'
       uses: actions/cache/save@v5
       with:
-        path: /var/cache/apt/archives
-        key: ${{ runner.os }}-${{ runner.arch }}-apt-${{ hashFiles('.github/workflows/install-deps/action.yml') }}-v2
+        path: /var/cache/apt/archives/*.deb
+        key: ${{ runner.os }}-${{ runner.arch }}-apt-${{ hashFiles('.github/workflows/install-deps/action.yml') }}-v3
 
     - name: Install cached packages
       shell: bash
