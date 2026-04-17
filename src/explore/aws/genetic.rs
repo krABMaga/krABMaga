@@ -60,9 +60,9 @@ else
 fi
 
 docker_check=$(groups $USER)
-if [[ $docker_check == *"docker"* ]]; then 
+if [[ $docker_check == *"docker"* ]]; then
     echo "docker is configured correctly, continuing..."
-else 
+else
     echo "You need to configure docker to run without sudo permission! Exiting..."
     exit 1
 fi
@@ -106,15 +106,9 @@ fi
             std::process::exit(0);
         }
 
-        // create the folder rab_aws where all the file will be put
+        // create (or reuse) the folder where all generated files are stored
         println!("Creating rab_aws folder...");
-        let mkdir_output = Command::new("mkdir")
-        .arg("rab_aws")
-        .stdout(Stdio::piped())
-        .output()
-        .expect("Command \"mkdir rab_aws\" failed!");
-        let mkdir_output = String::from_utf8(mkdir_output.stdout).expect("Cannot cast output of command into String!");
-        println!("{}", mkdir_output);
+        std::fs::create_dir_all("rab_aws").expect("Cannot create rab_aws folder!");
 
         // configuration of the different aws clients
         let mut aws_config: Option<aws_config::Config> = None;
@@ -124,7 +118,11 @@ fi
         // wait until all the async operations completes
         let _result = Runtime::new().expect("Cannot create Runtime!").block_on({
             async {
-                aws_config = Some(aws_config::load_from_env().await);
+                aws_config = Some(
+                    aws_config::defaults(aws_config::BehaviorVersion::latest())
+                        .load()
+                        .await,
+                );
 
                 // create the sqs client
                 client_sqs = Some(aws_sdk_sqs::Client::new(&aws_config.expect("Cannot create SQS client!")));
@@ -179,10 +177,10 @@ async fn func(event: Value, _: lambda_runtime::Context) -> Result<(), lambda_run
     let mut results: String = format!("{{{{\n\t\"function\":[");
 
     //let reps = {}; // $reps
-    
+
     for (index, ind) in my_population_params.iter().enumerate(){{
         let individual = ind.as_str().expect("Cannot cast individual!").to_string();
-        
+
         let mut computed_ind: Vec<({}, Schedule)> = Vec::new(); // $state
 
         //for _ in 0..(reps as usize){{
@@ -217,18 +215,21 @@ async fn func(event: Value, _: lambda_runtime::Context) -> Result<(), lambda_run
 
     // send the result on the SQS queue
     send_on_sqs(results.to_string()).await;
-    
+
     Ok(())
 }}
 
 async fn send_on_sqs(results: String) -> Result<(), aws_sdk_sqs::Error> {{
     // configuration of the aws client
 	let region_provider = aws_config::meta::region::RegionProviderChain::default_provider();
-	let config = aws_config::from_env().region(region_provider).load().await;
+    let config = aws_config::defaults(aws_config::BehaviorVersion::latest())
+        .region(region_provider)
+        .load()
+        .await;
 
     // create the SQS client
 	let client_sqs = aws_sdk_sqs::Client::new(&config);
-    
+
 
     // get the queue_url of the queue
     let queue = client_sqs.get_queue_url().queue_name("rab_queue".to_string()).send().await?;
@@ -266,7 +267,7 @@ echo '{
             "Action": [
                 "sqs:*"
             ],
-            "Resource": "*" 
+            "Resource": "*"
         },
         {
             "Effect":"Allow",
@@ -279,7 +280,7 @@ echo '{
         }
     ]
 }' > rab_aws/policy.json
-    
+
 echo '{
     "Version": "2012-10-17",
     "Statement": [
@@ -288,7 +289,7 @@ echo '{
             "Principal": {
                 "Service": "lambda.amazonaws.com"
             },
-            "Action": "sts:AssumeRole" 
+            "Action": "sts:AssumeRole"
         }
     ]
 }' > rab_aws/rolePolicy.json
@@ -297,16 +298,16 @@ echo "Creation of IAM Role rab_role..."
 role_arn=$(aws iam create-role --role-name rab_role --assume-role-policy-document file://rab_aws/rolePolicy.json --query 'Role.Arn')
 echo "IAM Role rab_role created at ARN "${role_arn//\"}
 
-echo "Attacching policy to IAM Role..."	
+echo "Attacching policy to IAM Role..."
 aws iam put-role-policy --role-name rab_role --policy-name rab_policy --policy-document file://rab_aws/policy.json
 
 echo "Function building..."
 cross build --release --features aws --bin function --target x86_64-unknown-linux-gnu
 echo "Zipping the target for the upload..."
-cp ./target/x86_64-unknown-linux-gnu/release/function ./bootstrap && zip rab_aws/rab_lambda.zip bootstrap && rm bootstrap 
+cp ./target/x86_64-unknown-linux-gnu/release/function ./bootstrap && zip rab_aws/rab_lambda.zip bootstrap && rm bootstrap
 
 echo "Creation of the lambda function..."
-aws lambda create-function --function-name rab_lambda --handler main --zip-file fileb://rab_aws/rab_lambda.zip --runtime provided.al2 --role ${role_arn//\"} --timeout 900 --memory-size 10240 --environment Variables={RUST_BACKTRACE=1} --tracing-config Mode=Active 
+aws lambda create-function --function-name rab_lambda --handler main --zip-file fileb://rab_aws/rab_lambda.zip --runtime provided.al2 --role ${role_arn//\"} --timeout 900 --memory-size 10240 --environment Variables={RUST_BACKTRACE=1} --tracing-config Mode=Active
 "#;
 
         // write the deploy_script in function.rs file
@@ -429,7 +430,9 @@ aws lambda create-function --function-name rab_lambda --handler main --zip-file 
                     let _result = Runtime::new().expect("Cannot create Runtime!").block_on({
                         async {
                             // create the lambda client
-                            let config = aws_config::load_from_env().await;
+                            let config = aws_config::defaults(aws_config::BehaviorVersion::latest())
+                                .load()
+                                .await;
                             let client_lambda = aws_sdk_lambda::Client::new(&config);
 
                             println!("Invoking lambda function {}...", i);
@@ -575,8 +578,8 @@ echo "Deleting the IAM role rab_role..."
 aws iam delete-role-policy --role-name rab_role --policy-name rab_policy
 aws iam delete-role --role-name rab_role
 
-rm -r rab_aws
-rm src/function.rs
+rm -rf rab_aws
+rm -f src/function.rs
 "#;
 
         // write the deploy_script in function.rs file
