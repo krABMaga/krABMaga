@@ -12,6 +12,10 @@ jobs:
       id-token: write     # Required for OIDC token exchange
     steps:
     - uses: actions/checkout@v6
+    - name: Install system dependencies
+      uses: ./.github/workflows/install-deps
+      with:
+        profile: base
     - uses: rust-lang/crates-io-auth-action@v1
       id: auth
     - run: cargo publish
