@@ -68,6 +68,10 @@ image = {version="0.24.8", optional=true, default-features = false}
 bevy_egui = {version="0.39.1", optional=true}
 bevy = {version= "0.18.1", optional = true, features = ["x11"]}
 
+# GIS feature: A5 pentagonal cell hierarchy as an engine field.
+# Pulled in by the `gis` feature.
+bevy_a5 = {version = "0.1.2", optional = true}
+
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = {version="0.3.4", features=["wasm_js"], default-features = false}
 uuid = {version="1.19", features=["js"], default-features = false}
@@ -129,6 +133,13 @@ visualization_wasm = [
     "bevy_egui/default_fonts"
 ]
 
+# A5 pentagonal cell engine field. Adds `SparseA5Grid` and re-exports the
+# `bevy_a5` crate so models can use planet-scale spatial queries.
+gis = [
+    "bevy_a5",
+    "bevy",
+]
+
 [package.metadata.docs.rs]
 features = ["bayesian"]
 
@@ -136,7 +147,6 @@ features = ["bayesian"]
 # Renames simd_fmin/simd_fmax to simd_minimum_number_nsz/simd_maximum_number_nsz
 # to fix https://github.com/servo/pathfinder/issues/584 on nightly 2026-03-31+.
 pathfinder_simd = { git = "https://github.com/PaulWagener/pathfinder", branch = "rename-simd-fmin-fmax" }
-
 
 [lib]
 doctest = false

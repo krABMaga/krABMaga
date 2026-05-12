@@ -4,8 +4,8 @@ CARGO ?= cargo
 
 .DEFAULT_GOAL := help
 
-.PHONY: help build check check-vis check-wasm check-mpi check-bayesian check-parallel check-all \
-	test test-vis clippy clippy-vis fmt fmt-check doc clean ci ci-vis
+.PHONY: help build check check-vis check-wasm check-mpi check-bayesian check-parallel check-gis check-all \
+	test test-vis test-gis test-gis-parallel clippy clippy-vis fmt fmt-check doc clean ci ci-vis
 
 help:
 	@echo "Common commands:"
@@ -16,9 +16,12 @@ help:
 	@echo "  make check-mpi      Check with distributed_mpi feature"
 	@echo "  make check-bayesian Check with bayesian feature"
 	@echo "  make check-parallel Check with parallel feature"
+	@echo "  make check-gis      Check with gis feature"
 	@echo "  make check-all      Run common feature checks"
 	@echo "  make test           Run tests in release mode"
 	@echo "  make test-vis       Run tests with visualization feature"
+	@echo "  make test-gis       Run tests with gis feature"
+	@echo "  make test-gis-parallel  Run tests with gis + parallel features"
 	@echo "  make clippy         Run clippy for all targets"
 	@echo "  make clippy-vis     Run clippy with visualization feature"
 	@echo "  make fmt            Format all Rust files"
@@ -28,7 +31,7 @@ help:
 	@echo "  make ci             Local CI subset (fmt/check/test/clippy)"
 	@echo "  make ci-vis         Local visualization subset"
 	@echo "  make run            Run default binary in release mode"
-	@echo "  make run-bin name=bin_name  Run specified binary in release mode
+	@echo "  make run-bin name=bin_name  Run specified binary in release mode"
 
 build:
 	$(CARGO) build --release
@@ -51,13 +54,22 @@ check-bayesian:
 check-parallel:
 	$(CARGO) check --release --features parallel
 
-check-all: check check-vis check-mpi check-bayesian check-parallel
+check-gis:
+	$(CARGO) check --release --features gis
+
+check-all: check check-vis check-mpi check-bayesian check-parallel check-gis
 
 test:
 	$(CARGO) test --release
 
 test-vis:
 	$(CARGO) test --release --features visualization
+
+test-gis:
+	$(CARGO) test --release --features gis
+
+test-gis-parallel:
+	$(CARGO) test --release --features "gis parallel"
 
 clippy:
 	$(CARGO) clippy --all-targets
