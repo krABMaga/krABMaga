@@ -585,12 +585,7 @@ impl<O: Eq + Hash + Clone + Copy> SparseA5Grid3D<O> {
         Some(out)
     }
 
-    pub fn cell_3d_at(
-        &self,
-        longitude: f64,
-        latitude: f64,
-        altitude: f64,
-    ) -> Option<A5Cell3D> {
+    pub fn cell_3d_at(&self, longitude: f64, latitude: f64, altitude: f64) -> Option<A5Cell3D> {
         let cell = GeoCell::from_lon_lat(longitude, latitude, self.resolution)?;
         let layer = self.layer_for_altitude(altitude)?;
         Some(A5Cell3D::new(cell, layer))
@@ -613,11 +608,7 @@ impl<O: Eq + Hash + Clone + Copy> SparseA5Grid3D<O> {
         Some(lift_to_layer(query::grid_disk(&loc.cell, k)?, loc.layer))
     }
 
-    pub fn cell_spherical_cap(
-        &self,
-        loc: &A5Cell3D,
-        radius_meters: f64,
-    ) -> Option<Vec<A5Cell3D>> {
+    pub fn cell_spherical_cap(&self, loc: &A5Cell3D, radius_meters: f64) -> Option<Vec<A5Cell3D>> {
         Some(lift_to_layer(
             query::spherical_cap(&loc.cell, radius_meters)?,
             loc.layer,
@@ -663,10 +654,7 @@ impl<O: Eq + Hash + Clone + Copy> SparseA5Grid3D<O> {
 // ---------------------------------------------------------------------------
 
 fn lift_to_layer(cells: Vec<GeoCell>, layer: usize) -> Vec<A5Cell3D> {
-    cells
-        .into_iter()
-        .map(|c| A5Cell3D::new(c, layer))
-        .collect()
+    cells.into_iter().map(|c| A5Cell3D::new(c, layer)).collect()
 }
 
 /// Normalise `layer_boundaries`: empty / single-entry → `None`, and panic

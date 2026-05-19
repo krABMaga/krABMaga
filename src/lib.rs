@@ -384,7 +384,11 @@ pub use {
 #[cfg(any(feature = "visualization", feature = "visualization_wasm",))]
 pub mod visualization;
 
-#[cfg(any(feature = "visualization", feature = "visualization_wasm", feature = "gis"))]
+#[cfg(any(
+    feature = "visualization",
+    feature = "visualization_wasm",
+    feature = "gis"
+))]
 pub use bevy;
 
 #[cfg(feature = "gis")]
