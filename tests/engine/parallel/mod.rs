@@ -4,3 +4,8 @@ pub mod field_2d;
 pub mod network;
 pub mod sparse_number_grid_2d;
 pub mod sparse_object_grid_2d;
+
+#[cfg(feature = "gis")]
+pub mod sparse_a5_grid;
+#[cfg(feature = "gis")]
+pub mod sparse_a5_grid_3d;

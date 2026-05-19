@@ -13,3 +13,4 @@ Cargo.lock
 # tarpaulin output
 cobertura.xml
 tarpaulin-report.html
+.claude/scheduled_tasks.lock
