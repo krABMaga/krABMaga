@@ -15,6 +15,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
+      - name: Install ubuntu dependencies
+        uses: ./.github/workflows/install-deps
+        with:
+          profile: base
+
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
