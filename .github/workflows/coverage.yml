@@ -33,7 +33,7 @@ jobs:
             --verbose \
             --lcov \
             --output-path lcov.info \
-            --ignore-filename-regex "src/(utils/.*|visualization/.*|engine/fields/kdtree_mpi\\.rs|explore/bayesian\\.rs|lib\\.rs)"
+            --ignore-filename-regex "src/(utils/.*|visualization/.*|engine/fields/kdtree_mpi\\.rs|explore/(bayesian|random_search)\\.rs|lib\\.rs)"
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v6

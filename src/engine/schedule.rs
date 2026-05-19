@@ -415,6 +415,43 @@ cfg_if! {
     }
 }
 
+#[cfg(all(test, not(feature = "parallel")))]
+mod tests {
+    use super::{Agent, AgentImpl, Pair, Priority, ScheduleOptions, State};
+
+    #[derive(Clone)]
+    struct TestAgent;
+
+    impl Agent for TestAgent {
+        fn step(&mut self, _state: &mut dyn State) {}
+
+        fn before_step(
+            &mut self,
+            _state: &mut dyn State,
+        ) -> Option<Vec<(Box<dyn Agent>, ScheduleOptions)>> {
+            None
+        }
+
+        fn after_step(
+            &mut self,
+            _state: &mut dyn State,
+        ) -> Option<Vec<(Box<dyn Agent>, ScheduleOptions)>> {
+            None
+        }
+    }
+
+    #[test]
+    fn pair_display_formats_agent_and_priority() {
+        let agent = AgentImpl::new(Box::new(TestAgent), 1);
+        let priority = Priority::new(0.0, 0);
+        let pair = Pair::new(agent, priority);
+        let rendered = format!("{pair}");
+
+        assert!(rendered.contains("agent:"));
+        assert!(rendered.contains("priority:"));
+    }
+}
+
 #[doc(hidden)]
 /// A struct used to specify schedule options to pass to an agent's clone when an agent reproduces.
 pub struct ScheduleOptions {
