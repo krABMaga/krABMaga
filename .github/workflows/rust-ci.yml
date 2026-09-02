@@ -19,7 +19,7 @@ jobs:
           - stable
     name: '${{ matrix.os }} ${{ matrix.rust }} build'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Install system dependencies
         if: matrix.os == 'ubuntu-latest'
         uses: ./.github/workflows/install-deps
@@ -57,7 +57,7 @@ jobs:
     name: '${{ matrix.os }} MPI'
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Setup MPI
         uses: mpi4py/setup-mpi@v1
         with:
@@ -85,7 +85,7 @@ jobs:
     continue-on-error: true
     name: 'ubuntu nightly build'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Install system dependencies
         uses: ./.github/workflows/install-deps
         with:
