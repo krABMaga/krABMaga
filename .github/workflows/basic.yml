@@ -1,6 +1,6 @@
 on: [push, pull_request]
 
-name: Continuous integration
+name: Basic Check
 
 jobs:
   check:
@@ -9,11 +9,14 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
-      - name: Install system dependencies
-        uses: ./.github/workflows/install-deps
-        with:
-          profile: base
-      - run: cargo check --release
+      # - name: Install system dependencies
+      #   uses: ./.github/workflows/install-deps
+      #   with:
+      #     profile: base
+      - run:
+          apt-get update && apt-get install -y build-essential pkg-config libfontconfig1-dev
+          cargo check --release
+
 
   checkvis:
     name: Check visualization and bayesian

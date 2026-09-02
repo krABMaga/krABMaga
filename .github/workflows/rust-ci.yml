@@ -1,4 +1,4 @@
-name: Rust CI
+name: Cargo builds
 'on':
   pull_request:
     branches:
