@@ -1,12 +1,11 @@
 name: Manage PR and issue labels
 
 on:
-  pull_request_target:
+  pull_request_target: # zizmor: ignore[dangerous-triggers] -- required for fork PRs
     types: [opened, synchronize, reopened]
 
 jobs:
   label:
-    if: github.event_name == 'pull_request_target'
     runs-on: ubuntu-latest
     permissions:
       contents: read
