@@ -13,9 +13,10 @@ jobs:
       #   uses: ./.github/workflows/install-deps
       #   with:
       #     profile: base
-      - run:
-          apt-get update && apt-get install -y build-essential pkg-config libfontconfig1-dev
-          cargo check --release
+      - run: |
+          sudo apt update
+          sudo apt install pkg-config build-essential libfontconfig1-dev
+      - run: cargo check --release
 
 
   checkvis:
