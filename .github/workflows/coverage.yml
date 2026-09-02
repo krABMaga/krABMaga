@@ -22,7 +22,7 @@ jobs:
           --exclude-files src/utils/* src/visualization/* src/lib.rs
           src/engine/fields/kdtree_mpi.rs src/explore/bayesian.rs
       - name: Upload to codecov.io
-        uses: codecov/codecov-action@v6
+        uses: codecov/codecov-action@v7
         with:
           token: ${{secrets.CODECOV_TOKEN}}
           files: ./cobertura.xml
