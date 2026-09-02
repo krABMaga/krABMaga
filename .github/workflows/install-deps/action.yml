@@ -2,7 +2,7 @@ name: Install System Dependencies
 
 inputs:
   profile:
-    description: 'Dependency profile to install (base, visualization, mpi)'
+    description: Dependency profile to install (base, visualization, mpi)
     required: false
     default: 'base'
 

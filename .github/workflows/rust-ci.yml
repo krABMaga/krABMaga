@@ -89,12 +89,26 @@ jobs:
       - name: Install system dependencies
         uses: ./.github/workflows/install-deps
         with:
-          profile: visualization
+          profile: base
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly
       - uses: Swatinem/rust-cache@v2
       - name: Build nightly
         run: cargo build --release
+  nightlybuildvis:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    name: 'ubuntu nightly build'
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install system dependencies
+        uses: ./.github/workflows/install-deps
+        with:
+          profile: visualization
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly
+      - uses: Swatinem/rust-cache@v2
       - name: BuildVisualization nightly
         run: 'cargo build --release --features "visualization, visualization_wasm"'
