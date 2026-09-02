@@ -1,5 +1,4 @@
-name: 'Install System Dependencies'
-description: 'Install required system dependencies with dedicated apt package caching'
+name: Install System Dependencies
 
 inputs:
   profile:
@@ -10,52 +9,52 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Cache and install base dependencies
+    - name: Install base dependencies
       if: inputs.profile == 'base'
-      uses: awalsh128/cache-apt-pkgs-action@v1
-      with:
-        packages: >-
-          build-essential
-          pkg-config
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          pkg-config \
           libfontconfig1-dev
-        version: base-v1
 
-    - name: Cache and install visualization dependencies
+    - name: Install visualization dependencies
       if: inputs.profile == 'visualization'
-      uses: awalsh128/cache-apt-pkgs-action@v1
-      with:
-        packages: >-
-          pkg-config
-          libx11-dev
-          libasound2-dev
-          libudev-dev
-          libgtk-3-dev
-          libwayland-dev
-          libxkbcommon-dev
-          libxcb-randr0-dev
-          libxcb-xtest0-dev
-          libxcb-xinerama0-dev
-          libxcb-shape0-dev
-          libxcb-xkb-dev
-          libxcb-render0-dev
-          libxcb-xfixes0-dev
-          libxcb1-dev
-          portaudio19-dev
-          build-essential
-          libpulse-dev
-          libdbus-1-dev
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          pkg-config \
+          libx11-dev \
+          libasound2-dev \
+          libudev-dev \
+          libgtk-3-dev \
+          libwayland-dev \
+          libxkbcommon-dev \
+          libxcb-randr0-dev \
+          libxcb-xtest0-dev \
+          libxcb-xinerama0-dev \
+          libxcb-shape0-dev \
+          libxcb-xkb-dev \
+          libxcb-render0-dev \
+          libxcb-xfixes0-dev \
+          libxcb1-dev \
+          portaudio19-dev \
+          build-essential \
+          libpulse-dev \
+          libdbus-1-dev \
           libfontconfig1-dev
-        version: visualization-v1
 
-    - name: Cache and install mpi dependencies
+    - name: Install MPI dependencies
       if: inputs.profile == 'mpi'
-      uses: awalsh128/cache-apt-pkgs-action@v1
-      with:
-        packages: >-
-          build-essential
-          pkg-config
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          pkg-config \
           libfontconfig1-dev
-        version: mpi-v1
 
     - name: Validate dependency profile
       if: inputs.profile != 'base' && inputs.profile != 'visualization' && inputs.profile != 'mpi'

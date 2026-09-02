@@ -9,13 +9,10 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
-      # - name: Install system dependencies
-      #   uses: ./.github/workflows/install-deps
-      #   with:
-      #     profile: base
-      - run: |
-          sudo apt update
-          sudo apt install pkg-config build-essential libfontconfig1-dev
+      - name: Install system dependencies
+        uses: ./.github/workflows/install-deps
+        with:
+          profile: base
       - run: cargo check --release
 
 
