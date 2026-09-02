@@ -1,6 +1,6 @@
 on: [push, pull_request]
 
-name: Continuous integration
+name: Basic Check
 
 jobs:
   check:
@@ -14,6 +14,7 @@ jobs:
         with:
           profile: base
       - run: cargo check --release
+
 
   checkvis:
     name: Check visualization and bayesian
