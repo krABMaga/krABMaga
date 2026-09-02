@@ -15,8 +15,8 @@ runs:
       uses: awalsh128/cache-apt-pkgs-action@v1
       with:
         packages: >-
+          build-essential
           pkg-config
-          libfontconfig
           libfontconfig1-dev
         version: base-v1
 
@@ -44,7 +44,6 @@ runs:
           build-essential
           libpulse-dev
           libdbus-1-dev
-          libfontconfig
           libfontconfig1-dev
         version: visualization-v1
 
@@ -53,8 +52,8 @@ runs:
       uses: awalsh128/cache-apt-pkgs-action@v1
       with:
         packages: >-
+          build-essential
           pkg-config
-          libfontconfig
           libfontconfig1-dev
         version: mpi-v1
 
