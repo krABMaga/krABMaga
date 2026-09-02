@@ -19,16 +19,16 @@ jobs:
           - stable
     name: '${{ matrix.os }} ${{ matrix.rust }} build'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install system dependencies
         if: matrix.os == 'ubuntu-latest'
         uses: ./.github/workflows/install-deps
         with:
           profile: visualization
-      - uses: dtolnay/rust-toolchain@master
+      - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # v1.96.1 # v1.96.1
         with:
           toolchain: '${{ matrix.rust }}'
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
       - name: Build
         run: cargo build --release
       - name: BuildVisualization
@@ -57,13 +57,13 @@ jobs:
     name: '${{ matrix.os }} MPI'
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Setup MPI
-        uses: mpi4py/setup-mpi@v1
+        uses: mpi4py/setup-mpi@3417e34f1394a16723d7913c236642c24e95fd5a # 1.4.4
         with:
           mpi: '${{ matrix.mpi }}'
-      - uses: Swatinem/rust-cache@v2
-      - uses: dtolnay/rust-toolchain@master
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # v1.96.1
         with:
           toolchain: '${{ matrix.rust }}'
       - name: Install system dependencies
@@ -85,14 +85,14 @@ jobs:
     continue-on-error: true
     name: 'ubuntu nightly build'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install system dependencies
         uses: ./.github/workflows/install-deps
         with:
           profile: base
-      - uses: dtolnay/rust-toolchain@master
+      - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # v1.96.1
         with:
           toolchain: nightly
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6
       - name: Build nightly
         run: cargo build --release
