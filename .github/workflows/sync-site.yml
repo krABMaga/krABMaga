@@ -21,6 +21,9 @@ on:
       tags:
         description: 'Manual update of site'
 
+permissions:
+  contents: read
+
 jobs:
   if_merged:
     if: github.event.pull_request.merged == true && github.event.pull_request.head.repo.full_name == github.repository

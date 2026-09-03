@@ -5,6 +5,10 @@ name: Cargo builds
       - main
 env:
   CARGO_TERM_COLOR: always
+
+permissions:
+  contents: read
+
 jobs:
   stdbuild:
     runs-on: '${{ matrix.os }}'
@@ -20,6 +24,8 @@ jobs:
     name: '${{ matrix.os }} ${{ matrix.rust }} build'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+            persist-credentials: false
       - name: Install system dependencies
         if: matrix.os == 'ubuntu-latest'
         uses: ./.github/workflows/install-deps
@@ -58,6 +64,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Setup MPI
         uses: mpi4py/setup-mpi@3417e34f1394a16723d7913c236642c24e95fd5a # 1.4.4
         with:
@@ -86,6 +94,8 @@ jobs:
     name: 'ubuntu nightly build'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Install system dependencies
         uses: ./.github/workflows/install-deps
         with:
