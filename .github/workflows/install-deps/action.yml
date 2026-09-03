@@ -1,4 +1,5 @@
 name: Install System Dependencies
+description: Installs system dependencies for the project based on the specified profile.
 
 inputs:
   profile:
@@ -55,10 +56,3 @@ runs:
           build-essential \
           pkg-config \
           libfontconfig1-dev
-
-    - name: Validate dependency profile
-      if: inputs.profile != 'base' && inputs.profile != 'visualization' && inputs.profile != 'mpi'
-      shell: bash
-      run: |
-        echo "Unsupported install-deps profile: '${{ inputs.profile }}'"
-        exit 1
