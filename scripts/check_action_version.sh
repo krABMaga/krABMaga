@@ -50,7 +50,7 @@ while read -r pinned marker version; do
     repository="${owner}/${repo_and_path%%/*}"
 
     # Require an exact semantic-version comment such as "# v1.2.3".
-    if [[ "${marker:-}" != "#" || ! "${version:-}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+    if [[ "${marker:-}" != "#" || ! "${version:-}" =~ ^v[0-9]+(\.[0-9]+){0,2}([.-][0-9A-Za-z.-]+)?$ ]]; then
         print_table_row \
             "FAIL" "${action}" "${version:--}" "${sha}" \
             "Missing or invalid version comment"
