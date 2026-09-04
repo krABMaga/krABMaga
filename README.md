@@ -5,7 +5,8 @@
   <img alt="Crates.io" src="https://img.shields.io/crates/l/krabmaga">
   <a href="https://crates.io/crates/krabmaga"><img alt="Crates.io" src="https://img.shields.io/crates/v/krabmaga"> </a>
   <a href="https://docs.rs/krabmaga/latest/krabmaga"><img alt="docs.rs" src="https://img.shields.io/docsrs/krabmaga"> </a>
-  <img alt="Rust CI" src="https://github.com/krABMaga/krABMaga/workflows/Rust%20CI/badge.svg">
+  <img alt="Rust CI"
+     src="https://img.shields.io/github/actions/workflow/status/krABMaga/krABMaga/rust-ci.yml?label=Rust%20CI">
   <a href="https://codecov.io/gh/krABMaga/krABMaga"><img alt="codecov" src="https://codecov.io/gh/krABMaga/krABMaga/branch/main/graph/badge.svg?token=GWYP2UBPIZ"> </a>
 </div>
 
@@ -182,9 +183,48 @@ pub enum LogType {
 
 ## Support conference paper
 
-If you find this code useful in your research, please consider citing:
+If you find this code useful in your research, please consider citing on of the following papers:
 
 ```
+@article{antelmi2022experimenting,
+  title={Experimenting with agent-based model simulation tools},
+  author={Antelmi, Alessia and Cordasco, Gennaro and D’Ambrosio, Giuseppe and De Vinco, Daniele and Spagnuolo, Carmine},
+  journal={Applied Sciences},
+  volume={13},
+  number={1},
+  pages={13},
+  year={2022},
+  publisher={MDPI}
+}
+
+@article{antelmi2024reliable,
+  title={Reliable and efficient agent-based modeling and simulation},
+  author={Antelmi, Alessia and Caramante, Pasquale and Cordasco, Gennaro and D'Ambrosio, Giuseppe and De Vinco, Daniele and Foglia, Francesco and Postiglione, Luca and Spagnuolo, Carmine and others},
+  journal={JASSS},
+  volume={27},
+  number={2},
+  pages={1--28},
+  year={2024}
+}
+
+@inproceedings{de2024high,
+  title={High-Performance Computation on a Rust-based distributed ABM engine},
+  author={De Vinco, Daniele and Tranquillo, Andrea and Antelmi, Alessia and Spagnuolo, Carmine and Scarano, Vittorio and others},
+  booktitle={Ceur Workshop Proceedings},
+  volume={3785},
+  pages={52--60},
+  year={2024},
+  organization={CEUR-WS}
+}
+
+@inproceedings{ambrosio2025impact,
+  title={The Impact of ECS Logic on Parallel Performance in Agent-based Model Simulations.},
+  author={Ambrosio, Antonio and De Vinco, Daniele and Foglia, Francesco and Spagnuolo, Carmine and Scarano, Vittorio},
+  booktitle={BigHPC@ ITADATA},
+  pages={1--10},
+  year={2025}
+}
+
 @ARTICLE{AntelmiASIASIM2019,
   author={Antelmi, A. and Cordasco, G. and D’Auria, M. and De Vinco, D. and Negro, A. and Spagnuolo, C.},
   title={On Evaluating Rust as a Programming Language for the Future of Massive Agent-Based Simulations},

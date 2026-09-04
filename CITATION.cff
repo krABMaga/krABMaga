@@ -1,0 +1,39 @@
+cff-version: 1.2.0
+message: >-
+  If you use krABMaga in your research, please cite it using the metadata in
+  this file.
+title: "krABMaga is a discrete events simulation engine for developing ABM simulations in Rust"
+type: software
+
+repository-code: https://github.com/krABMaga/krABMaga
+url: http://krabmaga.github.io/
+
+license: MIT
+version: 0.1.0
+
+authors:
+  - family-names: De Vinco
+    given-names: Daniele
+    orcid: https://orcid.org/0000-0003-0781-3744
+    email: ddevinco@unisa.it
+  - family-names: Spagnuolo
+    given-names: Carmine
+    orcid: https://orcid.org/0000-0002-8267-9808
+    email: cspagnuolo@unisa.it
+
+keywords:
+  - rust
+  - agent-based modeling
+  - discrete event simulation
+  - high performance computing
+
+preferred-citation:
+  type: software
+  title: krABMaga
+  authors:
+    - family-names: De Vinco
+      given-names: Daniele
+    - family-names: Spagnuolo
+      given-names: Carmine
+  year: 2026
+  url: https://github.com/krABMaga/krABMaga

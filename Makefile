@@ -84,7 +84,7 @@ fmt-check:
 	$(CARGO) fmt --all -- --check
 
 doc:
-	$(CARGO) doc --no-deps --features bayesian
+	$(CARGO) doc --no-deps
 
 clean:
 	$(CARGO) clean
