@@ -198,7 +198,7 @@ cfg_if! {
             /// grid.iter_values(|&loc, &value| {
             ///     // do something with loc and value
             ///     // can't modify the grid here
-            /// };
+            /// });
             ///
             /// ```
             pub fn iter_values<F>(&self, closure: F)
@@ -233,7 +233,7 @@ cfg_if! {
             /// // can't modify the grid here
             /// grid.iter_values_unbuffered(|&loc, &value| {
             ///    some_function(loc, value);
-            /// };
+            /// });
             ///
             /// ```
             pub fn iter_values_unbuffered<F>(&self, closure: F)
