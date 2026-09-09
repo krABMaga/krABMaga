@@ -21,7 +21,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Install system dependencies
-        uses: ./.github/workflows/install-deps
+        uses: $/.github/workflows/install-deps
         with:
           profile: base
       - name: Install Rust
