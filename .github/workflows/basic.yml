@@ -17,7 +17,7 @@ jobs:
         with:
           toolchain: stable
       - name: Install system dependencies
-        uses: ./.github/workflows/install-deps
+        uses: $/.github/workflows/install-deps
         with:
           profile: base
       - run: cargo check --release
@@ -34,7 +34,7 @@ jobs:
         with:
           toolchain: stable
       - name: Install system dependencies
-        uses: ./.github/workflows/install-deps
+        uses: $/.github/workflows/install-deps
         with:
           profile: visualization
       - run: cargo check --release --features "visualization, bayesian"
@@ -63,7 +63,7 @@ jobs:
         with:
           toolchain: stable
       - name: Install system dependencies
-        uses: ./.github/workflows/install-deps
+        uses: $/.github/workflows/install-deps
         with:
           profile: mpi
       - run: cargo check --release --features distributed_mpi
@@ -93,7 +93,7 @@ jobs:
           toolchain: stable
           components: clippy
       - name: Install system dependencies
-        uses: ./.github/workflows/install-deps
+        uses: $/.github/workflows/install-deps
         with:
           profile: base
       - run: cargo clippy
@@ -110,7 +110,7 @@ jobs:
           toolchain: stable
           components: clippy
       - name: Install system dependencies
-        uses: ./.github/workflows/install-deps
+        uses: $/.github/workflows/install-deps
         with:
           profile: visualization
       - run: cargo clippy --features "visualization, bayesian"
@@ -140,7 +140,7 @@ jobs:
           toolchain: stable
           components: clippy
       - name: Install system dependencies
-        uses: ./.github/workflows/install-deps
+        uses: $/.github/workflows/install-deps
         with:
           profile: mpi
       - run: cargo clippy --features distributed_mpi
