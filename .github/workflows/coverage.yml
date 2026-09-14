@@ -17,6 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
+<<<<<<< HEAD
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -30,6 +31,18 @@ jobs:
           toolchain: stable
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+=======
+        uses: actions/checkout@v6
+
+      - name: Install ubuntu dependencies
+        uses: ./.github/workflows/install-deps
+        with:
+          profile: base
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+>>>>>>> 22e30b0 (chore: added profile)
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@d438492cf8a250514fa2d34b30bc3c0dc37c65ff # v2.87.8
         with:
