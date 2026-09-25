@@ -277,6 +277,9 @@ fn dense_object_grid_2d_missing_branches() {
     grid_contains.set_object_location(bird_b, &loc);
     grid_contains.lazy_update();
     grid_contains.apply_to_all_values(|_loc, _bird| Some(bird_a), GridOption::READWRITE);
+    let objs_contains = grid_contains.get_objects_unbuffered(&loc).unwrap();
+    assert_eq!(objs_contains.len(), 1);
+    assert_eq!(objs_contains[0].id, bird_a.id);
 
     // Cover READWRITE None branch in the read path.
     let mut grid_none: DenseGrid2D<Bird> = DenseGrid2D::new(2, 2);
@@ -293,6 +296,9 @@ fn dense_object_grid_2d_missing_branches() {
         },
         GridOption::READWRITE,
     );
+    let objs_none = grid_none.get_objects_unbuffered(&loc).unwrap();
+    assert_eq!(objs_none.len(), 1);
+    assert_eq!(objs_none[0].id, bird_b.id);
 
     // Cover get_random_empty_bag None branch when read is full.
     grid.lazy_update();

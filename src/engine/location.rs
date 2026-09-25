@@ -34,7 +34,7 @@ impl PartialEq for Real2D {
 }
 
 /// A structure describing a two-dimensional, i32 location, for use in discrete fields such as a grid.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Int2D {
     pub x: i32,
     pub y: i32,
