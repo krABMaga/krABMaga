@@ -19,6 +19,7 @@ help:
 	@echo "  make check-gis      Check with gis feature"
 	@echo "  make check-all      Run common feature checks"
 	@echo "  make test           Run tests in release mode"
+	@echo "  make stest          Run single test in release mode"
 	@echo "  make test-vis       Run tests with visualization feature"
 	@echo "  make test-gis       Run tests with gis feature"
 	@echo "  make test-gis-parallel  Run tests with gis + parallel features"
@@ -61,6 +62,9 @@ check-all: check check-vis check-mpi check-bayesian check-parallel check-gis
 
 test:
 	$(CARGO) test --release
+
+stest:
+	$(CARGO) test -- --no-capture $(func_name)
 
 test-vis:
 	$(CARGO) test --release --features visualization
