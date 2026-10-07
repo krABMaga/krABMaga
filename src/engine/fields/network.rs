@@ -657,7 +657,7 @@ cfg_if! {
             //     }
             //     formatter.push_str(" - ");
             // }
-            write!(f, "MATRIX:\n{:?}", formatter)
+            write!(f, "MATRIX:\n\"{}\"", formatter)
         }
 
         }
