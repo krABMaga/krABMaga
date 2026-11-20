@@ -58,7 +58,7 @@ jobs:
         uses: mpi4py/setup-mpi@3417e34f1394a16723d7913c236642c24e95fd5a # v1.4.4
         with:
           mpi: ${{ matrix.mpi }}
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
       - uses: dtolnay/rust-toolchain@7e38f4b43b4db5c8dd498af069a4f6196df1d067 # v1
         with:
           toolchain: stable
@@ -134,7 +134,7 @@ jobs:
         uses: mpi4py/setup-mpi@3417e34f1394a16723d7913c236642c24e95fd5a # v1.4.4
         with:
           mpi: ${{ matrix.mpi }}
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
       - uses: dtolnay/rust-toolchain@7e38f4b43b4db5c8dd498af069a4f6196df1d067 # v1
         with:
           toolchain: stable
