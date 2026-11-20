@@ -777,3 +777,13 @@ fn calculate_indexes_bag(index: i32, width: i32, height: i32) -> Option<Int2D> {
     }
     None
 }
+
+#[cfg(test)]
+mod tests {
+    use super::calculate_indexes_bag;
+
+    #[test]
+    fn calculate_indexes_bag_returns_none_for_out_of_range() {
+        assert!(calculate_indexes_bag(10, 2, 2).is_none());
+    }
+}

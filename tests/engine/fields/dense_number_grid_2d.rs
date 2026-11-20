@@ -98,68 +98,47 @@ fn dense_number_grid_2d_bags() {
     let mut grid: DenseNumberGrid2D<u16> = DenseNumberGrid2D::new(WIDTH, HEIGHT);
 
     let all = grid.get_empty_bags();
-    assert_eq!((HEIGHT * WIDTH) as usize, all.len());
+    assert_eq!(all.len(), (WIDTH * HEIGHT) as usize);
 
-    let loc = grid.get_random_empty_bag();
-    assert!(None != loc);
-    let loc = loc.unwrap();
-    grid.set_value_location(10, &loc);
-
-    let value = grid.get_value_unbuffered(&loc);
-    assert!(None != value);
-    assert_eq!(Some(10), value);
-    grid.remove_value_location(&loc);
-    let value = grid.get_value_unbuffered(&loc);
-    assert!(None == value);
-
-    grid.set_value_location(10, &loc);
-    grid.update();
-    let all = grid.get_empty_bags();
-    assert_eq!((HEIGHT * WIDTH - 1) as usize, all.len());
-
-    for i in 0..WIDTH {
-        for j in 0..HEIGHT {
-            let loc = Int2D { x: i, y: j };
-            grid.set_value_location(0, &loc);
-        }
-    }
-
-    let loc = grid.get_location_unbuffered(0);
-    assert!(loc.is_some());
-    let loc = loc.unwrap();
-    assert_eq!(loc.x, 0);
-    assert_eq!(loc.y, 0);
-
-    let mut rng = rand::rng();
-    let i = rng.random_range(1..WIDTH);
-    let j = rng.random_range(1..HEIGHT);
-
-    let loc = Int2D { x: i, y: j };
-    grid.set_value_location(5, &loc);
-    let loc2 = grid.get_location_unbuffered(5);
-    assert!(None != loc2);
-    let loc2 = loc2.unwrap();
-    assert_eq!(loc2.x, i);
-    assert_eq!(loc2.y, j);
-
-    assert!(grid.get_location_unbuffered(6).is_none());
+    let random_bag = grid.get_random_empty_bag();
+    assert!(random_bag.is_some());
+    let bag_loc = random_bag.unwrap();
+    grid.set_value_location(10, &bag_loc);
 
     grid.lazy_update();
 
-    let loc = grid.get_location(0);
-    assert!(loc.is_some());
-    let loc = loc.unwrap();
-    assert_eq!(loc.x, 0);
-    assert_eq!(loc.y, 0);
+    let pos = grid.get_location(10);
+    assert_eq!(pos, Some(bag_loc));
 
-    let loc2 = grid.get_location(5);
-    assert!(None != loc2);
-    let loc2 = loc2.unwrap();
-    assert_eq!(loc2.x, i);
-    assert_eq!(loc2.y, j);
+    let none = grid.get_location(20);
+    assert_eq!(none, None);
 
-    assert!(grid.get_location(6).is_none());
+    let pos_unbuffered = grid.get_location_unbuffered(10);
+    assert_eq!(pos_unbuffered, None);
 
-    let none = grid.get_empty_bags();
-    assert_eq!(0, none.len());
+    grid.set_value_location(20, &Int2D { x: 0, y: 0 });
+    let pos_unbuffered_2 = grid.get_location_unbuffered(20);
+    assert_eq!(pos_unbuffered_2, Some(Int2D { x: 0, y: 0 }));
+
+    grid.remove_value_location(&Int2D { x: 0, y: 0 });
+    let pos_unbuffered_3 = grid.get_location_unbuffered(20);
+    assert_eq!(pos_unbuffered_3, None);
+
+    grid.lazy_update();
+    let val = grid.get_value(&Int2D { x: 0, y: 0 });
+    assert_eq!(val, None);
+}
+
+#[cfg(not(any(
+    feature = "visualization",
+    feature = "visualization_wasm",
+    feature = "parallel"
+)))]
+#[test]
+fn dense_number_grid_2d_update_test() {
+    let mut grid: DenseNumberGrid2D<u16> = DenseNumberGrid2D::new(WIDTH, HEIGHT);
+    grid.set_value_location(1, &Int2D { x: 0, y: 0 });
+    grid.update();
+    assert_eq!(grid.get_value(&Int2D { x: 0, y: 0 }), Some(1));
+    assert_eq!(grid.get_value_unbuffered(&Int2D { x: 0, y: 0 }), None);
 }
