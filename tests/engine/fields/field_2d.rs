@@ -114,6 +114,16 @@ fn field_2d_neighbors() {
     assert_eq!(2, vec.len());
     assert!(vec.contains(&bird1));
     assert!(vec.contains(&bird2));
+
+    // Test the else branch
+    let vec = state
+        .field1
+        .get_neighbors_within_distance(Real2D { x: 10.0, y: 10.0 }, 1.0);
+    assert_eq!(0, vec.len());
+    let vec = state
+        .field1
+        .get_neighbors_within_relax_distance(Real2D { x: 10.0, y: 10.0 }, 1.0);
+    assert_eq!(0, vec.len());
 }
 
 #[cfg(not(any(

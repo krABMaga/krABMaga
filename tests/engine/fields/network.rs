@@ -456,3 +456,78 @@ fn network_scale_free_2() {
 
     assert!(!equals);
 }
+
+#[cfg(not(any(
+    feature = "visualization",
+    feature = "visualization_wasm",
+    feature = "parallel"
+)))]
+#[test]
+fn test_network_fmt() {
+    let mut net: Network<u16, String> = Network::new(false);
+    let node_set: &[u16] = &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+    for i in 0..node_set.len() {
+        net.add_node(node_set[i]);
+    }
+    net.lazy_update();
+    net.preferential_attachment_BA_with_seed(node_set, INIT_EDGES, 0);
+
+    let net_str = String::from("MATRIX:\n\"0100100000-1010000000-0101001010-0010010001-1000000100-0001000000-0010000000-0000100000-0010000000-0001000000-\"");
+    assert_eq!(format!("{}", net), net_str);
+}
+
+#[cfg(not(any(
+    feature = "visualization",
+    feature = "visualization_wasm",
+    feature = "parallel"
+)))]
+#[test]
+fn test_add_edge_none_branch() {
+    let mut net: Network<u32, String> = Network::new(false);
+
+    // Add nodes to the network
+    net.add_node(1);
+    net.add_node(2);
+    net.update();
+
+    // Test the None branch for node u
+    let (added_u, added_v) = net.add_edge(3, 2, EdgeOptions::Simple);
+    assert!(!added_u);
+    assert!(!added_v);
+
+    // Test the None branch for node v
+    let (added_u, added_v) = net.add_edge(1, 3, EdgeOptions::Simple);
+    assert!(!added_u);
+    assert!(!added_v);
+
+    // Test the None branch for both nodes
+    let (added_u, added_v) = net.add_edge(3, 4, EdgeOptions::Simple);
+    assert!(!added_u);
+    assert!(!added_v);
+}
+
+#[cfg(not(any(
+    feature = "visualization",
+    feature = "visualization_wasm",
+    feature = "parallel"
+)))]
+#[test]
+fn test_get_id() {
+    let mut net: Network<u32, String> = Network::new(false);
+
+    // Add nodes to the network
+    net.add_node(1);
+    net.add_node(2);
+    net.update();
+
+    // Test the get_id function
+    let id = net.get_id(1);
+    assert_eq!(id, Some(0));
+
+    let id = net.get_id(2);
+    assert_eq!(id, Some(1));
+
+    // Test the None branch
+    let id = net.get_id(3);
+    assert_eq!(id, None);
+}
